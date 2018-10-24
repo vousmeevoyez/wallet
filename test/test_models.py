@@ -7,7 +7,7 @@ sys.path.append("../app")
 from datetime import datetime, timedelta
 
 from app            import create_app, db
-from app.models     import ApiKey, Wallet, VirtualAccount
+from app.models     import ApiKey, Wallet, VirtualAccount, Transaction
 from app.config     import config
 
 now = datetime.utcnow()
@@ -197,6 +197,29 @@ class WalletModelCase(unittest.TestCase):
         wallet_id = Wallet().generate_wallet_id()
         self.assertEqual( len(wallet_id), 12)
 
+    def test_va_relationship(self):
+        wallet = Wallet(
+            name="lisa",
+            msisdn="081212341234",
+            email="lisa@bp.com",
+        )
+        db.session.add(wallet)
+        db.session.commit()
+
+        wallet = Wallet.query.get(1)
+        va = VirtualAccount(
+            client_id="123123",
+            trx_id="123",
+            trx_amount="100",
+            billing_type="J",
+            customer_name="Lisa",
+            wallet_id=wallet.id
+        )
+        va_id = va.generate_va_number()
+        db.session.add(va)
+        db.session.commit()
+        self.assertEqual(wallet.virtual_account.id, int(va_id))
+        self.assertEqual(va.wallet.id, 1)
 
 class VirtualAccountModelCase(unittest.TestCase):
     def setUp(self):
@@ -212,13 +235,82 @@ class VirtualAccountModelCase(unittest.TestCase):
 
     def test_generate_va_number(self):
         va_number = VirtualAccount().generate_va_number()
-        print(va_number)
         self.assertEqual(len(va_number), 16)
 
-    def test_generate_trx_id(self):
-        trx_id = VirtualAccount().generate_trx_id()
-        print(trx_id)
-        self.assertEqual(len(trx_id), 9)
+
+class TransactionModelCase(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app(TestConfig)
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+
+    def test_debit_transaction(self):
+        wallet = Wallet(
+            name="lisa",
+            msisdn="081212341234",
+            email="lisa@bp.com",
+        )
+        wallet2 = Wallet(
+            name="jisoo",
+            msisdn="081219888888",
+            email="jisoo@bp.com",
+        )
+
+        db.session.add(wallet)
+        db.session.add(wallet2)
+        db.session.commit()
+
+        user = Wallet.query.get(1)
+        user.add_balance(1000)
+        db.session.commit()
+
+        user = Wallet.query.get(1)
+        self.assertEqual(user.check_balance(), 1000)
+
+        user2 = Wallet.query.get(2)
+        user2.add_balance(1000)
+        db.session.commit()
+
+        user2 = Wallet.query.get(2)
+        self.assertEqual(user2.check_balance(), 1000)
+
+        #create transaction here
+        #(-) deduct balance first
+        debit_trx = Transaction(
+            source_id = user.id,
+            destination_id = user2.id,
+            amount = 100,
+            transaction_type= True,
+            notes="this is debit trx"
+        )
+        debit_trx.generate_trx_id()
+        user.deduct_balance(100)
+
+        credit_trx = Transaction(
+            source_id = user2.id,
+            destination_id = user.id,
+            amount = 100,
+            transaction_type= False,
+            notes="this is credit trx"
+        )
+        credit_trx.generate_trx_id()
+        user2.add_balance(100)
+
+        db.session.add(debit_trx)
+        db.session.add(credit_trx)
+        db.session.commit()
+
+        user2 = Wallet.query.get(2)
+        self.assertEqual(user2.check_balance(), 1100)
+
+        user = Wallet.query.get(1)
+        self.assertEqual(user.check_balance(), 900)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

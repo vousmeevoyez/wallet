@@ -16,6 +16,7 @@ class ApiKey(db.Model):
     access_key   = db.Column(db.String(255), unique=True)
     name         = db.Column(db.String(100), unique=True)
     expiration   = db.Column(db.DateTime)
+    created_at   = db.Column(db.DateTime, default=now)
 
     def __repr__(self):
         return '<ApiKey {}>'.format(self.access_key)
@@ -37,17 +38,18 @@ class ApiKey(db.Model):
         return result
 
 class Wallet(db.Model):
-    id        = db.Column(db.Integer, primary_key=True)
-    name      = db.Column(db.String(144))
-    msisdn    = db.Column(db.Integer, unique=True)
-    email     = db.Column(db.String(144), unique=True)
-    create_at = db.Column(db.DateTime, default=now)
-    pin_hash  = db.Column(db.String(128))
-    status    = db.Column(db.Boolean, default=True)
-    balance   = db.Column(db.Float, default=0)
+    id              = db.Column(db.Integer, primary_key=True)
+    name            = db.Column(db.String(144))
+    msisdn          = db.Column(db.String(12), unique=True)
+    email           = db.Column(db.String(144), unique=True)
+    created_at      = db.Column(db.DateTime, default=now)
+    pin_hash        = db.Column(db.String(128))
+    status          = db.Column(db.Boolean, default=True)
+    balance         = db.Column(db.Float, default=0)
+    virtual_account = db.relationship("VirtualAccount", uselist=False, back_populates="wallet")
 
     def __repr__(self):
-        return '<Wallet {}>'.format(self.id)
+        return '<Wallet {} {}>'.format(self.id, self.balance)
 
     def check_balance(self):
         return self.balance
@@ -82,6 +84,7 @@ class Wallet(db.Model):
                 break
             #end if
         #end while
+        self.id = wallet_id
         return wallet_id
     #end def
 
@@ -90,6 +93,11 @@ class Wallet(db.Model):
 
     def check_pin(self, pin):
         return check_password_hash(self.pin_hash, pin)
+
+    def generate_transaction(self, destination):
+        self.transactions.append(destination)
+        return check_password_hash(self.pin_hash, pin)
+
 
 class VirtualAccount(db.Model):
     id              = db.Column(db.Integer, primary_key=True)
@@ -102,10 +110,12 @@ class VirtualAccount(db.Model):
     customer_phone  = db.Column(db.Integer, unique=True)
     virtual_account = db.Column(db.Integer, unique=True)
     datetime_expired= db.Column(db.DateTime)
-    wallet_id       = db.Column
+    created_at      = db.Column(db.DateTime, default=now)
+    wallet_id       = db.Column(db.Integer, db.ForeignKey('wallet.id'))
+    wallet          = db.relationship("Wallet", back_populates="virtual_account")
 
     def __repr__(self):
-        return '<VirtualAccount {}>'.format(self.virtual_account)
+        return '<VirtualAccount {}>'.format(self.id)
 
     def generate_va_number(self):
         va_id = None
@@ -122,8 +132,24 @@ class VirtualAccount(db.Model):
                 break
             #end if
         #end while
+        self.id = va_id
         return va_id
     #end def
+
+class Transaction(db.Model):
+    id               = db.Column(db.Integer, primary_key=True)
+    source_id        = db.Column(db.Integer, db.ForeignKey('wallet.id'))
+    destination_id   = db.Column(db.Integer, db.ForeignKey('wallet.id'))
+    amount           = db.Column(db.Float)
+    transaction_type = db.Column(db.Integer)
+    transfer_type    = db.Column(db.Boolean)
+    notes            = db.Column(db.String(255))
+    created_at       = db.Column(db.DateTime, default=now)
+    source           = db.relationship("Wallet", foreign_keys=[source_id])
+    destination      = db.relationship("Wallet", foreign_keys=[destination_id])
+
+    def __repr__(self):
+        return '<Transaction {} {} {} {}>'.format(self.id, self.amount, self.transaction_type, self.notes)
 
     def generate_trx_id(self):
         trx_id = None
@@ -132,21 +158,11 @@ class VirtualAccount(db.Model):
                 100000000,
                 999999999
             ))
-            result = VirtualAccount.query.filter_by(trx_id=trx_id).first()
+            result = Transaction.query.filter_by(id=trx_id).first()
             if result == None:
                 break
             #end if
         #end while
+        self.id = trx_id
         return trx_id
     #end def
-
-
-class Transaction(db.Model):
-    id          = db.Column(db.Integer, primary_key=True)
-    source      = db.Column(db.Integer, db.ForeignKey('wallet.id'))
-    destination = db.Column(db.Integer, db.ForeignKey('wallet.id'))
-    balance     = db.Column(db.Float)
-    notes       = db.Column(db.String(255))
-
-    def __repr__(self):
-        return '<Transaction {}>'.format(self.id)

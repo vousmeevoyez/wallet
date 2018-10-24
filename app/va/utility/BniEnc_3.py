@@ -64,7 +64,6 @@ class BniEnc:
 		result = base64.b64decode(string)
 		result = BniEnc.dec(result, cid)
 		result = BniEnc.dec(result, secret)
-		print(result)
 		return result
 
 	@staticmethod

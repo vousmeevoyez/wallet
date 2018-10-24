@@ -14,11 +14,19 @@ class MyEncoder(json.JSONEncoder):
                 return json.JSONEncoder.default(self, obj)
 
 def encrypt(client_id, secret_key, payload):
-    return BniEnc_3.BniEnc().encrypt(json.dumps(payload), client_id, secret_key)
+    try:
+        encrypyed_data = BniEnc_3.BniEnc().encrypt(json.dumps(payload), client_id, secret_key)
+    except:
+        return None
+    return encrypyed_data
 #end def
 
 def decrypt(client_id, secret_key, payload):
-    return BniEnc_3.BniEnc().decrypt(payload, client_id, secret_key)
+    try:
+        decrypted_data = BniEnc_3.BniEnc().decrypt(payload, client_id, secret_key)
+        return json.loads(decrypted_data)
+    except:
+        return None
 #end def
 
 def post(base_url, client_id, secret_key, data):
