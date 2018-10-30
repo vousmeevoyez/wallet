@@ -1,4 +1,5 @@
 import sys
+import json
 import unittest
 
 sys.path.append("../")
@@ -7,14 +8,15 @@ sys.path.append("../app")
 from datetime import datetime, timedelta
 
 from app            import create_app, db
-from app.models     import ApiKey, Wallet, VirtualAccount, Transaction
+from app.models     import ApiKey, Wallet, VirtualAccount, Transaction, ExternalLog
 from app.config     import config
 
 now = datetime.utcnow()
 
 class TestConfig(config.Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite://'
+    #SQLALCHEMY_DATABASE_URI = 'sqlite://'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://modana:password@localhost/unittest_db'
 
 class ApiKeyModelCase(unittest.TestCase):
     def setUp(self):
@@ -195,7 +197,7 @@ class WalletModelCase(unittest.TestCase):
 
     def test_generate_wallet_id(self):
         wallet_id = Wallet().generate_wallet_id()
-        self.assertEqual( len(wallet_id), 12)
+        self.assertEqual( len(wallet_id), 10)
 
     def test_va_relationship(self):
         wallet = Wallet(
@@ -208,17 +210,17 @@ class WalletModelCase(unittest.TestCase):
 
         wallet = Wallet.query.get(1)
         va = VirtualAccount(
-            client_id="123123",
-            trx_id="123",
             trx_amount="100",
-            billing_type="J",
-            customer_name="Lisa",
+            name="Lisa",
             wallet_id=wallet.id
         )
-        va_id = va.generate_va_number()
+        va_id  = va.generate_va_number()
+        trx_id = va.generate_trx_id()
         db.session.add(va)
         db.session.commit()
+        print(va)
         self.assertEqual(wallet.virtual_account.id, int(va_id))
+        self.assertEqual(wallet.virtual_account.trx_id, int(trx_id))
         self.assertEqual(va.wallet.id, 1)
 
 class VirtualAccountModelCase(unittest.TestCase):
@@ -236,6 +238,28 @@ class VirtualAccountModelCase(unittest.TestCase):
     def test_generate_va_number(self):
         va_number = VirtualAccount().generate_va_number()
         self.assertEqual(len(va_number), 16)
+
+    def test_inject_balance(self):
+        wallet = Wallet(
+            name="lisa",
+            msisdn="081212341234",
+            email="lisa@bp.com",
+        )
+        db.session.add(wallet)
+        db.session.commit()
+
+        va_source = 123456
+        wallet_id = 1
+        amount    = 100
+
+        inject_status = VirtualAccount().inject_balance(va_source, wallet_id, amount)
+        self.assertTrue(inject_status)
+
+        user = Wallet.query.get(1)
+        balance = user.check_balance()
+        self.assertEqual( balance, amount)
+
+        print(Transaction.query.all())
 
 
 class TransactionModelCase(unittest.TestCase):
@@ -311,6 +335,47 @@ class TransactionModelCase(unittest.TestCase):
 
         user = Wallet.query.get(1)
         self.assertEqual(user.check_balance(), 900)
+
+class ExternalModelCase(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app(TestConfig)
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+
+    def test_set_status(self):
+        request  = { "client_id" : 123, "payload" : "this is my payload"}
+        response = { "client_id" : 123, "payload" : "this is my payload"}
+
+        log = ExternalLog(
+            id = 1,
+            status = True,
+            request = request,
+            response= response,
+        )
+        log.set_status(True)
+
+        log2 = ExternalLog(
+            id = 2,
+            status = True,
+            request = request,
+            response= response,
+        )
+        log2.set_status(False)
+        db.session.add(log)
+        db.session.add(log2)
+        db.session.commit()
+
+        result  = ExternalLog.query.get(1)
+        result2 = ExternalLog.query.get(2)
+
+        self.assertTrue(result.status)
+        self.assertFalse(result2.status)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

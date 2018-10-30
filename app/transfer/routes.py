@@ -10,8 +10,12 @@ from app.config     import config
 from marshmallow    import ValidationError
 from sqlalchemy.exc import IntegrityError
 
+import traceback
+
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 RESPONSE_MSG      = config.Config.RESPONSE_MSG
+WALLET_CONFIG     = config.Config.WALLET_CONFIG
+TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 
 @bp.route('/direct', methods=["POST"])
 def virtual_transfer():
@@ -39,7 +43,8 @@ def virtual_transfer():
         if errors:
             return bad_request(errors)
 
-        result = _do_transaction(source, destination, amount, "VA_TO_VA")
+        result = _do_transaction(source, destination, amount, pin, "VA_TO_VA")
+        print(result)
         if result["status"] != "SUCCESS":
             return bad_request(result["data"])
 
@@ -85,32 +90,33 @@ def _do_transaction(source, destination, amount, pin, transfer_type):
     try:
         # debit(-) we deduct balance first
         debit_transaction = Transaction(
-            source_id=master_wallet.id,
-            destination_id=wallet.id,
+            source_id=source_wallet.id,
+            destination_id=destination_wallet.id,
             amount=amount,
             transaction_type=WALLET_CONFIG["DEBIT_FLAG"],
             transfer_type=WALLET_CONFIG[transfer_type],
-            notes=TRANSACTION_NOTES["INJECT"].format(str(amount))
+            notes=TRANSACTION_NOTES["SEND_TRANSFER"].format(str(amount))
         )
         debit_transaction.generate_trx_id()
-        master_wallet.deduct_balance(amount)
+        source_wallet.deduct_balance(amount)
         db.session.add(debit_transaction)
 
         # credit (+) we increase balance 
         credit_transaction = Transaction(
-            source_id=wallet.id,
-            destination_id=master_wallet.id,
+            source_id=destination_wallet.id,
+            destination_id=source_wallet.id,
             amount=amount,
             transaction_type=WALLET_CONFIG["CREDIT_FLAG"],
             transfer_type=WALLET_CONFIG[transfer_type],
-            notes=TRANSACTION_NOTES["DEPOSIT"].format(str(amount))
+            notes=TRANSACTION_NOTES["RECEIVE_TRANSFER"].format(str(amount))
         )
         credit_transaction.generate_trx_id()
-        wallet.add_balance(amount)
+        destination_wallet.add_balance(amount)
         db.session.add(credit_transaction)
 
         db.session.commit()
     except:
+        print(traceback.format_exc())
         response["status"] = "FAILED"
         db.session.rollback()
 

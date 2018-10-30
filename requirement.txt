@@ -8,3 +8,5 @@ marshmallow-sqlalchemy
 numpy
 flask-inputs
 flask-wtf
+psycopg2-binary
+celery

@@ -5,24 +5,30 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY') or "S3cret"
     # SQL ALCHEMY CONFIG
+    #SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'app.db')
+            'postgresql://modana:password@localhost/db_wallet'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    PRESERVE_CONTEXT_ON_EXCEPTION = False
 
     # MASTER WALLET SETTINGS
     WALLET_CONFIG= {
-        "MASTER_WALLET_ID" : 114620581380,
+        "MASTER_WALLET_ID" : 1176785615,
+        "PIN"              : 123456,
         "CREDIT_FLAG"      : True,
         "DEBIT_FLAG"       : False,
         "VA_TO_VA"         : 1,
         "BANK_TO_VA"       : 2,
         "VA_TO_BANK"       : 3,
+        "VA_TIMEOUT"       : 435, # 
     }
 
     # MASTER WALLET SETTINGS
     TRANSACTION_NOTES= {
-        "DEPOSIT" : "Top up balance {}",
-        "INJECT"  : "Injected balance {}",
+        "DEPOSIT"         : "Top up balance {}",
+        "INJECT"          : "Injected balance {}",
+        "SEND_TRANSFER"   : "Transfer balance {}",
+        "RECEIVE_TRANSFER": "Received balance {}",
     }
 
     # RESPONSE MESSAGE
@@ -30,6 +36,7 @@ class Config(object):
         "WALLET_NOT_FOUND"       : "{} Wallet not found",
         "ERROR_ADDING_RECORD"    : "Error adding record",
         "WALLET_CREATED"         : "Wallet successfully created",
+        "WALLET_REMOVED"         : "Wallet successfully removed",
         "INCORRECT_PIN"          : "Incorrect Pin",
         "WALLET_ALREADY_LOCKED"  : "Wallet already locked",
         "WALLET_LOCKED"          : "Wallet successfully locked",
@@ -40,6 +47,19 @@ class Config(object):
         "SUCCESS_DEPOSIT"        : "Successfully Deposit {} to {}",
         "SUCCESS_TRANSFER"       : "Successfully Transfer {} to {}",
         "ROLLBACK_ERROR"         : "Transaction failed",
+        "ALREADY_REQUESTED_ERROR": "Request already success, please wait before request again",
+        "WITHDRAW_ERROR"         : "Request Withdraw Failed",
+        "SUCCESS_WITHDRAW"       : "Request Withdraw Success",
+        "TOPUP_ERROR"            : "Request Top Up Failed",
+        "SUCCESS_TOPUP"          : "Request Top Up Success",
+        "VA_CREATION_FAILED"     : "Virtual Account Creation Failed",
+    }
+
+    # BNI E-COLLECTION ERROR MSG
+    BNI_ECOLLECTION_ERROR_HANDLER= {
+        "VA_ERROR"      : "VA failed to create",
+        "INQUIRY_ERROR" : "Get Inquiry failed",
+        "UPDATE_ERROR " : "Update VA Transaction failed",
     }
 
     # BNI E-COLLECTION CONFIG
@@ -48,20 +68,36 @@ class Config(object):
         "BASE_URL_PROD" : "https://apibeta.bni-ecollection.com/",
         "SECRET_KEY"    : "8eafc8687722fdd0ef78942309fcd983",
         "CLIENT_ID"     : "99099",
-        "BILLING_TYPE"  : "J",
+        "BILLING"       : "createbilling",
+        "CARDLESS"      : "createdebitcardless",
+        "UPDATE"        : "updatebilling",
+        "INQUIRY"       : "inquirybilling",
+        "CREDIT_BILLING_TYPE"   : "z",
+        "CARDLESS_BILLING_TYPE" : "j",
     }
 
     # BNI OPG CONFIG
     BNI_OPG_CONFIG = {
-        "BASE_URL_DEV"  : "https://apibeta.bni-ecollection.com/",
-        "BASE_URL_PROD" : "https://apibeta.bni-ecollection.com/",
-        "SECRET_KEY"    : "8eafc8687722fdd0ef78942309fcd983",
-        "CLIENT_ID"     : "99099",
-        "BILLING_TYPE"  : "J",
+        "BASE_URL_DEV"  : "https://apidev.bni.co.id",
+        "PORT"          : "8066",
+        "CLIENT_ID"     : "IDBNIQk5JU0VSVklDRQ==",
+        "USERNAME"      : "ab4e9e87-3b2c-4ed0-87bf-f807ae9b17e1",
+        "PASSWORD"      : "ff915349-cbc6-4b9e-acfd-c727df960ded",
+        "ROUTES"        : {
+            "GET_TOKEN"  : "/api/oauth/token",
+            "GET_BALANCE": "/H2H/getbalance",
+        }
     }
 
     # ACCESS_KEY CONFIG
     ACCESS_KEY_CONFIG = {
         "TOKEN_LENGTH" : 20,
-        "EXPIRE_IN"    : 525600 # 1 year in minutes
+        #"EXPIRE_IN"    : 525600 # 1 year in minutes
+        "EXPIRE_IN"    : 8760 # 1 year in hour
+    }
+
+    # logging config
+    LOGGING_CONFIG = {
+        "TIMEOUT" : 3,
+        "BNI_ECOLLECTION" : "BNI-ECOLLECTION",
     }

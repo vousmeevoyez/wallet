@@ -26,6 +26,15 @@ def create_app(config_class=config.Config):
     from app.transfer   import bp as transfer_bp
     app.register_blueprint(transfer_bp, url_prefix="/transfer")
 
+    from app.bank       import bp as bank_bp
+    app.register_blueprint(bank_bp)
+
+    from app.withdraw   import bp as withdraw_bp
+    app.register_blueprint(withdraw_bp, url_prefix="/withdraw")
+
+    from app.top_up     import bp as top_up_bp
+    app.register_blueprint(top_up_bp, url_prefix="/topup")
+
     return app
 
 from app import models, errors, serializer, validator

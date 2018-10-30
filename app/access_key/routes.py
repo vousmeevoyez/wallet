@@ -21,26 +21,30 @@ def generate_access_key():
         try:
             # parse request data 
             request_data = request.form
+            username   = request_data["username"   ]
+            password   = request_data["password"   ]
             label      = request_data["label"      ]
             name       = request_data["name"       ]
             expiration = request_data["expiration" ]
 
             data = {
+                "username"   : username,
+                "password"   : password,
                 "label"      : label,
                 "name"       : name,
                 "expiration" : int(expiration),
             }
 
             # request data validator
-            result,errors = ApiKeySchema().load(data)
+            api_key, errors = ApiKeySchema().load(data)
             if errors:
                 return bad_request(errors)
 
             try:
-                result.generate_access_key(ACCESS_KEY_CONFIG["TOKEN_LENGTH"])
-                result.set_expiration(ACCESS_KEY_CONFIG["EXPIRE_IN"])
+                api_key.generate_access_key(ACCESS_KEY_CONFIG["TOKEN_LENGTH"])
+                api_key.set_expiration(ACCESS_KEY_CONFIG["EXPIRE_IN"])
+                api_key.set_expiration(ACCESS_KEY_CONFIG["EXPIRE_IN"])
                 db.session.add(result)
-                result.generate_access_key(ACCESS_KEY_CONFIG["TOKEN_LENGTH"])
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()

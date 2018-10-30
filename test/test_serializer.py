@@ -6,7 +6,7 @@ sys.path.append("../app")
 
 from datetime import datetime, timedelta
 
-from app            import create_app, db
+from app            import create_app
 from app.serializer import ApiKeySchema, WalletSchema, TransactionSchema
 from app.config     import config
 
@@ -88,8 +88,27 @@ class TestTransactionSchema(unittest.TestCase):
             "notes"       : "Test",
         }
         result, errors = TransactionSchema().load(data)
-        print(result)
         self.assertEqual(errors, {})
+
+        data = {
+            "source"      : 114620581380,
+            "destination" : 118275863791,
+            "pin"         : "123",
+            "amount"      : -1,
+            "notes"       : "Test",
+        }
+        result, errors = TransactionSchema().load(data)
+        self.assertEqual(errors, {'amount': ['Invalid Amount, cannot be less than 0']})
+
+        data = {
+            "source"      : 114620581380,
+            "destination" : 118275863791,
+            "pin"         : "123",
+            "amount"      : 0,
+            "notes"       : "Test",
+        }
+        result, errors = TransactionSchema().load(data)
+        self.assertEqual(errors, {'amount': ['Invalid Amount, cannot be less than 0']})
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

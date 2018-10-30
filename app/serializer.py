@@ -1,5 +1,5 @@
 from app         import ma,db
-from app.models  import ApiKey, Wallet, Transaction
+from app.models  import ApiKey, Wallet, Transaction, VirtualAccount
 
 from marshmallow import fields, ValidationError, post_load, validates
 
@@ -12,6 +12,8 @@ def cannot_be_blank(string):
 
 class ApiKeySchema(ma.Schema):
 
+    username   = fields.Str(required=True, validate=cannot_be_blank)
+    password   = fields.Str(required=True, attribute="password_hash", validate=cannot_be_blank)
     label      = fields.Str(required=True, validate=cannot_be_blank)
     name       = fields.Str(required=True, validate=cannot_be_blank)
     expiration = fields.Int(required=True)
@@ -72,14 +74,34 @@ class WalletSchema(ma.Schema):
         else:
             raise ValidationError("Invalid Pin, Minimum 4-6 digit")
     #end def
-
 #end class
 
-class TransactionSchema(ma.ModelSchema):
-    class Meta:
-        model = Transaction
+class TransactionSchema(ma.Schema):
+    id               = fields.Int()
+    source_id        = fields.Int()
+    destination_id   = fields.Int()
+    amount           = fields.Float()
+    transaction_type = fields.Int()
+    transfer_type    = fields.Int()
+    notes            = fields.Str()
+    created_at       = fields.Date()
 
     @validates('amount')
     def validate_amount(self, amount):
-        if amount < 0:
+        if float(amount) <= 0:
             raise ValidationError("Invalid Amount, cannot be less than 0")
+    #end def
+
+
+class VirtualAccountSchema(ma.Schema):
+    id         = fields.Int()
+    trx_id     = fields.Int()
+    name       = fields.Str(required=True, validate=cannot_be_blank)
+    #wallet_id  = fields.Int(required=True)
+    status     = fields.Bool()
+
+    @post_load
+    def make_wallet(self, data):
+        return VirtualAccount(**data)
+    #end def
+#end class
