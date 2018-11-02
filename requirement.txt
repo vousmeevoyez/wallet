@@ -10,3 +10,6 @@ flask-inputs
 flask-wtf
 psycopg2-binary
 celery
+nose
+coverage
+pyOpenSSL

@@ -1,7 +1,5 @@
 import os
 
-basedir = os.path.abspath(os.path.dirname(__file__))
-
 class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY') or "S3cret"
     # SQL ALCHEMY CONFIG
@@ -100,4 +98,5 @@ class Config(object):
     LOGGING_CONFIG = {
         "TIMEOUT" : 3,
         "BNI_ECOLLECTION" : "BNI-ECOLLECTION",
+        "BNI_OPG"         : "BNI-OPG",
     }

@@ -1,3 +1,7 @@
+import traceback
+
+from marshmallow    import ValidationError
+from sqlalchemy.exc import IntegrityError
 from flask          import request, jsonify
 
 from app            import db
@@ -7,19 +11,19 @@ from app.serializer import TransactionSchema
 from app.errors     import bad_request, internal_error, request_not_found
 from app.config     import config
 
-from marshmallow    import ValidationError
-from sqlalchemy.exc import IntegrityError
-
-import traceback
-
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 RESPONSE_MSG      = config.Config.RESPONSE_MSG
 WALLET_CONFIG     = config.Config.WALLET_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 
+
 @bp.route('/direct', methods=["POST"])
 def virtual_transfer():
-    response = { "status_code" : 0, "status_message" : "SUCCESS", "data" : "NONE" }
+    response = {
+        "status_code"    : 0,
+        "status_message" : "SUCCESS",
+        "data" : "NONE"
+    }
 
     try:
         # parse request data 
@@ -49,6 +53,29 @@ def virtual_transfer():
             return bad_request(result["data"])
 
         response["data"] = RESPONSE_MSG["SUCCESS_TRANSFER"].format(str(destination), str(amount))
+
+    except Exception as e:
+        print(str(e))
+        return internal_error()
+
+    return jsonify(response)
+#end def
+
+@bp.route('/bulk', methods=["POST"])
+def bulk_transfer():
+    response = {
+        "status_code"    : 0,
+        "status_message" : "SUCCESS",
+        "data" : "NONE"
+    }
+
+    try:
+        # parse request data 
+        request_data = request.form
+        source           = request_data["source"          ]
+        destination_list = json.loads(request_data["destination_list"])
+        pin              = request_data["pin"             ]
+
 
     except Exception as e:
         print(str(e))

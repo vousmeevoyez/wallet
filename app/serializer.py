@@ -1,14 +1,15 @@
-from app         import ma,db
-from app.models  import ApiKey, Wallet, Transaction, VirtualAccount
+import re
 
 from marshmallow import fields, ValidationError, post_load, validates
 
-import re
+from app         import ma,db
+from app.models  import ApiKey, Wallet, Transaction, VirtualAccount
 
 def cannot_be_blank(string):
     if not string:
         raise ValidationError(" Data cannot be blank")
 #end def
+
 
 class ApiKeySchema(ma.Schema):
 
@@ -23,6 +24,12 @@ class ApiKeySchema(ma.Schema):
     class Meta:
         #strict = True
         pass
+
+    @validates('expiration')
+    def validate_expiration(self, expiration):
+        if expiration <= 0:
+            raise ValidationError('Invalid Expiration, Cannot be less or equal 0')
+    #end def
 
     @post_load
     def make_api_key(self, data):

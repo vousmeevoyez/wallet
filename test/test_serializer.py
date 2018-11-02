@@ -20,17 +20,17 @@ class TestApiKeySchema(unittest.TestCase):
         #    ApiKeySchema().load({ "label" : 1234, "name" : "name"})
         #self.assertTrue("{'label': ['Not a valid string.']}" in str(context.exception))
 
-        result, errors = ApiKeySchema().load({ "label" : "test", "name" : "name", "expiration" : 0})
-        self.assertEqual( errors, {} )
+        result, errors = ApiKeySchema().load({ "label" : "test", "name" : "name", "expiration" : 0, "username" : "jennie", "password" : "password"})
+        self.assertEqual( errors, {'expiration': ['Invalid Expiration, Cannot be less or equal 0']} )
 
-        result, errors = ApiKeySchema().load({ "label" : 1234, "name" : "name" , "expiration" : 0})
+        result, errors = ApiKeySchema().load({ "label" : 1234, "name" : "name", "expiration" : 1, "username" : "jennie", "password" : "password"})
         self.assertEqual( errors, {'label': ['Not a valid string.']})
 
-        result, errors = ApiKeySchema().load({ "label" : 1234, "name" : 12345 , "expiration" : 0})
+        result, errors = ApiKeySchema().load({ "label" : 1234, "name" : 1234, "expiration" : 1, "username" : "jennie", "password" : "password"})
         self.assertEqual( errors, {'label': ['Not a valid string.'], "name" : ["Not a valid string."]})
 
-        result, errors = ApiKeySchema().load({ "label" : "", "name" : "" , "expiration" : 0})
-        self.assertEqual( errors, {'name': [' Data cannot be blank'], 'label': [' Data cannot be blank']})
+        result, errors = ApiKeySchema().load({ "label" : "", "name" : "", "expiration" : 1, "username" : "", "password" : ""})
+        self.assertEqual( errors, {'password': [' Data cannot be blank'], 'label': [' Data cannot be blank'], 'username': [' Data cannot be blank'], 'name': [' Data cannot be blank']})
 
 
 class TestWalletSchema(unittest.TestCase):

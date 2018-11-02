@@ -53,27 +53,31 @@ class ApiKeyModelCase(unittest.TestCase):
         key.set_expiration(525600)
         key.revoke_access_key()
 
-
-        key = ApiKey(label='SAMPLELABLE', name='SAMPLENAME')
-        key.set_expiration(43800)
-        key.revoke_access_key()
+        key2 = ApiKey(label='SAMPLELABLE2', name='SAMPLENAME2')
+        key2.set_expiration(43800)
+        key2.revoke_access_key()
 
         self.assertEqual(key.expiration.hour,  (now + timedelta(seconds=1)).hour)
-        self.assertEqual(key.expiration.minute,  (now + timedelta(seconds=1)).minute )
+        self.assertEqual(key2.expiration.minute,  (now + timedelta(seconds=1)).minute )
 
     def test_check_access_key(self):
-        key = ApiKey(label='SAMPLELABLE', name='SAMPLENAME')
+        key = ApiKey(label='SAMPLELALE3', name='SAPLENAME3')
         key.generate_access_key(20)
         key.set_expiration(525600)
+
+        self.assertEqual(len(key.access_key), 40)
+
+    def test_password(self):
+        key = ApiKey(label='SAMPLELABLE4', name='SAMPLENAME4')
+        key.generate_access_key(20)
+        key.set_expiration(525600)
+        key.set_password("password")
         db.session.add(key)
         db.session.commit()
 
-        key_status = key.check_access_key("test")
-        self.assertEqual(key_status, None)
-
-        key_status = key.check_access_key("")
-        self.assertEqual(key_status, None)
-
+        key = ApiKey.query.get(1)
+        self.assertTrue(key.check_password("password"))
+        self.assertFalse(key.check_password("test"))
 
 class WalletModelCase(unittest.TestCase):
     def setUp(self):

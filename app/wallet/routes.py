@@ -1,4 +1,8 @@
+import traceback
+from datetime import datetime, timedelta
+
 from flask          import request, jsonify
+from sqlalchemy.exc import IntegrityError
 
 from app            import db
 from app.wallet     import bp
@@ -8,9 +12,6 @@ from app.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
 from app.errors     import bad_request, internal_error, request_not_found
 from app.config     import config
 
-from sqlalchemy.exc import IntegrityError
-import traceback
-
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 WALLET_CONFIG     = config.Config.WALLET_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
@@ -18,7 +19,11 @@ RESPONSE_MSG      = config.Config.RESPONSE_MSG
 
 @bp.route('/create', methods=["POST"])
 def generate_wallet():
-    response = { "status_code" : 0, "status_message" : "SUCCESS", "data" : "NONE" }
+    response = {
+        "status_code"    : 0,
+        "status_message" : "SUCCESS",
+        "data" : "NONE"
+    }
 
     try:
         # parse request data 
@@ -54,7 +59,6 @@ def generate_wallet():
             )
             va_id  = va.generate_va_number()
             trx_id = va.generate_trx_id()
-            print(va)
 
             db.session.add(va)
             db.session.commit()
@@ -67,7 +71,7 @@ def generate_wallet():
             customer_phone = fixed + customer_phone
 
             # generate expires time
-            datetime_expired = datetime.now() + timedelta(hour=WALLET_CONFIG["VA_TIMEOUT"])
+            datetime_expired = datetime.now() + timedelta(hours=WALLET_CONFIG["VA_TIMEOUT"])
             expires_in       = datetime_expired.timestamp()
 
             va_payload = {
@@ -78,17 +82,14 @@ def generate_wallet():
                 "virtual_account"  : str(va_id),
                 "datetime_expired" : datetime_expired.strftime("%Y-%m-%d %H:%M:%S"),
             }
-            print(va_payload)
 
             # request create VA
             result = bank_handler.EcollectionHandler().create_va("CREDIT", va_payload)
-            print(result)
 
             if result["status"] != "SUCCESS":
                 return bad_request(RESPONSE_MSG["VA_CREATION_FAILED"])
 
         except IntegrityError as err:
-            print(err)
             db.session.rollback()
             return bad_request(RESPONSE_MSG["ERROR_ADDING_RECORD"])
         #end try
@@ -107,7 +108,11 @@ def generate_wallet():
 
 @bp.route('/list', methods=["GET"])
 def wallet_list():
-    response = { "status_code" : 0, "status_message" : "SUCCESS", "data" : "NONE" }
+    response = {
+        "status_code"    : 0,
+        "status_message" : "SUCCESS",
+        "data" : "NONE"
+    }
 
     try:
         wallet = Wallet.query.all()
@@ -122,7 +127,11 @@ def wallet_list():
 
 @bp.route('/get_info', methods=["POST"])
 def get_wallet_details():
-    response = { "status_code" : 0, "status_message" : "SUCCESS", "data" : "NONE" }
+    response = {
+        "status_code"    : 0,
+        "status_message" : "SUCCESS",
+        "data" : "NONE"
+    }
 
     try:
         # parse request data 
@@ -141,10 +150,15 @@ def get_wallet_details():
 
         if wallet.check_pin(pin) != True:
             return bad_request(RESPONSE_MSG["INCORRECT_PIN"])
+        #end if
 
         wallet_information = WalletSchema().dump(wallet).data
         va_information     = VirtualAccountSchema().dump(wallet.virtual_account).data
-        response["data"] = { "wallet" : wallet_information, "virtual_account" : va_information}
+
+        response["data"] = {
+            "wallet" : wallet_information,
+            "virtual_account" : va_information
+        }
 
     except Exception as e:
         print(str(e))
@@ -156,7 +170,11 @@ def get_wallet_details():
 
 @bp.route('/remove', methods=["GET"])
 def remove_wallet():
-    response = { "status_code" : 0, "status_message" : "SUCCESS", "data" : "NONE" }
+    response = {
+        "status_code"    : 0,
+        "status_message" : "SUCCESS",
+        "data" : "NONE"
+    }
 
     try:
         # parse request data 
@@ -179,12 +197,16 @@ def remove_wallet():
 
 @bp.route('/check_balance', methods=["POST"])
 def check_wallet_balance():
-    response = { "status_code" : 0, "status_message" : "SUCCESS", "data" : "NONE" }
+    response = {
+        "status_code"    : 0,
+        "status_message" : "SUCCESS",
+        "data" : "NONE"
+    }
 
     try:
         # parse request data 
         request_data = request.form
-        wallet_id  = request_data["wallet_id"]
+        wallet_id  = request_data["id"]
         pin        = request_data["pin"   ]
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
@@ -194,7 +216,10 @@ def check_wallet_balance():
         if wallet.check_pin(pin) != True:
             return bad_request(RESPONSE_MSG["INCORRECT_PIN"])
 
-        response["data"] = { "id" : wallet_id, "balance" : wallet.balance }
+        response["data"] = {
+            "id" : wallet_id,
+            "balance" : wallet.balance
+        }
 
     except Exception as e:
         print(str(e))
@@ -205,7 +230,11 @@ def check_wallet_balance():
 
 @bp.route('/lock', methods=["GET"])
 def lock_wallet():
-    response = { "status_code" : 0, "status_message" : "SUCCESS", "data" : "NONE" }
+    response = {
+        "status_code"    : 0,
+        "status_message" : "SUCCESS",
+        "data" : "NONE"
+    }
 
     try:
         # parse request data 
@@ -232,7 +261,11 @@ def lock_wallet():
 
 @bp.route('/unlock', methods=["GET"])
 def unlock_wallet():
-    response = { "status_code" : 0, "status_message" : "SUCCESS", "data" : "NONE" }
+    response = {
+        "status_code"    : 0,
+        "status_message" : "SUCCESS",
+        "data" : "NONE"
+    }
 
     try:
         # parse request data 
@@ -258,7 +291,11 @@ def unlock_wallet():
 
 @bp.route('/deposit', methods=["POST"])
 def deposit():
-    response = { "status_code" : 0, "status_message" : "SUCCESS", "data" : "NONE" }
+    response = {
+        "status_code"    : 0,
+        "status_message" : "SUCCESS",
+        "data" : "NONE"
+    }
 
     try:
         # parse request data 
@@ -328,17 +365,23 @@ def deposit():
 
 @bp.route('/transaction_history', methods=["GET"])
 def wallet_mutation():
-    response = { "status_code" : 0, "status_message" : "SUCCESS", "data" : "NONE" }
+    response = {
+        "status_code"    : 0,
+        "status_message" : "SUCCESS",
+        "data" : "NONE"
+    }
 
     try:
         # parse request data 
-        wallet_id = int(request.args.get("id"))
+        wallet_id = request.args.get("id")
 
-        wallet = Transaction.query.filter_by(source_id=wallet_id ,destination_id=wallet_id)
+        wallet = Wallet.query.filter_by(id=wallet_id).first()
         if wallet == None:
             return request_not_found()
 
-        response["data"] = TransactionSchema(many=True).dump(wallet).data
+        wallet_response = Transaction.query.filter_by(source_id=wallet_id ,destination_id=wallet_id)
+
+        response["data"] = TransactionSchema(many=True).dump(wallet_response).data
 
     except Exception as e:
         print(str(e))

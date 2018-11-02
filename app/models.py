@@ -1,15 +1,15 @@
+import secrets
+import random
+import traceback
+from datetime import datetime, timedelta
+
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from app import db
 from app.config import config
 
-import secrets
-import random
-from datetime import datetime, timedelta
-
-import traceback
-
 now = datetime.utcnow()
+
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 WALLET_CONFIG          = config.Config.WALLET_CONFIG
 TRANSACTION_NOTES      = config.Config.TRANSACTION_NOTES
@@ -26,7 +26,7 @@ class ApiKey(db.Model):
     created_at    = db.Column(db.DateTime, default=now)
 
     def __repr__(self):
-        return '<ApiKey {}>'.format(self.access_key)
+        return '<ApiKey {} {} {} {} >'.format(self.username, self.password_hash, self.label, self.access_key)
     #end def
 
     def generate_access_key(self, digit):

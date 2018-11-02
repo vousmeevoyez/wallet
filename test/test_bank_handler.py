@@ -135,6 +135,7 @@ class TestMockEcollectionHandler(unittest.TestCase):
 
 class TestEcollectionHandler(unittest.TestCase):
 
+    """
     def test_get_inquiry(self):
         data = {
             "trx_id" : "1234",
@@ -143,6 +144,7 @@ class TestEcollectionHandler(unittest.TestCase):
         print(result)
         self.assertEqual( result["status"], "SUCCESS")
     #end def
+    """
 
 class TestOpgHandler(unittest.TestCase):
 

@@ -41,7 +41,11 @@ def post(base_url, client_id, secret_key, data):
     payload["data"     ] = encrypt(client_id, secret_key, data)
 
     try:
-        r = requests.post( base_url, data=json.dumps(payload, cls=MyEncoder), headers=headers, timeout=LOGGING_CONFIG["TIMEOUT"])
+        r = requests.post(base_url,
+                          data=json.dumps(payload, cls=MyEncoder),
+                          headers=headers,
+                          timeout=LOGGING_CONFIG["TIMEOUT"])
+
     except requests.exceptions.Timeout as err:
         response["status"] = 400
         response["data"  ] = str(err)

@@ -1,10 +1,15 @@
+import requests
+import base64
+import hashlib
+
+from OpenSSL import crypto
+
 from app        import create_app, db
 from app.models import ExternalLog
 from app.config import config
 
 from .utility import remote_call
 
-import requests, base64
 
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG
 
@@ -17,17 +22,24 @@ class EcollectionHandler(object):
     SECRET_KEY   = BNI_ECOLLECTION_CONFIG["SECRET_KEY"]
     CLIENT_ID    = BNI_ECOLLECTION_CONFIG["CLIENT_ID"]
 
+    """
     def __init__(self):
         self.app = create_app()
         self.app_context = self.app.app_context()
         self.app_context.push()
+    #end def
+    """
 
     def _post(self, payload):
-        remote_response = remote_call.post( self.BASE_URL, self.CLIENT_ID, self.SECRET_KEY, payload)
+        remote_response = remote_call.post(self.BASE_URL, self.CLIENT_ID, self.SECRET_KEY, payload)
         return remote_response
+    #end def
 
     def create_va(self, va_type, params):
-        response = { "status" : "SUCCESS", "data" : {} }
+        response = {
+            "status" : "SUCCESS",
+            "data"   : {}
+        }
 
         if va_type == "CREDIT":
             api_type     = self.BNI_ECOLLECTION_CONFIG["BILLING"]
@@ -52,6 +64,7 @@ class EcollectionHandler(object):
             'datetime_expired': params["datetime_expired"],
             'description'     : ''
         }
+
         # initialize logging object
         log = ExternalLog( request=payload, resource=LOGGING_CONFIG["BNI_ECOLLECTION"], api_name=api_name)
 
@@ -76,7 +89,12 @@ class EcollectionHandler(object):
     #end def
 
     def get_inquiry(self, params):
-        response = { "status" : "SUCCESS", "data" : {} }
+        API_NAME = "GET_INQUIRY"
+
+        response = {
+            "status" : "SUCCESS",
+            "data"   : {}
+        }
 
         payload = {
             'type'     : self.BNI_ECOLLECTION_CONFIG["INQUIRY"],
@@ -84,9 +102,10 @@ class EcollectionHandler(object):
             'trx_id'   : params["trx_id"]
         }
 
-        api_name = "GET_INQUIRY"
         # initialize logging object
-        log = ExternalLog( request=payload, resource=LOGGING_CONFIG["BNI_ECOLLECTION"], api_name=api_name)
+        log = ExternalLog(request=payload,
+                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
+                          api_name=API_NAME)
 
         result = self._post(payload)
         response["data"] = result["data"]
@@ -109,7 +128,12 @@ class EcollectionHandler(object):
     #end def
 
     def update_va(self, params):
-        response = { "status" : "SUCCESS", "data" : {} }
+        API_NAME = "UPDATE_TRANSACTION"
+
+        response = {
+            "status" : "SUCCESS",
+            "data"   : {}
+        }
 
         payload = {
             'type'             : self.BNI_ECOLLECTION_CONFIG["UPDATE"],
@@ -120,9 +144,10 @@ class EcollectionHandler(object):
             'datetime_expired' : params["datetime_expired"],
         }
 
-        api_name = "UPDATE_TRANSACTION"
         # initialize logging object
-        log = ExternalLog( request=payload, resource=LOGGING_CONFIG["BNI_ECOLLECTION"], api_name=api_name)
+        log = ExternalLog(request=payload,
+                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
+                          api_name=API_NAME)
 
         result = self._post(payload)
         response["data"] = result["data"]
@@ -152,18 +177,38 @@ class OpgHandler(object):
     ROUTES         = BNI_OPG_CONFIG["ROUTES"]
     URL            = BNI_OPG_CONFIG["BASE_URL_DEV"] + ":" + BNI_OPG_CONFIG["PORT"]
 
+    P12_KEY       = "/Users/kelvin/apps/secrets/modana.p12"
+
     def __init__(self):
         pass
     #end def
 
+    def _create_signature(self, string):
+        p12 = crypto.load_pkcs12(open(self.P12_KEY, 'rb').read(), "")
+        priv_key = p12.get_privatekey()
+
+        hash_string = hashlib.sha256(string).digest()
+    #end def
+
     def get_token(self):
+        API_NAME = "GET_TOKEN"
+
         base_64 = base64.b64encode( (self.BNI_OPG_CONFIG["USERNAME"] + ":" + self.BNI_OPG_CONFIG["PASSWORD"]).encode("utf-8") )
         headers = {
             "Content-Type" : "application/x-www-form-urlencoded",
             "Authorization": "Basic %s" % str(base_64)
         }
         payload = { "grant_type" : "client_credentials" }
-        response = requests.post(self.URL + self.ROUTES["GET_TOKEN"], headers=headers, data=payload)
-        return response
+        r = requests.post(self.URL + self.ROUTES["GET_TOKEN"], headers=headers, data=payload)
+        if r.ok:
+            response = r.json()
+            access_token = response["access_token"]
+            self.access_token = access_token
+        else:
+            return None
+    #end def
+
+    def get_balance(self):
+        pass
     #end def
 #end class
