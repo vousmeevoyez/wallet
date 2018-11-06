@@ -21,7 +21,7 @@ def create_app(config_class=config.Config):
     app.register_blueprint(access_key_bp, url_prefix="/access_key")
 
     from app.wallet     import bp as wallet_bp
-    app.register_blueprint(wallet_bp, url_prefix="/wallet")
+    app.register_blueprint(wallet_bp)
 
     from app.transfer   import bp as transfer_bp
     app.register_blueprint(transfer_bp, url_prefix="/transfer")
@@ -31,6 +31,9 @@ def create_app(config_class=config.Config):
 
     from app.withdraw   import bp as withdraw_bp
     app.register_blueprint(withdraw_bp, url_prefix="/withdraw")
+
+    from app.user       import bp as user_bp
+    app.register_blueprint(user_bp, url_prefix="/user")
 
     return app
 

@@ -5,10 +5,10 @@ from flask          import request, jsonify
 from sqlalchemy.exc import IntegrityError
 
 from app            import db
-from app.wallet     import bp
-from app.bank       import helper as bank_handler
-from app.models     import Wallet, Transaction, VirtualAccount
-from app.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
+from app.user       import bp
+from app.wallet     import helper
+from app.models     import User
+from app.serializer import UserSchema
 from app.errors     import bad_request, internal_error, request_not_found
 from app.config     import config
 
@@ -17,8 +17,8 @@ VA_TYPE           = config.Config.VA_TYPE_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 RESPONSE_MSG      = config.Config.RESPONSE_MSG
 
-#@bp.route('/create', methods=["POST"])
-def generate_wallet(params):
+@bp.route('/register', methods=["POST"])
+def user_register():
     response = {
         "status_code"    : 0,
         "status_message" : "SUCCESS",
@@ -27,47 +27,60 @@ def generate_wallet(params):
 
     try:
         # parse request data 
-        name       = params["name"   ]
-        msisdn     = params["msisdn" ]
-        user_id    = params["user_id"]
-        pin        = params["pin"    ]
+        request_data = request.form
+        username   = request_data["username"]
+        name       = request_data["name"    ]
+        msisdn     = request_data["msisdn"  ]
+        email      = request_data["email"   ]
+        password   = request_data["password"]
+        pin        = request_data["pin"     ]
+        role       = request_data["role"    ]
+
+        if role == "USER":
+            role = 1
+        else:
+            role = 2
 
         data = {
-            "pin" : pin,
+            "username"   : username,
+            "name"       : name,
+            "msisdn"     : msisdn,
+            "email"      : email,
+            "password"   : password,
+            "pin"        : pin,
+            "role"       : role,
         }
 
         # request data validator
-        wallet, errors = WalletSchema().load(data)
+        user, errors = UserSchema().load(data)
         if errors:
             return bad_request(errors)
         #end if
 
+        session = db.session(autocommit=True)
+        session.begin(subtransactions=True)
+
         try:
-            wallet_id = wallet.generate_wallet_id()
-            wallet.set_pin(pin)
+            user.set_password(password)
+            session.add(user)
 
-            va_payload = {
-                "wallet_id"        : wallet.id,
-                "amount"           : wallet.balance,
-                "customer_name"    : name,
-                "customer_phone"   : msisdn,
-            }
+            data["user_id"] = user.id
+            wallet_response = helper.WalletHelper().generate_wallet(data, session)
 
-            # request create VA
-            result = bank_handler.EcollectionHandler().create_va("CREDIT", va_payload)
+            if wallet_response["status"] != "SUCCESS":
+                session.rollback()
+                return bad_request(wallet_response["data"])
 
-            if result["status"] != "SUCCESS":
-                return bad_request(RESPONSE_MSG["VA_CREATION_FAILED"])
-
-            db.session.add(wallet)
-            db.session.commit()
+            session.commit()
         except IntegrityError as err:
-            db.session.rollback()
+            session.rollback()
             return bad_request(RESPONSE_MSG["ERROR_ADDING_RECORD"])
         #end try
 
+        wallet_id = wallet_response["data"]["wallet_id"]
+
         response["data"          ] = { "wallet_id" : wallet_id }
-        response["status_message"] = RESPONSE_MSG["WALLET_CREATED"]
+        response["status_message"] = RESPONSE_MSG["SUCCESS_CREATE_USER"]
 
     except Exception as e:
         print(traceback.format_exc())

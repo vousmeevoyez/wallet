@@ -2,7 +2,7 @@ from flask          import request, jsonify
 
 from app            import db
 from app.withdraw   import bp
-from app.bank       import handler as bank_handler
+from app.bank       import helper as bank_handler
 from app.models     import Wallet, Transaction, VirtualAccount
 from app.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
 from app.errors     import bad_request, internal_error, request_not_found

@@ -11,14 +11,29 @@ class Config(object):
 
     # MASTER WALLET SETTINGS
     WALLET_CONFIG= {
-        "MASTER_WALLET_ID" : 1176785615,
-        "PIN"              : 123456,
-        "CREDIT_FLAG"      : True,
-        "DEBIT_FLAG"       : False,
-        "VA_TO_VA"         : 1,
-        "BANK_TO_VA"       : 2,
-        "VA_TO_BANK"       : 3,
-        "VA_TIMEOUT"       : 435, # 
+        "MASTER_WALLET_ID"   : 1176785615,
+        "PIN"                : 123456,
+        "CREDIT_FLAG"        : True,
+        "DEBIT_FLAG"         : False,
+        "VA_TO_VA"           : 1,
+        "BANK_TO_VA"         : 2,
+        "VA_TO_BANK"         : 3,
+        "CREDIT_VA_TIMEOUT"  : 4350, # 
+        "CARDLESS_VA_TIMEOUT": 10, # 
+    }
+
+    BANK_LIST_CONFIG = {
+        "BNI" : 1,
+    }
+
+    USER_LEVEL_CONFIG = {
+        "ADMIN" : 1,
+        "USER"  : 2
+    }
+
+    VA_TYPE_CONFIG = {
+        "CREDIT"   : 1,
+        "CARDLESS" : 2
     }
 
     # MASTER WALLET SETTINGS
@@ -51,6 +66,7 @@ class Config(object):
         "TOPUP_ERROR"            : "Request Top Up Failed",
         "SUCCESS_TOPUP"          : "Request Top Up Success",
         "VA_CREATION_FAILED"     : "Virtual Account Creation Failed",
+        "SUCCESS_CREATE_USER"    : "User & Wallet Successfully Created",
     }
 
     # BNI E-COLLECTION ERROR MSG

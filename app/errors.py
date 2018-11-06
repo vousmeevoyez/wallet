@@ -9,7 +9,8 @@ def error_response(status_code, message=None):
     }
     if message:
         payload["data"] = message
-    response = jsonify(payload)
+    response = payload
+    #response = jsonify(payload)
     #response.status_code = status_code
 
     return response

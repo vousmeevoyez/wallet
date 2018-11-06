@@ -3,7 +3,7 @@ import re
 from marshmallow import fields, ValidationError, post_load, validates
 
 from app         import ma,db
-from app.models  import ApiKey, Wallet, Transaction, VirtualAccount
+from app.models  import ApiKey, Wallet, Transaction, VirtualAccount, User
 
 def cannot_be_blank(string):
     if not string:
@@ -37,23 +37,23 @@ class ApiKeySchema(ma.Schema):
     #end def
 #end class
 
-class WalletSchema(ma.Schema):
+class UserSchema(ma.Schema):
     id         = fields.Int()
+    username   = fields.Str(required=True, validate=cannot_be_blank)
     name       = fields.Str(required=True, validate=cannot_be_blank)
     msisdn     = fields.Str(required=True, validate=cannot_be_blank)
     email      = fields.Str(required=True, validate=cannot_be_blank)
-    pin        = fields.Str(required=True, attribute="pin_hash", validate=cannot_be_blank, load_only=True)
+    password   = fields.Str(required=True, attribute="password_hash", validate=cannot_be_blank, load_only=True)
     created_at = fields.Date()
     status     = fields.Bool()
-    balance    = fields.Float()
 
     class Meta():
         pass
         #strict = True
 
     @post_load
-    def make_wallet(self, data):
-        return Wallet(**data)
+    def make_user(self, data):
+        return User(**data)
     #end def
 
     @validates('msisdn')
@@ -74,6 +74,31 @@ class WalletSchema(ma.Schema):
             raise ValidationError('Invalid email')
     #end def
 
+    @validates('password')
+    def validate_password(self, password):
+        if re.match(r'[A-Za-z0-9@#$%^&+=]{6,}', password):
+            pass
+        else:
+            raise ValidationError("Invalid Password, Minimum 6 Character")
+    #end def
+#end class
+
+class WalletSchema(ma.Schema):
+    id         = fields.Int()
+    pin        = fields.Str(required=True, attribute="pin_hash", validate=cannot_be_blank, load_only=True)
+    created_at = fields.Date()
+    status     = fields.Bool()
+    balance    = fields.Float()
+
+    class Meta():
+        pass
+        #strict = True
+
+    @post_load
+    def make_wallet(self, data):
+        return Wallet(**data)
+    #end def
+
     @validates('pin')
     def validate_pin(self, pin):
         if re.fullmatch("\d{4}|\d{6}", pin):
@@ -81,6 +106,7 @@ class WalletSchema(ma.Schema):
         else:
             raise ValidationError("Invalid Pin, Minimum 4-6 digit")
     #end def
+
 #end class
 
 class TransactionSchema(ma.Schema):

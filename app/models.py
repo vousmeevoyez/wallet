@@ -1,15 +1,15 @@
-import secrets
-import random
-import traceback
-from datetime import datetime, timedelta
-
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from app import db
 from app.config import config
 
-now = datetime.utcnow()
+import secrets
+import random
+from datetime import datetime, timedelta
 
+import traceback
+
+now = datetime.utcnow()
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 WALLET_CONFIG          = config.Config.WALLET_CONFIG
 TRANSACTION_NOTES      = config.Config.TRANSACTION_NOTES
@@ -26,7 +26,7 @@ class ApiKey(db.Model):
     created_at    = db.Column(db.DateTime, default=now)
 
     def __repr__(self):
-        return '<ApiKey {} {} {} {} >'.format(self.username, self.password_hash, self.label, self.access_key)
+        return '<ApiKey {}>'.format(self.access_key)
     #end def
 
     def generate_access_key(self, digit):
@@ -58,16 +58,41 @@ class ApiKey(db.Model):
     #end def
 #end class
 
-class Wallet(db.Model):
+class User(db.Model):
     id              = db.Column(db.BigInteger, primary_key=True)
+    username        = db.Column(db.String(144))
     name            = db.Column(db.String(144))
     msisdn          = db.Column(db.String(12), unique=True)
     email           = db.Column(db.String(144), unique=True)
     created_at      = db.Column(db.DateTime, default=now)
-    pin_hash        = db.Column(db.String(128))
+    password_hash   = db.Column(db.String(128))
     status          = db.Column(db.Boolean, default=True)
-    balance         = db.Column(db.Float, default=0)
-    virtual_account = db.relationship("VirtualAccount", uselist=False, back_populates="wallet")
+    role            = db.Column(db.Integer)
+    wallets         = db.relationship("Wallet")
+
+    def __repr__(self):
+        return '<User {} {} {} {}>'.format(self.username,
+                                     self.name, self.msisdn, self.email
+                                    )
+    #end def
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    #end def
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+    #end def
+#end class
+
+class Wallet(db.Model):
+    id               = db.Column(db.BigInteger, primary_key=True)
+    created_at       = db.Column(db.DateTime, default=now)
+    pin_hash         = db.Column(db.String(128))
+    status           = db.Column(db.Boolean, default=True)
+    balance          = db.Column(db.Float, default=0)
+    user_id          = db.Column(db.BigInteger, db.ForeignKey('user.id'))
+    virtual_accounts = db.relationship("VirtualAccount")
 
     def __repr__(self):
         return '<Wallet {} {}>'.format(self.id, self.balance)
@@ -128,6 +153,8 @@ class Wallet(db.Model):
 
 class VirtualAccount(db.Model):
     id              = db.Column(db.BigInteger, primary_key=True)
+    bank_id         = db.Column(db.Integer)
+    va_type         = db.Column(db.Integer)
     trx_id          = db.Column(db.BigInteger, unique=True)
     trx_amount      = db.Column(db.Float, default=0)
     name            = db.Column(db.String(144))
@@ -135,7 +162,7 @@ class VirtualAccount(db.Model):
     status          = db.Column(db.Boolean, default=False)
     created_at      = db.Column(db.DateTime, default=now)
     wallet_id       = db.Column(db.BigInteger, db.ForeignKey('wallet.id'))
-    wallet          = db.relationship("Wallet", back_populates="virtual_account")
+    wallet          = db.relationship("Wallet", back_populates="virtual_accounts")
 
     def __repr__(self):
         return '<VirtualAccount {} {} {} {}>'.format(self.id, self.trx_id, self.name, self.status)
@@ -268,3 +295,4 @@ class ExternalLog(db.Model):
         return '<External Log {} {} {} {} {} {}>'.format(self.id, self.resource, self.api_name, self.status, self.request, self.response)
     #end def
 #end class
+

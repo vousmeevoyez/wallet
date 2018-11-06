@@ -7,7 +7,7 @@ sys.path.append("../app")
 from datetime import datetime, timedelta
 
 from app            import create_app
-from app.serializer import ApiKeySchema, WalletSchema, TransactionSchema
+from app.serializer import ApiKeySchema, UserSchema, WalletSchema, TransactionSchema
 from app.config     import config
 
 from marshmallow import ValidationError
@@ -32,8 +32,7 @@ class TestApiKeySchema(unittest.TestCase):
         result, errors = ApiKeySchema().load({ "label" : "", "name" : "", "expiration" : 1, "username" : "", "password" : ""})
         self.assertEqual( errors, {'password': [' Data cannot be blank'], 'label': [' Data cannot be blank'], 'username': [' Data cannot be blank'], 'name': [' Data cannot be blank']})
 
-
-class TestWalletSchema(unittest.TestCase):
+class TestUserSchema(unittest.TestCase):
     def test_serializer(self):
         #with self.assertRaises(ValidationError) as context:
         #    ApiKeySchema().load({ "label" : 1234, "name" : "name"})
@@ -41,13 +40,53 @@ class TestWalletSchema(unittest.TestCase):
 
         # CHECKING PHONE NUMBER
         data = {
-            "name"   : "Lisa",
-            "msisdn" : "0812341234",
-            "email"  : "lisa@bp.com",
-            "pin"    : "123456",
+            "username": "Lisa",
+            "name"    : "Lisa",
+            "msisdn"  : "0812123411111",
+            "email"   : "lisa@bp.com",
+            "password": "password",
         }
-        result, errors = WalletSchema().load(data)
+        result, errors = UserSchema().load(data)
         self.assertEqual( errors, {'msisdn': ['Invalid phone number']} )
+
+        # CHECKING EMAIL
+        data = {
+            "username": "Lisa",
+            "name"    : "Lisa",
+            "msisdn"  : "081212341111",
+            "email"   : "lisa!bp.com",
+            "password": "password",
+        }
+        result, errors = UserSchema().load(data)
+        self.assertEqual( errors, {'email': ['Invalid email']} )
+
+        # CHECKING PASSWORD
+        data = {
+            "username": "Lisa",
+            "name"    : "Lisa",
+            "msisdn"  : "081212341111",
+            "email"   : "lisa@bp.com",
+            "password": "pass",
+        }
+        result, errors = UserSchema().load(data)
+        self.assertEqual( errors, {'password': ['Invalid Password, Minimum 6 Character']} )
+
+        # CHECKING ALL
+        data = {
+            "username": "Lisa",
+            "name"    : "Lisa",
+            "msisdn"  : "0812123411111",
+            "email"   : "lisa!bp.com",
+            "password": "pass",
+        }
+        result, errors = UserSchema().load(data)
+        self.assertEqual( errors, {'email': ['Invalid email'], 'msisdn': ['Invalid phone number'], 'password': ['Invalid Password, Minimum 6 Character']})
+
+class TestWalletSchema(unittest.TestCase):
+    def test_serializer(self):
+        #with self.assertRaises(ValidationError) as context:
+        #    ApiKeySchema().load({ "label" : 1234, "name" : "name"})
+        #self.assertTrue("{'label': ['Not a valid string.']}" in str(context.exception))
 
         # CHECKING PIN 
         data2 = {
@@ -58,25 +97,6 @@ class TestWalletSchema(unittest.TestCase):
         }
         result2, errors2 = WalletSchema().load(data2)
         self.assertEqual( errors2, {'pin': ['Invalid Pin, Minimum 4-6 digit']})
-
-        # CHECKING EMAIL
-        data3 = {
-            "name"   : "Lisa",
-            "msisdn" : "081212341234",
-            "email"  : "lisabp.com",
-            "pin"    : "123456",
-        }
-        result3, errors3 = WalletSchema().load(data3)
-        self.assertEqual( errors3, {'email': ['Invalid email']})
-
-        # ALL INVALID
-        data4 = {
-            "name"   : "Lisa",
-            "msisdn" : "081341234",
-            "email"  : "lisabp.com",
-            "pin"    : "123",
-        }
-        result4, errors4 = WalletSchema().load(data4)
 
 class TestTransactionSchema(unittest.TestCase):
     def test_serializer(self):
