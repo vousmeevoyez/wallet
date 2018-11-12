@@ -47,9 +47,10 @@ class Config(object):
     # RESPONSE MESSAGE
     RESPONSE_MSG = {
         "WALLET_NOT_FOUND"       : "{} Wallet not found",
-        "ERROR_ADDING_RECORD"    : "Error adding record",
+        "ERROR_ADDING_RECORD"    : "Duplicate Record",
         "WALLET_CREATED"         : "Wallet successfully created",
         "WALLET_REMOVED"         : "Wallet successfully removed",
+        "INCORRECT_LOGIN"        : "Incorrect Login",
         "INCORRECT_PIN"          : "Incorrect Pin",
         "WALLET_ALREADY_LOCKED"  : "Wallet already locked",
         "WALLET_LOCKED"          : "Wallet successfully locked",
@@ -58,7 +59,7 @@ class Config(object):
         "TRANSACTION_LOCKED"     : "Cannot proceed transaction, Wallet is locked",
         "INSUFFICIENT_BALANCE"   : "Insufficient balance for this transaction",
         "SUCCESS_DEPOSIT"        : "Successfully Deposit {} to {}",
-        "SUCCESS_TRANSFER"       : "Successfully Transfer {} to {}",
+        "SUCCESS_TRANSFER"       : "Successfully Transfer {} from {} to {}",
         "ROLLBACK_ERROR"         : "Transaction failed",
         "ALREADY_REQUESTED_ERROR": "Request already success, please wait before request again",
         "WITHDRAW_ERROR"         : "Request Withdraw Failed",
@@ -67,6 +68,9 @@ class Config(object):
         "SUCCESS_TOPUP"          : "Request Top Up Success",
         "VA_CREATION_FAILED"     : "Virtual Account Creation Failed",
         "SUCCESS_CREATE_USER"    : "User & Wallet Successfully Created",
+        "USER_REMOVED"           : "User successfully removed",
+        "USER_UPDATED"           : "User information successfully updated",
+        "WALLET_REMOVAL_FAILED"  : "Can't remove the main wallet",
     }
 
     # BNI E-COLLECTION ERROR MSG

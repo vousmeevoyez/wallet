@@ -60,7 +60,7 @@ class ApiKey(db.Model):
 
 class User(db.Model):
     id              = db.Column(db.BigInteger, primary_key=True)
-    username        = db.Column(db.String(144))
+    username        = db.Column(db.String(144), unique=True)
     name            = db.Column(db.String(144))
     msisdn          = db.Column(db.String(12), unique=True)
     email           = db.Column(db.String(144), unique=True)
@@ -68,11 +68,11 @@ class User(db.Model):
     password_hash   = db.Column(db.String(128))
     status          = db.Column(db.Boolean, default=True)
     role            = db.Column(db.Integer)
-    wallets         = db.relationship("Wallet")
+    wallets         = db.relationship("Wallet", back_populates="user", cascade="delete")
 
     def __repr__(self):
         return '<User {} {} {} {}>'.format(self.username,
-                                     self.name, self.msisdn, self.email
+                                     self.name, self.msisdn, self.email,
                                     )
     #end def
 
@@ -92,10 +92,11 @@ class Wallet(db.Model):
     status           = db.Column(db.Boolean, default=True)
     balance          = db.Column(db.Float, default=0)
     user_id          = db.Column(db.BigInteger, db.ForeignKey('user.id'))
-    virtual_accounts = db.relationship("VirtualAccount")
+    user             = db.relationship("User", back_populates="wallets")
+    virtual_accounts = db.relationship("VirtualAccount", cascade="delete")
 
     def __repr__(self):
-        return '<Wallet {} {}>'.format(self.id, self.balance)
+        return '<Wallet {} {} {}>'.format(self.id, self.balance, self.user_id)
     #end def
 
     def check_balance(self):
@@ -162,7 +163,7 @@ class VirtualAccount(db.Model):
     status          = db.Column(db.Boolean, default=False)
     created_at      = db.Column(db.DateTime, default=now)
     wallet_id       = db.Column(db.BigInteger, db.ForeignKey('wallet.id'))
-    wallet          = db.relationship("Wallet", back_populates="virtual_accounts")
+    wallet          = db.relationship("Wallet", back_populates="virtual_accounts", cascade="delete")
 
     def __repr__(self):
         return '<VirtualAccount {} {} {} {}>'.format(self.id, self.trx_id, self.name, self.status)
@@ -254,7 +255,7 @@ class Transaction(db.Model):
     destination      = db.relationship("Wallet", foreign_keys=[destination_id])
 
     def __repr__(self):
-        return '<Transaction {} {} {} {}>'.format(self.id, self.amount, self.transaction_type, self.notes)
+        return '<Transaction {} {} {} {} {} {}>'.format(self.id, self.source_id, self.amount, self.transaction_type, self.destination_id, self.notes)
     #end def
 
     def generate_trx_id(self):

@@ -13,3 +13,5 @@ celery
 nose
 coverage
 pyOpenSSL
+flask-jwt-extended
+

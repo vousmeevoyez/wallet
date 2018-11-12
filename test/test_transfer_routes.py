@@ -2,6 +2,8 @@ import sys
 import unittest
 import json
 
+from unittest.mock import Mock, patch
+
 sys.path.append("../")
 sys.path.append("../app")
 
@@ -27,15 +29,42 @@ class TestTransferRoutes(unittest.TestCase):
         db.create_all()
 
         self.client = self.app.test_client()
+        self.mock_post_patcher = patch("app.bank.utility.remote_call.requests.post")
+        self.mock_post = self.mock_post_patcher.start()
 
     def tearDown(self):
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
 
+        self.mock_post_patcher.stop()
+
+
     """
         HELPER
     """
+    def _register_user(self, username, name, msisdn, email, password, pin, role):
+        return self.client.post(
+            '/user/register',
+            data=dict(
+                username=username,
+                name=name,
+                msisdn=msisdn,
+                email=email,
+                password=password,
+                pin=pin,
+                role=role
+            )
+        )
+
+    def _deposit(self, wallet_id, amount):
+        return self.client.post(
+            '/wallet/deposit',
+            data=dict(
+                wallet_id=wallet_id,
+                amount=amount
+            )
+        )
 
     def _direct_transfer(self, source, destination, amount, notes, pin):
         return self.client.post(
@@ -65,34 +94,32 @@ class TestTransferRoutes(unittest.TestCase):
     """
 
     def test_direct_transfer_success(self):
-        pass
-        #result = self._direct_transfer("label", "jennie", 525600, "jennie", "password")
-        #response = result.get_json()
+        # generate account
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
 
-        #self.assertEqual(response["data"], "Secret key successfully created")
-        #self.assertEqual(response["status_code"], 0)
-        #self.assertEqual(response["status_message"], "SUCCESS")
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
 
-    def test_bulk_transfer(self):
-        source = "12345"
-        transaction_list = [
-            {
-                "destination" : "123",
-                "amount"      : 1,
-                "notes"       : "SALARY DISTRIBUTION"
-            },
-            {
-                "destination" : "124",
-                "amount"      : 1,
-                "notes"       : "SALARY DISTRIBUTION"
-            }
-        ]
-        #result = self._bulk_transfer(source, transaction_list, "123456")
-        #response = result.get_json()
+        result = self._register_user("jennie", "Jennie", "081219644324", "jennie@blackpink.com", "password", "123456", "2")
+        response = result.get_json()
+        print(response)
+        source = response["data"]["wallet_id"]
 
-        #self.assertEqual(response["data"], "Secret key successfully created")
-        #self.assertEqual(response["status_code"], 0)
-        #self.assertEqual(response["status_message"], "SUCCESS")
+        # generate account
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "124", 'virtual_account': "112222" }
+        }
+
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+
+        result = self._register_user("rose", "Rose", "081219644323", "rose@blackpink.com", "password", "123456", "2")
+        response = result.get_json()
+        print(response)
 
 
 if __name__ == "__main__":

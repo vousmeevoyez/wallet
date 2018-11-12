@@ -10,8 +10,8 @@ sys.path.append("../app")
 
 from app         import create_app, db
 from app.config  import config
-from app.models  import ApiKey, Wallet
-from app.bank    import handler
+from app.models  import User, Wallet, VirtualAccount, Transaction
+from app.serializer import WalletSchema
 
 
 class TestConfig(config.Config):
@@ -44,41 +44,45 @@ class TestWalletRoutes(unittest.TestCase):
         HELPER
     """
 
-    def _create_wallet(self, name, msisdn, email, pin):
+    def _create_wallet(self, name, msisdn, pin, user_id):
         return self.client.post(
             '/wallet/create',
             data=dict(
                 name=name,
                 msisdn=msisdn,
-                email=email,
                 pin=pin,
+                user_id=user_id,
             )
         )
 
-    def _get_wallet_list(self):
+    def _get_wallet_list(self, id):
         return self.client.get(
-            '/wallet/list',
+            '/wallet/list?id=' + id,
         )
 
     def _get_wallet_details(self, wallet_id, pin):
         return self.client.post(
-            '/wallet/get_info',
+            '/wallet/info',
             data=dict(
-                id=wallet_id,
+                wallet_id=wallet_id,
                 pin=pin
             )
         )
 
-    def _remove_wallet(self, wallet_id):
-        return self.client.get(
-            '/wallet/remove?id=' + wallet_id,
+    def _remove_wallet(self, wallet_id, pin):
+        return self.client.delete(
+            '/wallet/info',
+            data=dict(
+                wallet_id=wallet_id,
+                pin=pin,
+            )
         )
 
     def _check_balance(self, wallet_id, pin):
         return self.client.post(
-            '/wallet/check_balance',
+            '/wallet/balance',
             data=dict(
-                id=wallet_id,
+                wallet_id=wallet_id,
                 pin=pin
             )
         )
@@ -93,9 +97,13 @@ class TestWalletRoutes(unittest.TestCase):
             '/wallet/unlock?id=' + wallet_id,
         )
 
-    def _deposit(self, wallet_id):
-        return self.client.get(
-            '/wallet/deposit?id=' + wallet_id,
+    def _deposit(self, wallet_id, amount):
+        return self.client.post(
+            '/wallet/deposit',
+            data=dict(
+                wallet_id=wallet_id,
+                amount=amount
+            )
         )
 
     def _transaction_history(self, wallet_id):
@@ -107,47 +115,32 @@ class TestWalletRoutes(unittest.TestCase):
         WALLET
     """
     def test_create_wallet_success(self):
+        # add user first
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+        # generate mock responses
         expected_value = {
             "status" : "000",
             "message" : {'trx_id': "123", 'virtual_account': "122222" }
         }
 
-        # MOCK RESPONSE
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-        result = self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
+        # create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
         response = result.get_json()
 
-        self.assertEqual(response["status_code"], 0)
-        self.assertTrue(response["data"]["wallet_id"])
-
-    def test_create_wallet_duplicate(self):
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        # MOCK RESPONSE
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        result = self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
-        response = result.get_json()
-
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        # MOCK RESPONSE
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        result = self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
-        response = result.get_json()
-
-        self.assertEqual(response["status_code"], 400)
+        # MAKE SURE WALLET SUCCESSFULLY CREATED AND LINKED TO USER
+        user = User.query.get(1)
+        self.assertEqual(len(user.wallets), 1)
 
     def test_create_wallet_empty_error(self):
         result = self._create_wallet("", "", "", "")
@@ -156,43 +149,177 @@ class TestWalletRoutes(unittest.TestCase):
         self.assertEqual(response["status_code"], 400)
 
     def test_create_wallet_failed(self):
+        # create user first
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+        # generate mock up responses
         expected_value = {
             "status" : "009",
             "message" : "Unexpected Error"
         }
 
-        # MOCK RESPONSE
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-        result = self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
+        #create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)
         self.assertEqual(response["data"], "Virtual Account Creation Failed")
 
     def test_wallet_list(self):
-        self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
+        # add user first
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
 
-        result = self._get_wallet_list()
+        # generate mock responses
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+
+        # create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
+        response = result.get_json()
+
+        # generate mock responses
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+
+        # create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
+        response = result.get_json()
+
+        result = self._get_wallet_list("1")
+        response = result.get_json()
+
+        # CHECK WALLET IN DATABASES
+        wallet = Wallet.query.filter_by(user_id=1)
+        test = WalletSchema(many=True).dump(wallet).data
+
+        self.assertEqual(response["status_code"], 0)
+        self.assertEqual(len(response["data"]), len(test))
+
+    def test_deposit_wallet(self):
+        # add user first
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+        # generate mock responses
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+
+        # create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
+        response = result.get_json()
+
+        wallet_id = response["data"]["wallet_id"]
+
+        # deposit balance
+        result = self._deposit(wallet_id, "9999")
+        response = result.get_json()
+
+        # CHECK BALANCE ON DATABASES
+        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        self.assertEqual( wallet.balance, 9999)
+
+        # CHECK TRANSACTION
+        transaction = Transaction.query.filter_by(destination_id=wallet_id).first()
+        self.assertEqual( transaction.amount, 9999)
+
+    def test_transaction_history(self):
+        # create user first
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+        # generate mock response
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+
+        # create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
+        response = result.get_json()
+
+        wallet_id = response["data"]["wallet_id"]
+
+        # deposit balance
+        result = self._deposit(wallet_id, "9999")
+
+        # checking transaction history
+        result = self._transaction_history(wallet_id)
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 0)
         self.assertEqual(len(response["data"]), 1)
 
     def test_wallet_details_success(self):
-        # GENERATE WALLET FIRST
+        # create user first
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+        # generate mock response
         expected_value = {
             "status" : "000",
             "message" : {'trx_id': "123", 'virtual_account': "122222" }
         }
 
-        # MOCK RESPONSE
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-        result = self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
+        # create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
         response = result.get_json()
+
         wallet_id = response["data"]["wallet_id"]
 
         # CHECK WALLET DETAILS
@@ -208,71 +335,139 @@ class TestWalletRoutes(unittest.TestCase):
         self.assertEqual(response["status_code"], 404)
 
     def test_wallet_details_incorrect_pin(self):
-        # GENERATE WALLET FIRST
+        # create user first
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+        # generate mock response
         expected_value = {
             "status" : "000",
             "message" : {'trx_id': "123", 'virtual_account': "122222" }
         }
 
-        # MOCK RESPONSE
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-        result = self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
+        # create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
         response = result.get_json()
+
         wallet_id = response["data"]["wallet_id"]
 
         # CHECK WALLET DETAILS
-        result = self._get_wallet_details(wallet_id, "124456")
+        result = self._get_wallet_details(wallet_id, "122456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)
 
     def test_wallet_remove(self):
-        # GENERATE WALLET FIRST
+        # create user first
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+        # generate mock response
         expected_value = {
             "status" : "000",
             "message" : {'trx_id': "123", 'virtual_account': "122222" }
         }
 
-        # MOCK RESPONSE
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-        result = self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
+        # create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
         response = result.get_json()
+
+        # create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
+        response = result.get_json()
+
         wallet_id = response["data"]["wallet_id"]
 
-        result = self._remove_wallet(wallet_id)
+        result = self._remove_wallet(wallet_id, "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 0)
 
-        result = self._get_wallet_list()
+        result = self._get_wallet_list("1")
         response = result.get_json()
 
-        self.assertEqual(len(response["data"]), 0)
+        self.assertEqual(len(response["data"]), 1)
 
     def test_wallet_remove_failed(self):
+        # create user first
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+        # generate mock response
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+
+        # create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
+        response = result.get_json()
+
+        wallet_id = response["data"]["wallet_id"]
+
+        result = self._remove_wallet(wallet_id, "123456")
+        response = result.get_json()
+
+        self.assertEqual(response["status_code"], 400)
+
+    def test_wallet_remove_failed_not_found(self):
         # GENERATE WALLET FIRST
-        result = self._remove_wallet("123")
+        result = self._remove_wallet("123", "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 404)
 
     def test_check_wallet_balance_success(self):
-        # GENERATE WALLET FIRST
+        # create user first
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+        # generate mock response
         expected_value = {
             "status" : "000",
             "message" : {'trx_id': "123", 'virtual_account': "122222" }
         }
 
-        # MOCK RESPONSE
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-        result = self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
+        # create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
         response = result.get_json()
+
         wallet_id = response["data"]["wallet_id"]
 
         result = self._check_balance(wallet_id, "123456")
@@ -282,108 +477,32 @@ class TestWalletRoutes(unittest.TestCase):
         self.assertEqual(response["data"]["balance"], 0)
 
     def test_check_wallet_balance_failed(self):
-        # GENERATE WALLET FIRST
+        # create user first
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+        # generate mock response
         expected_value = {
             "status" : "000",
             "message" : {'trx_id': "123", 'virtual_account': "122222" }
         }
 
-        # MOCK RESPONSE
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-        result = self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
+        # create actual wallet
+        result = self._create_wallet("rose", "081219644314", "123456", "1")
         response = result.get_json()
+
         wallet_id = response["data"]["wallet_id"]
-
-        result = self._check_balance(wallet_id, "213456")
-        response = result.get_json()
-
-        self.assertEqual(response["status_code"], 400)
 
         result = self._check_balance("123213", "213456")
-        response = result.get_json()
-
-        self.assertEqual(response["status_code"], 404)
-
-    def test_lock_wallet(self):
-        # GENERATE WALLET FIRST
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        # MOCK RESPONSE
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        result = self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
-        response = result.get_json()
-        wallet_id = response["data"]["wallet_id"]
-
-        result = self._lock(wallet_id)
-        response = result.get_json()
-
-        self.assertEqual(response["status_code"], 0)
-
-        result = self._lock("1234")
-        response = result.get_json()
-
-        self.assertEqual(response["status_code"], 404)
-
-        result = self._lock(wallet_id)
-        response = result.get_json()
-
-        self.assertEqual(response["status_code"], 400)
-
-    def test_unlock_wallet(self):
-        # GENERATE WALLET FIRST
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        # MOCK RESPONSE
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        result = self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
-        response = result.get_json()
-        wallet_id = response["data"]["wallet_id"]
-
-        result = self._unlock(wallet_id)
-        response = result.get_json()
-
-        self.assertEqual(response["status_code"], 400)
-
-        result = self._unlock("1232")
-        response = result.get_json()
-
-        self.assertEqual(response["status_code"], 404)
-
-    def test_wallet_mutation(self):
-        # GENERATE WALLET FIRST
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        # MOCK RESPONSE
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        result = self._create_wallet("rose", "081219644314", "rose@blackpink.com", "123456")
-        response = result.get_json()
-        wallet_id = response["data"]["wallet_id"]
-
-        result = self._transaction_history(wallet_id)
-        response = result.get_json()
-
-        self.assertEqual(response["status_code"], 0)
-        self.assertEqual(len(response["data"]), 0)
-
-    def test_wallet_mutation_failed(self):
-        result = self._transaction_history("0235")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 404)

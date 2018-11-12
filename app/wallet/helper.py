@@ -17,6 +17,7 @@ class WalletHelper(object):
 
     def __init__(self):
         pass
+    #end def
 
     def generate_wallet(self, params, session=None):
         response = {
@@ -32,7 +33,8 @@ class WalletHelper(object):
             pin        = params["pin"    ]
 
             data = {
-                "pin" : pin,
+                "user_id" : user_id,
+                "pin"     : pin,
             }
 
             # request data validator
@@ -43,6 +45,10 @@ class WalletHelper(object):
                 return response
             #end if
 
+            if session == None:
+                #session = db.session(autocommit=True)
+                session = db.session
+            #end if
             session.begin(subtransactions=True)
 
             try:
@@ -60,7 +66,6 @@ class WalletHelper(object):
 
                 # request create VA
                 result = bank_helper.EcollectionHelper().create_va("CREDIT", va_payload, session)
-
                 if result["status"] != "SUCCESS":
                     session.rollback()
                     response["status"] = "FAILED"
@@ -70,6 +75,7 @@ class WalletHelper(object):
                 session.commit()
 
             except IntegrityError as err:
+                print(err)
                 session.rollback()
                 response["status"] = "FAILED"
                 response["data"  ] = RESPONSE_MSG["ERROR_ADDING_RECORD"]
@@ -87,3 +93,5 @@ class WalletHelper(object):
 
         return response
     #end def
+
+#end class

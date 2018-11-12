@@ -85,6 +85,7 @@ class UserSchema(ma.Schema):
 
 class WalletSchema(ma.Schema):
     id         = fields.Int()
+    user_id    = fields.Int()
     pin        = fields.Str(required=True, attribute="pin_hash", validate=cannot_be_blank, load_only=True)
     created_at = fields.Date()
     status     = fields.Bool()

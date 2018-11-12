@@ -22,24 +22,36 @@ class TransferController:
         pass
     #end def
 
-    def internal_transfer(self):
+    def internal_transfer(self, params):
         response = {
             "status_code"    : 0,
             "status_message" : "SUCCESS",
             "data"           : "NONE"
         }
 
+        source      = params["source"     ]
+        destination = params["destination"]
+        amount      = params["amount"     ]
+        pin         = params["pin"        ]
+        transfer_type = "VA_TO_VA"
+
         transfer_response = self._do_transaction(source, destination, amount, pin, transfer_type)
         if transfer_response["status"] != "SUCCESS":
-            return transfer_response
+            response["status_message"] = transfer_response["status"]
+            response["data"          ] = transfer_response["data"]
+            return response
+        #end if
+
+        response["data"] = RESPONSE_MSG["SUCCESS_TRANSFER"].format( str(amount), str(source), str(destination) )
+
+        return response
     #end def
-
-
 
     def _do_transaction(self, source, destination, amount, pin, transfer_type):
         response = { "status" : "SUCCESS", "data" : ""}
 
         source_wallet = Wallet.query.filter_by(id=source).first()
+        print(source_wallet)
         if source_wallet == None:
             response["status"] = "FAILED"
             response["data"  ] = "Wallet source not found"
@@ -56,6 +68,7 @@ class TransferController:
             return response
 
         destination_wallet = Wallet.query.filter_by(id=destination).first()
+        print(destination_wallet)
         if destination_wallet == None:
             response["status"] = "FAILED"
             response["data"  ] = "Wallet destination not found"

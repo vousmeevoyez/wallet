@@ -163,16 +163,24 @@ class TestMockEcollectionHelper(unittest.TestCase):
 
 class TestEcollectionHelper(unittest.TestCase):
 
-    """
+    def setUp(self):
+        self.app = create_app(TestConfig)
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+
     def test_get_inquiry(self):
         data = {
             "trx_id" : "1234",
         }
         result = helper.EcollectionHelper().get_inquiry(data)
-        print(result)
         self.assertEqual( result["status"], "SUCCESS")
     #end def
-    """
 
 class TestOpgHelper(unittest.TestCase):
 

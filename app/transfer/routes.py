@@ -19,11 +19,11 @@ def virtual_transfer():
     }
 
     # request data validator
-    transaction, errors = TransactionSchema().load(data)
+    errors = TransactionSchema().validate(data)
     if errors:
         return jsonify(bad_request(errors))
 
-    response = transfer.TransferController().internal_transfer(source, destination, amount, pin, "VA_TO_VA")
+    response = transfer.TransferController().internal_transfer(data)
 
     return jsonify(response)
 #end def

@@ -65,6 +65,10 @@ class EcollectionHelper(object):
             return response
         #end if
 
+        # set session if empty
+        if session == None:
+            session = db.session
+        #end if
         session.begin(subtransactions=True)
 
         # CREATE VIRTUAL ACCOUNT ON DATABASES FIRST

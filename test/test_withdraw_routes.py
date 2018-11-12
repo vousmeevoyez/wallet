@@ -11,7 +11,6 @@ sys.path.append("../app")
 from app         import create_app, db
 from app.config  import config
 from app.models  import ApiKey, Wallet
-from app.bank    import handler
 
 
 class TestConfig(config.Config):
