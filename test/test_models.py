@@ -8,7 +8,7 @@ sys.path.append("../app")
 from datetime import datetime, timedelta
 
 from app            import create_app, db
-from app.models     import ApiKey, Wallet, VirtualAccount, Transaction, ExternalLog, User
+from app.models     import ApiKey, Wallet, VirtualAccount, Transaction, ExternalLog, User, BlacklistToken
 from app.config     import config
 
 now = datetime.utcnow()
@@ -263,6 +263,30 @@ class WalletModelCase(unittest.TestCase):
 
         self.assertEqual(len(wallet.virtual_accounts), 2)
 
+    def test_is_owned(self):
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+        db.session.commit()
+
+        wallet = Wallet(
+            user_id = user.id,
+        )
+        wallet_id = wallet.generate_wallet_id()
+        db.session.add(wallet)
+        db.session.commit()
+
+        result = Wallet.is_owned(1, wallet_id)
+        self.assertTrue(result)
+
+        result = Wallet.is_owned(1, 456464)
+        self.assertFalse(result)
+
 class VirtualAccountModelCase(unittest.TestCase):
     def setUp(self):
         self.app = create_app(TestConfig)
@@ -406,6 +430,26 @@ class ExternalModelCase(unittest.TestCase):
 
         self.assertTrue(result.status)
         self.assertFalse(result2.status)
+
+class BlacklistTokenModelCase(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app(TestConfig)
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+
+    def test_is_blacklisted(self):
+        token = BlacklistToken(token="adsjkdsjlkjdsljdsl")
+        db.session.add(token)
+        db.session.commit()
+
+        result = BlacklistToken.is_blacklisted("adsjkdsjlkjdsljdsl")
+        self.assertTrue(result)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

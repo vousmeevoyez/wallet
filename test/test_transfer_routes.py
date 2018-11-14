@@ -11,7 +11,7 @@ sys.path.append("../app")
 
 from app         import create_app, db
 from app.config  import config
-from app.models  import ApiKey, Wallet
+from app.models  import User, Wallet
 
 
 class TestConfig(config.Config):
@@ -43,30 +43,10 @@ class TestTransferRoutes(unittest.TestCase):
     """
         HELPER
     """
-    def _register_user(self, username, name, msisdn, email, password, pin, role):
-        return self.client.post(
-            '/user/register',
-            data=dict(
-                username=username,
-                name=name,
-                msisdn=msisdn,
-                email=email,
-                password=password,
-                pin=pin,
-                role=role
-            )
-        )
-
-    def _deposit(self, wallet_id, amount):
-        return self.client.post(
-            '/wallet/deposit',
-            data=dict(
-                wallet_id=wallet_id,
-                amount=amount
-            )
-        )
-
-    def _direct_transfer(self, source, destination, amount, notes, pin):
+    def _direct_transfer(self, access_token, source, destination, amount, notes, pin):
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
         return self.client.post(
             '/transfer/direct',
             data=dict(
@@ -75,7 +55,8 @@ class TestTransferRoutes(unittest.TestCase):
                 amount=amount,
                 notes=notes,
                 pin=pin
-            )
+            ),
+            headers=headers
         )
 
     def _bulk_transfer(self, source, transaction_list, pin):
@@ -88,39 +69,203 @@ class TestTransferRoutes(unittest.TestCase):
             )
         )
 
+    def _request_token(self, username, password):
+        return self.client.post(
+            '/auth/request_token',
+            data=dict(
+                username=username,
+                password=password
+            )
+        )
+
 
     """
         TRANFSER
     """
 
     def test_direct_transfer_success(self):
-        # generate account
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+        db.session.commit()
 
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
+        wallet = Wallet(
+            user_id=user.id,
+            balance=100
+        )
+        wallet.set_pin("123456")
+        db.session.add(wallet)
+        db.session.commit()
 
-        result = self._register_user("jennie", "Jennie", "081219644324", "jennie@blackpink.com", "password", "123456", "2")
-        response = result.get_json()
-        print(response)
-        source = response["data"]["wallet_id"]
+        user2 = User(
+            username='jennie',
+            name='jennie',
+            email='jennie@bp.com',
+            msisdn='081229644314',
+        )
+        user2.set_password("password")
+        db.session.add(user2)
+        db.session.commit()
 
-        # generate account
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "124", 'virtual_account': "112222" }
-        }
+        wallet2 = Wallet(
+            user_id=user2.id,
+            balance=100
+        )
+        wallet2.set_pin("123456")
+        db.session.add(wallet2)
+        db.session.commit()
 
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
+        # GET ACCESS TOKEN
+        response = self._request_token("lisabp", "password")
+        result = response.get_json()
+        access_token = result["data"]["access_token"]
 
-        result = self._register_user("rose", "Rose", "081219644323", "rose@blackpink.com", "password", "123456", "2")
-        response = result.get_json()
-        print(response)
+        response = self._direct_transfer(access_token, wallet.id, wallet2.id, "1", "TEST", "123456")
+        result = response.get_json()
+        self.assertEqual(result["status_code"], 0)
 
+    def test_direct_transfer_failed_destination_not_found(self):
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+        db.session.commit()
+
+        wallet = Wallet(
+            user_id=user.id,
+            balance=100
+        )
+        wallet.set_pin("123456")
+        db.session.add(wallet)
+        db.session.commit()
+
+        user2 = User(
+            username='jennie',
+            name='jennie',
+            email='jennie@bp.com',
+            msisdn='081229644314',
+        )
+        user2.set_password("password")
+        db.session.add(user2)
+        db.session.commit()
+
+        wallet2 = Wallet(
+            user_id=user2.id,
+            balance=100
+        )
+        wallet2.set_pin("123456")
+        db.session.add(wallet2)
+        db.session.commit()
+
+        # GET ACCESS TOKEN
+        response = self._request_token("lisabp", "password")
+        result = response.get_json()
+        access_token = result["data"]["access_token"]
+
+        response = self._direct_transfer(access_token, wallet.id, "3", "1", "TEST", "123456")
+        result = response.get_json()
+        self.assertEqual(result["status_code"], 404)
+
+    def test_direct_transfer_failed_source_not_found(self):
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+        db.session.commit()
+
+        wallet = Wallet(
+            user_id=user.id,
+            balance=100
+        )
+        wallet.set_pin("123456")
+        db.session.add(wallet)
+        db.session.commit()
+
+        user2 = User(
+            username='jennie',
+            name='jennie',
+            email='jennie@bp.com',
+            msisdn='081229644314',
+        )
+        user2.set_password("password")
+        db.session.add(user2)
+        db.session.commit()
+
+        wallet2 = Wallet(
+            user_id=user2.id,
+            balance=100
+        )
+        wallet2.set_pin("123456")
+        db.session.add(wallet2)
+        db.session.commit()
+
+        # GET ACCESS TOKEN
+        response = self._request_token("lisabp", "password")
+        result = response.get_json()
+        access_token = result["data"]["access_token"]
+
+        response = self._direct_transfer(access_token, "3", wallet2.id, "1", "TEST", "123456")
+        result = response.get_json()
+        self.assertEqual(result["status_code"], 400)
+
+    def test_direct_transfer_pin_failed(self):
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+        db.session.commit()
+
+        wallet = Wallet(
+            user_id=user.id,
+            balance=100
+        )
+        wallet.set_pin("123456")
+        db.session.add(wallet)
+        db.session.commit()
+
+        user2 = User(
+            username='jennie',
+            name='jennie',
+            email='jennie@bp.com',
+            msisdn='081229644314',
+        )
+        user2.set_password("password")
+        db.session.add(user2)
+        db.session.commit()
+
+        wallet2 = Wallet(
+            user_id=user2.id,
+            balance=100
+        )
+        wallet2.set_pin("123456")
+        db.session.add(wallet2)
+        db.session.commit()
+
+        # GET ACCESS TOKEN
+        response = self._request_token("lisabp", "password")
+        result = response.get_json()
+        access_token = result["data"]["access_token"]
+
+        response = self._direct_transfer(access_token, wallet.id, wallet2.id, "1", "TEST", "103456")
+        result = response.get_json()
+        self.assertEqual(result["status_code"], 400)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -83,6 +83,7 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
     #end def
+
 #end class
 
 class Wallet(db.Model):
@@ -148,6 +149,12 @@ class Wallet(db.Model):
 
     def check_pin(self, pin):
         return check_password_hash(self.pin_hash, pin)
+    #end def
+
+    @staticmethod
+    def is_owned(user_id, wallet_id):
+        result = Wallet.query.filter_by(user_id=user_id, id=wallet_id).first()
+        return bool(result)
     #end def
 
 #end class
@@ -294,6 +301,21 @@ class ExternalLog(db.Model):
 
     def __repr__(self):
         return '<External Log {} {} {} {} {} {}>'.format(self.id, self.resource, self.api_name, self.status, self.request, self.response)
+    #end def
+#end class
+
+class BlacklistToken(db.Model):
+    id          = db.Column(db.Integer, primary_key=True)
+    token       = db.Column(db.String(120))
+    created_at  = db.Column(db.DateTime, default=now)
+
+    @staticmethod
+    def is_blacklisted(token):
+        result = BlacklistToken.query.filter_by(token=token).first()
+        return bool(result)
+
+    def __repr__(self):
+        return '<Blacklist Token {} {}>'.format(self.id, self.jti)
     #end def
 #end class
 

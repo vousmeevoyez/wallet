@@ -185,7 +185,7 @@ class WalletController:
 
         try:
             # parse request data 
-            wallet_id  = params["wallet_id"]
+            wallet_id  = params["id"]
             amount     = float(params["amount"])
 
             if amount < 0:

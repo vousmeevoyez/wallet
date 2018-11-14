@@ -43,4 +43,4 @@ def create_app(config_class=config.Config):
 
     return app
 
-from app import models, errors, serializer, validator
+from app import models, errors, serializer

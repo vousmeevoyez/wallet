@@ -1,7 +1,11 @@
 import os
 
 class Config(object):
-    SECRET_KEY = os.environ.get('SECRET_KEY') or "S3cret"
+    SECRET_KEY     = os.environ.get('SECRET_KEY') or "S3cret"
+    # JSON WEB TOKEN CONFIG
+    JWT_SECRET_KEY             = "MyS3cret"
+    JWT_BLACKLIST_ENABLED      = True
+    JWT_BLACKLIST_TOKEN_CHEKCS = [ "access", "refresh" ]
     # SQL ALCHEMY CONFIG
     #SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
@@ -71,6 +75,12 @@ class Config(object):
         "USER_REMOVED"           : "User successfully removed",
         "USER_UPDATED"           : "User information successfully updated",
         "WALLET_REMOVAL_FAILED"  : "Can't remove the main wallet",
+        "SUCCESS_AUTH"           : "Authentication success, Token generated",
+        "REFRESH_AUTH"           : "Token Successfully refreshed",
+        "LOGOUT_AUTH"            : "Access Token Successfully revoked",
+        "LOGOUT_REFRESH"         : "Refresh Token Successfully revoked",
+        "UNAUTHORIZED_WALLET"    : "Unauthorized Permission to Wallet",
+        "UNAUTHORIZED_USER"      : "Unauthorized Permission to Access this user information",
     }
 
     # BNI E-COLLECTION ERROR MSG

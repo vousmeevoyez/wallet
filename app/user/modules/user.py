@@ -53,6 +53,7 @@ class UserController:
                 wallet_response = helper.WalletHelper().generate_wallet(params, session)
 
                 if wallet_response["status"] != "SUCCESS":
+                    session.delete(user)
                     session.rollback()
                     return bad_request(wallet_response["data"])
                 #end if
@@ -74,8 +75,6 @@ class UserController:
             "wallet_id" : wallet_id
         }
         response["status_message"] = RESPONSE_MSG["SUCCESS_CREATE_USER"]
-
-        session.close()
 
         return response
     #end def
