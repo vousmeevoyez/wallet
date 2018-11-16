@@ -13,8 +13,10 @@ from app.authentication         import helper as auth_helper
 RESPONSE_MSG = config.Config.RESPONSE_MSG
 
 @bp.route('/create', methods=["POST"])
-@custom_decorator.admin_required
+@jwt_required
 def create_wallet():
+    user_id = get_jwt_identity()
+
     request_data = request.form
     data = {
         "name"   : request_data["name"   ],
@@ -22,6 +24,11 @@ def create_wallet():
         "pin"    : request_data["pin"    ],
         "user_id": request_data["user_id"]
     }
+
+    # to prevent token to access another user information
+    if str(user_id) != data["user_id"]:
+        return jsonify(bad_request(RESPONSE_MSG["UNAUTHORIZED_USER"]))
+    #end if
 
     response = wallet.WalletController().create(data)
     return jsonify(response)

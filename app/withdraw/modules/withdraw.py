@@ -33,6 +33,7 @@ class WithdrawController:
 
         wallet_id = params["wallet_id"]
         pin       = params["pin"      ]
+        amount    = float(params["amount"])
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
         if wallet == None:
@@ -41,6 +42,18 @@ class WithdrawController:
 
         if wallet.check_pin(pin) != True:
             return bad_request(RESPONSE_MSG["INCORRECT_PIN"])
+        #end if
+
+        if amount < float(WALLET_CONFIG["MINIMAL_WITHDRAW"]):
+            return bad_request(RESPONSE_MSG["MIN_WITHDRAW_FAILED"].format(str(WALLET_CONFIG["MINIMAL_WITHDRAW"])))
+        #end if
+
+        if amount > float(WALLET_CONFIG["MAX_WITHDRAW"]):
+            return bad_request(RESPONSE_MSG["MAX_WITHDRAW_FAILED"].format(str(WALLET_CONFIG["MAX_WITHDRAW"])))
+        #end if
+
+        if amount > float(wallet.balance):
+            return bad_request(RESPONSE_MSG["INSUFFICIENT_BALANCE"])
         #end if
 
         user_info = wallet.user

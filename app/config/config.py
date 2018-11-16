@@ -24,6 +24,8 @@ class Config(object):
         "VA_TO_BANK"         : 3,
         "CREDIT_VA_TIMEOUT"  : 4350, # 
         "CARDLESS_VA_TIMEOUT": 10, # 
+        "MINIMAL_WITHDRAW"   : 1000, # 
+        "MAX_WITHDRAW"       : 100000, # 
     }
 
     BANK_LIST_CONFIG = {
@@ -81,6 +83,8 @@ class Config(object):
         "LOGOUT_REFRESH"         : "Refresh Token Successfully revoked",
         "UNAUTHORIZED_WALLET"    : "Unauthorized Permission to Wallet",
         "UNAUTHORIZED_USER"      : "Unauthorized Permission to Access this user information",
+        "MIN_WITHDRAW_FAILED"    : "Minimum withdraw amount is {} ",
+        "MAX_WITHDRAW_FAILED"    : "Maximum withdraw amount is {} ",
     }
 
     # BNI E-COLLECTION ERROR MSG

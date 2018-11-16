@@ -99,11 +99,15 @@ class EcollectionHelper(object):
             'billing_type'    : billing_type,
             'customer_name'   : params["customer_name"],
             'customer_email'  : '',
-            'customer_phone'  : params["customer_phone"],
+            'customer_phone'  : customer_phone,
             'virtual_account' : va_id,
             'datetime_expired': datetime_expired.strftime("%Y-%m-%d %H:%M:%S"),
-            'description'     : ''
         }
+
+        # to match payload we need to add description on CREDIT VA
+        if va_type == "CREDIT":
+            payload["description"] = ""
+        #end if
 
         # initialize logging object
         log = ExternalLog( request=payload, resource=LOGGING_CONFIG["BNI_ECOLLECTION"], api_name=api_name)

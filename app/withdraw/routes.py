@@ -13,6 +13,7 @@ def wtihdraw_wallet():
     data = {
         "wallet_id" : request_data["wallet_id" ],
         "pin"       : request_data["pin"       ],
+        "amount"    : request_data["amount"    ],
     }
 
     response = withdraw.WithdrawController().request(data)
