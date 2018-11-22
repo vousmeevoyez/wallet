@@ -33,12 +33,30 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post_patcher = patch("app.bank.utility.remote_call.requests.post")
         self.mock_post = self.mock_post_patcher.start()
 
+        self._init_test()
+
     def tearDown(self):
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
 
         self.mock_post_patcher.stop()
+
+    def _init_test(self):
+        # add user first
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            msisdn='081219644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+         # GET ACCESS TOKEN
+        response = self._request_token("lisabp", "password")
+        result = response.get_json()
+        self.access_token = result["data"]["access_token"]
 
     """
         HELPER
@@ -157,21 +175,6 @@ class TestWalletRoutes(unittest.TestCase):
         WALLET
     """
     def test_create_wallet_success(self):
-        # add user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
         # generate mock responses
         expected_value = {
             "status" : "000",
@@ -182,7 +185,7 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post.return_value.json.return_value  = expected_value
 
         # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         # MAKE SURE WALLET SUCCESSFULLY CREATED AND LINKED TO USER
@@ -190,37 +193,12 @@ class TestWalletRoutes(unittest.TestCase):
         self.assertEqual(len(user.wallets), 1)
 
     def test_create_wallet_empty_error(self):
-        # add user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        result = self._create_wallet(access_token, "", "", "", "")
+        result = self._create_wallet(self.access_token, "", "", "", "")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)
 
     def test_create_wallet_failed(self):
-        # create user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
         # generate mock up responses
         expected_value = {
             "status" : "009",
@@ -230,34 +208,14 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
         #create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)
         self.assertEqual(response["data"], "Virtual Account Creation Failed")
 
     def test_wallet_list(self):
-        # add user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
         # generate mock responses
         expected_value = {
             "status" : "000",
@@ -268,7 +226,7 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post.return_value.json.return_value  = expected_value
 
         # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         # generate mock responses
@@ -281,14 +239,14 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post.return_value.json.return_value  = expected_value
 
         # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         #create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
-        result = self._get_wallet_list(access_token, "1")
+        result = self._get_wallet_list(self.access_token, "1")
         response = result.get_json()
 
         # CHECK WALLET IN DATABASES
@@ -299,21 +257,6 @@ class TestWalletRoutes(unittest.TestCase):
         self.assertEqual(len(response["data"]), len(test))
 
     def test_deposit_wallet(self):
-        # add user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
         # add user first
         user = User(
             username='admin',
@@ -340,7 +283,7 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post.return_value.json.return_value  = expected_value
 
         # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         wallet_id = response["data"]["wallet_id"]
@@ -360,21 +303,6 @@ class TestWalletRoutes(unittest.TestCase):
     def test_transaction_history(self):
         # add user first
         user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        # add user first
-        user = User(
             username='admin',
             name='admin',
             email='admin@bp.com',
@@ -399,7 +327,7 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post.return_value.json.return_value  = expected_value
 
         # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         wallet_id = response["data"]["wallet_id"]
@@ -409,28 +337,13 @@ class TestWalletRoutes(unittest.TestCase):
         response = result.get_json()
 
         # checking transaction history
-        result = self._transaction_history(access_token, wallet_id)
+        result = self._transaction_history(self.access_token, wallet_id)
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 0)
         self.assertEqual(len(response["data"]), 1)
 
     def test_wallet_details_success(self):
-        # create user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
         # generate mock response
         expected_value = {
             "status" : "000",
@@ -441,54 +354,24 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post.return_value.json.return_value  = expected_value
 
         # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         wallet_id = response["data"]["wallet_id"]
 
         # CHECK WALLET DETAILS
-        result = self._get_wallet_details(access_token, wallet_id, "123456")
+        result = self._get_wallet_details(self.access_token, wallet_id, "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 0)
 
     def test_wallet_details_failed(self):
-        # create user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        result = self._get_wallet_details(access_token, "12345", "223456")
+        result = self._get_wallet_details(self.access_token, "12345", "223456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)
 
     def test_wallet_details_incorrect_pin(self):
-        # create user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
         # generate mock response
         expected_value = {
             "status" : "000",
@@ -499,33 +382,18 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post.return_value.json.return_value  = expected_value
 
         # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         wallet_id = response["data"]["wallet_id"]
 
         # CHECK WALLET DETAILS
-        result = self._get_wallet_details(access_token, wallet_id, "122456")
+        result = self._get_wallet_details(self.access_token, wallet_id, "122456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)
 
     def test_wallet_remove(self):
-        # create user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
         # generate mock response
         expected_value = {
             "status" : "000",
@@ -536,41 +404,26 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post.return_value.json.return_value  = expected_value
 
         # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         wallet_id = response["data"]["wallet_id"]
 
-        result = self._remove_wallet(access_token, wallet_id, "123456")
+        result = self._remove_wallet(self.access_token, wallet_id, "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 0)
 
-        result = self._get_wallet_list(access_token, "1")
+        result = self._get_wallet_list(self.access_token, "1")
         response = result.get_json()
 
         self.assertEqual(len(response["data"]), 1)
 
     def test_wallet_remove_failed(self):
-        # create user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
         # generate mock response
         expected_value = {
             "status" : "000",
@@ -581,49 +434,24 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post.return_value.json.return_value  = expected_value
 
         # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         wallet_id = response["data"]["wallet_id"]
 
-        result = self._remove_wallet(access_token, wallet_id, "123456")
+        result = self._remove_wallet(self.access_token, wallet_id, "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)
 
     def test_wallet_remove_failed_not_found(self):
-        # create user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
         # GENERATE WALLET FIRST
-        result = self._remove_wallet(access_token, "123", "123456")
+        result = self._remove_wallet(self.access_token, "123", "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)
 
     def test_check_wallet_balance_success(self):
-        # create user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
         # generate mock response
         expected_value = {
             "status" : "000",
@@ -633,39 +461,19 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
         # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         wallet_id = response["data"]["wallet_id"]
 
-        result = self._check_balance(access_token, wallet_id, "123456")
+        result = self._check_balance(self.access_token, wallet_id, "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 0)
         self.assertEqual(response["data"]["balance"], 0)
 
     def test_check_wallet_balance_failed(self):
-        # create user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
         # generate mock response
         expected_value = {
             "status" : "000",
@@ -676,12 +484,12 @@ class TestWalletRoutes(unittest.TestCase):
         self.mock_post.return_value.json.return_value  = expected_value
 
         # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
+        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
         response = result.get_json()
 
         wallet_id = response["data"]["wallet_id"]
 
-        result = self._check_balance(access_token, "123213", "213456")
+        result = self._check_balance(self.access_token, "123213", "213456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)

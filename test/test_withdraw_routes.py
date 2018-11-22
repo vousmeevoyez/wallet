@@ -32,12 +32,65 @@ class TestWithdrawRoutes(unittest.TestCase):
         self.mock_post_patcher = patch("app.bank.utility.remote_call.requests.post")
         self.mock_post = self.mock_post_patcher.start()
 
+        self._init_test()
+
     def tearDown(self):
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
 
         self.mock_post_patcher.stop()
+
+    def _init_test(self):
+         # add user first
+        user = User(
+            username='kimjennie',
+            name='kim jennie',
+            email='jennie@bp.com',
+            msisdn='081119644314',
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+         # get user access token first
+        response = self._request_token("kimjennie", "password")
+        result = response.get_json()
+        self.access_token = result["data"]["access_token"]
+
+        # generate mock responses
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+
+        # create actual wallet
+        result = self._create_wallet(self.access_token, "kimjennie", "081119644314", "123456", user.id)
+        response = result.get_json()
+
+        self.wallet_id = response["data"]["wallet_id"]
+
+        # create admin user
+        user = User(
+            username='admin',
+            name='admin',
+            email='admin@bp.com',
+            msisdn='081209644314',
+            role=1,
+        )
+        user.set_password("password")
+        db.session.add(user)
+
+         # get admin access token
+        response = self._request_token("admin", "password")
+        result = response.get_json()
+        self.access_token_admin = result["data"]["access_token"]
+
+        # deposit balance
+        result = self._deposit(self.access_token_admin, self.wallet_id, "9999")
+        response = result.get_json()
 
     """
         HELPER
@@ -96,392 +149,42 @@ class TestWithdrawRoutes(unittest.TestCase):
         WITHDRAW
     """
     def test_request_withdraw_success(self):
-         # add user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        # add user first
-        user = User(
-            username='admin',
-            name='admin',
-            email='admin@bp.com',
-            msisdn='081209644314',
-            role=1,
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("admin", "password")
-        result = response.get_json()
-        access_token_admin = result["data"]["access_token"]
-
-        # generate mock responses
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
-        response = result.get_json()
-
-        wallet_id = response["data"]["wallet_id"]
-
-        # deposit balance
-        result = self._deposit(access_token_admin, wallet_id, "9999")
-        response = result.get_json()
-
-        result = self._request_withdraw(wallet_id, "9999", "123456")
+        result = self._request_withdraw(self.wallet_id, "9999", "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 0)
 
     def test_request_withdraw_failed_incorrect_pin(self):
-         # add user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        # add user first
-        user = User(
-            username='admin',
-            name='admin',
-            email='admin@bp.com',
-            msisdn='081209644314',
-            role=1,
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("admin", "password")
-        result = response.get_json()
-        access_token_admin = result["data"]["access_token"]
-
-        # generate mock responses
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
-        response = result.get_json()
-
-        wallet_id = response["data"]["wallet_id"]
-
-        # deposit balance
-        result = self._deposit(access_token_admin, wallet_id, "9999")
-        response = result.get_json()
-
-        result = self._request_withdraw(wallet_id, "10000", "223456")
+        result = self._request_withdraw(self.wallet_id, "10000", "223456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)
 
     def test_request_withdraw_failed_insufficient_amount(self):
-         # add user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        # add user first
-        user = User(
-            username='admin',
-            name='admin',
-            email='admin@bp.com',
-            msisdn='081209644314',
-            role=1,
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("admin", "password")
-        result = response.get_json()
-        access_token_admin = result["data"]["access_token"]
-
-        # generate mock responses
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
-        response = result.get_json()
-
-        wallet_id = response["data"]["wallet_id"]
-
-        # deposit balance
-        result = self._deposit(access_token_admin, wallet_id, "9999")
-        response = result.get_json()
-
-        result = self._request_withdraw(wallet_id, "10000", "123456")
+        result = self._request_withdraw(self.wallet_id, "10000", "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)
 
     def test_request_withdraw_failed_max_amount_exceed(self):
-         # add user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        # add user first
-        user = User(
-            username='admin',
-            name='admin',
-            email='admin@bp.com',
-            msisdn='081209644314',
-            role=1,
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("admin", "password")
-        result = response.get_json()
-        access_token_admin = result["data"]["access_token"]
-
-        # generate mock responses
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
-        response = result.get_json()
-
-        wallet_id = response["data"]["wallet_id"]
-
-        # deposit balance
-        result = self._deposit(access_token_admin, wallet_id, "9999")
-        response = result.get_json()
-
-        result = self._request_withdraw(wallet_id, "99999999999", "123456")
+        result = self._request_withdraw(self.wallet_id, "99999999999", "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)
 
     def test_request_withdraw_failed_less_minimal_amount(self):
-         # add user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        # add user first
-        user = User(
-            username='admin',
-            name='admin',
-            email='admin@bp.com',
-            msisdn='081209644314',
-            role=1,
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("admin", "password")
-        result = response.get_json()
-        access_token_admin = result["data"]["access_token"]
-
-        # generate mock responses
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
-        response = result.get_json()
-
-        wallet_id = response["data"]["wallet_id"]
-
-        # deposit balance
-        result = self._deposit(access_token_admin, wallet_id, "9999")
-        response = result.get_json()
-
-        result = self._request_withdraw(wallet_id, "1", "123456")
+        result = self._request_withdraw(self.wallet_id, "1", "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)
 
     def test_request_withdraw_failed_wallet_not_found(self):
-         # add user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        # add user first
-        user = User(
-            username='admin',
-            name='admin',
-            email='admin@bp.com',
-            msisdn='081209644314',
-            role=1,
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("admin", "password")
-        result = response.get_json()
-        access_token_admin = result["data"]["access_token"]
-
-        # generate mock responses
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
-        response = result.get_json()
-
-        wallet_id = response["data"]["wallet_id"]
-
-        # deposit balance
-        result = self._deposit(access_token_admin, wallet_id, "9999")
-        response = result.get_json()
-
         result = self._request_withdraw("1231", "1", "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 404)
 
     def test_request_withdraw_failed_bni_error(self):
-         # add user first
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        # add user first
-        user = User(
-            username='admin',
-            name='admin',
-            email='admin@bp.com',
-            msisdn='081209644314',
-            role=1,
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("admin", "password")
-        result = response.get_json()
-        access_token_admin = result["data"]["access_token"]
-
-        # generate mock responses
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        # create actual wallet
-        result = self._create_wallet(access_token, "rose", "081219644314", "123456", "1")
-        response = result.get_json()
-
-        wallet_id = response["data"]["wallet_id"]
-
-        # deposit balance
-        result = self._deposit(access_token_admin, wallet_id, "999999")
-        response = result.get_json()
-
         expected_value = {
             "status"  : "002",
             "message" : "IP address not allowed or wrong Client ID."
@@ -490,7 +193,7 @@ class TestWithdrawRoutes(unittest.TestCase):
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-        result = self._request_withdraw(wallet_id, "10000", "123456")
+        result = self._request_withdraw(self.wallet_id, "10000", "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 400)

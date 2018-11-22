@@ -65,16 +65,16 @@ class TestUserRoutes(unittest.TestCase):
 
     def _user_info(self, id):
         return self.client.get(
-            '/user/info/' + id,
+            '/user/info?id=' + id,
         )
 
     def _user_remove(self, id):
         return self.client.delete(
-            '/user/info/' + id,
+            '/user/info?id=' + id,
         )
     def _user_update(self, id, name, msisdn, email):
         return self.client.put(
-            '/user/info/' + id,
+            '/user/info?id=' + id,
             data=dict(
                 name=name,
                 msisdn=msisdn,
@@ -111,30 +111,6 @@ class TestUserRoutes(unittest.TestCase):
         va = VirtualAccount.query.all()
         self.assertEqual(len(va), 1)
 
-    """
-    def test_register_user_duplicate_failed(self):
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        # MOCK RESPONSE
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        result = self._register_user("kevlin", "sada", "081219644324", "rrara@blackpink.com", "password", "123456", "1")
-        response = result.get_json()
-
-        self.assertEqual(response["status_code"], 0)
-        self.assertTrue(response["data"]["wallet_id"])
-
-        # DUPLICATE ENTRY ERROR
-        result = self._register_user("kevlin", "sada", "081219644324", "rrara@blackpink.com", "password", "123456", "1")
-        response = result.get_json()
-        print(response)
-
-        self.assertEqual(response["status_code"], 400)
-    """
 
     def test_register_user_va_failed(self):
         result = self._register_user("kevlin", "sada", "081219644324", "rrara@blackpink.com", "password", "123456", "1")
@@ -152,7 +128,7 @@ class TestUserRoutes(unittest.TestCase):
         va = VirtualAccount.query.all()
         self.assertEqual(len(va), 0)
 
-    def test_user_list(self):
+    def test_user_list_success(self):
         expected_value = {
             "status" : "000",
             "message" : {'trx_id': "123", 'virtual_account': "122222" }
@@ -169,7 +145,23 @@ class TestUserRoutes(unittest.TestCase):
         self.assertEqual(response["status_code"], 0)
         self.assertEqual(len(response["data"]), 1)
 
-    def test_user_info(self):
+    def test_user_list_failed_invalid_input(self):
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        # MOCK RESPONSE
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+
+        result = self._register_user("kevlin", "sada", "081219644324", "rrara@blackpink.com", "password", "123456", "1")
+        result = self._user_list("A")
+        response = result.get_json()
+
+        self.assertEqual(response["status_code"], 400)
+
+    def test_user_info_success(self):
         expected_value = {
             "status" : "000",
             "message" : {'trx_id': "123", 'virtual_account': "122222" }
@@ -186,7 +178,23 @@ class TestUserRoutes(unittest.TestCase):
         self.assertEqual(response["status_code"], 0)
         self.assertEqual(len(response["data"]), 2)
 
-    def test_remove_user(self):
+    def test_user_info_failed(self):
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        # MOCK RESPONSE
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+
+        result = self._register_user("kevlin", "sada", "081219644324", "rrara@blackpink.com", "password", "123456", "1")
+        result = self._user_info("A")
+        response = result.get_json()
+
+        self.assertEqual(response["status_code"], 400)
+
+    def test_remove_user_success(self):
         expected_value = {
             "status" : "000",
             "message" : {'trx_id': "123", 'virtual_account': "122222" }
@@ -211,7 +219,22 @@ class TestUserRoutes(unittest.TestCase):
         va = VirtualAccount.query.all()
         self.assertEqual(len(va), 0)
 
-    def test_update_user(self):
+    def test_remove_user_failed_not_found(self):
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        # MOCK RESPONSE
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+        result = self._register_user("kevlin", "sada", "081219644324", "rrara@blackpink.com", "password", "123456", "1")
+        result = self._user_remove("4")
+        response = result.get_json()
+
+        self.assertEqual(response["status_code"], 404)
+
+    def test_update_user_success(self):
         expected_value = {
             "status" : "000",
             "message" : {'trx_id': "123", 'virtual_account': "122222" }
@@ -231,6 +254,96 @@ class TestUserRoutes(unittest.TestCase):
         self.assertEqual(user.name, "jennie")
         self.assertEqual(user.msisdn, "081209644324")
         self.assertEqual(user.email, "jennie@blackpink.com")
+
+    def test_update_user_failed_empty_name(self):
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        # MOCK RESPONSE
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+        result = self._register_user("kevlin", "sada", "081219644324", "rrara@blackpink.com", "password", "123456", "1")
+        result = self._user_update("1", "", "081219644324", "jennie@blackpink.com")
+        response = result.get_json()
+
+        self.assertEqual(response["status_code"], 400)
+
+    def test_update_user_failed_empty_msisdn(self):
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        # MOCK RESPONSE
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+        result = self._register_user("kevlin", "sada", "081219644324", "rrara@blackpink.com", "password", "123456", "1")
+        result = self._user_update("1", "jennie", "", "jennie@blackpink.com")
+        response = result.get_json()
+
+        self.assertEqual(response["status_code"], 400)
+
+    def test_update_user_failed_empty_email(self):
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        # MOCK RESPONSE
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+        result = self._register_user("kevlin", "sada", "081219644324", "rrara@blackpink.com", "password", "123456", "1")
+        result = self._user_update("1", "jennie", "081219644324", "")
+        response = result.get_json()
+
+        self.assertEqual(response["status_code"], 400)
+
+    def test_update_user_failed_same_phone(self):
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        # MOCK RESPONSE
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+        result = self._register_user("kevlin", "sada", "081219644324", "rrara@blackpink.com", "password", "123456", "1")
+        result = self._user_update("1", "jennie", "081219644324", "jennie@blackpink.com")
+        response = result.get_json()
+
+        self.assertEqual(response["status_code"], 400)
+
+    def test_update_user_failed_same_email(self):
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        # MOCK RESPONSE
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+        result = self._register_user("kevlin", "sada", "081219644324", "rrara@blackpink.com", "password", "123456", "1")
+        result = self._user_update("1", "jennie", "082219644324", "rrara@blackpink.com")
+        response = result.get_json()
+
+        self.assertEqual(response["status_code"], 400)
+
+    def test_update_user_failed_exist_email(self):
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "123", 'virtual_account': "122222" }
+        }
+
+        # MOCK RESPONSE
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+        result = self._register_user("kevlin", "sada", "081219644324", "rrara@blackpink.com", "password", "123456", "1")
+        result = self._user_update("1", "jennie", "082219644324", "rrara@blackpink.com")
+        response = result.get_json()
+
+        self.assertEqual(response["status_code"], 400)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

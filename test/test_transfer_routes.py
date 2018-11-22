@@ -32,13 +32,64 @@ class TestTransferRoutes(unittest.TestCase):
         self.mock_post_patcher = patch("app.bank.utility.remote_call.requests.post")
         self.mock_post = self.mock_post_patcher.start()
 
+        self._init_test()
+    #end def
+
     def tearDown(self):
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
 
         self.mock_post_patcher.stop()
+    #end def
 
+    def _init_test(self):
+        # we create 2 dummy user & wallet to simulate transfer between user
+        # create first user 
+        self.user = User(
+            username='dummyacc1',
+            name='dummyacc1',
+            email='dummyacc1@test.com',
+            msisdn='081209644314',
+        )
+        self.user.set_password("password")
+        db.session.add(self.user)
+        db.session.commit()
+
+        # create first wallet user
+        self.wallet = Wallet(
+            user_id=self.user.id,
+            balance=100
+        )
+        self.wallet.set_pin("123456")
+        db.session.add(self.wallet)
+        db.session.commit()
+
+        # create second user
+        self.user2 = User(
+            username='dummyacc2',
+            name='dummyacc2',
+            email='dummyacc2@test.com',
+            msisdn='081229644310',
+        )
+        self.user2.set_password("password")
+        db.session.add(self.user2)
+        db.session.commit()
+
+        # create second wallet user
+        self.wallet2 = Wallet(
+            user_id=self.user2.id,
+            balance=100
+        )
+        self.wallet2.set_pin("123456")
+        db.session.add(self.wallet2)
+        db.session.commit()
+
+        # GET ACCESS TOKEN
+        response = self._request_token("dummyacc1", "password")
+        result = response.get_json()
+        self.access_token = result["data"]["access_token"]
+    #end def
 
     """
         HELPER
@@ -84,186 +135,22 @@ class TestTransferRoutes(unittest.TestCase):
     """
 
     def test_direct_transfer_success(self):
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-        db.session.commit()
-
-        wallet = Wallet(
-            user_id=user.id,
-            balance=100
-        )
-        wallet.set_pin("123456")
-        db.session.add(wallet)
-        db.session.commit()
-
-        user2 = User(
-            username='jennie',
-            name='jennie',
-            email='jennie@bp.com',
-            msisdn='081229644314',
-        )
-        user2.set_password("password")
-        db.session.add(user2)
-        db.session.commit()
-
-        wallet2 = Wallet(
-            user_id=user2.id,
-            balance=100
-        )
-        wallet2.set_pin("123456")
-        db.session.add(wallet2)
-        db.session.commit()
-
-        # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        response = self._direct_transfer(access_token, wallet.id, wallet2.id, "1", "TEST", "123456")
+        response = self._direct_transfer(self.access_token, self.wallet.id, self.wallet2.id, "1", "TEST", "123456")
         result = response.get_json()
         self.assertEqual(result["status_code"], 0)
 
     def test_direct_transfer_failed_destination_not_found(self):
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-        db.session.commit()
-
-        wallet = Wallet(
-            user_id=user.id,
-            balance=100
-        )
-        wallet.set_pin("123456")
-        db.session.add(wallet)
-        db.session.commit()
-
-        user2 = User(
-            username='jennie',
-            name='jennie',
-            email='jennie@bp.com',
-            msisdn='081229644314',
-        )
-        user2.set_password("password")
-        db.session.add(user2)
-        db.session.commit()
-
-        wallet2 = Wallet(
-            user_id=user2.id,
-            balance=100
-        )
-        wallet2.set_pin("123456")
-        db.session.add(wallet2)
-        db.session.commit()
-
-        # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        response = self._direct_transfer(access_token, wallet.id, "3", "1", "TEST", "123456")
+        response = self._direct_transfer(self.access_token, self.wallet.id, "3", "1", "TEST", "123456")
         result = response.get_json()
         self.assertEqual(result["status_code"], 404)
 
     def test_direct_transfer_failed_source_not_found(self):
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-        db.session.commit()
-
-        wallet = Wallet(
-            user_id=user.id,
-            balance=100
-        )
-        wallet.set_pin("123456")
-        db.session.add(wallet)
-        db.session.commit()
-
-        user2 = User(
-            username='jennie',
-            name='jennie',
-            email='jennie@bp.com',
-            msisdn='081229644314',
-        )
-        user2.set_password("password")
-        db.session.add(user2)
-        db.session.commit()
-
-        wallet2 = Wallet(
-            user_id=user2.id,
-            balance=100
-        )
-        wallet2.set_pin("123456")
-        db.session.add(wallet2)
-        db.session.commit()
-
-        # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        response = self._direct_transfer(access_token, "3", wallet2.id, "1", "TEST", "123456")
+        response = self._direct_transfer(self.access_token, "3", self.wallet2.id, "1", "TEST", "123456")
         result = response.get_json()
         self.assertEqual(result["status_code"], 400)
 
     def test_direct_transfer_pin_failed(self):
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            msisdn='081219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-        db.session.commit()
-
-        wallet = Wallet(
-            user_id=user.id,
-            balance=100
-        )
-        wallet.set_pin("123456")
-        db.session.add(wallet)
-        db.session.commit()
-
-        user2 = User(
-            username='jennie',
-            name='jennie',
-            email='jennie@bp.com',
-            msisdn='081229644314',
-        )
-        user2.set_password("password")
-        db.session.add(user2)
-        db.session.commit()
-
-        wallet2 = Wallet(
-            user_id=user2.id,
-            balance=100
-        )
-        wallet2.set_pin("123456")
-        db.session.add(wallet2)
-        db.session.commit()
-
-        # GET ACCESS TOKEN
-        response = self._request_token("lisabp", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
-        response = self._direct_transfer(access_token, wallet.id, wallet2.id, "1", "TEST", "103456")
+        response = self._direct_transfer(self.access_token, self.wallet.id, self.wallet2.id, "1", "TEST", "103456")
         result = response.get_json()
         self.assertEqual(result["status_code"], 400)
 

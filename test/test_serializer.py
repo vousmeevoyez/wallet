@@ -7,7 +7,7 @@ sys.path.append("../app")
 from datetime import datetime, timedelta
 
 from app            import create_app
-from app.serializer import ApiKeySchema, UserSchema, WalletSchema, TransactionSchema
+from app.serializer import ApiKeySchema, UserSchema, WalletSchema, TransactionSchema, CallbackSchema
 from app.config     import config
 
 from marshmallow import ValidationError
@@ -129,6 +129,48 @@ class TestTransactionSchema(unittest.TestCase):
         }
         result, errors = TransactionSchema().load(data)
         self.assertEqual(errors, {'amount': ['Invalid Amount, cannot be less than 0']})
+
+class TestCallbackSchema(unittest.TestCase):
+    def test_serializer_success(self):
+        data = {
+            "trx_id"                   : 1230000001,
+            "virtual_account"          : 9889909941749985,
+            "customer_name"            : "Jennie",
+            "trx_amount"               : 50000,
+            "payment_amount"           : 100000,
+            "cumulative_payment_amount": 100000,
+            "payment_ntb"              : 233171,
+            "datetime_payment"         : "2016-03-01 14:00:00",
+        }
+        errors = CallbackSchema().validate(data)
+        self.assertEqual( errors, {})
+
+    def test_serializer_failed(self):
+        data = {
+            "trx_id"                   : 1230000001,
+            "virtual_account"          : 9889909941749985,
+            "customer_name"            : "Jennie",
+            "trx_amount"               : 1,
+            "payment_amount"           : 1,
+            "cumulative_payment_amount": 100000,
+            "payment_ntb"              : 233171,
+            "datetime_payment"         : "2016-03-01 14:00:00",
+        }
+        errors = CallbackSchema().validate(data)
+        self.assertEqual( errors, {'payment_amount': ['Minimal deposit is 50000']} )
+
+        data = {
+            "trx_id"                   : 1230000001,
+            "virtual_account"          : 9889909941749985,
+            "customer_name"            : "Jennie",
+            "trx_amount"               : 1,
+            "payment_amount"           : 9999999999999999,
+            "cumulative_payment_amount": 100000,
+            "payment_ntb"              : 233171,
+            "datetime_payment"         : "2016-03-01 14:00:00",
+        }
+        errors = CallbackSchema().validate(data)
+        self.assertEqual( errors, {'payment_amount': ['Maximum deposit is 1000000000']} )
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
