@@ -96,7 +96,12 @@ def wallet_info():
 def wallet_mutation():
     user_id = get_jwt_identity()
 
-    wallet_id = request.args.get("id")
+    try:
+        wallet_id = int(request.args.get("id"))
+    except:
+        return jsonify(bad_request("invalid input"))
+    #end try
+
     # checking token identity to make sure user can only access their wallet information
     permission_response = auth_helper.AuthenticationHelper().check_wallet_permission(user_id, wallet_id)
     if permission_response != None:

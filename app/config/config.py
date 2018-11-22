@@ -26,6 +26,8 @@ class Config(object):
         "CARDLESS_VA_TIMEOUT": 10, # 
         "MINIMAL_WITHDRAW"   : 1000, # 
         "MAX_WITHDRAW"       : 100000, # 
+        "MINIMAL_DEPOSIT"    : 50000, # 
+        "MAX_DEPOSIT"        : 1000000000, # 
     }
 
     BANK_LIST_CONFIG = {
@@ -85,6 +87,7 @@ class Config(object):
         "UNAUTHORIZED_USER"      : "Unauthorized Permission to Access this user information",
         "MIN_WITHDRAW_FAILED"    : "Minimum withdraw amount is {} ",
         "MAX_WITHDRAW_FAILED"    : "Maximum withdraw amount is {} ",
+        "UNKNOWN_ERROR"          : "Something wrong happen, Please contact our customer support if error persist",
     }
 
     # BNI E-COLLECTION ERROR MSG

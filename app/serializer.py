@@ -4,12 +4,15 @@ from marshmallow import fields, ValidationError, post_load, validates
 
 from app         import ma,db
 from app.models  import ApiKey, Wallet, Transaction, VirtualAccount, User
+from app.config  import config
+
+BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
+WALLET_CONFIG          = config.Config.WALLET_CONFIG
 
 def cannot_be_blank(string):
     if not string:
         raise ValidationError(" Data cannot be blank")
 #end def
-
 
 class ApiKeySchema(ma.Schema):
 
@@ -138,4 +141,48 @@ class VirtualAccountSchema(ma.Schema):
     def make_wallet(self, data):
         return VirtualAccount(**data)
     #end def
+#end class
+
+class CallbackSchema(ma.Schema):
+    virtual_account           = fields.Int(required=True, validate=cannot_be_blank)
+    customer_name             = fields.Str(required=True, validate=cannot_be_blank)
+    trx_id                    = fields.Int(required=True, validate=cannot_be_blank)
+    trx_amount                = fields.Float(required=True)
+    payment_amount            = fields.Int(required=True, validate=cannot_be_blank)
+    cumulative_payment_amount = fields.Int(required=True, validate=cannot_be_blank)
+    payment_ntb               = fields.Int(required=True, validate=cannot_be_blank)
+    datetime_payment          = fields.Str(required=True, validate=cannot_be_blank)
+
+    @validates('virtual_account')
+    def validate_va_number(self, va_number):
+        va_number = str(va_number)
+        valid = True
+        # first make sure va_number is 16 digit can't be less or more
+        if len(va_number) != 16:
+            # second make sure 3 first va_number is valid
+            if va_number[:3] != "988":
+                # third make sure 3 first va_number is valid
+                if va_number[3:8] != BNI_ECOLLECTION_CONFIG["CLIENT_ID"]:
+                    valid = False
+                #end if
+                valid = False
+            #end if
+            valid = False
+        #end if
+
+        if valid == False:
+            raise ValidationError("Invalid Virtual Account Number")
+        #end if
+
+    @validates('payment_amount')
+    def validate_payment_amount(self, payment_amount):
+        if payment_amount < WALLET_CONFIG["MINIMAL_DEPOSIT"]:
+            raise ValidationError("Minimal deposit is {}".format(str(WALLET_CONFIG["MINIMAL_DEPOSIT"])))
+        #end if
+
+        if payment_amount > WALLET_CONFIG["MAX_DEPOSIT"]:
+            raise ValidationError("Maximum deposit is {}".format(str(WALLET_CONFIG["MAX_DEPOSIT"])))
+        #end if
+    #end def
+
 #end class

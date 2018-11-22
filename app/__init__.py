@@ -41,6 +41,9 @@ def create_app(config_class=config.Config):
     from app.user       import bp as user_bp
     app.register_blueprint(user_bp, url_prefix="/user")
 
+    from app.callback   import bp as callback_bp
+    app.register_blueprint(callback_bp, url_prefix="/callback")
+
     return app
 
 from app import models, errors, serializer

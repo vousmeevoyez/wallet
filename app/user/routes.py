@@ -39,27 +39,32 @@ def user_list_routes():
         "data" : "NONE"
     }
 
-    page = request.args.get("page")
+    try:
+        page = int(request.args.get("page"))
+    except:
+        return jsonify(bad_request("invalid input"))
 
     response = user.UserController().user_list(page)
 
     return jsonify(response)
 #end def
 
-@bp.route('/info/<id>', methods=["GET", "PUT", "DELETE"])
-def user_crud_routes(id):
-    data = {
-        "user_id": id
-    }
+@bp.route('/info', methods=["GET", "PUT", "DELETE"])
+def user_crud_routes():
+
+    try:
+        user_id = int(request.args.get("id"))
+    except:
+        return jsonify(bad_request("invalid input"))
 
     if request.method == "GET":
-        response = user.UserController().user_info(data)
+        response = user.UserController().user_info({ "user_id" : user_id })
     elif request.method == "DELETE":
-        response = user.UserController().remove_user(data)
+        response = user.UserController().remove_user({ "user_id" : user_id })
     elif request.method == "PUT":
         request_data = request.form
         data = {
-            "user_id"    : id,
+            "user_id"    : user_id,
             "name"       : request_data["name"    ],
             "msisdn"     : request_data["msisdn"  ],
             "email"      : request_data["email"   ],

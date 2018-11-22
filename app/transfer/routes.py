@@ -33,6 +33,8 @@ def virtual_transfer():
     errors = TransactionSchema().validate(data)
     if errors:
         return jsonify(bad_request(errors))
+    #end if
+
 
     response = transfer.TransferController().internal_transfer(data)
 

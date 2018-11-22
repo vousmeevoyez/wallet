@@ -22,7 +22,7 @@ class ApiKey(db.Model):
     label         = db.Column(db.String(120), unique=True)
     access_key    = db.Column(db.String(255), unique=True)
     name          = db.Column(db.String(100), unique=True)
-    expiration    = db.Column(db.DateTime)
+    expiration    = db.Column(db.DateTime) #datetime
     created_at    = db.Column(db.DateTime, default=now)
 
     def __repr__(self):

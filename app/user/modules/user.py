@@ -2,7 +2,9 @@ import traceback
 from datetime import datetime, timedelta
 
 from flask          import request, jsonify
+from sqlalchemy     import exists
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
+from marshmallow    import ValidationError
 
 from app            import db
 from app.user       import bp
@@ -30,42 +32,36 @@ class UserController:
             "data"           : "NONE"
         }
 
+        # CREATE TRANSACTION SESSION
+        session = db.session(autocommit=True)
+        session.begin(subtransactions=True)
+
         try:
-            # CREATE TRANSACTION SESSION
-            session = db.session(autocommit=True)
-            session.begin(subtransactions=True)
+            # create object
+            user = User(
+                username=params["username"],
+                name=params["name"],
+                msisdn=params["msisdn"],
+                email=params["email"],
+                role=params["role"],
+            )
 
-            try:
-                # create object
-                user = User(
-                    username=params["username"],
-                    name=params["name"],
-                    msisdn=params["msisdn"],
-                    email=params["email"],
-                    role=params["role"],
-                )
+            user.set_password(params["password"])
+            session.add(user)
+            session.commit()
 
-                user.set_password(params["password"])
-                session.add(user)
-                session.commit()
+            params["user_id"] = user.id
+            wallet_response = helper.WalletHelper().generate_wallet(params, session)
 
-                params["user_id"] = user.id
-                wallet_response = helper.WalletHelper().generate_wallet(params, session)
-
-                if wallet_response["status"] != "SUCCESS":
-                    session.delete(user)
-                    session.rollback()
-                    return bad_request(wallet_response["data"])
-                #end if
-
-            except IntegrityError as err:
+            if wallet_response["status"] != "SUCCESS":
+                session.delete(user)
                 session.rollback()
-                return bad_request(RESPONSE_MSG["ERROR_ADDING_RECORD"])
+                return bad_request(wallet_response["data"])
+            #end if
 
-        except Exception as e:
-            print(traceback.format_exc())
-            print(str(e))
-            return internal_error()
+        except IntegrityError as err:
+            session.rollback()
+            return bad_request(RESPONSE_MSG["ERROR_ADDING_RECORD"])
         #end try
 
         wallet_id = wallet_response["data"]["wallet_id"]
@@ -89,10 +85,16 @@ class UserController:
         try:
             users = User.query.all()
             response["data"] = UserSchema(many=True).dump(users).data
+        except IntegrityError as e:
+            print(e)
+            return bad_request(RESPONSE_MSG["UNKNOWN_ERROR"])
+        except ValidationError as e:
+            print(e)
+            return bad_request(RESPONSE_MSG["UNKNOWN_ERROR"])
         except Exception as e:
+            print(traceback.format_exc())
             print(str(e))
             return internal_error()
-        #end try
 
         return response
     #end def
@@ -110,6 +112,7 @@ class UserController:
             user = User.query.filter_by(id=user_id).first()
             if user == None:
                 return request_not_found()
+            #end if
 
             user_information   = UserSchema().dump(user).data
             wallet_information = WalletSchema(many=True).dump(user.wallets).data
@@ -119,7 +122,14 @@ class UserController:
                 "wallet_information" : wallet_information
             }
 
+        except IntegrityError as e:
+            print(e)
+            return bad_request(RESPONSE_MSG["UNKNOWN_ERROR"])
+        except ValidationError as e:
+            print(e)
+            return bad_request(RESPONSE_MSG["UNKNOWN_ERROR"])
         except Exception as e:
+            print(traceback.format_exc())
             print(str(e))
             return internal_error()
 
@@ -142,6 +152,7 @@ class UserController:
             user = User.query.filter_by(id=user_id).first()
             if user == None:
                 return request_not_found()
+            #end if
 
             db.session.delete(user)
             db.session.commit()
@@ -176,6 +187,17 @@ class UserController:
             user = User.query.filter_by(id=user_id).first()
             if user == None:
                 return request_not_found()
+            #end if
+
+            if user.msisdn == msisdn:
+                return bad_request("No Change on Phone number")
+            #end if
+
+            if user.email == email:
+                return bad_request("No Change on Email")
+            #end if
+
+            #ret = db.session.query(exists().where(User.email==email)).scalar()
 
             user.name   = name
             user.msisdn = msisdn
