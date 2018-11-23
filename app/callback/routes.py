@@ -13,8 +13,7 @@ RESPONSE_MSG = config.Config.RESPONSE_MSG
 @bp.route('/deposit', methods=["POST"])
 def callback_deposit_routes():
     request_data = request.form
-    print("notification received A", file=sys.stderr)
-    print(request_data, file=sys.stderr)
+    print(request_data)
 
     try:
         data = {
