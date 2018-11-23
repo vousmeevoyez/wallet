@@ -7,14 +7,17 @@ from app.serializer             import CallbackSchema
 from app.errors                 import bad_request, internal_error, request_not_found
 from app.config                 import config
 from app.callback.modules       import callback
+from app.bank.utility           import remote_call
 
 RESPONSE_MSG = config.Config.RESPONSE_MSG
+BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 
 @bp.route('/deposit', methods=["POST"])
 def callback_deposit_routes():
-    print(request)
-    request_data = request.get_json()
-    print(request_data)
+
+    # we received encrypted data and we need to decrypt it first
+    encrypted_data = request.get_json()
+    request_data = remote_call.decrypt( BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], encrypted_data)
 
     try:
         data = {
