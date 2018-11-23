@@ -86,7 +86,7 @@ class CallbackController:
                 return response
             #end if
 
-            db.session.begin(substransactions=True)
+            db.session.begin(subtransactions=True)
             try:
                 # credit (+) we increase balance 
                 credit_transaction = Transaction(
