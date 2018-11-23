@@ -28,6 +28,8 @@ class CallbackController:
             "status" : "000",
         }
 
+        print(params)
+
         va            = params["virtual_account"]
         customer_name = params["customer_name"  ]
         trx_id        = params["trx_id"         ]
