@@ -19,7 +19,7 @@ class TestConfig(config.Config):
     #SQLALCHEMY_DATABASE_URI = 'sqlite://'
     SQLALCHEMY_DATABASE_URI = 'postgresql://modana:password@localhost/unittest_db'
 
-class TestUserRoutes(unittest.TestCase):
+class TestCallbackModules(unittest.TestCase):
 
     def setUp(self):
         self.app = create_app(TestConfig)
@@ -85,11 +85,11 @@ class TestUserRoutes(unittest.TestCase):
             "virtual_account": self.va.id,
             "customer_name"  : self.va.name,
             "trx_id"         : self.va.trx_id,
-            "payment_amount" : 99,
+            "payment_amount" : 50000,
         }
         response = callback.CallbackController().deposit( data )
 
-        self.assertEqual(response["status_code"], 0)
+        self.assertEqual(response["status"], "000")
 
         # make sure balance is injected
         wallet = Wallet.query.filter_by(id=self.wallet_id).first()
@@ -105,7 +105,7 @@ class TestUserRoutes(unittest.TestCase):
         }
         response = callback.CallbackController().deposit( data )
 
-        self.assertEqual(response["status_code"], 404)
+        self.assertEqual(response["status"], "404")
     #end def
 
     def test_inject_success(self):
