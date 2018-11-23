@@ -1,4 +1,5 @@
 import traceback
+import sys
 from flask              import request, jsonify
 
 from app.callback               import bp
@@ -12,7 +13,9 @@ RESPONSE_MSG = config.Config.RESPONSE_MSG
 @bp.route('/deposit', methods=["POST"])
 def callback_deposit_routes():
     request_data = request.form
-    print(request_data)
+    print("notification received A", file=sys.stderr)
+    print(request_data, file=sys.stderr)
+
     try:
         data = {
             "virtual_account"           : int(request_data["virtual_account"]),
