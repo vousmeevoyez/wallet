@@ -12,7 +12,8 @@ from app.bank.utility           import remote_call
 RESPONSE_MSG = config.Config.RESPONSE_MSG
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 
-@bp.route('/deposit', methods=["POST"])
+@bp.route('/withdraw', methods=["POST"])
+#@bp.route('/deposit', methods=["POST"])
 def callback_deposit_routes():
     # response that only accepted by BNI
     response = {

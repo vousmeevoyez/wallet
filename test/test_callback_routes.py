@@ -53,12 +53,30 @@ class TestCallbackRoutes(unittest.TestCase):
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-        result = self._register_user("rose", "rosebp", "082219644324", "rose@blackpink.com", "password", "123456", "1")
+        result = self._register_user("nayeon", "nayeon", "081219644324", "nayeon@blackpink.com", "password", "123456", "1")
         response = result.get_json()
 
         self.wallet_id = response["data"]["wallet_id"]
 
         self.va = VirtualAccount.query.filter_by(wallet_id=self.wallet_id).first()
+
+        data = {
+            "virtual_account"           : "9889909996803067",
+            "customer_name"             : "Rose",
+            "trx_id"                    : "559307586",
+            "trx_amount"                : "0",
+            "payment_amount"            : "50000",
+            "cumulative_payment_amount" : "50000",
+            "payment_ntb"               : "12345",
+            "datetime_payment"          : "2018-11-24 14:00:00",
+        }
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+
+        expected_value = {
+            "client_id" : BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
+            "data"      : encrypted_data.decode("UTF-8")
+        }
+        print(json.dumps(expected_value))
 
     """
         HELPER
@@ -83,6 +101,30 @@ class TestCallbackRoutes(unittest.TestCase):
                 role=role
             )
         )
+
+    def _check_balance(self, access_token, wallet_id, pin):
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.post(
+            '/wallet/balance',
+            data=dict(
+                wallet_id=wallet_id,
+                pin=pin
+            ),
+            headers=headers
+        )
+
+    def _request_token(self, username, password):
+        return self.client.post(
+            '/auth/request_token',
+            data=dict(
+                username=username,
+                password=password
+            )
+        )
+
+
 
     """
         CALLBACK
@@ -110,9 +152,15 @@ class TestCallbackRoutes(unittest.TestCase):
 
         self.assertEqual( response["status"], "000")
 
+        # GET ACCESS TOKEN
+        response = self._request_token("nayeon", "password")
+        result = response.get_json()
+        access_token = result["data"]["access_token"]
+
         # make sure balance injected successfully
-        wallet = Wallet.query.filter_by(id=self.wallet_id).first()
-        self.assertEqual( wallet.balance, int(data["payment_amount"]))
+        result = self._check_balance(access_token, self.wallet_id, "123456")
+        response = result.get_json()
+        self.assertEqual( response["data"]["balance"], int(data["payment_amount"]))
 
         transaction = Transaction.query.all()
         print(transaction)
