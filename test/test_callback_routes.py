@@ -8,10 +8,12 @@ sys.path.append("../app")
 
 # FLASK
 
-from app         import create_app, db
-from app.config  import config
-from app.models  import User, Wallet, VirtualAccount
+from app                import create_app, db
+from app.config         import config
+from app.models         import User, Wallet, VirtualAccount, Transaction
+from app.bank.utility   import remote_call
 
+BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 
 class TestConfig(config.Config):
 
@@ -62,19 +64,10 @@ class TestCallbackRoutes(unittest.TestCase):
         HELPER
     """
 
-    def _callback_deposit(self, va, name, trx_id, trx_amount, payment_amount, cumulative_amount, ref_number, datetime_payment):
+    def _callback_deposit(self, json):
         return self.client.post(
             '/callback/deposit',
-            data=dict(
-                virtual_account=va,
-                customer_name=name,
-                trx_id=trx_id,
-                trx_amount=trx_amount,
-                payment_amount=payment_amount,
-                cumulative_payment_amount=cumulative_amount,
-                payment_ntb=ref_number,
-                datetime_payment=datetime_payment,
-            ),
+            json=json
         )
 
     def _register_user(self, username, name, msisdn, email, password, pin, role):
@@ -94,15 +87,104 @@ class TestCallbackRoutes(unittest.TestCase):
     """
         CALLBACK
     """
-    def test_callback_deposit(self):
-        result = self._callback_deposit( self.va.id, self.va.name, self.va.trx_id, self.va.trx_amount, "50000", "50000", "212", "2018-11-22 18:00:00")
+    def test_callback_deposit_success(self):
+        data = {
+            "virtual_account"           : str(self.va.id),
+            "customer_name"             : str(self.va.name),
+            "trx_id"                    : str(self.va.trx_id),
+            "trx_amount"                : str(self.va.trx_amount),
+            "payment_amount"            : "50000",
+            "cumulative_payment_amount" : "50000",
+            "payment_ntb"               : "12345",
+            "datetime_payment"          : "2018-11-24 14:00:00",
+        }
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+
+        expected_value = {
+            "client_id" : BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
+            "data"      : encrypted_data.decode("UTF-8")
+        }
+
+        result = self._callback_deposit(expected_value)
         response = result.get_json()
 
-        self.assertEqual( response["status_code"], 0)
+        self.assertEqual( response["status"], "000")
 
         # make sure balance injected successfully
         wallet = Wallet.query.filter_by(id=self.wallet_id).first()
-        self.assertEqual( wallet.balance, 50000)
+        self.assertEqual( wallet.balance, int(data["payment_amount"]))
+
+        transaction = Transaction.query.all()
+        print(transaction)
+
+    def test_callback_deposit_failed_min_deposit(self):
+        data = {
+            "virtual_account"           : str(self.va.id),
+            "customer_name"             : str(self.va.name),
+            "trx_id"                    : str(self.va.trx_id),
+            "trx_amount"                : str(self.va.trx_amount),
+            "payment_amount"            : "1",
+            "cumulative_payment_amount" : "1",
+            "payment_ntb"               : "12345",
+            "datetime_payment"          : "2018-11-24 14:00:00",
+        }
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+
+        expected_value = {
+            "client_id" : BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
+            "data"      : encrypted_data.decode("UTF-8")
+        }
+
+        result = self._callback_deposit(expected_value)
+        response = result.get_json()
+
+        self.assertEqual( response["status"], "400")
+
+    def test_callback_deposit_failed_max_deposit(self):
+        data = {
+            "virtual_account"           : str(self.va.id),
+            "customer_name"             : str(self.va.name),
+            "trx_id"                    : str(self.va.trx_id),
+            "trx_amount"                : str(self.va.trx_amount),
+            "payment_amount"            : "99999999999999999",
+            "cumulative_payment_amount" : "99999999999999999",
+            "payment_ntb"               : "12345",
+            "datetime_payment"          : "2018-11-24 14:00:00",
+        }
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+
+        expected_value = {
+            "client_id" : BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
+            "data"      : encrypted_data.decode("UTF-8")
+        }
+
+        result = self._callback_deposit(expected_value)
+        response = result.get_json()
+
+        self.assertEqual( response["status"], "400")
+
+    def test_callback_deposit_failed_va_not_found(self):
+        data = {
+            "virtual_account"           : "9889909910336282",
+            "customer_name"             : str(self.va.name),
+            "trx_id"                    : "123456",
+            "trx_amount"                : str(self.va.trx_amount),
+            "payment_amount"            : "50000",
+            "cumulative_payment_amount" : "50000",
+            "payment_ntb"               : "12345",
+            "datetime_payment"          : "2018-11-24 14:00:00",
+        }
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+
+        expected_value = {
+            "client_id" : BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
+            "data"      : encrypted_data.decode("UTF-8")
+        }
+
+        result = self._callback_deposit(expected_value)
+        response = result.get_json()
+
+        self.assertEqual( response["status"], "404")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

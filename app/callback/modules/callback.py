@@ -25,10 +25,10 @@ class CallbackController:
 
     def deposit(self, params):
         response = {
-            "status" : "000",
+            "status_code"    : 0,
+            "status_message" : "SUCCESS",
+            "data"           : "NONE"
         }
-
-        print(params)
 
         va            = params["virtual_account"]
         customer_name = params["customer_name"  ]
@@ -37,8 +37,7 @@ class CallbackController:
 
         virtual_account = VirtualAccount.query.filter_by(id=va, trx_id=trx_id).first()
         if virtual_account == None:
-            response["status"] = "404"
-            return response
+            return request_not_found()
         #end if
 
         deposit_payload = {
@@ -47,10 +46,8 @@ class CallbackController:
         }
 
         deposit_response = self._inject(deposit_payload)
-        print(deposit_response)
         if deposit_response["status"] != "SUCCESS":
-            response["status"] = "400"
-            return response
+            return bad_request()
         #end if
 
         return response

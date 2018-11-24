@@ -14,6 +14,10 @@ BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 
 @bp.route('/deposit', methods=["POST"])
 def callback_deposit_routes():
+    # response that only accepted by BNI
+    response = {
+        "status" : "000"
+    }
 
     # we received encrypted data and we need to decrypt it first
     encrypted_data = request.get_json()
@@ -30,18 +34,22 @@ def callback_deposit_routes():
             "payment_ntb"               : int(request_data["payment_ntb"]),
             "datetime_payment"          : request_data["datetime_payment"],
         }
-    except Exception as e:
-        print(traceback.format_exc())
-        print(str(e))
-        return jsonify( bad_request("invalid request data") )
+    except:
+        response["status"] = "400"
+        response["data"  ] = "Invalid Request Data"
+        return jsonify(response)
     #end try
 
     errors = CallbackSchema().validate(data)
     if errors:
-        return jsonify(bad_request(errors))
+        response["status"] = "400"
+        response["data"  ] = errors
+        return jsonify(response)
     #end if
 
-    response = callback.CallbackController().deposit(data)
+    deposit_response = callback.CallbackController().deposit(data)
+    if deposit_response["status_code"] != 0:
+        response["status"] = str(deposit_response["status_code"])
 
     return jsonify(response)
 #end def

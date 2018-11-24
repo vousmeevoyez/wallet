@@ -89,7 +89,7 @@ class TestCallbackModules(unittest.TestCase):
         }
         response = callback.CallbackController().deposit( data )
 
-        self.assertEqual(response["status"], "000")
+        self.assertEqual(response["status_code"], 0)
 
         # make sure balance is injected
         wallet = Wallet.query.filter_by(id=self.wallet_id).first()
@@ -105,7 +105,7 @@ class TestCallbackModules(unittest.TestCase):
         }
         response = callback.CallbackController().deposit( data )
 
-        self.assertEqual(response["status"], "404")
+        self.assertEqual(response["status_code"], 404)
     #end def
 
     def test_inject_success(self):
