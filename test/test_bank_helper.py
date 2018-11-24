@@ -178,9 +178,10 @@ class TestEcollectionHelper(unittest.TestCase):
 
     def test_get_inquiry(self):
         data = {
-            "trx_id" : "1234",
+            "trx_id" : "108813778",
         }
         result = helper.EcollectionHelper().get_inquiry(data)
+        print(result)
         self.assertEqual( result["status"], "SUCCESS")
     #end def
 

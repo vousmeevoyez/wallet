@@ -52,6 +52,7 @@ class CallbackController:
             return bad_request()
         #end if
 
+        """
         # after successfully inject the balance we need to update the VA and empty the balance
         va_payload = {
             "trx_id"           : str(virtual_account.trx_id),
@@ -63,6 +64,7 @@ class CallbackController:
         if va_response["status"] != "SUCCESS":
             return bad_request(RESPONSE_MSG["VA_UPDATE_FAILED"])
         #end if
+        """
 
         return response
     #end def
