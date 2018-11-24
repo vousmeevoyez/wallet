@@ -44,6 +44,7 @@ class TestCallbackRoutes(unittest.TestCase):
         self.mock_post_patcher.stop()
 
     def _init_test(self):
+        # SET MOCKUP RESPONSE FOR CREATING VA
         expected_value = {
             "status" : "000",
             "message" : {'trx_id': "123", 'virtual_account': "122222" }
@@ -58,8 +59,14 @@ class TestCallbackRoutes(unittest.TestCase):
 
         self.wallet_id = response["data"]["wallet_id"]
 
+        # get access token
+        response = self._request_token("nayeon", "password")
+        result = response.get_json()
+        self.access_token = result["data"]["access_token"]
+
         self.va = VirtualAccount.query.filter_by(wallet_id=self.wallet_id).first()
 
+        # CREATE ENCRYPYED JSON MOCKUP
         data = {
             "virtual_account"           : "9889909996803067",
             "customer_name"             : "Rose",
@@ -78,13 +85,21 @@ class TestCallbackRoutes(unittest.TestCase):
         }
         print(json.dumps(expected_value))
 
+        # SET MOCKUP RESPONSE FOR UPDATING VA
+        expected_value = {
+            "status" : "000",
+            "message": {'type': 'updatebilling', 'client_id': '99099', 'trx_id': '627493687', 'trx_amount': '1000', 'customer_name': 'Kelvin', 'datetime_expired': '2017-10-29 06:39:27'}
+        }
+        self.mock_post.return_value = Mock()
+        self.mock_post.return_value.json.return_value  = expected_value
+
     """
         HELPER
     """
 
     def _callback_deposit(self, json):
         return self.client.post(
-            '/callback/deposit',
+            '/callback/withdraw',
             json=json
         )
 
@@ -152,13 +167,8 @@ class TestCallbackRoutes(unittest.TestCase):
 
         self.assertEqual( response["status"], "000")
 
-        # GET ACCESS TOKEN
-        response = self._request_token("nayeon", "password")
-        result = response.get_json()
-        access_token = result["data"]["access_token"]
-
         # make sure balance injected successfully
-        result = self._check_balance(access_token, self.wallet_id, "123456")
+        result = self._check_balance(self.access_token, self.wallet_id, "123456")
         response = result.get_json()
         self.assertEqual( response["data"]["balance"], int(data["payment_amount"]))
 

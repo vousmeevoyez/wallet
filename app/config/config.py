@@ -88,6 +88,7 @@ class Config(object):
         "MIN_WITHDRAW_FAILED"    : "Minimum withdraw amount is {} ",
         "MAX_WITHDRAW_FAILED"    : "Maximum withdraw amount is {} ",
         "UNKNOWN_ERROR"          : "Something wrong happen, Please contact our customer support if error persist",
+        "VA_UPDATE_FAILED"       : "Failed updating Virtual Account",
     }
 
     # BNI E-COLLECTION ERROR MSG

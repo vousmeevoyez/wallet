@@ -1,6 +1,8 @@
 import sys
 import json
 
+from datetime import datetime
+
 sys.path.append("../")
 sys.path.append("../app")
 sys.path.append("../app/bank")
@@ -128,7 +130,7 @@ class TestMockEcollectionHelper(unittest.TestCase):
             "trx_id" : "627493687",
             "amount" : "1000",
             "customer_name"    : "Kelvin",
-            "datetime_expired" : "2017-10-29 06:39:27",
+            "datetime_expired" : datetime.now(),
         }
 
         expected_value = {
@@ -147,7 +149,7 @@ class TestMockEcollectionHelper(unittest.TestCase):
             "trx_id" : "627493687",
             "amount" : "1000",
             "customer_name"    : "Kelvin",
-            "datetime_expired" : "2017-10-29 06:39:27",
+            "datetime_expired" : datetime.now(),
         }
 
         expected_value = {

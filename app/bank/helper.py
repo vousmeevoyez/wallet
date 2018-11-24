@@ -185,7 +185,7 @@ class EcollectionHelper(object):
             'trx_id'           : params["trx_id"],
             'trx_amount'       : params["amount"],
             'customer_name'    : params["customer_name"],
-            'datetime_expired' : params["datetime_expired"],
+            'datetime_expired' : params["datetime_expired"].strftime("%Y-%m-%d %H:%M:%S"),
         }
 
         # initialize logging object

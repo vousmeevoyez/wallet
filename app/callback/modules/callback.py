@@ -10,6 +10,7 @@ from app.models     import Wallet, Transaction, VirtualAccount
 from app.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
 from app.errors     import bad_request, internal_error, request_not_found
 from app.config     import config
+from app.bank       import helper as bank_helper
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 VA_TYPE           = config.Config.VA_TYPE_CONFIG
@@ -40,6 +41,7 @@ class CallbackController:
             return request_not_found()
         #end if
 
+        # prepare inject the balance here
         deposit_payload = {
             "id"     : virtual_account.wallet_id,
             "amount" : payment_amount
@@ -48,6 +50,18 @@ class CallbackController:
         deposit_response = self._inject(deposit_payload)
         if deposit_response["status"] != "SUCCESS":
             return bad_request()
+        #end if
+
+        # after successfully inject the balance we need to update the VA and empty the balance
+        va_payload = {
+            "trx_id"           : str(virtual_account.trx_id),
+            "amount"           : "0", # set to zero
+            "customer_name"    : virtual_account.name, # set to zero
+            "datetime_expired" : virtual_account.datetime_expired, # set to zero
+        }
+        va_response = bank_helper.EcollectionHelper().update_va(va_payload)
+        if va_response["status"] != "SUCCESS":
+            return bad_request(RESPONSE_MSG["VA_UPDATE_FAILED"])
         #end if
 
         return response
