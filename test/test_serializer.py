@@ -170,7 +170,33 @@ class TestCallbackSchema(unittest.TestCase):
             "datetime_payment"         : "2016-03-01 14:00:00",
         }
         errors = CallbackSchema().validate(data)
-        self.assertEqual( errors, {'payment_amount': ['Maximum deposit is 1000000000']} )
+        self.assertEqual( errors, {'payment_amount': ['Maximum deposit is 100000000']} )
+
+        data = {
+            "trx_id"                   : 1230000001,
+            "virtual_account"          : 9889909941749985,
+            "customer_name"            : "Jennie",
+            "trx_amount"               : 1,
+            "payment_amount"           : -1,
+            "cumulative_payment_amount": 100000,
+            "payment_ntb"              : 233171,
+            "datetime_payment"         : "2016-03-01 14:00:00",
+        }
+        errors = CallbackSchema().validate(data)
+        self.assertEqual( errors, {'payment_amount': ['Minimal withdraw is 50000']} )
+
+        data = {
+            "trx_id"                   : 1230000001,
+            "virtual_account"          : 9889909941749985,
+            "customer_name"            : "Jennie",
+            "trx_amount"               : 1,
+            "payment_amount"           : -9999999999999999,
+            "cumulative_payment_amount": 100000,
+            "payment_ntb"              : 233171,
+            "datetime_payment"         : "2016-03-01 14:00:00",
+        }
+        errors = CallbackSchema().validate(data)
+        self.assertEqual( errors, {'payment_amount': ['Maximum withdraw is 100000000']} )
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -64,6 +64,39 @@ class TestMockEcollectionHelper(unittest.TestCase):
         result = helper.EcollectionHelper().create_va("CREDIT", data)
         self.assertEqual( result["status"], "SUCCESS") # data already existed
 
+        # make sure log is recorded
+        log = ExternalLog.query.all()
+        self.assertEqual( len(log), 1)
+
+    def test_mock_create_va_cardless_success(self):
+        wallet = Wallet(
+        )
+        db.session.add(wallet)
+        db.session.commit()
+
+        data = {
+            "wallet_id"       : wallet.id,
+            "amount"          : "1500",
+            "customer_name"   : "Jennie",
+            "customer_phone"  : "081234123111",
+            "datetime_expired": "2019-10-27 00:42:58",
+        }
+
+        expected_value = {
+            "status" : "000",
+            "message" : {'trx_id': "1234", 'virtual_account': "000211" }
+        }
+
+        self.mock_get.return_value = Mock()
+        self.mock_get.return_value.json.return_value = expected_value
+
+        result = helper.EcollectionHelper().create_va("CARDLESS", data)
+        self.assertEqual( result["status"], "SUCCESS") # data already existed
+
+        # make sure log is recorded
+        log = ExternalLog.query.all()
+        self.assertEqual( len(log), 1)
+
     def test_mock_create_va_failed(self):
         wallet = Wallet(
         )
@@ -91,6 +124,10 @@ class TestMockEcollectionHelper(unittest.TestCase):
         result = helper.EcollectionHelper().create_va("CREDIT", data)
         self.assertEqual( result["status"], "FAILED") # data already existed
 
+        # make sure log is recorded
+        log = ExternalLog.query.all()
+        self.assertEqual( len(log), 1)
+
     def test_mock_get_inquiry_success(self):
         data = {
             "trx_id" : "121",
@@ -105,8 +142,12 @@ class TestMockEcollectionHelper(unittest.TestCase):
         self.mock_get.return_value = Mock()
         self.mock_get.return_value.json.return_value = expected_value
 
-        result = helper.EcollectionHelper().get_inquiry(data)
+        result = helper.EcollectionHelper().get_inquiry("CREDIT", data)
         self.assertEqual( result["status"], "SUCCESS")
+
+        # make sure log is recorded
+        log = ExternalLog.query.all()
+        self.assertEqual( len(log), 1)
 
     def test_mock_get_inquiry_failed(self):
         data = {
@@ -121,8 +162,12 @@ class TestMockEcollectionHelper(unittest.TestCase):
         self.mock_get.return_value = Mock()
         self.mock_get.return_value.json.return_value = expected_value
 
-        result = helper.EcollectionHelper().get_inquiry(data)
+        result = helper.EcollectionHelper().get_inquiry("CREDIT", data)
         self.assertEqual( result["status"], "FAILED")
+
+        # make sure log is recorded
+        log = ExternalLog.query.all()
+        self.assertEqual( len(log), 1)
 
 
     def test_mock_update_va_success(self):
@@ -141,8 +186,12 @@ class TestMockEcollectionHelper(unittest.TestCase):
         self.mock_get.return_value = Mock()
         self.mock_get.return_value.json.return_value = expected_value
 
-        result = helper.EcollectionHelper().update_va(data)
+        result = helper.EcollectionHelper().update_va("CREDIT", data)
         self.assertEqual( result["status"], "SUCCESS")
+
+        # make sure log is recorded
+        log = ExternalLog.query.all()
+        self.assertEqual( len(log), 1)
 
     def test_mock_update_va_failed(self):
         data = {
@@ -160,8 +209,12 @@ class TestMockEcollectionHelper(unittest.TestCase):
         self.mock_get.return_value = Mock()
         self.mock_get.return_value.json.return_value = expected_value
 
-        result = helper.EcollectionHelper().update_va(data)
+        result = helper.EcollectionHelper().update_va("CREDIT", data)
         self.assertEqual( result["status"], "FAILED")
+
+        # make sure log is recorded
+        log = ExternalLog.query.all()
+        self.assertEqual( len(log), 1)
 
 class TestEcollectionHelper(unittest.TestCase):
 
@@ -180,10 +233,14 @@ class TestEcollectionHelper(unittest.TestCase):
         data = {
             "trx_id" : "108813778",
         }
-        result = helper.EcollectionHelper().get_inquiry(data)
+        result = helper.EcollectionHelper().get_inquiry("CARDLESS", data)
         print(result)
-        #self.assertEqual( result["status"], "SUCCESS")
+        self.assertEqual( result["status"], "SUCCESS")
+
+        log = ExternalLog.query.all()
+        self.assertEqual( len(log), 1)
     #end def
+
 
 class TestOpgHelper(unittest.TestCase):
 

@@ -54,36 +54,36 @@ class TestCallbackRoutes(unittest.TestCase):
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-        result = self._register_user("abcdef", "abcdef", "080219644324", "abcdef@blackpink.com", "password", "123456", "1")
+        result = self._register_user("jessica", "jessica", "089219644324", "jessica@modana.id", "password", "123456", "1")
         response = result.get_json()
 
         self.wallet_id = response["data"]["wallet_id"]
 
         # get access token
-        response = self._request_token("abcdef", "password")
+        response = self._request_token("jessica", "password")
         result = response.get_json()
         self.access_token = result["data"]["access_token"]
 
         self.va = VirtualAccount.query.filter_by(wallet_id=self.wallet_id).first()
 
-        # CREATE ENCRYPYED JSON MOCKUP
+        # CREATE ENCRYPYED DEPOSIT MOCKUP RESPONSE
         data = {
-            "virtual_account"           : "9889909996803067",
+            "virtual_account"           : "9889909813169928",
             "customer_name"             : "Rose",
-            "trx_id"                    : "559307586",
+            "trx_id"                    : "227473614",
             "trx_amount"                : "0",
             "payment_amount"            : "50000",
             "cumulative_payment_amount" : "50000",
             "payment_ntb"               : "12345",
             "datetime_payment"          : "2018-11-24 14:00:00",
         }
-        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
-        print(json.dumps(expected_value))
+        #print(json.dumps(expected_value))
 
         # SET MOCKUP RESPONSE FOR UPDATING VA
         expected_value = {
@@ -98,6 +98,12 @@ class TestCallbackRoutes(unittest.TestCase):
     """
 
     def _callback_deposit(self, json):
+        return self.client.post(
+            '/callback/deposit',
+            json=json
+        )
+
+    def _callback_withdraw(self, json):
         return self.client.post(
             '/callback/withdraw',
             json=json
@@ -142,7 +148,7 @@ class TestCallbackRoutes(unittest.TestCase):
 
 
     """
-        CALLBACK
+        DEPOSIT CALLBACK
     """
     def test_callback_deposit_success(self):
         data = {
@@ -155,15 +161,16 @@ class TestCallbackRoutes(unittest.TestCase):
             "payment_ntb"               : "12345",
             "datetime_payment"          : "2018-11-24 14:00:00",
         }
-        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
 
         result = self._callback_deposit(expected_value)
         response = result.get_json()
+        print(response)
 
         self.assertEqual( response["status"], "000")
 
@@ -186,10 +193,10 @@ class TestCallbackRoutes(unittest.TestCase):
             "payment_ntb"               : "12345",
             "datetime_payment"          : "2018-11-24 14:00:00",
         }
-        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
 
@@ -209,10 +216,10 @@ class TestCallbackRoutes(unittest.TestCase):
             "payment_ntb"               : "12345",
             "datetime_payment"          : "2018-11-24 14:00:00",
         }
-        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
 
@@ -232,14 +239,142 @@ class TestCallbackRoutes(unittest.TestCase):
             "payment_ntb"               : "12345",
             "datetime_payment"          : "2018-11-24 14:00:00",
         }
-        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"], data)
+
+        expected_value = {
+            "client_id" : BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"],
+            "data"      : encrypted_data.decode("UTF-8")
+        }
+
+        result = self._callback_deposit(expected_value)
+        response = result.get_json()
+
+        self.assertEqual( response["status"], "404")
+
+    def test_callback_withdraw_success(self):
+        db.session.begin()
+        start_balance = 100000
+        # hard inject the balance first
+        wallet = Wallet.query.filter_by(id=self.wallet_id).first()
+        wallet.add_balance(start_balance)
+        db.session.commit()
+
+        data = {
+            "virtual_account"           : str(self.va.id),
+            "customer_name"             : str(self.va.name),
+            "trx_id"                    : str(self.va.trx_id),
+            "trx_amount"                : str(self.va.trx_amount),
+            "payment_amount"            : "-59999",
+            "cumulative_payment_amount" : "-59999",
+            "payment_ntb"               : "12345",
+            "datetime_payment"          : "2018-11-24 14:00:00",
+        }
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"], data)
 
         expected_value = {
             "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
 
-        result = self._callback_deposit(expected_value)
+        result = self._callback_withdraw(expected_value)
+        response = result.get_json()
+        self.assertEqual( response["status"], "000")
+
+        # make sure balance deducted successfully
+        result = self._check_balance(self.access_token, self.wallet_id, "123456")
+        response = result.get_json()
+        self.assertEqual( response["data"]["balance"], start_balance + int(data["payment_amount"]))
+
+        transaction_list = Transaction.query.all()
+        for item in transaction_list:
+            print(item.notes)
+
+    def test_callback_withdraw_failed_min_amount(self):
+        db.session.begin()
+        start_balance = 100000
+        # hard inject the balance first
+        wallet = Wallet.query.filter_by(id=self.wallet_id).first()
+        wallet.add_balance(start_balance)
+        db.session.commit()
+
+        data = {
+            "virtual_account"           : str(self.va.id),
+            "customer_name"             : str(self.va.name),
+            "trx_id"                    : str(self.va.trx_id),
+            "trx_amount"                : str(self.va.trx_amount),
+            "payment_amount"            : "-1",
+            "cumulative_payment_amount" : "-1",
+            "payment_ntb"               : "12345",
+            "datetime_payment"          : "2018-11-24 14:00:00",
+        }
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"], data)
+
+        expected_value = {
+            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
+            "data"      : encrypted_data.decode("UTF-8")
+        }
+
+        result = self._callback_withdraw(expected_value)
+        response = result.get_json()
+
+        self.assertEqual( response["status"], "400")
+
+    def test_callback_withdraw_failed_max_amount(self):
+        db.session.begin()
+        start_balance = 100000
+        # hard inject the balance first
+        wallet = Wallet.query.filter_by(id=self.wallet_id).first()
+        wallet.add_balance(start_balance)
+        db.session.commit()
+
+        data = {
+            "virtual_account"           : str(self.va.id),
+            "customer_name"             : str(self.va.name),
+            "trx_id"                    : str(self.va.trx_id),
+            "trx_amount"                : str(self.va.trx_amount),
+            "payment_amount"            : "-99999999999999",
+            "cumulative_payment_amount" : "-99999999999999",
+            "payment_ntb"               : "12345",
+            "datetime_payment"          : "2018-11-24 14:00:00",
+        }
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"], data)
+
+        expected_value = {
+            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
+            "data"      : encrypted_data.decode("UTF-8")
+        }
+
+        result = self._callback_withdraw(expected_value)
+        response = result.get_json()
+
+        self.assertEqual( response["status"], "400")
+
+    def test_callback_withdraw_failed_va_not_found(self):
+        db.session.begin()
+        start_balance = 100000
+        # hard inject the balance first
+        wallet = Wallet.query.filter_by(id=self.wallet_id).first()
+        wallet.add_balance(start_balance)
+        db.session.commit()
+
+        data = {
+            "virtual_account"           : "9889909910336282",
+            "customer_name"             : str(self.va.name),
+            "trx_id"                    : str(self.va.trx_id),
+            "trx_amount"                : str(self.va.trx_amount),
+            "payment_amount"            : "-99999",
+            "cumulative_payment_amount" : "-99999",
+            "payment_ntb"               : "12345",
+            "datetime_payment"          : "2018-11-24 14:00:00",
+        }
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"], data)
+
+        expected_value = {
+            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
+            "data"      : encrypted_data.decode("UTF-8")
+        }
+
+        result = self._callback_withdraw(expected_value)
         response = result.get_json()
 
         self.assertEqual( response["status"], "404")

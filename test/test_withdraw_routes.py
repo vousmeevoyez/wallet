@@ -89,7 +89,7 @@ class TestWithdrawRoutes(unittest.TestCase):
         self.access_token_admin = result["data"]["access_token"]
 
         # deposit balance
-        result = self._deposit(self.access_token_admin, self.wallet_id, "9999")
+        result = self._deposit(self.access_token_admin, self.wallet_id, "100000")
         response = result.get_json()
 
     """
@@ -149,7 +149,7 @@ class TestWithdrawRoutes(unittest.TestCase):
         WITHDRAW
     """
     def test_request_withdraw_success(self):
-        result = self._request_withdraw(self.wallet_id, "9999", "123456")
+        result = self._request_withdraw(self.wallet_id, "50000", "123456")
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 0)
