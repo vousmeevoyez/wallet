@@ -129,7 +129,7 @@ class WalletController:
                 "trx_id"           : va_info[0].trx_id,
                 "amount"           : "0",
                 "customer_name"    : "NONE",
-                "datetime_expired" : datetime_expired.strftime("%Y-%m-%d %H:%M:%S")
+                "datetime_expired" : datetime_expired
             }
             va_response = bank_helper.EcollectionHelper().update_va(va_payload)
 

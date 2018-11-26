@@ -22,7 +22,7 @@ def callback_deposit_routes():
 
     # we received encrypted data and we need to decrypt it first
     encrypted_data = request.get_json()
-    request_data = remote_call.decrypt( BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], encrypted_data["data"])
+    request_data = remote_call.decrypt( BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], encrypted_data["data"])
 
     try:
         data = {

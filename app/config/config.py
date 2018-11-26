@@ -28,6 +28,7 @@ class Config(object):
         "MAX_WITHDRAW"       : 100000, # 
         "MINIMAL_DEPOSIT"    : 50000, # 
         "MAX_DEPOSIT"        : 1000000000, # 
+        "VA_TIMEOUT"         : 87600, # set va expire to 10 years ago 
     }
 
     BANK_LIST_CONFIG = {
@@ -100,15 +101,17 @@ class Config(object):
 
     # BNI E-COLLECTION CONFIG
     BNI_ECOLLECTION_CONFIG = {
-        "BASE_URL_DEV"  : "https://apibeta.bni-ecollection.com/",
-        "BASE_URL_PROD" : "https://apibeta.bni-ecollection.com/",
-        "SECRET_KEY"    : "8eafc8687722fdd0ef78942309fcd983",
-        "CLIENT_ID"     : "99099",
-        "BILLING"       : "createbilling",
-        "CARDLESS"      : "createdebitcardless",
-        "UPDATE"        : "updatebilling",
-        "INQUIRY"       : "inquirybilling",
-        "CREDIT_BILLING_TYPE"   : "z",
+        "BASE_URL_DEV"     : "https://apibeta.bni-ecollection.com/",
+        "BASE_URL_PROD"    : "https://apibeta.bni-ecollection.com/",
+        "SECRET_KEY"       : "8eafc8687722fdd0ef78942309fcd983",
+        "DEBIT_CLIENT_ID"  : "99099",
+        "CREDIT_CLIENT_ID" : "99098",
+        "BILLING"          : "createbilling",
+        "CARDLESS"         : "createdebitcardless",
+        "UPDATE"           : "updatebilling",
+        "INQUIRY"          : "inquirybilling",
+        #"CREDIT_BILLING_TYPE"   : "z",
+        "CREDIT_BILLING_TYPE"   : "o", #open payment
         "CARDLESS_BILLING_TYPE" : "j",
     }
 

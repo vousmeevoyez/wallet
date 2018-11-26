@@ -54,13 +54,13 @@ class TestCallbackRoutes(unittest.TestCase):
         self.mock_post.return_value = Mock()
         self.mock_post.return_value.json.return_value  = expected_value
 
-        result = self._register_user("nayeon", "nayeon", "081219644324", "nayeon@blackpink.com", "password", "123456", "1")
+        result = self._register_user("abcdef", "abcdef", "080219644324", "abcdef@blackpink.com", "password", "123456", "1")
         response = result.get_json()
 
         self.wallet_id = response["data"]["wallet_id"]
 
         # get access token
-        response = self._request_token("nayeon", "password")
+        response = self._request_token("abcdef", "password")
         result = response.get_json()
         self.access_token = result["data"]["access_token"]
 
@@ -77,10 +77,10 @@ class TestCallbackRoutes(unittest.TestCase):
             "payment_ntb"               : "12345",
             "datetime_payment"          : "2018-11-24 14:00:00",
         }
-        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
         print(json.dumps(expected_value))
@@ -155,10 +155,10 @@ class TestCallbackRoutes(unittest.TestCase):
             "payment_ntb"               : "12345",
             "datetime_payment"          : "2018-11-24 14:00:00",
         }
-        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
 
@@ -186,10 +186,10 @@ class TestCallbackRoutes(unittest.TestCase):
             "payment_ntb"               : "12345",
             "datetime_payment"          : "2018-11-24 14:00:00",
         }
-        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
 
@@ -209,10 +209,10 @@ class TestCallbackRoutes(unittest.TestCase):
             "payment_ntb"               : "12345",
             "datetime_payment"          : "2018-11-24 14:00:00",
         }
-        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
 
@@ -232,10 +232,10 @@ class TestCallbackRoutes(unittest.TestCase):
             "payment_ntb"               : "12345",
             "datetime_payment"          : "2018-11-24 14:00:00",
         }
-        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
 

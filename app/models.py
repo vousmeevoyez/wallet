@@ -189,11 +189,15 @@ class VirtualAccount(db.Model):
             self.status = True
     #end def
 
-    def generate_va_number(self):
+    def generate_va_number(self, va_type):
         va_id = None
         while True:
             fixed = 988
-            client_id = BNI_ECOLLECTION_CONFIG["CLIENT_ID"]
+            if va_type == "CREDIT":
+                client_id = BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
+            else:
+                client_id = BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
+            #end if
             suffix = random.randint(
                 10000000,
                 99999999

@@ -243,7 +243,7 @@ class WalletModelCase(unittest.TestCase):
             bank_id=1,
             va_type=1
         )
-        va_id  = va.generate_va_number()
+        va_id  = va.generate_va_number("CREDIT")
         trx_id = va.generate_trx_id()
         db.session.add(va)
         db.session.commit()
@@ -255,7 +255,7 @@ class WalletModelCase(unittest.TestCase):
             bank_id=1,
             va_type=2
         )
-        va_id  = va.generate_va_number()
+        va_id  = va.generate_va_number("CREDIT")
         trx_id = va.generate_trx_id()
 
         db.session.add(va)
@@ -300,7 +300,10 @@ class VirtualAccountModelCase(unittest.TestCase):
         self.app_context.pop()
 
     def test_generate_va_number(self):
-        va_number = VirtualAccount().generate_va_number()
+        va_number = VirtualAccount().generate_va_number("CREDIT")
+        self.assertEqual(len(va_number), 16)
+
+        va_number = VirtualAccount().generate_va_number("CARDLESS")
         self.assertEqual(len(va_number), 16)
 
     def test_inject_balance(self):

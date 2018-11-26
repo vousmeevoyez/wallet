@@ -23,7 +23,7 @@ class EcollectionHelper(object):
 
     BASE_URL     = BNI_ECOLLECTION_CONFIG["BASE_URL_DEV"]
     SECRET_KEY   = BNI_ECOLLECTION_CONFIG["SECRET_KEY"]
-    CLIENT_ID    = BNI_ECOLLECTION_CONFIG["CLIENT_ID"]
+    CLIENT_ID    = BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
 
     """
     def __init__(self):
@@ -45,17 +45,19 @@ class EcollectionHelper(object):
         }
 
         if va_type == "CREDIT":
-            api_type     = self.BNI_ECOLLECTION_CONFIG["BILLING"]
-            billing_type = self.BNI_ECOLLECTION_CONFIG["CREDIT_BILLING_TYPE"]
-            api_name     = "CREATE_CREDIT_VA"
-            va_type      = VA_TYPE["CREDIT"]
+            api_type         = self.BNI_ECOLLECTION_CONFIG["BILLING"]
+            billing_type     = self.BNI_ECOLLECTION_CONFIG["CREDIT_BILLING_TYPE"]
+            api_name         = "CREATE_CREDIT_VA"
+            va_type          = VA_TYPE["CREDIT"]
             datetime_expired = datetime.now() + timedelta(hours=WALLET_CONFIG["CREDIT_VA_TIMEOUT"])
+            CLIENT_ID        = self.BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
         elif va_type == "CARDLESS":
-            api_type     = self.BNI_ECOLLECTION_CONFIG["CARDLESS"]
-            billing_type = self.BNI_ECOLLECTION_CONFIG["CARDLESS_BILLING_TYPE"]
-            api_name     = "CREATE_CARDLESS_DEBIT_VA"
-            va_type      = VA_TYPE["CARDLESS"]
+            api_type         = self.BNI_ECOLLECTION_CONFIG["CARDLESS"]
+            billing_type     = self.BNI_ECOLLECTION_CONFIG["CARDLESS_BILLING_TYPE"]
+            api_name         = "CREATE_CARDLESS_DEBIT_VA"
+            va_type          = VA_TYPE["CARDLESS"]
             datetime_expired = datetime.now() + timedelta(minutes=WALLET_CONFIG["CARDLESS_VA_TIMEOUT"])
+            CLIENT_ID        = self.BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
         #end if
 
         search_va = VirtualAccount.query.filter_by(wallet_id=int(params["wallet_id"]), va_type=va_type).first()
@@ -80,7 +82,7 @@ class EcollectionHelper(object):
             va_type=va_type,
             datetime_expired=datetime_expired
         )
-        va_id  = va.generate_va_number()
+        va_id  = va.generate_va_number(va_type)
         trx_id = va.generate_trx_id()
 
         session.add(va)
@@ -93,7 +95,7 @@ class EcollectionHelper(object):
 
         payload = {
             'type'            : api_type,
-            'client_id'       : self.CLIENT_ID,
+            'client_id'       : CLIENT_ID,
             'trx_id'          : trx_id,
             'trx_amount'      : params["amount"],
             'billing_type'    : billing_type,
@@ -211,6 +213,33 @@ class EcollectionHelper(object):
         db.session.commit()
 
         return response
+    #end def
+
+    def recreate_va(self, params):
+        response = {
+            "status" : "SUCCESS",
+            "data"   : {}
+        }
+
+        # modify datetime_expired so it expire
+        datetime_expired = datetime.now() - timedelta(hours=WALLET_CONFIG["VA_TIMEOUT"])
+        params["datetime_expired"] = datetime_expired
+
+        # first deactivate va
+        va_response = self.update_va(params)
+        if va_response["status"] != "SUCCESS":
+            response["status"] = va_response["status"]
+            response["data"  ] = va_response["data"  ]
+            return response
+        #end if
+
+        # second recreate va with same VA
+        va_response = self.update_va(params)
+        if va_response["status"] != "SUCCESS":
+            response["status"] = va_response["status"]
+            response["data"  ] = va_response["data"  ]
+            return response
+        #end if
     #end def
 
 #end class
