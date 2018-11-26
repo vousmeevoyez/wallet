@@ -59,7 +59,7 @@ class WalletHelper(object):
 
                 va_payload = {
                     "wallet_id"        : wallet_id,
-                    "amount"           : wallet.balance,
+                    "amount"           : 0,
                     "customer_name"    : name,
                     "customer_phone"   : msisdn,
                 }

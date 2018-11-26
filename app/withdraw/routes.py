@@ -8,7 +8,7 @@ from app.config             import config
 from app.withdraw.modules   import withdraw
 
 @bp.route('/request', methods=["POST"])
-def wtihdraw_wallet():
+def withdraw_wallet():
     request_data = request.form
     data = {
         "wallet_id" : request_data["wallet_id" ],

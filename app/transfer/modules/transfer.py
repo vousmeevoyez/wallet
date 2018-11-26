@@ -144,6 +144,7 @@ class TransferController:
         return response
     #end def
 
+    """
     def _do_transaction(self, source, destination, amount, pin, transfer_type):
         response = {
             "code"   : 0,
@@ -307,5 +308,6 @@ class TransferController:
             session.rollback()
         #end try
     #end def
+    """
 
 #end class

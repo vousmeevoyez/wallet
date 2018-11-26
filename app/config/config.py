@@ -24,10 +24,10 @@ class Config(object):
         "VA_TO_BANK"         : 3,
         "CREDIT_VA_TIMEOUT"  : 4350, # 
         "CARDLESS_VA_TIMEOUT": 10, # 
-        "MINIMAL_WITHDRAW"   : 1000, # 
-        "MAX_WITHDRAW"       : 100000, # 
+        "MINIMAL_WITHDRAW"   : 50000, # 
+        "MAX_WITHDRAW"       : 100000000, # 
         "MINIMAL_DEPOSIT"    : 50000, # 
-        "MAX_DEPOSIT"        : 1000000000, # 
+        "MAX_DEPOSIT"        : 100000000, # 
         "VA_TIMEOUT"         : 87600, # set va expire to 10 years ago 
     }
 
@@ -51,6 +51,7 @@ class Config(object):
         "INJECT"          : "Injected balance {}",
         "SEND_TRANSFER"   : "Transfer balance {}",
         "RECEIVE_TRANSFER": "Received balance {}",
+        "WITHDRAW_NOTIF"  : "Withdraw Amount from Virtual Account {}, Reference Number {}"
     }
 
     # RESPONSE MESSAGE
@@ -69,6 +70,7 @@ class Config(object):
         "INSUFFICIENT_BALANCE"   : "Insufficient balance for this transaction",
         "SUCCESS_DEPOSIT"        : "Successfully Deposit {} to {}",
         "SUCCESS_TRANSFER"       : "Successfully Transfer {} from {} to {}",
+        "SUCCESS_WITHDRAW"       : "Successfully Withdraw {} from {}",
         "ROLLBACK_ERROR"         : "Transaction failed",
         "ALREADY_REQUESTED_ERROR": "Request already success, please wait before request again",
         "WITHDRAW_ERROR"         : "Request Withdraw Failed",
@@ -103,7 +105,8 @@ class Config(object):
     BNI_ECOLLECTION_CONFIG = {
         "BASE_URL_DEV"     : "https://apibeta.bni-ecollection.com/",
         "BASE_URL_PROD"    : "https://apibeta.bni-ecollection.com/",
-        "SECRET_KEY"       : "8eafc8687722fdd0ef78942309fcd983",
+        "DEBIT_SECRET_KEY" : "8eafc8687722fdd0ef78942309fcd983",
+        "CREDIT_SECRET_KEY": "707e501f79c05001a376636c10f7b8cf",
         "DEBIT_CLIENT_ID"  : "99099",
         "CREDIT_CLIENT_ID" : "99098",
         "BILLING"          : "createbilling",

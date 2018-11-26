@@ -21,9 +21,7 @@ class EcollectionHelper(object):
     BNI_ECOLLECTION_CONFIG        = config.Config.BNI_ECOLLECTION_CONFIG
     BNI_ECOLLECTION_ERROR_HANDLER = config.Config.BNI_ECOLLECTION_ERROR_HANDLER
 
-    BASE_URL     = BNI_ECOLLECTION_CONFIG["BASE_URL_DEV"]
-    SECRET_KEY   = BNI_ECOLLECTION_CONFIG["SECRET_KEY"]
-    CLIENT_ID    = BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
+    BASE_URL = BNI_ECOLLECTION_CONFIG["BASE_URL_DEV"]
 
     """
     def __init__(self):
@@ -33,31 +31,40 @@ class EcollectionHelper(object):
     #end def
     """
 
-    def _post(self, payload):
-        remote_response = remote_call.post(self.BASE_URL, self.CLIENT_ID, self.SECRET_KEY, payload)
+    def _post(self, resource_type, payload):
+        if resource_type == "CREDIT":
+            CLIENT_ID  = self.BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
+            SECRET_KEY = self.BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"]
+        elif resource_type == "CARDLESS":
+            CLIENT_ID  = self.BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
+            SECRET_KEY = self.BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"]
+        #end if
+
+        # assign client in in payload
+        payload["client_id"] = CLIENT_ID
+
+        remote_response = remote_call.post(self.BASE_URL, CLIENT_ID, SECRET_KEY, payload)
         return remote_response
     #end def
 
-    def create_va(self, va_type, params, session=None):
+    def create_va(self, resource_type, params, session=None):
         response = {
             "status" : "SUCCESS",
             "data"   : {}
         }
 
-        if va_type == "CREDIT":
+        if resource_type == "CREDIT":
             api_type         = self.BNI_ECOLLECTION_CONFIG["BILLING"]
             billing_type     = self.BNI_ECOLLECTION_CONFIG["CREDIT_BILLING_TYPE"]
             api_name         = "CREATE_CREDIT_VA"
             va_type          = VA_TYPE["CREDIT"]
             datetime_expired = datetime.now() + timedelta(hours=WALLET_CONFIG["CREDIT_VA_TIMEOUT"])
-            CLIENT_ID        = self.BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
-        elif va_type == "CARDLESS":
+        elif resource_type == "CARDLESS":
             api_type         = self.BNI_ECOLLECTION_CONFIG["CARDLESS"]
             billing_type     = self.BNI_ECOLLECTION_CONFIG["CARDLESS_BILLING_TYPE"]
             api_name         = "CREATE_CARDLESS_DEBIT_VA"
             va_type          = VA_TYPE["CARDLESS"]
             datetime_expired = datetime.now() + timedelta(minutes=WALLET_CONFIG["CARDLESS_VA_TIMEOUT"])
-            CLIENT_ID        = self.BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
         #end if
 
         search_va = VirtualAccount.query.filter_by(wallet_id=int(params["wallet_id"]), va_type=va_type).first()
@@ -82,7 +89,7 @@ class EcollectionHelper(object):
             va_type=va_type,
             datetime_expired=datetime_expired
         )
-        va_id  = va.generate_va_number(va_type)
+        va_id  = va.generate_va_number()
         trx_id = va.generate_trx_id()
 
         session.add(va)
@@ -95,9 +102,9 @@ class EcollectionHelper(object):
 
         payload = {
             'type'            : api_type,
-            'client_id'       : CLIENT_ID,
-            'trx_id'          : trx_id,
-            'trx_amount'      : params["amount"],
+            'client_id'       : None, # set client_id in another function
+            'trx_id'          : str(trx_id),
+            'trx_amount'      : str(params["amount"]),
             'billing_type'    : billing_type,
             'customer_name'   : params["customer_name"],
             'customer_email'  : '',
@@ -114,7 +121,7 @@ class EcollectionHelper(object):
         # initialize logging object
         log = ExternalLog( request=payload, resource=LOGGING_CONFIG["BNI_ECOLLECTION"], api_name=api_name)
 
-        result = self._post(payload)
+        result = self._post(resource_type, payload)
         response["data"] = result["data"]
 
         log.save_response(result)
@@ -134,7 +141,7 @@ class EcollectionHelper(object):
         return response
     #end def
 
-    def get_inquiry(self, params):
+    def get_inquiry(self, resource_type, params):
         API_NAME = "GET_INQUIRY"
 
         response = {
@@ -144,7 +151,7 @@ class EcollectionHelper(object):
 
         payload = {
             'type'     : self.BNI_ECOLLECTION_CONFIG["INQUIRY"],
-            'client_id': self.CLIENT_ID,
+            'client_id': None, # set in another function
             'trx_id'   : params["trx_id"]
         }
 
@@ -153,7 +160,7 @@ class EcollectionHelper(object):
                           resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
                           api_name=API_NAME)
 
-        result = self._post(payload)
+        result = self._post(resource_type, payload)
         response["data"] = result["data"]
 
         log.save_response(result)
@@ -173,7 +180,7 @@ class EcollectionHelper(object):
         return response
     #end def
 
-    def update_va(self, params):
+    def update_va(self, resource_type, params):
         API_NAME = "UPDATE_TRANSACTION"
 
         response = {
@@ -183,7 +190,7 @@ class EcollectionHelper(object):
 
         payload = {
             'type'             : self.BNI_ECOLLECTION_CONFIG["UPDATE"],
-            'client_id'        : self.CLIENT_ID,
+            'client_id'        : None,
             'trx_id'           : params["trx_id"],
             'trx_amount'       : params["amount"],
             'customer_name'    : params["customer_name"],
@@ -195,7 +202,7 @@ class EcollectionHelper(object):
                           resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
                           api_name=API_NAME)
 
-        result = self._post(payload)
+        result = self._post(resource_type, payload)
         response["data"] = result["data"]
 
         log.save_response(result)

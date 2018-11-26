@@ -131,8 +131,7 @@ class WalletController:
                 "customer_name"    : "NONE",
                 "datetime_expired" : datetime_expired
             }
-            va_response = bank_helper.EcollectionHelper().update_va(va_payload)
-
+            va_response = bank_helper.EcollectionHelper().update_va("CREDIT", va_payload)
 
             db.session.delete(wallet)
             db.session.commit()

@@ -162,7 +162,7 @@ class CallbackSchema(ma.Schema):
             # second make sure 3 first va_number is valid
             if va_number[:3] != "988":
                 # third make sure 3 first va_number is valid
-                if va_number[3:8] != BNI_ECOLLECTION_CONFIG["CLIENT_ID"]:
+                if va_number[3:8] != BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"] or va_number[3:8] != BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]:
                     valid = False
                 #end if
                 valid = False
@@ -176,13 +176,23 @@ class CallbackSchema(ma.Schema):
 
     @validates('payment_amount')
     def validate_payment_amount(self, payment_amount):
-        if payment_amount < WALLET_CONFIG["MINIMAL_DEPOSIT"]:
-            raise ValidationError("Minimal deposit is {}".format(str(WALLET_CONFIG["MINIMAL_DEPOSIT"])))
-        #end if
+        # if payment amount is positive it means deposit
+        if payment_amount > 0:
+            if payment_amount < WALLET_CONFIG["MINIMAL_DEPOSIT"]:
+                raise ValidationError("Minimal deposit is {}".format(str(WALLET_CONFIG["MINIMAL_DEPOSIT"])))
+            #end if
 
-        if payment_amount > WALLET_CONFIG["MAX_DEPOSIT"]:
-            raise ValidationError("Maximum deposit is {}".format(str(WALLET_CONFIG["MAX_DEPOSIT"])))
-        #end if
-    #end def
+            if payment_amount > WALLET_CONFIG["MAX_DEPOSIT"]:
+                raise ValidationError("Maximum deposit is {}".format(str(WALLET_CONFIG["MAX_DEPOSIT"])))
+            #end if
+        # negatives it means withdraw
+        elif payment_amount < 0:
+            if abs(payment_amount) < WALLET_CONFIG["MINIMAL_WITHDRAW"]:
+                raise ValidationError("Minimal withdraw is {}".format(str(WALLET_CONFIG["MINIMAL_WITHDRAW"])))
+            #end if
 
+            if abs(payment_amount) > WALLET_CONFIG["MAX_WITHDRAW"]:
+                raise ValidationError("Maximum withdraw is {}".format(str(WALLET_CONFIG["MAX_WITHDRAW"])))
+            #end if
+        #end if
 #end class

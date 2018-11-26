@@ -5,7 +5,8 @@ import numpy as np
 from app.bank.utility import BniEnc3
 from app.config       import config
 
-LOGGING_CONFIG = config.Config.LOGGING_CONFIG
+LOGGING_CONFIG         = config.Config.LOGGING_CONFIG
+BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 
 class MyEncoder(json.JSONEncoder):
         def default(self, obj):
@@ -30,7 +31,6 @@ def decrypt(client_id, secret_key, payload):
     except:
         return None
 #end def
-
 def post(base_url, client_id, secret_key, data):
     headers = {  "content-type" : "application/json" }
     payload = { "client_id" : None, "data" : None    }
@@ -66,5 +66,4 @@ def post(base_url, client_id, secret_key, data):
 
     return response
 #end def
-
 

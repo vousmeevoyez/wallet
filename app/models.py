@@ -11,6 +11,7 @@ import traceback
 
 now = datetime.utcnow()
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
+VA_TYPE_CONFIG         = config.Config.VA_TYPE_CONFIG
 WALLET_CONFIG          = config.Config.WALLET_CONFIG
 TRANSACTION_NOTES      = config.Config.TRANSACTION_NOTES
 
@@ -189,11 +190,11 @@ class VirtualAccount(db.Model):
             self.status = True
     #end def
 
-    def generate_va_number(self, va_type):
+    def generate_va_number(self):
         va_id = None
         while True:
             fixed = 988
-            if va_type == "CREDIT":
+            if self.va_type == VA_TYPE_CONFIG["CREDIT"]:
                 client_id = BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
             else:
                 client_id = BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
