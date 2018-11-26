@@ -59,7 +59,7 @@ class WithdrawController:
         user_info = wallet.user
         va_payload = {
             "wallet_id"        : wallet_id,
-            "amount"           : wallet.balance,
+            "amount"           : int(wallet.balance),
             "customer_name"    : user_info.name,
             "customer_phone"   : user_info.msisdn,
         }
