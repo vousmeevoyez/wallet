@@ -1,5 +1,7 @@
 import traceback
 import sys
+from datetime import datetime
+
 from flask              import request, jsonify
 
 from app.callback               import bp
@@ -92,6 +94,18 @@ def callback_withdraw_routes():
     withdraw_response = callback.CallbackController().withdraw(data)
     if withdraw_response["status_code"] != 0:
         response["status"] = str(withdraw_response["status_code"])
+
+    return jsonify(response)
+#end def
+
+@bp.route('/test', methods=["GET"])
+def test_callback():
+    # response that only accepted by BNI
+    response = {
+        "status" : "000"
+    }
+
+    print(datetime.now())
 
     return jsonify(response)
 #end def
