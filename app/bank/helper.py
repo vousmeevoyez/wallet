@@ -1,3 +1,4 @@
+import pytz
 import requests
 import base64
 import hashlib
@@ -22,6 +23,8 @@ class EcollectionHelper(object):
     BNI_ECOLLECTION_ERROR_HANDLER = config.Config.BNI_ECOLLECTION_ERROR_HANDLER
 
     BASE_URL = BNI_ECOLLECTION_CONFIG["BASE_URL_DEV"]
+
+    TIMEZONE = pytz.timezone("Asia/Jakarta")
 
     """
     def __init__(self):
@@ -58,13 +61,13 @@ class EcollectionHelper(object):
             billing_type     = self.BNI_ECOLLECTION_CONFIG["CREDIT_BILLING_TYPE"]
             api_name         = "CREATE_CREDIT_VA"
             va_type          = VA_TYPE["CREDIT"]
-            datetime_expired = datetime.now() + timedelta(hours=WALLET_CONFIG["CREDIT_VA_TIMEOUT"])
+            datetime_expired = datetime.now(self.TIMEZONE) + timedelta(hours=WALLET_CONFIG["CREDIT_VA_TIMEOUT"])
         elif resource_type == "CARDLESS":
             api_type         = self.BNI_ECOLLECTION_CONFIG["CARDLESS"]
             billing_type     = self.BNI_ECOLLECTION_CONFIG["CARDLESS_BILLING_TYPE"]
             api_name         = "CREATE_CARDLESS_DEBIT_VA"
             va_type          = VA_TYPE["CARDLESS"]
-            datetime_expired = datetime.now() + timedelta(minutes=WALLET_CONFIG["CARDLESS_VA_TIMEOUT"])
+            datetime_expired = datetime.now(self.TIMEZONE) + timedelta(minutes=WALLET_CONFIG["CARDLESS_VA_TIMEOUT"])
         #end if
 
         search_va = VirtualAccount.query.filter_by(wallet_id=int(params["wallet_id"]), va_type=va_type).first()

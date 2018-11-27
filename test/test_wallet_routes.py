@@ -256,50 +256,6 @@ class TestWalletRoutes(unittest.TestCase):
         self.assertEqual(response["status_code"], 0)
         self.assertEqual(len(response["data"]), len(test))
 
-    def test_deposit_wallet(self):
-        # add user first
-        user = User(
-            username='admin',
-            name='admin',
-            email='admin@bp.com',
-            msisdn='081209644314',
-            role=1,
-        )
-        user.set_password("password")
-        db.session.add(user)
-
-         # GET ACCESS TOKEN
-        response = self._request_token("admin", "password")
-        result = response.get_json()
-        access_token_admin = result["data"]["access_token"]
-
-        # generate mock responses
-        expected_value = {
-            "status" : "000",
-            "message" : {'trx_id': "123", 'virtual_account': "122222" }
-        }
-
-        self.mock_post.return_value = Mock()
-        self.mock_post.return_value.json.return_value  = expected_value
-
-        # create actual wallet
-        result = self._create_wallet(self.access_token, "rose", "081219644314", "123456", "1")
-        response = result.get_json()
-
-        wallet_id = response["data"]["wallet_id"]
-
-        # deposit balance
-        result = self._deposit(access_token_admin, wallet_id, "9999")
-        response = result.get_json()
-
-        # CHECK BALANCE ON DATABASES
-        wallet = Wallet.query.filter_by(id=wallet_id).first()
-        self.assertEqual( wallet.balance, 9999)
-
-        # CHECK TRANSACTION
-        transaction = Transaction.query.filter_by(destination_id=wallet_id).first()
-        self.assertEqual( transaction.amount, 9999)
-
     def test_transaction_history(self):
         # add user first
         user = User(
@@ -332,16 +288,12 @@ class TestWalletRoutes(unittest.TestCase):
 
         wallet_id = response["data"]["wallet_id"]
 
-        # deposit balance
-        result = self._deposit(access_token_admin, wallet_id, "9999")
-        response = result.get_json()
-
         # checking transaction history
         result = self._transaction_history(self.access_token, wallet_id)
         response = result.get_json()
 
         self.assertEqual(response["status_code"], 0)
-        self.assertEqual(len(response["data"]), 1)
+        self.assertEqual(len(response["data"]), 0)
 
     def test_wallet_details_success(self):
         # generate mock response

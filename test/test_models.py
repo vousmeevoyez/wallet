@@ -243,7 +243,7 @@ class WalletModelCase(unittest.TestCase):
             bank_id=1,
             va_type=1
         )
-        va_id  = va.generate_va_number("CREDIT")
+        va_id  = va.generate_va_number()
         trx_id = va.generate_trx_id()
         db.session.add(va)
         db.session.commit()
@@ -255,7 +255,7 @@ class WalletModelCase(unittest.TestCase):
             bank_id=1,
             va_type=2
         )
-        va_id  = va.generate_va_number("CREDIT")
+        va_id  = va.generate_va_number()
         trx_id = va.generate_trx_id()
 
         db.session.add(va)
@@ -300,30 +300,11 @@ class VirtualAccountModelCase(unittest.TestCase):
         self.app_context.pop()
 
     def test_generate_va_number(self):
-        va_number = VirtualAccount().generate_va_number("CREDIT")
+        va_number = VirtualAccount().generate_va_number()
         self.assertEqual(len(va_number), 16)
 
-        va_number = VirtualAccount().generate_va_number("CARDLESS")
+        va_number = VirtualAccount().generate_va_number()
         self.assertEqual(len(va_number), 16)
-
-    def test_inject_balance(self):
-        wallet = Wallet(
-        )
-        db.session.add(wallet)
-        db.session.commit()
-
-        va_source = 123456
-        wallet_id = 1
-        amount    = 100
-
-        inject_status = VirtualAccount().inject_balance(va_source, wallet_id, amount)
-        self.assertTrue(inject_status)
-
-        user = Wallet.query.get(1)
-        balance = user.check_balance()
-        self.assertEqual( balance, amount)
-
-        print(Transaction.query.all())
 
 class TransactionModelCase(unittest.TestCase):
     def setUp(self):

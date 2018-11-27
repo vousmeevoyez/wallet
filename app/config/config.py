@@ -22,8 +22,8 @@ class Config(object):
         "VA_TO_VA"           : 1,
         "BANK_TO_VA"         : 2,
         "VA_TO_BANK"         : 3,
-        "CREDIT_VA_TIMEOUT"  : 4350, # 
-        "CARDLESS_VA_TIMEOUT": 10, # 
+        "CREDIT_VA_TIMEOUT"  : 4350, # 1 years 
+        "CARDLESS_VA_TIMEOUT": 10, # 10 minutes
         "MINIMAL_WITHDRAW"   : 50000, # 
         "MAX_WITHDRAW"       : 100000000, # 
         "MINIMAL_DEPOSIT"    : 50000, # 

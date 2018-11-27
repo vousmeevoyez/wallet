@@ -229,29 +229,6 @@ class VirtualAccount(db.Model):
         return trx_id
     #end def
 
-    @staticmethod
-    def inject_balance(va_source, wallet_id, amount):
-        try:
-            # fetch wallet object
-            wallet = Wallet.query.filter_by(id=wallet_id).first()
-
-            # create credit transaction
-            credit_transaction = Transaction(
-                    source_id=wallet_id,
-                    destination_id=wallet_id,
-                    amount=amount,
-                    transaction_type=WALLET_CONFIG["CREDIT_FLAG"],
-                    notes=TRANSACTION_NOTES["DEPOSIT"].format(str(amount))
-            )
-            credit_transaction.generate_trx_id()
-            db.session.add(credit_transaction)
-            wallet.add_balance(amount)
-            db.session.commit()
-        except:
-            print(traceback.format_exc())
-            return False
-        return True
-    #end def
 #end class
 
 class Transaction(db.Model):
