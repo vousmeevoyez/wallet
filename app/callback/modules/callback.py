@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app            import db
 from app.callback   import bp
-from app.models     import Wallet, Transaction, VirtualAccount
+from app.models     import Wallet, Transaction, VirtualAccount, ExternalLog
 from app.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
 from app.errors     import bad_request, internal_error, request_not_found
 from app.config     import config
@@ -17,6 +17,7 @@ VA_TYPE           = config.Config.VA_TYPE_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 RESPONSE_MSG      = config.Config.RESPONSE_MSG
 WALLET_CONFIG     = config.Config.WALLET_CONFIG
+LOGGING_CONFIG    = config.Config.LOGGING_CONFIG
 
 class CallbackController:
 
@@ -31,10 +32,19 @@ class CallbackController:
             "data"           : "NONE"
         }
 
-        va            = params["virtual_account"]
-        customer_name = params["customer_name"  ]
-        trx_id        = params["trx_id"         ]
-        payment_amount= params["payment_amount" ]
+        va               = params["virtual_account"]
+        customer_name    = params["customer_name"  ]
+        trx_id           = params["trx_id"         ]
+        payment_amount   = params["payment_amount" ]
+        reference_number = params["payment_ntb"    ]
+
+        # log ingoing request
+        API_NAME = "DEPOSIT_NOTIFICATION"
+        log = ExternalLog(request=params,
+                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
+                          api_name=API_NAME,
+                          api_type=LOGGING_CONFIG["INGOING"]
+                         )
 
         virtual_account = VirtualAccount.query.filter_by(id=va, trx_id=trx_id).first()
         if virtual_account == None:
@@ -43,28 +53,23 @@ class CallbackController:
 
         # prepare inject the balance here
         deposit_payload = {
-            "id"     : virtual_account.wallet_id,
-            "amount" : payment_amount
+            "va_id"            : virtual_account.id,
+            "reference_number" : reference_number,
+            "id"               : virtual_account.wallet_id,
+            "amount"           : payment_amount
         }
 
         deposit_response = self._inject(deposit_payload)
+        log.save_response(deposit_response) # log the response here
         if deposit_response["status"] != "SUCCESS":
+            log.set_status(False) # False it means failed
             return bad_request()
         #end if
 
-        """
-        # after successfully inject the balance we need to update the VA and empty the balance
-        va_payload = {
-            "trx_id"           : str(virtual_account.trx_id),
-            "amount"           : "0", # set to zero
-            "customer_name"    : virtual_account.name, # set to zero
-            "datetime_expired" : virtual_account.datetime_expired, # set to zero
-        }
-        va_response = bank_helper.EcollectionHelper().update_va(va_payload)
-        if va_response["status"] != "SUCCESS":
-            return bad_request(RESPONSE_MSG["VA_UPDATE_FAILED"])
-        #end if
-        """
+        # commit log here
+        log.set_status(True)
+        db.session.add(log)
+        db.session.commit()
 
         return response
     #end def
@@ -82,36 +87,38 @@ class CallbackController:
         payment_amount   = params["payment_amount"  ]
         reference_number = params["payment_ntb"     ]
 
+        # log ingoing request
+        API_NAME = "WITHDRAW_NOTIFICATION"
+        log = ExternalLog( request=params,
+                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
+                          api_name=API_NAME,
+                          api_type=LOGGING_CONFIG["INGOING"]
+                         )
+
         virtual_account = VirtualAccount.query.filter_by(id=va, trx_id=trx_id).first()
         if virtual_account == None:
             return request_not_found()
         #end if
 
-        # prepare inject the balance here
+        # prepare deduct the balance here
         withdraw_payload = {
+            "va_id"            : virtual_account.id,
             "reference_number" : reference_number,
             "id"               : virtual_account.wallet_id,
             "amount"           : payment_amount
         }
 
         withdraw_response = self._deduct(withdraw_payload)
+        log.save_response(withdraw_response) # log the response here
         if withdraw_response["status"] != "SUCCESS":
+            log.set_status(False) # False it means failed
             return bad_request()
         #end if
 
-        """
-        # after successfully inject the balance we need to update the VA and empty the balance
-        va_payload = {
-            "trx_id"           : str(virtual_account.trx_id),
-            "amount"           : "0", # set to zero
-            "customer_name"    : virtual_account.name, # set to zero
-            "datetime_expired" : virtual_account.datetime_expired, # set to zero
-        }
-        va_response = bank_helper.EcollectionHelper().update_va(va_payload)
-        if va_response["status"] != "SUCCESS":
-            return bad_request(RESPONSE_MSG["VA_UPDATE_FAILED"])
-        #end if
-        """
+        # commit log here
+        log.set_status(True)
+        db.session.add(log)
+        db.session.commit()
 
         return response
     #end def
@@ -124,8 +131,10 @@ class CallbackController:
 
         try:
             # parse request data 
-            wallet_id  = params["id"]
-            amount     = float(params["amount"])
+            va_id            = params["va_id"]
+            reference_number = params["reference_number"]
+            wallet_id        = params["id"]
+            amount           = float(params["amount"])
 
             if amount < 0:
                 response["status"] = "FAILED"
@@ -154,7 +163,7 @@ class CallbackController:
                     amount=amount,
                     transaction_type=WALLET_CONFIG["CREDIT_FLAG"],
                     transfer_type=WALLET_CONFIG["BANK_TO_VA"],
-                    notes=TRANSACTION_NOTES["DEPOSIT"].format(str(amount))
+                    notes=TRANSACTION_NOTES["DEPOSIT"].format(str(amount), str(va_id), str(reference_number))
                 )
                 credit_transaction.generate_trx_id()
                 wallet.add_balance(amount)
@@ -183,7 +192,9 @@ class CallbackController:
         }
 
         try:
+
             # parse request data 
+            va_id            = params["va_id"]
             reference_number = params["reference_number"]
             wallet_id        = params["id"]
             amount           = float(params["amount"])
@@ -222,7 +233,7 @@ class CallbackController:
                     amount=amount,
                     transaction_type=WALLET_CONFIG["DEBIT_FLAG"],
                     transfer_type=WALLET_CONFIG["VA_TO_BANK"],
-                    notes=TRANSACTION_NOTES["WITHDRAW_NOTIF"].format(str(amount),str(reference_number))
+                    notes=TRANSACTION_NOTES["WITHDRAW_NOTIF"].format(str(amount), str(va_id), str(reference_number))
                 )
                 debit_transaction.generate_trx_id()
                 wallet.deduct_balance(amount)

@@ -52,19 +52,6 @@ def wallet_list():
     return jsonify(response)
 #end def
 
-@bp.route('/deposit', methods=["POST"])
-@custom_decorator.admin_required
-def deposit():
-    request_data = request.form
-    data = {
-        "id"     : request_data["wallet_id"],
-        "amount" : request_data["amount"   ],
-    }
-
-    response = wallet.WalletController().deposit(data)
-    return jsonify(response)
-#end def
-
 @bp.route('/info', methods=["POST", "DELETE"])
 @jwt_required
 def wallet_info():

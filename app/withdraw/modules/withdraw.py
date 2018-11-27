@@ -35,6 +35,8 @@ class WithdrawController:
         pin       = params["pin"      ]
         amount    = float(params["amount"])
 
+        session = db.session
+
         wallet = Wallet.query.filter_by(id=wallet_id).first()
         if wallet == None:
             return request_not_found()
@@ -64,12 +66,15 @@ class WithdrawController:
             "customer_phone"   : user_info.msisdn,
         }
 
-        va_response = bank_helper.EcollectionHelper().create_va("CARDLESS", va_payload)
+        va_response = bank_helper.EcollectionHelper().create_va("CARDLESS", va_payload, session)
         if va_response["status"] != "SUCCESS":
+            session.rollback()
             return bad_request(va_response["data"])
         #end if
 
-        response["data"] = va_response
+        session.commit()
+
+        response["data"] = va_response["data"]
 
         return response
     #end def

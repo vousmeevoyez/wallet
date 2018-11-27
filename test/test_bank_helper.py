@@ -231,7 +231,7 @@ class TestEcollectionHelper(unittest.TestCase):
 
     def test_get_inquiry(self):
         data = {
-            "trx_id" : "108813778",
+            "trx_id" : "566107292",
         }
         result = helper.EcollectionHelper().get_inquiry("CARDLESS", data)
         print(result)

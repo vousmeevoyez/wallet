@@ -10,7 +10,7 @@ sys.path.append("../app")
 
 from app                import create_app, db
 from app.config         import config
-from app.models         import User, Wallet, VirtualAccount, Transaction
+from app.models         import User, Wallet, VirtualAccount, Transaction, ExternalLog
 from app.bank.utility   import remote_call
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
@@ -68,9 +68,9 @@ class TestCallbackRoutes(unittest.TestCase):
 
         # CREATE ENCRYPYED DEPOSIT MOCKUP RESPONSE
         data = {
-            "virtual_account"           : "9889909813169928",
-            "customer_name"             : "Rose",
-            "trx_id"                    : "227473614",
+            "virtual_account"           : "9889909883647070",
+            "customer_name"             : "Irene",
+            "trx_id"                    : "850639115",
             "trx_amount"                : "0",
             "payment_amount"            : "50000",
             "cumulative_payment_amount" : "50000",
@@ -83,7 +83,31 @@ class TestCallbackRoutes(unittest.TestCase):
             "client_id" : BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
+        #print("--------------------------DEPOSIT MOCKUP------------------------------------")
         #print(json.dumps(expected_value))
+        #print("--------------------------DEPOSIT MOCKUP------------------------------------")
+
+        # CREATE ENCRYPYED WITHDRAW MOCKUP RESPONSE
+        data = {
+            "virtual_account"           : "9889909960022240",
+            "customer_name"             : "Irene",
+            "trx_id"                    : "794730729",
+            "trx_amount"                : "0",
+            "payment_amount"            : "-50000",
+            "cumulative_payment_amount" : "-50000",
+            "payment_ntb"               : "12345",
+            "datetime_payment"          : "2018-11-24 14:00:00",
+        }
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"], data)
+
+        expected_value = {
+            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
+            "data"      : encrypted_data.decode("UTF-8")
+        }
+
+        print("--------------------------WITHDRAW MOCKUP------------------------------------")
+        print(json.dumps(expected_value))
+        print("--------------------------WITHDRAW MOCKUP------------------------------------")
 
         # SET MOCKUP RESPONSE FOR UPDATING VA
         expected_value = {
@@ -170,7 +194,6 @@ class TestCallbackRoutes(unittest.TestCase):
 
         result = self._callback_deposit(expected_value)
         response = result.get_json()
-        print(response)
 
         self.assertEqual( response["status"], "000")
 
@@ -179,8 +202,13 @@ class TestCallbackRoutes(unittest.TestCase):
         response = result.get_json()
         self.assertEqual( response["data"]["balance"], int(data["payment_amount"]))
 
+        # make sure transaction is recorded
         transaction = Transaction.query.all()
-        print(transaction)
+        self.assertEqual( len(transaction), 1)
+
+        # make sure incoming request is recorded
+        log = ExternalLog.query.all()
+        self.assertEqual( len(log), 2)
 
     def test_callback_deposit_failed_min_deposit(self):
         data = {
@@ -205,6 +233,10 @@ class TestCallbackRoutes(unittest.TestCase):
 
         self.assertEqual( response["status"], "400")
 
+        # make sure incoming request is recorded
+        log = ExternalLog.query.all()
+        self.assertEqual( len(log), 1)
+
     def test_callback_deposit_failed_max_deposit(self):
         data = {
             "virtual_account"           : str(self.va.id),
@@ -228,6 +260,10 @@ class TestCallbackRoutes(unittest.TestCase):
 
         self.assertEqual( response["status"], "400")
 
+        # make sure incoming request is recorded
+        log = ExternalLog.query.all()
+        self.assertEqual( len(log), 1)
+
     def test_callback_deposit_failed_va_not_found(self):
         data = {
             "virtual_account"           : "9889909910336282",
@@ -250,6 +286,10 @@ class TestCallbackRoutes(unittest.TestCase):
         response = result.get_json()
 
         self.assertEqual( response["status"], "404")
+
+        # make sure incoming request is recorded
+        log = ExternalLog.query.all()
+        self.assertEqual( len(log), 1)
 
     def test_callback_withdraw_success(self):
         db.session.begin()

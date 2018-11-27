@@ -175,61 +175,6 @@ class WalletController:
         return response
     #end def
 
-    def deposit(self, params):
-        response = {
-            "status_code"    : 0,
-            "status_message" : "SUCCESS",
-            "data"           : "NONE"
-        }
-
-        try:
-            # parse request data 
-            wallet_id  = params["id"]
-            amount     = float(params["amount"])
-
-            if amount < 0:
-                return bad_request("Invalid Amount")
-            #end if
-
-            wallet = Wallet.query.filter_by(id=wallet_id).first()
-            if wallet == None:
-                return request_not_found()
-            #end if
-
-            if wallet.is_unlocked() == False:
-                return bad_request(RESPONSE_MSG["TRANSACTION_LOCKED"])
-            #end if
-
-            try:
-                # credit (+) we increase balance 
-                credit_transaction = Transaction(
-                    source_id=wallet.id,
-                    destination_id=wallet.id,
-                    amount=amount,
-                    transaction_type=WALLET_CONFIG["CREDIT_FLAG"],
-                    transfer_type=WALLET_CONFIG["BANK_TO_VA"],
-                    notes=TRANSACTION_NOTES["DEPOSIT"].format(str(amount))
-                )
-                credit_transaction.generate_trx_id()
-                wallet.add_balance(amount)
-                db.session.add(credit_transaction)
-
-                db.session.commit()
-            except:
-                db.session.rollback()
-                print(traceback.format_exc())
-                return internal_error()
-
-            success_message = RESPONSE_MSG["SUCCESS_DEPOSIT"].format(str(amount), wallet_id)
-            response["data"] = success_message
-
-        except Exception as e:
-            print(str(e))
-            return internal_error()
-
-        return response
-    #end def
-
     def history(self, wallet_id):
         response = {
             "status_code"    : 0,

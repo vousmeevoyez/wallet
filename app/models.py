@@ -174,7 +174,7 @@ class VirtualAccount(db.Model):
     wallet          = db.relationship("Wallet", back_populates="virtual_accounts", cascade="delete")
 
     def __repr__(self):
-        return '<VirtualAccount {} {} {} {}>'.format(self.id, self.trx_id, self.name, self.status)
+        return '<VirtualAccount {} {} {} {} {}>'.format(self.id, self.trx_id, self.name, self.status, self.va_type)
     #end def
 
     def is_unlocked(self):
@@ -294,6 +294,7 @@ class ExternalLog(db.Model):
     api_name    = db.Column(db.String(255))
     request     = db.Column(db.JSON)
     response    = db.Column(db.JSON)
+    api_type    = db.Column(db.Integer, default=0) # 0 mean outgoing
     created_at  = db.Column(db.DateTime, default=now)
 
     def set_status(self, status):

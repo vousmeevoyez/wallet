@@ -119,7 +119,11 @@ class EcollectionHelper(object):
         #end if
 
         # initialize logging object
-        log = ExternalLog( request=payload, resource=LOGGING_CONFIG["BNI_ECOLLECTION"], api_name=api_name)
+        log = ExternalLog( request=payload,
+                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
+                          api_name=api_name,
+                          api_type=LOGGING_CONFIG["OUTGOING"]
+                         )
 
         result = self._post(resource_type, payload)
         response["data"] = result["data"]
@@ -156,9 +160,11 @@ class EcollectionHelper(object):
         }
 
         # initialize logging object
-        log = ExternalLog(request=payload,
+        log = ExternalLog( request=payload,
                           resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
-                          api_name=API_NAME)
+                          api_name=API_NAME,
+                          api_type=LOGGING_CONFIG["OUTGOING"]
+                         )
 
         result = self._post(resource_type, payload)
         response["data"] = result["data"]
@@ -198,9 +204,11 @@ class EcollectionHelper(object):
         }
 
         # initialize logging object
-        log = ExternalLog(request=payload,
+        log = ExternalLog( request=payload,
                           resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
-                          api_name=API_NAME)
+                          api_name=API_NAME,
+                          api_type=LOGGING_CONFIG["OUTGOING"]
+                         )
 
         result = self._post(resource_type, payload)
         response["data"] = result["data"]

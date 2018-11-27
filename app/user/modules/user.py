@@ -48,16 +48,17 @@ class UserController:
 
             user.set_password(params["password"])
             session.add(user)
-            session.commit()
+            session.flush()
 
             params["user_id"] = user.id
             wallet_response = helper.WalletHelper().generate_wallet(params, session)
 
             if wallet_response["status"] != "SUCCESS":
-                session.delete(user)
                 session.rollback()
                 return bad_request(wallet_response["data"])
             #end if
+
+            session.commit()
 
         except IntegrityError as err:
             session.rollback()

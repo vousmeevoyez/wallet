@@ -47,11 +47,11 @@ class Config(object):
 
     # MASTER WALLET SETTINGS
     TRANSACTION_NOTES= {
-        "DEPOSIT"         : "Top up balance {}",
+        "DEPOSIT"         : "Top up balance {} from Virtual Account {}, Reference Number {}",
         "INJECT"          : "Injected balance {}",
         "SEND_TRANSFER"   : "Transfer balance {}",
         "RECEIVE_TRANSFER": "Received balance {}",
-        "WITHDRAW_NOTIF"  : "Withdraw Amount from Virtual Account {}, Reference Number {}"
+        "WITHDRAW_NOTIF"  : "Withdraw balance {} from Virtual Account {}, Reference Number {}"
     }
 
     # RESPONSE MESSAGE
@@ -143,4 +143,6 @@ class Config(object):
         "TIMEOUT" : 3,
         "BNI_ECOLLECTION" : "BNI-ECOLLECTION",
         "BNI_OPG"         : "BNI-OPG",
+        "OUTGOING"        : 0,
+        "INGOING"         : 1,
     }
