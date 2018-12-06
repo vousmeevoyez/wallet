@@ -1,49 +1,21 @@
-from flask              import Flask, request, current_app
-from flask_sqlalchemy   import SQLAlchemy
-from flask_migrate      import Migrate
-from flask_marshmallow  import Marshmallow
-from flask_jwt_extended import JWTManager
+from flask_restplus import Api
 
-from app.config import config
+from flask import Blueprint
 
-db      = SQLAlchemy()
-migrate = Migrate()
-ma      = Marshmallow()
-jwt     = JWTManager()
+from app.api.user           import api as user_ns
+from app.api.authentication import api as auth_ns
+from app.api.wallet         import api as wallet_ns
+from app.api.bank           import api as bank_ns
 
-def create_app(config_class=config.Config):
-    app = Flask(__name__)
-    app.config.from_object(config_class)
+from app.api    import jwt
 
-    db.init_app(app)
-    migrate.init_app(app,db)
-    ma.init_app(app)
-    jwt.init_app(app)
+blueprint = Blueprint("api", __name__)
 
-    from app.authentication import bp as auth_bp
-    app.register_blueprint(auth_bp, url_prefix="/auth")
+api = Api(blueprint,
+            version="1.0",
+         )
 
-    from app.access_key import bp as access_key_bp
-    app.register_blueprint(access_key_bp, url_prefix="/access_key")
-
-    from app.wallet     import bp as wallet_bp
-    app.register_blueprint(wallet_bp, url_prefix="/wallet")
-
-    from app.transfer   import bp as transfer_bp
-    app.register_blueprint(transfer_bp, url_prefix="/transfer")
-
-    from app.bank       import bp as bank_bp
-    app.register_blueprint(bank_bp)
-
-    from app.withdraw   import bp as withdraw_bp
-    app.register_blueprint(withdraw_bp, url_prefix="/withdraw")
-
-    from app.user       import bp as user_bp
-    app.register_blueprint(user_bp, url_prefix="/user")
-
-    from app.callback   import bp as callback_bp
-    app.register_blueprint(callback_bp, url_prefix="/callback")
-
-    return app
-
-from app import models, errors, serializer
+api.add_namespace(user_ns,   path="/users")
+api.add_namespace(auth_ns,   path="/auth")
+api.add_namespace(wallet_ns, path="/wallets")
+api.add_namespace(bank_ns)
