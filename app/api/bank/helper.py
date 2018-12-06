@@ -14,8 +14,6 @@ from .utility import remote_call
 
 
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG
-BANK_LIST      = config.Config.BANK_LIST_CONFIG
-VA_TYPE        = config.Config.VA_TYPE_CONFIG
 WALLET_CONFIG  = config.Config.WALLET_CONFIG
 
 class EcollectionHelper(object):

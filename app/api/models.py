@@ -1,6 +1,8 @@
 import secrets
 import random
 import traceback
+import jwt
+
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -8,10 +10,11 @@ from app.api        import db
 from app.api.config import config
 
 now = datetime.utcnow()
+
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
-VA_TYPE_CONFIG         = config.Config.VA_TYPE_CONFIG
 WALLET_CONFIG          = config.Config.WALLET_CONFIG
 TRANSACTION_NOTES      = config.Config.TRANSACTION_NOTES
+JWT_CONFIG             = config.Config.JWT_CONFIG
 
 class Role(db.Model):
     id          = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -56,6 +59,45 @@ class User(db.Model):
 
     def get_phone_number(self):
         return str(self.phone_ext) + str(self.msisdn)
+    #end def
+
+    @staticmethod
+    def encode_token(token_type, user_id, role):
+        try:
+            if token_type == "ACCESS":
+                exp = datetime.utcnow() + timedelta(minutes=JWT_CONFIG["ACCESS_EXPIRE"])
+            elif token_type == "REFRESH":
+                exp = datetime.utcnow() + timedelta(days=JWT_CONFIG["ACCESS_EXPIRE"])
+            #end if
+            payload = {
+                "exp" : exp,
+                "iat" : datetime.utcnow(),
+                "sub" : user_id,
+                "type": token_type,
+                "role": role,
+            }
+            return jwt.encode(
+                payload,
+                JWT_CONFIG["SECRET"],
+                algorithm="HS256"
+            )
+        except Exception as e:
+            return e
+    #end def
+
+    @staticmethod
+    def decode_token(token):
+        try:
+            payload = jwt.decode(token, JWT_CONFIG["SECRET"])
+            blacklist_status = BlacklistToken.is_blacklisted(token)
+            if blacklist_status == True:
+                return "Token has been revoked"
+            else:
+                return payload
+        except jwt.ExpiredSignatureError:
+            return "Signature Expired"
+        except jwt.InvalidTokenError:
+            return "Invalid Token"
     #end def
 
 #end class
@@ -310,7 +352,7 @@ class ExternalLog(db.Model):
 
 class BlacklistToken(db.Model):
     id          = db.Column(db.Integer, primary_key=True)
-    token       = db.Column(db.String(120))
+    token       = db.Column(db.String(255))
     created_at  = db.Column(db.DateTime, default=now)
 
     @staticmethod
@@ -326,6 +368,7 @@ class BlacklistToken(db.Model):
 class ForgotPin(db.Model):
     id          = db.Column(db.Integer, primary_key=True)
     otp_code    = db.Column(db.String(120))
+    otp_key     = db.Column(db.String(120))
     created_at  = db.Column(db.DateTime, default=now)
     valid_until = db.Column(db.DateTime)
     wallet_id   = db.Column(db.BigInteger, db.ForeignKey('wallet.id'))
@@ -341,5 +384,11 @@ class ForgotPin(db.Model):
 
     def check_otp_code(self, otp_code):
         return check_password_hash(self.otp_code, otp_code)
+    #end def
+
+    def generate_otp_key(self):
+        otp_key = secrets.token_hex(16)
+        self.otp_key = otp_key
+        return otp_key
     #end def
 #end class

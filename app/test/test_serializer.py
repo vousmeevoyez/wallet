@@ -24,7 +24,7 @@ class TestWalletSchema(BaseTestCase):
             "pin"    : "12345",
         }
         result2, errors2 = WalletSchema().load(data2)
-        self.assertEqual( errors2, {'pin': ['Invalid Pin, Minimum 4-6 digit']})
+        self.assertEqual( errors2, {'pin': ['Invalid Pin']})
 
 class TestTransactionSchema(BaseTestCase):
     def test_serializer(self):

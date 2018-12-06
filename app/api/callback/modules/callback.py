@@ -4,16 +4,14 @@ from datetime import datetime, timedelta
 from flask          import request, jsonify
 from sqlalchemy.exc import IntegrityError
 
-from app            import db
-from app.callback   import bp
-from app.models     import Wallet, Transaction, VirtualAccount, ExternalLog
-from app.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
-from app.errors     import bad_request, internal_error, request_not_found
-from app.config     import config
-from app.bank       import helper as bank_helper
+from app.api            import db
+from app.api.models     import Wallet, Transaction, VirtualAccount, ExternalLog
+from app.api.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
+from app.api.errors     import bad_request, internal_error, request_not_found
+from app.api.config     import config
+from app.api.bank       import helper as bank_helper
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
-VA_TYPE           = config.Config.VA_TYPE_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 RESPONSE_MSG      = config.Config.RESPONSE_MSG
 WALLET_CONFIG     = config.Config.WALLET_CONFIG

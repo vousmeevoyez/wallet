@@ -91,6 +91,7 @@ def make_shell_context():
             'VirtualAccount' : VirtualAccount,
             'Transaction'    : Transaction,
             'ExternalLog'    : ExternalLog,
+            'ForgotPin'      : ForgotPin,
             'User'           : User
            }
 #end def

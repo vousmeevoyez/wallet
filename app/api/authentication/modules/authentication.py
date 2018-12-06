@@ -1,11 +1,11 @@
+import jwt
 import traceback
+
 from datetime import datetime, timedelta
 
-from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
-from flask          import request, jsonify
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
-from app.api            import db, jwt
+from app.api            import db
 from app.api.models     import User, BlacklistToken
 from app.api.serializer import UserSchema, WalletSchema, VirtualAccountSchema
 from app.api.errors     import bad_request, internal_error, request_not_found
@@ -19,11 +19,43 @@ class AuthController:
         pass
     #end def
 
+    def _create_access_token(self, user):
+        token = User.encode_token("ACCESS", user.id, user.role.description)
+        return token.decode()
+    #end def
+
+    def _create_refresh_token(self, user):
+        token = User.encode_token("REFRESH", user.id, user.role.description)
+        return token.decode()
+    #end def
+
+    @staticmethod
+    def current_login_user(token):
+        response = {
+            "status" : "SUCCESS"
+        }
+
+        payload = User.decode_token(token)
+
+        if not isinstance(payload, dict):
+            response["status"] = "FAILED"
+            response["data"  ] = payload # append the error here
+            return response
+        #end if
+
+        # fetch user information
+        response["data"] = {
+            "token_type": payload["type"],
+            "user_id"   : payload["sub"],
+            "role"      : payload["role"],
+        }
+        return response
+    #end def
+
     def create_token(self, params):
         response = {}
 
         try:
-
             username = params["username"]
             password = params["password"]
 
@@ -37,8 +69,8 @@ class AuthController:
             #end if
 
             # generate token here
-            access_token = create_access_token(identity=user)
-            refresh_token= create_refresh_token(identity=user)
+            access_token = self._create_access_token(user)
+            refresh_token= self._create_refresh_token(user)
 
         except Exception as e:
             print(traceback.format_exc())
@@ -59,13 +91,12 @@ class AuthController:
         response = {}
 
         try:
-
             user = User.query.filter_by(id=current_user).first()
             if user == None:
                 return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
             #end if
 
-            access_token = create_access_token(identity=user)
+            access_token = self._create_access_token(user)
 
         except Exception as e:
             print(traceback.format_exc())
@@ -85,6 +116,12 @@ class AuthController:
         response = {}
 
         try:
+            # decode the token first
+            resp = User.decode_token(token)
+
+            if not isinstance(resp, dict):
+                return bad_request(resp)
+            #end if
 
             blacklist_token = BlacklistToken(token=token)
 
@@ -105,6 +142,12 @@ class AuthController:
         response = {}
 
         try:
+            # decode the token first
+            resp = User.decode_token(token)
+
+            if not isinstance(resp, dict):
+                return bad_request(resp)
+            #end if
 
             blacklist_token = BlacklistToken(token=token)
 

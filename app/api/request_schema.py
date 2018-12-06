@@ -14,26 +14,44 @@ class UserRequestSchema:
 
 class AuthRequestSchema:
     parser = reqparse.RequestParser()
-    parser.add_argument("username", type=str)
-    parser.add_argument("password", type=str)
+    parser.add_argument("username", type=str, required=True)
+    parser.add_argument("password", type=str, required=True)
 #end class
 
 class WalletRequestSchema:
     parser = reqparse.RequestParser()
-    parser.add_argument("name",   type=str)
-    parser.add_argument("msisdn", type=str)
-    parser.add_argument("pin",    type=str)
+    parser.add_argument("name",   type=str, required=True)
+    parser.add_argument("msisdn", type=str, required=True)
+    parser.add_argument("pin",    type=str, required=True)
+#end class
+
+class WalletUpdatePinRequestSchema:
+    parser = reqparse.RequestParser()
+    parser.add_argument("pin",        type=str, required=True)
+    parser.add_argument("confirm_pin",type=str, required=True)
+#end class
+
+class PinAuthRequestSchema:
+    parser = reqparse.RequestParser()
+    parser.add_argument("pin",type=str, required=True)
+#end class
+
+class ForgotPinRequestSchema:
+    parser = reqparse.RequestParser()
+    parser.add_argument("pin",     type=str, required=True)
+    parser.add_argument("otp_code",type=str, required=True)
+    parser.add_argument("otp_key", type=str, required=True)
 #end class
 
 class TransferRequestSchema:
     parser = reqparse.RequestParser()
-    parser.add_argument("amount", type=int)
-    parser.add_argument("pin",    type=str)
-    parser.add_argument("notes",  type=str)
+    parser.add_argument("amount", type=int, required=True)
+    parser.add_argument("pin",    type=str, required=True)
+    parser.add_argument("notes",  type=str, required=True)
 #end class
 
 class WithdrawRequestSchema:
     parser = reqparse.RequestParser()
-    parser.add_argument("amount", type=int)
-    parser.add_argument("pin",    type=str)
+    parser.add_argument("amount", type=int, required=True)
+    parser.add_argument("pin",    type=str, required=True)
 #end class

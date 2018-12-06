@@ -8,7 +8,6 @@ from app.api.config  import config
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 WALLET_CONFIG          = config.Config.WALLET_CONFIG
-VA_TYPE_CONFIG         = config.Config.VA_TYPE_CONFIG
 
 def cannot_be_blank(string):
     if not string:
@@ -161,10 +160,10 @@ class WalletSchema(ma.Schema):
 
     @validates('pin')
     def validate_pin(self, pin):
-        if re.fullmatch("\d{4}|\d{6}", pin):
+        if re.match(r"\d{6}", pin):
             pass
         else:
-            raise ValidationError("Invalid Pin, Minimum 4-6 digit")
+            raise ValidationError("Invalid Pin")
     #end def
 
 #end class

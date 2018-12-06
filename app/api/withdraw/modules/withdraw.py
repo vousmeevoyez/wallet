@@ -13,7 +13,6 @@ from app.errors     import bad_request, internal_error, request_not_found
 from app.config     import config
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
-VA_TYPE           = config.Config.VA_TYPE_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 RESPONSE_MSG      = config.Config.RESPONSE_MSG
 WALLET_CONFIG     = config.Config.WALLET_CONFIG

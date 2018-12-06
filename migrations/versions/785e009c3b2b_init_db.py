@@ -1,8 +1,8 @@
 """init db
 
-Revision ID: 2f62c13484d9
+Revision ID: 785e009c3b2b
 Revises: 
-Create Date: 2018-12-05 17:26:37.035033
+Create Date: 2018-12-06 21:48:28.542706
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '2f62c13484d9'
+revision = '785e009c3b2b'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -29,7 +29,7 @@ def upgrade():
     )
     op.create_table('blacklist_token',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('token', sa.String(length=120), nullable=True),
+    sa.Column('token', sa.String(length=255), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -99,6 +99,7 @@ def upgrade():
     op.create_table('forgot_pin',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('otp_code', sa.String(length=120), nullable=True),
+    sa.Column('otp_key', sa.String(length=120), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('valid_until', sa.DateTime(), nullable=True),
     sa.Column('wallet_id', sa.BigInteger(), nullable=True),

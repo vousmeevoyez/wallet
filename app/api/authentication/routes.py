@@ -1,18 +1,15 @@
 from functools import wraps
 import traceback
 
-from flask              import request, jsonify
-from flask_restplus     import Resource
-from flask_jwt_extended import jwt_refresh_token_required, jwt_required, get_jwt_identity, get_raw_jwt, verify_jwt_in_request, get_jwt_claims
-from flask_jwt_extended.exceptions import RevokedTokenError
+from flask_restplus     import Resource, reqparse
 
-from app.api.authentication         import api
-from app.api.serializer             import UserSchema
-from app.api.request_schema         import AuthRequestSchema
-from app.api.errors                 import bad_request, internal_error
-from app.api.authentication.modules import authentication
-from app.api.models                 import BlacklistToken, User, Wallet, Role
-from app.api.config                 import config
+from app.api.authentication           import api
+from app.api.serializer               import UserSchema
+from app.api.request_schema           import AuthRequestSchema
+from app.api.errors                   import bad_request, internal_error
+from app.api.authentication.modules   import authentication
+from app.api.authentication.decorator import refresh_token_only, token_required, get_current_token, get_token_payload
+from app.api.config                   import config
 
 request_schema = AuthRequestSchema.parser
 
@@ -45,9 +42,15 @@ class AccessTokenLogin(Resource):
 @api.route("/refresh")
 class RefreshTokenLogin(Resource):
     # refresh the token
-    @jwt_refresh_token_required
+    @refresh_token_only
     def post(self):
-        current_user = get_jwt_identity()
+        # fetch payload
+        payload_resp = get_token_payload()
+        if not isinstance(payload_resp, dict):
+            return payload_resp
+        #end if
+
+        current_user = payload_resp["user_id"]
 
         response = authentication.AuthController().refresh_token(current_user)
         return response
@@ -57,11 +60,12 @@ class RefreshTokenLogin(Resource):
 @api.route("/token/revoke")
 class AccessTokenLogout(Resource):
     # blacklist access token
-    @jwt_required
+    @token_required
     def post(self):
-        token = get_raw_jwt()["jti"]
-        response = authentication.AuthController().logout_access_token(token)
+        # fetch token from header
+        token = get_current_token()
 
+        response = authentication.AuthController().logout_access_token(token)
         return response
     #end def
 #end class
@@ -69,13 +73,12 @@ class AccessTokenLogout(Resource):
 @api.route("/refresh/revoke")
 class RefreshTokenLogout(Resource):
     # blacklist refresh token
-    @jwt_refresh_token_required
+    @refresh_token_only
     def post(self):
-        token = get_raw_jwt()["jti"]
-        response = authentication.AuthController().logout_refresh_token(token)
+        # fetch token from header
+        token = get_current_token()
 
+        response = authentication.AuthController().logout_refresh_token(token)
         return response
     #end def
 #end class
-
-

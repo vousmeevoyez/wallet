@@ -93,6 +93,61 @@ class UserTestCaseModel(BaseTestCase):
         self.assertTrue(user.check_password("password"))
         self.assertFalse(user.check_password("test"))
 
+    def test_encode_token(self):
+        # create user role first
+        role = Role(
+            description="USER",
+        )
+        db.session.add(role)
+        db.session.commit()
+
+        # create dummy user
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            phone_ext='62',
+            phone_number='81219644314',
+            role_id=role.id,
+        )
+        user.set_password("password")
+        db.session.add(user)
+        db.session.commit()
+
+        token = user.encode_token("ACCESS", user.id, user.role.description)
+        self.assertTrue(isinstance(token, bytes))
+
+    def test_decode_token(self):
+        # create user role first
+        role = Role(
+            description="USER",
+        )
+        db.session.add(role)
+        db.session.commit()
+
+        # create dummy user
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            phone_ext='62',
+            phone_number='81219644314',
+            role_id=role.id,
+        )
+        user.set_password("password")
+        db.session.add(user)
+        db.session.commit()
+
+        token = user.encode_token("ACCESS", user.id, user.role.description)
+        self.assertTrue(isinstance(token, bytes))
+
+        utf_token = token.decode("utf-8")
+
+        # make sure the decoded token contain following information
+        self.assertEqual(user.decode_token(utf_token)["type"], "ACCESS")
+        self.assertEqual(user.decode_token(utf_token)["sub"], 1)
+        self.assertEqual(user.decode_token(utf_token)["role"], "USER")
+
 class WalletModelCase(BaseTestCase):
 
     def test_check_balance(self):
@@ -305,6 +360,7 @@ class WalletModelCase(BaseTestCase):
         result = Wallet.is_owned(1, 456464)
         self.assertFalse(result)
 
+
 class VirtualAccountModelCase(BaseTestCase):
 
     def test_generate_va_number(self):
@@ -335,6 +391,7 @@ class VirtualAccountModelCase(BaseTestCase):
 
         va_number = va.generate_va_number()
         self.assertEqual(len(va_number), 16)
+
 
 class TransactionModelCase(BaseTestCase):
     def test_debit_transaction(self):
@@ -393,6 +450,7 @@ class TransactionModelCase(BaseTestCase):
         user = Wallet.query.get(1)
         self.assertEqual(user.check_balance(), 900)
 
+
 class ExternalModelCase(BaseTestCase):
 
     def test_set_status(self):
@@ -423,6 +481,7 @@ class ExternalModelCase(BaseTestCase):
 
         self.assertTrue(result.status)
         self.assertFalse(result2.status)
+
 
 class ForgotPinModelCase(BaseTestCase):
     def test_set_otp_code(self):
@@ -463,6 +522,55 @@ class ForgotPinModelCase(BaseTestCase):
         result = forgot_pin.check_otp_code("123456")
 
         self.assertTrue(result)
+
+    def test_check_valid_otp_log(self):
+        # create wallet
+        wallet = Wallet(
+        )
+        db.session.add(wallet)
+        db.session.commit()
+
+        wallet = Wallet.query.get(1)
+
+        # create forgot pin record
+        valid_until = datetime.now() + timedelta(minutes=5)
+
+        forgot_pin = ForgotPin(
+            wallet_id=wallet.id,
+            valid_until=valid_until
+        )
+        forgot_pin.set_otp_code("123456")
+        db.session.add(forgot_pin)
+        db.session.commit()
+
+        # check record and make sure there's a pending otp record
+        result = ForgotPin.query.filter(ForgotPin.wallet_id==wallet.id, ForgotPin.status==False, ForgotPin.valid_until > datetime.now()).count()
+        self.assertEqual(result, 1)
+
+    def test_check_invalid_otp_log(self):
+        # create wallet
+        wallet = Wallet(
+        )
+        db.session.add(wallet)
+        db.session.commit()
+
+        wallet = Wallet.query.get(1)
+
+        # create forgot pin record
+        valid_until = datetime.now() - timedelta(minutes=5)
+
+        forgot_pin = ForgotPin(
+            wallet_id=wallet.id,
+            valid_until=valid_until
+        )
+        forgot_pin.set_otp_code("123456")
+        db.session.add(forgot_pin)
+        db.session.commit()
+
+        # check record and make sure there's a pending otp record
+        result = ForgotPin.query.filter(ForgotPin.wallet_id==wallet.id, ForgotPin.status==False, ForgotPin.valid_until > datetime.now()).count()
+        self.assertEqual(result, 0)
+
 
 class BankAccountModelCase(BaseTestCase):
 

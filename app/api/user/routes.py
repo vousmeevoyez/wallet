@@ -1,12 +1,11 @@
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt_claims
 from flask_restplus     import Resource
 
-from app.api                import jwt, db
+from app.api                import db
 from app.api.user           import api
 from app.api.serializer     import UserSchema
 from app.api.request_schema import UserRequestSchema
 
-from app.api.authentication.decorator import admin_required
+from app.api.authentication.decorator import token_required, admin_required
 
 from app.api.user.modules   import user
 
@@ -48,6 +47,7 @@ class UserRoutes(Resource):
 
 @api.route("/<int:user_id>")
 class UserInfoRoutes(Resource):
+    @token_required
     def get(self, user_id):
         response = user.UserController().user_info({ "user_id" : user_id })
         return response

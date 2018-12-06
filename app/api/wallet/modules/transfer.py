@@ -4,12 +4,11 @@ from marshmallow    import ValidationError
 from sqlalchemy.exc import IntegrityError
 from flask          import request, jsonify
 
-from app            import db
-from app.transfer   import bp
-from app.models     import Wallet, Transaction
-from app.serializer import TransactionSchema
-from app.errors     import bad_request, internal_error, request_not_found
-from app.config     import config
+from app.api            import db
+from app.api.models     import Wallet, Transaction
+from app.api.serializer import TransactionSchema
+from app.api.errors     import bad_request, internal_error, request_not_found
+from app.api.config     import config
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 RESPONSE_MSG      = config.Config.RESPONSE_MSG

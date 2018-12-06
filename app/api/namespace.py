@@ -19,3 +19,7 @@ class WalletNamespace:
 class BankNamespace:
     api = Namespace("bank")
 #end class
+
+class CallbackNamespace:
+    api = Namespace("callback")
+#end class

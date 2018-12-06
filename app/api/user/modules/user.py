@@ -13,9 +13,6 @@ from app.api.serializer import UserSchema, WalletSchema, VirtualAccountSchema
 from app.api.errors     import bad_request, internal_error, request_not_found
 from app.api.config     import config
 
-ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
-VA_TYPE           = config.Config.VA_TYPE_CONFIG
-TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 RESPONSE_MSG      = config.Config.RESPONSE_MSG
 
 class UserController:
@@ -28,8 +25,12 @@ class UserController:
         response = {}
 
         # CREATE TRANSACTION SESSION
-        session = db.session(autocommit=True)
-        session.begin(subtransactions=True)
+        try:
+            session = db.session(autocommit=True)
+            session.begin(subtransactions=True)
+        except InvalidRequestError:
+            db.session.commit()
+            session = db.session()
 
         try:
             # fetch user role first

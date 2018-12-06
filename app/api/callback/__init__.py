@@ -1,5 +1,5 @@
-from flask import Blueprint
+from app.api.namespace import CallbackNamespace
 
-bp = Blueprint('callback', __name__)
+api = CallbackNamespace.api
 
-from app.callback import routes, helper
+from app.api.callback import routes

@@ -11,9 +11,11 @@ class Config:
     BUNDLE_ERRORS = True #configuration key for flask-restplus to enable bundle erors
 
     # JSON WEB TOKEN CONFIG
-    JWT_SECRET_KEY             = "MyS3cret"
-    JWT_BLACKLIST_ENABLED      = True
-    JWT_BLACKLIST_TOKEN_CHECKS = [ "access", "refresh" ]
+    JWT_CONFIG = {
+        "SECRET"         : "wiqeuyashdkjlakssahn",
+        "ACCESS_EXPIRE"  : 10, # minutes,
+        "REFRESH_EXPIRE" : 30, # day,
+    }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     PRESERVE_CONTEXT_ON_EXCEPTION  = False
 
@@ -31,15 +33,7 @@ class Config:
         "MINIMAL_DEPOSIT"    : 50000, # 
         "MAX_DEPOSIT"        : 100000000, # 
         "VA_TIMEOUT"         : 87600, # set va expire to 10 years ago 
-    }
-
-    BANK_LIST_CONFIG = {
-        "BNI" : 1,
-    }
-
-    VA_TYPE_CONFIG = {
-        "CREDIT"   : 1,
-        "CARDLESS" : 2
+        "OTP_TIMEOUT"        : 5 # set otp timeout in minutes
     }
 
     # MASTER WALLET SETTINGS
@@ -68,6 +62,9 @@ class Config:
             "REFRESH_AUTH"          : "Token Successfully refreshed",
             "LOGOUT_AUTH"           : "Access Token Successfully revoked",
             "LOGOUT_REFRESH"        : "Refresh Token Successfully revoked",
+            "UPDATE_PIN"            : "Pin Successfully updated",
+            "FORGOT_OTP"            : "Forgot OTP Code has been sent to {}",
+            "FORGOT_PIN"            : "Forgot Pin Success",
         },
         "FAILED" : {
             "RECORD_NOT_FOUND"       : "Record not found",
@@ -93,6 +90,13 @@ class Config:
             "REVOKED_TOKEN"          : "Token has been revoked",
             "INVALID_TOKEN"          : "Invalid Token",
             "INSUFFICIENT_PERMISSION": "Admin Permission Required",
+            "PIN_NOT_MATCH"          : "Pin & Confirm Pin does not match",
+            "OLD_PIN"                : "New Pin can't be the same with old one",
+            "OTP_PENDING"            : "There's pending Forgot OTP, Please wait 5 minutes before request again",
+            "OTP_NOT_FOUND"          : "Invalid Forgot OTP Record",
+            "INVALID_OTP_CODE"       : "Invalid OTP Code",
+            "OTP_ALREADY_VERIFIED"   : "OTP Already verified",
+            "REFRESH_TOKEN_ONLY"     : "Only Refresh Token Allowed",
         }
     }
 
