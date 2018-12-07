@@ -131,6 +131,8 @@ class WalletTransfer(Resource):
         # parse request data
         request_data = transfer_request_schema.parse_args(strict=True)
         data = {
+            "source"      : source_wallet_id,
+            "destination" : destination,
             "amount"      : request_data["amount"],
             "notes"       : request_data["notes"],
             "pin"         : request_data["pin"],
