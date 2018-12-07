@@ -5,7 +5,7 @@ from flask_restplus     import Resource
 
 from app.api.wallet             import api
 from app.api.serializer         import WalletSchema
-from app.api.request_schema     import WalletRequestSchema, WalletUpdatePinRequestSchema, PinAuthRequestSchema, ForgotPinRequestSchema
+from app.api.request_schema     import WalletRequestSchema, WalletUpdatePinRequestSchema, PinAuthRequestSchema, ForgotPinRequestSchema, TransferRequestSchema
 from app.api.errors             import bad_request, internal_error, request_not_found
 
 # wallet modules
@@ -25,6 +25,7 @@ request_schema            = WalletRequestSchema.parser
 update_pin_request_schema = WalletUpdatePinRequestSchema.parser
 pin_auth_request_schema   = PinAuthRequestSchema.parser
 forgot_pin_request_schema = ForgotPinRequestSchema.parser
+transfer_request_schema   = TransferRequestSchema.parser
 
 @api.route('/<int:wallet_id>')
 class WalletDetails(Resource):
@@ -109,10 +110,14 @@ class ForgotWalletPin(Resource):
 class WalletTransfer(Resource):
     @token_required
     def post(self, source_wallet_id, destination_wallet_id):
-        user_id = get_jwt_identity()
+        # fetch payload
+        payload_resp = get_token_payload()
+        if not isinstance(payload_resp, dict):
+            return payload_resp
+        #end if
 
         # parse request data
-        request_data = request.form
+        request_data = transfer_request_schema.parse_args(strict=True)
         data = {
             "amount"      : request_data["amount"],
             "notes"       : request_data["notes"],
@@ -120,7 +125,7 @@ class WalletTransfer(Resource):
         }
 
         # checking token identity to make sure user can only access their wallet information
-        permission_response = auth_helper.AuthenticationHelper().check_wallet_permission(user_id, data["source"])
+        permission_response = auth_helper.AuthenticationHelper().check_wallet_permission(user_id, source_wallet_id)
         if permission_response != None:
             return permission_response
         #end if
