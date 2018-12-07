@@ -33,7 +33,7 @@ class Config:
         "MINIMAL_DEPOSIT"    : 50000, # 
         "MAX_DEPOSIT"        : 100000000, # 
         "VA_TIMEOUT"         : 87600, # set va expire to 10 years ago 
-        "OTP_TIMEOUT"        : 5 # set otp timeout in minutes
+        "OTP_TIMEOUT"        : 2 # set otp timeout in minutes
     }
 
     # MASTER WALLET SETTINGS
@@ -76,7 +76,7 @@ class Config:
             "LOCK_TRANSACTION"       : "Cannot proceed transaction, Wallet is locked",
             "INSUFFICIENT_BALANCE"   : "Insufficient balance for this transaction",
             "ROLLBACK"               : "Transaction failed",
-            "EXIST_WITHDRAW"         : "Request already success, please wait before request again",
+            "WITHDRAW_PENDING"       : "There's pending Withdraw Process, please wait {} before request again".format(WALLET_CONFIG["CARDLESS_VA_TIMEOUT"]),
             "WITHDRAW"               : "Request Withdraw Failed",
             "VA_CREATION"            : "Virtual Account Creation Failed",
             "WALLET_REMOVAL"         : "Can't remove the main wallet",
@@ -92,7 +92,7 @@ class Config:
             "INSUFFICIENT_PERMISSION": "Admin Permission Required",
             "PIN_NOT_MATCH"          : "Pin & Confirm Pin does not match",
             "OLD_PIN"                : "New Pin can't be the same with old one",
-            "OTP_PENDING"            : "There's pending Forgot OTP, Please wait 5 minutes before request again",
+            "OTP_PENDING"            : "There's pending Forgot OTP, Please wait {} minutes before request again".format(str(WALLET_CONFIG["OTP_TIMEOUT"])),
             "OTP_NOT_FOUND"          : "Invalid Forgot OTP Record",
             "INVALID_OTP_CODE"       : "Invalid OTP Code",
             "OTP_ALREADY_VERIFIED"   : "OTP Already verified",
@@ -156,13 +156,20 @@ class Config:
     }
 
     SMS_SERVICES_CONFIG = {
-        "API_KEY"    : "1ae57f88",
-        "SECRET_KEY" : "t1sXmOVCPCJapQ0m",
-        "FROM"       : "Modanaku",
+        "BASE_URL"   : "https://api.wavecell.com/sms/v1/Modana_OTP/single",
+        "API_KEY"    : "7hH72ACD8DA6EED4DD985D4489A034",
+        "FROM"       : "MODANA",
+    }
+
+    SMS_OTP_ERRORS = {
+        "FAILURE"    : "SMS OTP Failed",
+        "TIMEOUT"    : "SMS OTP Services Timeout",
+        "REDIRECT"   : "Bad URL",
+        "EXCEPTION"  : "Something Unexpected Happen",
     }
 
     SMS_SERVICES_TEMPLATES = {
-        "FORGOT_PIN" : "This is your FORGOT PASSWORD CODE for your Modanaku : {} . DON'T SHARE IT WITH ANYONE (NOT EVENT MODANA)",
+        "FORGOT_PIN" : "This is your FORGOT PIN Code for your Modanaku : {} . DON'T SHARE IT WITH ANYONE (NOT EVENT MODANA)",
     }
 #end class
 

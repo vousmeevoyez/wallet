@@ -112,6 +112,7 @@ class Wallet(db.Model):
     user             = db.relationship("User", back_populates="wallets")
     virtual_accounts = db.relationship("VirtualAccount", cascade="delete")
     forgot_pin       = db.relationship("ForgotPin")
+    withdraw         = db.relationship("Withdraw")
 
     def __repr__(self):
         return '<Wallet {} {} {}>'.format(self.id, self.balance, self.user_id)
@@ -390,5 +391,17 @@ class ForgotPin(db.Model):
         otp_key = secrets.token_hex(16)
         self.otp_key = otp_key
         return otp_key
+    #end def
+#end class
+
+class Withdraw(db.Model):
+    id          = db.Column(db.Integer, primary_key=True)
+    amount      = db.Column(db.Float)
+    created_at  = db.Column(db.DateTime, default=now)
+    valid_until = db.Column(db.DateTime)
+    wallet_id   = db.Column(db.BigInteger, db.ForeignKey('wallet.id'))
+
+    def __repr__(self):
+        return '<Withdraw {} {} {} {}>'.format(self.id, self.amount, self.wallet_id, self.status)
     #end def
 #end class

@@ -571,6 +571,30 @@ class ForgotPinModelCase(BaseTestCase):
         result = ForgotPin.query.filter(ForgotPin.wallet_id==wallet.id, ForgotPin.status==False, ForgotPin.valid_until > datetime.now()).count()
         self.assertEqual(result, 0)
 
+class WithdrawModelCase(BaseTestCase):
+
+    def test_withdraw_wallet(self):
+        # create wallet
+        wallet = Wallet(
+        )
+        db.session.add(wallet)
+        db.session.commit()
+
+        wallet = Wallet.query.get(1)
+
+        # create forgot pin record
+        valid_until = datetime.now() - timedelta(minutes=5)
+
+        withdraw= Withdraw(
+            wallet_id=wallet.id,
+            valid_until=valid_until
+        )
+        db.session.add(withdraw)
+        db.session.commit()
+
+        # check record and make sure there's a pending otp record
+        result = Withdraw.query.filter(Withdraw.wallet_id==wallet.id, Withdraw.valid_until > datetime.now()).count()
+        self.assertEqual(result, 0)
 
 class BankAccountModelCase(BaseTestCase):
 

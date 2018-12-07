@@ -63,7 +63,7 @@ class EcollectionHelper(object):
         #end if
 
         search_va = VirtualAccount.query.filter_by(wallet_id=int(params["wallet_id"]), va_type_id=va_type.id).first()
-        if search_va != None:
+        if search_va != None and resource_type == "CREDIT":
             response["status"] = "FAILED"
             response["data"  ] = "VA ALREADY EXISTS"
             return response
@@ -139,6 +139,12 @@ class EcollectionHelper(object):
         #end if
 
         session.add(log)
+
+        # delete if cardless VA exist so there can be only 1 VA Debit
+        if resource_type == "CARDLESS" and search_va != None:
+            session.delete(search_va)
+        #end if
+
         session.commit()
 
         return response

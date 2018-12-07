@@ -9,8 +9,7 @@ from app.api.request_schema     import WalletRequestSchema, WalletUpdatePinReque
 from app.api.errors             import bad_request, internal_error, request_not_found
 
 # wallet modules
-from app.api.wallet.modules     import wallet
-from app.api.wallet.modules     import transfer
+from app.api.wallet.modules     import wallet, transfer
 
 # authentication 
 from app.api.authentication.decorator import refresh_token_only, token_required, get_current_token, get_token_payload, admin_required
@@ -118,6 +117,23 @@ class ForgotWalletPin(Resource):
     #end def
 #end class
 
+@api.route('/<int:wallet_id>/withdraw/')
+class WithdrawWallet(Resource):
+    @token_required
+    def post(self, wallet_id):
+        request_data = forgot_pin_request_schema.parse_args(strict=True)
+        data = {
+            "pin"    : request_data["pin"],
+            "amount" : request_data["otp_key"],
+            "id"     : wallet_id,
+        }
+
+        # need to serialize here
+        response = withdraw.WithdrawController().request(data)
+        return response
+    #end def
+#end class
+
 @api.route('/<int:source_wallet_id>/transfer/<int:destination_wallet_id>')
 class WalletTransfer(Resource):
     @token_required
@@ -132,7 +148,7 @@ class WalletTransfer(Resource):
         request_data = transfer_request_schema.parse_args(strict=True)
         data = {
             "source"      : source_wallet_id,
-            "destination" : destination,
+            "destination" : destination_wallet_id,
             "amount"      : request_data["amount"],
             "notes"       : request_data["notes"],
             "pin"         : request_data["pin"],

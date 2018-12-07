@@ -221,7 +221,7 @@ class WalletController:
             # first check if there are any pending otp record
             pending_otp = ForgotPin.query.filter(ForgotPin.wallet_id==wallet.id, ForgotPin.status==False, ForgotPin.valid_until > datetime.now()).count()
             if pending_otp != 0:
-                return request_not_found(RESPONSE_MSG["FAILED"]["OTP_PENDING"])
+                return bad_request(RESPONSE_MSG["FAILED"]["OTP_PENDING"])
             #end if
 
             # second generate random verify otp number to user phone
@@ -242,7 +242,12 @@ class WalletController:
             # fourth send the forgot otp sms to user phone
             # fetch required information for sending sms here
             msisdn = str(wallet.user.phone_ext) + str(wallet.user.phone_number)
-            sms_status = common_helper.SmsHelper().send_sms( msisdn, "FORGOT_PIN", otp_code)
+            sms_otp_resp = common_helper.SmsHelper().send_sms( msisdn, "FORGOT_PIN", otp_code)
+
+            if sms_otp_resp["status"] != "SUCCESS":
+                db.session.rollback()
+                return internal_error(sms_otp_resp["data"])
+            #end if
 
             db.session.commit()
 
