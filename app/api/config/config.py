@@ -97,6 +97,8 @@ class Config:
             "INVALID_OTP_CODE"       : "Invalid OTP Code",
             "OTP_ALREADY_VERIFIED"   : "OTP Already verified",
             "REFRESH_TOKEN_ONLY"     : "Only Refresh Token Allowed",
+            "INJECT"                 : "Fail injecting balance",
+            "DEDUCT"                 : "Fail deducting balance",
         }
     }
 

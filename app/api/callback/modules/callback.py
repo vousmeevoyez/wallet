@@ -46,7 +46,9 @@ class CallbackController:
 
         virtual_account = VirtualAccount.query.filter_by(id=va, trx_id=trx_id).first()
         if virtual_account == None:
-            return request_not_found()
+            response["status_code"] = "404"
+            response["data"       ] = RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"]
+            return response
         #end if
 
         # prepare inject the balance here
@@ -61,7 +63,9 @@ class CallbackController:
         log.save_response(deposit_response) # log the response here
         if deposit_response["status"] != "SUCCESS":
             log.set_status(False) # False it means failed
-            return bad_request()
+            response["status_code"] = "400"
+            response["data"       ] = RESPONSE_MSG["FAILED"]["INJECT"]
+            return response
         #end if
 
         # commit log here
@@ -95,7 +99,9 @@ class CallbackController:
 
         virtual_account = VirtualAccount.query.filter_by(id=va, trx_id=trx_id).first()
         if virtual_account == None:
-            return request_not_found()
+            response["status_code"] = "404"
+            response["data"       ] = RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"]
+            return response
         #end if
 
         # prepare deduct the balance here
@@ -110,7 +116,9 @@ class CallbackController:
         log.save_response(withdraw_response) # log the response here
         if withdraw_response["status"] != "SUCCESS":
             log.set_status(False) # False it means failed
-            return bad_request()
+            response["status_code"] = "400"
+            response["data"       ] = RESPONSE_MSG["FAILED"]["DEDUCT"]
+            return response
         #end if
 
         # commit log here
@@ -173,7 +181,7 @@ class CallbackController:
                 print(traceback.format_exc())
                 return internal_error()
 
-            success_message = RESPONSE_MSG["SUCCESS_DEPOSIT"].format(str(amount), wallet_id)
+            success_message = RESPONSE_MSG["SUCCESS"]["DEPOSIT"].format(str(amount), wallet_id)
             response["data"] = success_message
 
         except Exception as e:
@@ -243,7 +251,7 @@ class CallbackController:
                 print(traceback.format_exc())
                 return internal_error()
 
-            success_message = RESPONSE_MSG["SUCCESS_WITHDRAW"].format(str(amount), wallet_id)
+            success_message = RESPONSE_MSG["SUCCESS"]["WITHDRAW"].format(str(amount), wallet_id)
             response["data"] = success_message
 
         except Exception as e:
