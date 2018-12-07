@@ -31,6 +31,18 @@ transfer_request_schema   = TransferRequestSchema.parser
 class WalletDetails(Resource):
     @token_required
     def get(self, wallet_id):
+        # fetch payload
+        payload_resp = get_token_payload()
+        if not isinstance(payload_resp, dict):
+            return payload_resp
+        #end if
+
+        # checking token identity to make sure user can only access their wallet information
+        permission_response = auth_helper.AuthenticationHelper().check_wallet_permission(payload_resp["user_id"], wallet_id)
+        if permission_response != None:
+            return permission_response
+        #end if
+
         response = wallet.WalletController().details({ "id" : wallet_id })
         return response
     #end def
@@ -125,7 +137,7 @@ class WalletTransfer(Resource):
         }
 
         # checking token identity to make sure user can only access their wallet information
-        permission_response = auth_helper.AuthenticationHelper().check_wallet_permission(user_id, source_wallet_id)
+        permission_response = auth_helper.AuthenticationHelper().check_wallet_permission(payload_resp["user_id"], source_wallet_id)
         if permission_response != None:
             return permission_response
         #end if
