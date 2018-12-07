@@ -52,6 +52,7 @@ class CallbackDeposit(Resource):
         #end if
 
         deposit_response = callback.CallbackController().deposit(data)
+        print(deposit_response)
         if deposit_response["status_code"] != 0:
             response["status"] = str(deposit_response["status_code"])
         return response
@@ -95,6 +96,7 @@ class CallbackWithdraw(Resource):
         #end if
 
         withdraw_response = callback.CallbackController().withdraw(data)
+        print(withdraw_response)
         if withdraw_response["status_code"] != 0:
             response["status"] = str(withdraw_response["status_code"])
 
