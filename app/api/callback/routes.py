@@ -2,6 +2,7 @@ import traceback
 import sys
 
 from flask_restplus     import Resource
+from flask              import request
 from datetime import datetime
 
 from app.api.callback           import api
