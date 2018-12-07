@@ -88,10 +88,10 @@ class UserController:
             response["data"] = UserSchema(many=True).dump(users).data
         except IntegrityError as e:
             print(e)
-            return bad_request(RESPONSE_MSG["UNKNOWN_ERROR"])
+            return bad_request(RESPONSE_MSG["FAILED"]["UNKNOWN_ERROR"])
         except ValidationError as e:
             print(e)
-            return bad_request(RESPONSE_MSG["UNKNOWN_ERROR"])
+            return bad_request(RESPONSE_MSG["FAILED"]["UNKNOWN_ERROR"])
         except Exception as e:
             print(traceback.format_exc())
             print(str(e))

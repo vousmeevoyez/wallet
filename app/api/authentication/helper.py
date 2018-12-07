@@ -14,7 +14,7 @@ class AuthenticationHelper:
     def check_wallet_permission(self, user_id, wallet_id):
         result = Wallet.is_owned(user_id, wallet_id)
         if result != True:
-            return bad_request(RESPONSE_MSG["UNAUTHORIZED_WALLET"])
+            return bad_request(RESPONSE_MSG["FAILED"]["UNAUTHORIZED_WALLET"])
         return None
     #end def
 
