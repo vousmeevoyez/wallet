@@ -4,7 +4,7 @@ import traceback
 from flask_restplus     import Resource
 
 from app.api.wallet             import api
-from app.api.serializer         import WalletSchema
+from app.api.serializer         import WalletSchema, TransactionSchema
 from app.api.request_schema     import WalletRequestSchema, WalletUpdatePinRequestSchema, PinAuthRequestSchema, ForgotPinRequestSchema, TransferRequestSchema
 from app.api.errors             import bad_request, internal_error, request_not_found
 
