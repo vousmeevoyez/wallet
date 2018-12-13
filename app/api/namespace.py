@@ -23,3 +23,7 @@ class BankNamespace:
 class CallbackNamespace:
     api = Namespace("callback")
 #end class
+
+class ExceptionNamespace:
+    api = Namespace("exception")
+#end class

@@ -17,9 +17,8 @@ user_request_schema = UserRequestSchema.parser
 @api.route("/")
 class UserRoutes(Resource):
     @admin_required
-    @api.expect(user_request_schema, validate=True)
     def post(self):
-        request_data = request.json
+        request_data = user_request_schema.parse_args(strict=True)
         data = {
             "username"    : request_data["username"    ],
             "name"        : request_data["name"        ],
