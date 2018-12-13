@@ -130,14 +130,24 @@ class Config:
     BNI_OPG_CONFIG = {
         "BASE_URL_DEV"  : "https://apidev.bni.co.id",
         "PORT"          : "8066",
-        "CLIENT_ID"     : "IDBNIQk5JU0VSVklDRQ==",
-        "USERNAME"      : "ab4e9e87-3b2c-4ed0-87bf-f807ae9b17e1",
-        "PASSWORD"      : "ff915349-cbc6-4b9e-acfd-c727df960ded",
+        "CLIENT_NAME"   : "IDBNITU9EQU5B",
+        "USERNAME"      : "041c7414-00fe-4338-98aa-b905ab5c2972",
+        "PASSWORD"      : "894fe209-4c78-4c22-9925-a23ba36483f0",
+        "API_KEY"       : "09ea583b-6d13-47ed-b675-9648f27826f2",
+        "SECRET_API_KEY": "b854407e-33c9-4987-811d-72f7128b69f9",
         "ROUTES"        : {
-            "GET_TOKEN"  : "/api/oauth/token",
-            "GET_BALANCE": "/H2H/getbalance",
+            "GET_TOKEN"            : "/api/oauth/token",
+            "GET_BALANCE"          : "/H2H/v2/getbalance",
+            "GET_INHOUSE_INQUIRY"  : "/H2H/v2/getinhouseinquiry",
+            "DO_PAYMENT"           : "/H2H/v2/dopayment",
+            "GET_PAYMENT_STATUS"   : "/H2H/v2/getpaymentstatus",
+            "GET_INTERBANK_INQUIRY": "/H2H/v2/getinterbankinquiry",
+            "GET_INTERBANK_PAYMENT": "/H2H/v2/getinterbankpayment",
+            "HOLD_AMOUNT"          : "/H2H/v2/holdamount",
+            "HOLD_AMOUNT_RELEASE"  : "/H2H/v2/holdamountrelease",
         }
     }
+
 
     # ACCESS_KEY CONFIG
     ACCESS_KEY_CONFIG = {

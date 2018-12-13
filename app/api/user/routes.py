@@ -1,3 +1,4 @@
+from flask              import request
 from flask_restplus     import Resource
 
 from app.api                import db
@@ -11,13 +12,14 @@ from app.api.user.modules   import user
 
 from app.api.errors import bad_request, internal_error, request_not_found
 
-request_schema = UserRequestSchema.parser
+user_request_schema = UserRequestSchema.parser
 
 @api.route("/")
 class UserRoutes(Resource):
     @admin_required
+    @api.expect(user_request_schema, validate=True)
     def post(self):
-        request_data = request_schema.parse_args(strict=True)
+        request_data = request.json
         data = {
             "username"    : request_data["username"    ],
             "name"        : request_data["name"        ],
