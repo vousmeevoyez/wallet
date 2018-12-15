@@ -77,7 +77,7 @@ class EcollectionHelper(object):
 
         # BANK ID FIRST
         # for now we only support BNI but more bank in future
-        bank = Bank.query.filter_by(key="BNI").first()
+        bank = Bank.query.filter_by(code="009").first()
 
         # CREATE VIRTUAL ACCOUNT ON DATABASES FIRST
         va = VirtualAccount(

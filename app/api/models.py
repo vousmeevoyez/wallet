@@ -32,16 +32,16 @@ class User(db.Model):
     id              = db.Column(db.BigInteger, primary_key=True)
     username        = db.Column(db.String(144), unique=True)
     name            = db.Column(db.String(144))
-    phone_ext       = db.Column(db.String(3))
+    phone_ext       = db.Column(db.String(3)) # phone extension
     phone_number    = db.Column(db.String(11), unique=True)
     email           = db.Column(db.String(144), unique=True)
-    created_at      = db.Column(db.DateTime, default=now)
-    password_hash   = db.Column(db.String(128))
-    status          = db.Column(db.Boolean, default=True)
+    created_at      = db.Column(db.DateTime, default=now) # UTC
+    password_hash   = db.Column(db.String(128)) # hashed password
+    status          = db.Column(db.Boolean, default=True) # active / inactive
     role_id         = db.Column(db.Integer, db.ForeignKey("role.id"))
-    role            = db.relationship("Role", back_populates="user")
-    wallets         = db.relationship("Wallet", back_populates="user", cascade="delete")
-    bank_accounts   = db.relationship("BankAccount", back_populates="user", cascade="delete")
+    role            = db.relationship("Role", back_populates="user") # one to one
+    wallets         = db.relationship("Wallet", back_populates="user", cascade="delete") # one to many
+    bank_accounts   = db.relationship("BankAccount", back_populates="user", cascade="delete") # one to many
 
     def __repr__(self):
         return '<User {} {} {} {}>'.format(self.username,
@@ -104,15 +104,16 @@ class User(db.Model):
 
 class Wallet(db.Model):
     id               = db.Column(db.BigInteger, primary_key=True)
-    created_at       = db.Column(db.DateTime, default=now)
+    created_at       = db.Column(db.DateTime, default=now) # UTC
     pin_hash         = db.Column(db.String(128))
     status           = db.Column(db.Boolean, default=True)
     balance          = db.Column(db.Float, default=0)
     user_id          = db.Column(db.BigInteger, db.ForeignKey('user.id'))
-    user             = db.relationship("User", back_populates="wallets")
-    virtual_accounts = db.relationship("VirtualAccount", cascade="delete")
-    forgot_pin       = db.relationship("ForgotPin")
-    withdraw         = db.relationship("Withdraw")
+    user             = db.relationship("User", back_populates="wallets") # many to one
+    virtual_accounts = db.relationship("VirtualAccount", cascade="delete") # one to many
+    forgot_pin       = db.relationship("ForgotPin") # one to many
+    withdraw         = db.relationship("Withdraw") # one to many
+    transactions     = db.relationship("Transaction", back_populates="wallet") # one to many
 
     def __repr__(self):
         return '<Wallet {} {} {}>'.format(self.id, self.balance, self.user_id)
@@ -190,13 +191,14 @@ class VaType(db.Model):
 
 class Bank(db.Model):
     id              = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    key             = db.Column(db.String(24))
-    name            = db.Column(db.String(100))
-    code            = db.Column(db.String(100))
-    created_at      = db.Column(db.DateTime, default=now)
-    status          = db.Column(db.Boolean, default=True)
-    virtual_account = db.relationship("VirtualAccount", back_populates="bank")
-    bank_account    = db.relationship("BankAccount", back_populates="bank")
+    key             = db.Column(db.String(24)) # bank_key
+    name            = db.Column(db.String(100)) # bank_name
+    code            = db.Column(db.String(100)) # bank_code
+    created_at      = db.Column(db.DateTime, default=now) # UTC
+    status          = db.Column(db.Boolean, default=True) # active / inactive
+    virtual_account = db.relationship("VirtualAccount", back_populates="bank") # one to many
+    bank_accounts   = db.relationship("BankAccount", back_populates="bank") # one to many
+    payment_channels= db.relationship("PaymentChannel", back_populates="bank") # one to many
 
     def __repr__(self):
         return '<Bank {} {} {}>'.format(self.id, self.name, self.code, self.status)
@@ -205,18 +207,61 @@ class Bank(db.Model):
 
 class BankAccount(db.Model):
     id         = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name       = db.Column(db.String(24))
-    created_at = db.Column(db.DateTime, default=now)
-    status     = db.Column(db.Boolean, default=True)
+    label      = db.Column(db.String(24), unique=True) # account label
+    name       = db.Column(db.String(24), unique=True) # bank account name
+    account_no = db.Column(db.String(24), unique=True) # bank account no
+    created_at = db.Column(db.DateTime, default=now) # UTC
+    status     = db.Column(db.Boolean, default=True) # active / inactive
     bank_id    = db.Column(db.Integer, db.ForeignKey("bank.id"))
-    bank       = db.relationship("Bank", back_populates="bank_account")
+    bank       = db.relationship("Bank", back_populates="bank_accounts") # one to one
     user_id    = db.Column(db.BigInteger, db.ForeignKey('user.id'))
-    user       = db.relationship("User", back_populates="bank_accounts")
+    user       = db.relationship("User", back_populates="bank_accounts") # one to one
 
     def __repr__(self):
         return '<BankAccount {} {} {}>'.format(self.id, self.name, self.status)
     #end def
 #end class
+
+class PaymentChannel(db.Model):
+    id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name         = db.Column(db.String(100)) # payment channel name
+    key          = db.Column(db.String(100)) # payment channel key
+    channel_type = db.Column(db.String(100)) # VIRTUAL ACCOUNT / NORMAL TRANSFER
+    created_at   = db.Column(db.DateTime, default=now) # UTC
+    status       = db.Column(db.Boolean, default=True) # ACTIVE / INACTIVE
+    bank_id      = db.Column(db.Integer, db.ForeignKey("bank.id"))
+    bank         = db.relationship("Bank", back_populates="payment_channels") # many to one
+    payments     = db.relationship("Payment", back_populates="payment_channel") # one to many
+
+    def __repr__(self):
+        return '<PaymentChannel {} {} {} {}>'.format(self.id, self.name, self.key, self.status)
+    #end def
+#end class
+
+class Payment(db.Model):
+    id             = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    source_account = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (where the money comes from)
+    to             = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (where the money goes)
+    ref_number     = db.Column(db.String(100)) # journal number from the bank
+    amount         = db.Column(db.Float)
+    created_at     = db.Column(db.DateTime, default=now) # UTC
+    payment_type   = db.Column(db.Boolean, default=True) # True = Credit / False = Debit
+    status         = db.Column(db.Integer, default=1) # COMPLETED / PENDING / FAILED
+    channel_id     = db.Column(db.Integer, db.ForeignKey("payment_channel.id"))
+    payment_channel= db.relationship("PaymentChannel", back_populates="payments", uselist=False) # one to one
+    transaction    = db.relationship("Transaction", back_populates="payment", uselist=False) # one to one
+
+    def __repr__(self):
+        return '<Payment {} {} {} {} {}>'.format(self.id, self.source_account, self.ref_number, self.amount, self.status)
+    #end def
+#end class
+
+"""
+class VaDetails(db.Model):
+    id = db.Column(db.BigInteger, primary_key=True)
+    trx_id     = db.Column(db.BigInteger, unique=True)
+    trx_amount = db.Column(db.Float, default=0)
+"""
 
 class VirtualAccount(db.Model):
     id              = db.Column(db.BigInteger, primary_key=True)
@@ -292,23 +337,36 @@ class VirtualAccount(db.Model):
         self.trx_id= int(trx_id)
         return trx_id
     #end def
-
 #end class
 
 class Transaction(db.Model):
     id               = db.Column(db.BigInteger, primary_key=True)
-    source_id        = db.Column(db.Integer, db.ForeignKey('wallet.id'))
-    destination_id   = db.Column(db.Integer, db.ForeignKey('wallet.id'))
-    amount           = db.Column(db.Float)
-    transaction_type = db.Column(db.Boolean)
-    transfer_type    = db.Column(db.Integer)
-    notes            = db.Column(db.String(255))
-    created_at       = db.Column(db.DateTime, default=now)
-    source           = db.relationship("Wallet", foreign_keys=[source_id])
-    destination      = db.relationship("Wallet", foreign_keys=[destination_id])
+    wallet_id        = db.Column(db.Integer, db.ForeignKey('wallet.id'))
+    amount           = db.Column(db.Float, default=0)
+    balance          = db.Column(db.Float, default=0) # balance after transaction
+    transaction_type = db.Column(db.Integer) # withdraw / deposit / transfer_bank / transfer_va
+    notes            = db.Column(db.String(255)) # transaction notes if there are
+    created_at       = db.Column(db.DateTime, default=now) # UTC
+    payment_id       = db.Column(db.Integer, db.ForeignKey("payment.id"))
+    payment          = db.relationship("Payment", back_populates="transaction", uselist=False) # one to one
+    wallet           = db.relationship("Wallet", back_populates="transactions", uselist=False) # one to one
 
     def __repr__(self):
-        return '<Transaction {} {} {} {} {} {}>'.format(self.id, self.source_id, self.amount, self.transaction_type, self.destination_id, self.notes)
+        return '<Transaction {} {} {} {} {}>'.format(self.id, self.wallet_id, self.amount, self.transaction_type, self.notes)
+    #end def
+
+    def current_balance(self, operation, amount):
+        wallet = Wallet.query.filter_by(id=self.wallet_id).first()
+        if wallet.balance < amount:
+            return False
+        else:
+            if operation == "DEDUCT":
+                self.balance = wallet.balance - amount
+            elif operation == "ADD":
+                self.balance = wallet.balance + amount
+            #end if
+            return True
+        #end if
     #end def
 
     def generate_trx_id(self):

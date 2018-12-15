@@ -39,6 +39,15 @@ class Config:
         "OTP_TIMEOUT"        : 2 # set otp timeout in minutes
     }
 
+    TRANSACTION_CONFIG = {
+        "TYPES" : {
+            "TOP_UP"      : 1,
+            "WITHDRAW"    : 2,
+            "TRANSFER_IN" : 3, # transfer between user
+            "TRANSFER_OUT": 4, # transfer to external system
+        }
+    }
+
     # MASTER WALLET SETTINGS
     TRANSACTION_NOTES= {
         "DEPOSIT"         : "Top up balance {} from Virtual Account {}, Reference Number {}",
@@ -59,6 +68,9 @@ class Config:
             "TRANSFER"              : "Successfully Transfer {} from {} to {}",
             "REQUEST_WITHDRAW"      : "Request Withdraw Success",
             "CREATE_USER"           : "User & Wallet Successfully Created",
+            "CREATE_BANK_ACCOUNT"   : "Bank Account Sucessfully Added",
+            "UPDATE_BANK_ACCOUNT"   : "Bank Account Sucessfully Updated",
+            "REMOVE_BANK_ACCOUNT"   : "Bank Account Succesfully Removed",
             "REMOVE_USER"           : "User successfully removed",
             "UPDATE_USER"           : "User information successfully updated",
             "ACCESS_AUTH"           : "Authentication success, Token generated",

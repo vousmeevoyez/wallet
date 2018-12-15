@@ -12,6 +12,9 @@ python-packages:
 
 install: system-packages python-packages
 
+upgrade:
+	python manage.py db upgrade
+
 tests:
 	python manage.py test
 
@@ -24,5 +27,4 @@ init:
 shell:
 	python manage.py shell
 
-all: clean install tests init run
-
+all: clean install tests upgrade init run

@@ -394,7 +394,9 @@ class VirtualAccountModelCase(BaseTestCase):
 
 
 class TransactionModelCase(BaseTestCase):
+
     def test_debit_transaction(self):
+        # create 2 dummy wallet here
         wallet = Wallet(
         )
         wallet2 = Wallet(
@@ -402,54 +404,76 @@ class TransactionModelCase(BaseTestCase):
 
         db.session.add(wallet)
         db.session.add(wallet2)
-        db.session.commit()
+        db.session.flush()
 
+        # add some balance here for test case
         user = Wallet.query.get(1)
         user.add_balance(1000)
-        db.session.commit()
+        db.session.flush()
 
-        user = Wallet.query.get(1)
         self.assertEqual(user.check_balance(), 1000)
 
         user2 = Wallet.query.get(2)
         user2.add_balance(1000)
-        db.session.commit()
+        db.session.flush()
 
-        user2 = Wallet.query.get(2)
         self.assertEqual(user2.check_balance(), 1000)
 
-        #create transaction here
-        #(-) deduct balance first
+        #start transaction here
+        trx_amount = 10
+        # first create debit payment
+        debit_payment = Payment(
+            source_account=wallet.id,
+            to=wallet2.id,
+            amount=trx_amount,
+            payment_type=False,
+        )
+        db.session.add(debit_payment)
+
+        #create debit transaction
         debit_trx = Transaction(
-            source_id = user.id,
-            destination_id = user2.id,
-            amount = 100,
-            transaction_type= True,
-            notes="this is debit trx"
+            wallet_id=wallet.id,
+            amount=trx_amount,
         )
         debit_trx.generate_trx_id()
-        user.deduct_balance(100)
+        debit_trx.current_balance("DEDUCT", trx_amount)
+        db.session.add(debit_trx)
+        # deduct balance
+        user.deduct_balance(trx_amount)
 
+        db.session.flush()
+
+        #start another transaction here
+        trx_amount = 10
+        # second create credit payment
+        credit_payment = Payment(
+            source_account=wallet.id,
+            to=wallet2.id,
+            amount=trx_amount,
+        )
+        db.session.add(credit_payment)
+
+        #create debit transaction
         credit_trx = Transaction(
-            source_id = user2.id,
-            destination_id = user.id,
-            amount = 100,
-            transaction_type= False,
-            notes="this is credit trx"
+            wallet_id=wallet2.id,
+            amount=trx_amount,
         )
         credit_trx.generate_trx_id()
-        user2.add_balance(100)
-
-        db.session.add(debit_trx)
+        credit_trx.current_balance("ADD", trx_amount)
         db.session.add(credit_trx)
-        db.session.commit()
+        # deduct user balance here
+        user2.add_balance(trx_amount)
+
+        db.session.flush()
+
+        # make sure each account have correct balance after each transaction
+        user = Wallet.query.get(1)
+        self.assertEqual(user.check_balance(), 990)
+        self.assertEqual(len(user.transactions), 1)
 
         user2 = Wallet.query.get(2)
-        self.assertEqual(user2.check_balance(), 1100)
-
-        user = Wallet.query.get(1)
-        self.assertEqual(user.check_balance(), 900)
-
+        self.assertEqual(user2.check_balance(), 1010)
+        self.assertEqual(len(user2.transactions), 1)
 
 class ExternalModelCase(BaseTestCase):
 
@@ -657,6 +681,97 @@ class BankAccountModelCase(BaseTestCase):
         # make sure user is associated to bank account
         print(user.bank_accounts)
         self.assertEqual( len(user.bank_accounts), 2)
+
+class PaymentChannelModelCase(BaseTestCase):
+    def test_payment_channel(self):
+        # create bank here
+        bni=Bank(
+            key="BNI",
+            name="Bank BNI",
+            code="99",
+        )
+        db.session.add(bni)
+        db.session.commit()
+
+        # create payment channel
+        payment_channel1 = PaymentChannel(
+            name="BNI Virtual Account",
+            key="BNI_VA",
+            channel_type="VIRTUAL_ACCOUNT",
+            bank_id=bni.id
+        )
+        db.session.add(payment_channel1)
+
+        # create payment channel
+        payment_channel2 = PaymentChannel(
+            name="BNI Transfer",
+            key="BNI_TRANSFER",
+            channel_type="TRANSFER",
+            bank_id=bni.id
+        )
+        db.session.add(payment_channel2)
+        db.session.commit()
+
+        self.assertEqual(len(bni.payment_channels), 2)
+    #end def
+#end class
+
+class PaymentModelCase(BaseTestCase):
+
+    def test_payment_model(self):
+        # create bank here
+        bni=Bank(
+            key="BNI",
+            name="Bank BNI",
+            code="99",
+        )
+        db.session.add(bni)
+        db.session.commit()
+
+        # create payment channel
+        payment_channel1 = PaymentChannel(
+            name="BNI Virtual Account",
+            key="BNI_VA",
+            channel_type="VIRTUAL_ACCOUNT",
+            bank_id=bni.id
+        )
+        db.session.add(payment_channel1)
+
+        # create payment channel
+        payment_channel2 = PaymentChannel(
+            name="BNI Transfer",
+            key="BNI_TRANSFER",
+            channel_type="TRANSFER",
+            bank_id=bni.id
+        )
+        db.session.add(payment_channel2)
+        db.session.flush()
+
+        # payment
+        payment = Payment(
+            source_account="123456",
+            ref_number="111111",
+            amount=1,
+            to="123",
+            channel_id=payment_channel1.id,
+        )
+        db.session.add(payment)
+
+        # payment 2
+        payment2 = Payment(
+            source_account="133456",
+            ref_number="111112",
+            amount=2,
+            channel_id=payment_channel2.id,
+            to="123"
+        )
+        db.session.add(payment2)
+        db.session.commit()
+
+        payments = Payment.query.join(PaymentChannel).join(Bank).filter(PaymentChannel.bank_id==bni.id).all()
+        self.assertEqual(len(payments), 2)
+    #end def
+#end class
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -14,6 +14,69 @@ def cannot_be_blank(string):
         raise ValidationError(" Data cannot be blank")
 #end def
 
+class BankSchema(ma.Schema):
+    id   = fields.Int(load_only=True)
+    name = fields.Str(required=True, validate=cannot_be_blank)
+    code = fields.Str(required=True, validate=cannot_be_blank)
+
+class BankAccountSchema(ma.Schema):
+    id         = fields.Int()
+    name       = fields.Str(required=True, validate=cannot_be_blank)
+    account_no = fields.Str(required=True, validate=cannot_be_blank)
+    label      = fields.Str(required=True, validate=cannot_be_blank)
+    bank_code  = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
+    bank_name  = fields.Method("bank_id_to_name")
+
+    def bank_id_to_name(self, obj):
+        return obj.bank.name
+    #end def
+
+    @validates('name')
+    def validate_name(self, name):
+        # onyl allow alphabet character
+        pattern = r"^[a-zA-Z]+$"
+        if len(name) < 1:
+            raise ValidationError('Invalid name, minimum is 1 character')
+        if len(name) > 70:
+            raise ValidationError('Invalid name, max is 70 character')
+        if  re.match(pattern, name) is None:
+            raise ValidationError('Invalid name, only alphabet allowed')
+    #end def
+
+    @validates('label')
+    def validate_name(self, label):
+        # onyl allow alphabet character and space
+        pattern = r"^[a-zA-Z ]+$"
+        if len(label) < 1:
+            raise ValidationError('Invalid label, minimum is 1 character')
+        if len(label) > 30:
+            raise ValidationError('Invalid label, max is 30 character')
+        if  re.match(pattern, label) is None:
+            raise ValidationError('Invalid label, only alphabet allowed')
+    #end def
+
+    @validates('account_no')
+    def validate_account_no(self, account_no):
+        # only allow 0-9, minimal 10 and maximal is 16 digit
+        pattern = r"^[0-9]{10,16}$"
+        if re.search(pattern, account_no) is None:
+            raise ValidationError('Invalid account number, only number allowed')
+        elif int(account_no) < 1:
+            raise ValidationError("account no can't be 0")
+        #end if
+    #end def
+
+    @validates('bank_code')
+    def validate_bank_code(self, bank_code):
+        pattern = r"^[0-9]{1,3}$"
+        if re.search(pattern, bank_code) is None:
+            raise ValidationError('Invalid bank code, only number allowed')
+        elif int(bank_code) < 1:
+            raise ValidationError("bank code can't be 0")
+        #end if
+    #end def
+#end def
+
 class UserSchema(ma.Schema):
     id          = fields.Int(load_only=True)
     username    = fields.Str(required=True, validate=cannot_be_blank)
