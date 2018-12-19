@@ -13,7 +13,7 @@ class Config:
     # JSON WEB TOKEN CONFIG
     JWT_CONFIG = {
         "SECRET"         : "wiqeuyashdkjlakssahn",
-        "ACCESS_EXPIRE"  : 10, # minutes,
+        "ACCESS_EXPIRE"  : 30, # minutes,
         "REFRESH_EXPIRE" : 30, # day,
     }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -26,9 +26,10 @@ class Config:
     WALLET_CONFIG= {
         "CREDIT_FLAG"        : True,
         "DEBIT_FLAG"         : False,
-        "VA_TO_VA"           : 1,
-        "BANK_TO_VA"         : 2,
-        "VA_TO_BANK"         : 3,
+        "DEPOSIT"            : 1,
+        "IN_TRANSFER"        : 2,
+        "OUT_TRANSFER"       : 3,
+        "WITHDRAW"           : 4,
         "CREDIT_VA_TIMEOUT"  : 4350, # 1 years 
         "CARDLESS_VA_TIMEOUT": 10, # 10 minutes
         "MINIMAL_WITHDRAW"   : 50000, # 

@@ -33,22 +33,22 @@ class BankAccountSchema(ma.Schema):
 
     @validates('name')
     def validate_name(self, name):
-        # onyl allow alphabet character
-        pattern = r"^[a-zA-Z]+$"
-        if len(name) < 1:
-            raise ValidationError('Invalid name, minimum is 1 character')
-        if len(name) > 70:
-            raise ValidationError('Invalid name, max is 70 character')
+        # onyl allow alphabet space character
+        pattern = r"^[a-zA-Z ]+$"
+        if len(name) < 2:
+            raise ValidationError('Invalid name, minimum is 2 character')
+        if len(name) > 35:
+            raise ValidationError('Invalid name, max is 35 character')
         if  re.match(pattern, name) is None:
             raise ValidationError('Invalid name, only alphabet allowed')
     #end def
 
     @validates('label')
-    def validate_name(self, label):
+    def validate_label(self, label):
         # onyl allow alphabet character and space
         pattern = r"^[a-zA-Z ]+$"
-        if len(label) < 1:
-            raise ValidationError('Invalid label, minimum is 1 character')
+        if len(label) < 2:
+            raise ValidationError('Invalid label, minimum is 2 character')
         if len(label) > 30:
             raise ValidationError('Invalid label, max is 30 character')
         if  re.match(pattern, label) is None:
@@ -93,7 +93,6 @@ class UserSchema(ma.Schema):
 
     class Meta():
         pass
-        #strict = True
 
     def phone_to_msisdn(self, obj):
         return obj.phone_ext + obj.phone_number
@@ -130,9 +129,9 @@ class UserSchema(ma.Schema):
     @validates('name')
     def validate_name(self, name):
         # onyl allow alphabet character
-        pattern = r"^[a-zA-Z]+$"
-        if len(name) < 1:
-            raise ValidationError('Invalid name, minimum is 1 character')
+        pattern = r"^[a-zA-Z ]+$"
+        if len(name) < 2:
+            raise ValidationError('Invalid name, minimum is 2 character')
         if len(name) > 70:
             raise ValidationError('Invalid name, max is 70 character')
         if  re.match(pattern, name) is None:
@@ -233,18 +232,30 @@ class WalletSchema(ma.Schema):
 
 class TransactionSchema(ma.Schema):
     id               = fields.Int()
-    source_id        = fields.Int()
-    destination_id   = fields.Int()
+    wallet_id        = fields.Int()
+    balance          = fields.Float()
     amount           = fields.Float()
     transaction_type = fields.Int()
-    transfer_type    = fields.Int()
     notes            = fields.Str()
+    payment_id       = fields.Method("payment_id_to_details")
     created_at       = fields.DateTime('%Y-%m-%d %H:%M:%S')
 
     @validates('amount')
     def validate_amount(self, amount):
         if float(amount) <= 0:
             raise ValidationError("Invalid Amount, cannot be less than 0")
+    #end def
+
+    def payment_id_to_details(self, obj):
+        payment_details = {
+            "source"          : obj.payment.source_account,
+            "to"              : obj.payment.to,
+            "reference_number": obj.payment.ref_number,
+            "amount"          : obj.payment.amount,
+            "payment_type"    : obj.payment.payment_type,
+            "status"          : obj.payment.status,
+        }
+        return payment_details
     #end def
 #end class
 

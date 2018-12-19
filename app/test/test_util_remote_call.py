@@ -1,5 +1,6 @@
 import json
 import random
+import requests
 
 from unittest.mock import Mock, patch
 
@@ -8,7 +9,7 @@ from app.api.bank.utility   import remote_call
 
 class TestUtilityRemoteCall(BaseTestCase):
 
-    """
+    @patch("requests.post")
     def test_post_success(self, mock_post):
         base_url   = "https://apibeta.bni-ecollection.com/"
         secret_key = "8eafc8687722fdd0ef78942309fcd983"
@@ -23,9 +24,7 @@ class TestUtilityRemoteCall(BaseTestCase):
         mock_post.return_value.json.return_value = { "status" : "0", "data" : encrypted_data }
 
         result = remote_call.post( base_url, client_id, secret_key, payload )
-        print(result)
         self.assertEqual( result["status"], "0")
-    """
 
     def test_encrypt(self):
         secret_key = "8eafc8687722fdd0ef78942309fcd983"

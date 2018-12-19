@@ -11,18 +11,18 @@ from app.api.models import Wallet, VirtualAccount, Transaction, ExternalLog
 from app.api.bank   import helper
 from app.api.config import config
 
-"""
 class TestMockEcollectionHelper(BaseTestCase):
 
     def setUp(self):
-        #self.mock_get_patcher = patch("app.bank.utility.remote_call.requests.post")
-        #self.mock_get         = self.mock_get_patcher.start()
+        self.mock_get_patcher = patch("app.bank.utility.remote_call.requests.post")
+        self.mock_get         = self.mock_get_patcher.start()
         pass
 
     def tearDown(self):
         #self.mock_get_patcher.stop()
         pass
 
+    """
     def test_mock_create_va_success(self):
         wallet = Wallet(
         )

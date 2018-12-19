@@ -1,7 +1,3 @@
-import sys
-import json
-import unittest
-
 from datetime import datetime, timedelta
 
 from app.test.base  import BaseTestCase
@@ -9,7 +5,6 @@ from app.api        import db
 from app.api.models import *
 from app.api.config import config
 
-now = datetime.utcnow()
 
 class UserTestCaseModel(BaseTestCase):
     def test_user_role_relation(self):
@@ -69,7 +64,7 @@ class UserTestCaseModel(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        user = User.query.get(1)
+        user = User.query.get(2)
         # check how many wallet user have
         self.assertEqual( len(user.wallets), 1)
 
@@ -145,7 +140,7 @@ class UserTestCaseModel(BaseTestCase):
 
         # make sure the decoded token contain following information
         self.assertEqual(user.decode_token(utf_token)["type"], "ACCESS")
-        self.assertEqual(user.decode_token(utf_token)["sub"], 1)
+        self.assertEqual(user.decode_token(utf_token)["sub"], 2)
         self.assertEqual(user.decode_token(utf_token)["role"], "USER")
 
 class WalletModelCase(BaseTestCase):
@@ -354,7 +349,7 @@ class WalletModelCase(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        result = Wallet.is_owned(1, wallet_id)
+        result = Wallet.is_owned(2, wallet_id)
         self.assertTrue(result)
 
         result = Wallet.is_owned(1, 456464)
@@ -671,7 +666,7 @@ class BankAccountModelCase(BaseTestCase):
 
         # create bank account here
         bank_account = BankAccount(
-            name="Lisa",
+            name="Ririn",
             bank_id=bca.id,
             user_id=user.id
         )

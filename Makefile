@@ -27,4 +27,7 @@ init:
 shell:
 	python manage.py shell
 
+coverage:
+	coverage run --source app/api -m unittest discover -s app/test/
+
 all: clean install tests upgrade init run

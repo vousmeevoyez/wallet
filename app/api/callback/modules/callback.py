@@ -5,7 +5,7 @@ from flask          import request, jsonify
 from sqlalchemy.exc import IntegrityError
 
 from app.api            import db
-from app.api.models     import Wallet, Transaction, VirtualAccount, ExternalLog
+from app.api.models     import Wallet, Transaction, VirtualAccount, ExternalLog, Payment, PaymentChannel
 from app.api.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
 from app.api.errors     import bad_request, internal_error, request_not_found
 from app.api.config     import config
@@ -23,6 +23,30 @@ class CallbackController:
         pass
     #end def
 
+    def _create_payment(self, params, session=None):
+        if session == None:
+            session = db.session
+        #end if
+
+        payment_channel_key = params["payment_channel_key"]
+
+        # fetch payment channel
+        payment_channel = PaymentChannel.query.filter_by(key=payment_channel_key).first()
+
+        # build payment object
+        payment = Payment(
+            source_account=virtual_account.id,
+            to=virtual_account.wallet_id,
+            ref_number=reference_number,
+            amount=payment_amount,
+            channel_id=payment_channel.id
+        )
+        session.add(payment)
+        session.flush()
+
+        return payment.id
+    #end def
+
     def deposit(self, params):
         response = {
             "status_code"    : 0,
@@ -35,6 +59,15 @@ class CallbackController:
         trx_id           = params["trx_id"         ]
         payment_amount   = params["payment_amount" ]
         reference_number = params["payment_ntb"    ]
+
+        # CREATE TRANSACTION SESSION
+        try:
+            session = db.session(autocommit=True)
+            session.begin(subtransactions=True)
+        except InvalidRequestError:
+            db.session.commit()
+            session = db.session()
+        #end try
 
         # log ingoing request
         API_NAME = "DEPOSIT_NOTIFICATION"
@@ -51,12 +84,25 @@ class CallbackController:
             return response
         #end if
 
+        # fetch payment channel
+        payment_channel = PaymentChannel.query.filter_by(key="BNI_VA").first()
+
+        # build payment object
+        payment = Payment(
+            source_account=virtual_account.id,
+            to=virtual_account.wallet_id,
+            ref_number=reference_number,
+            amount=payment_amount,
+            channel_id=payment_channel.id
+        )
+        session.add(payment)
+        session.flush()
+
         # prepare inject the balance here
         deposit_payload = {
-            "va_id"            : virtual_account.id,
-            "reference_number" : reference_number,
-            "id"               : virtual_account.wallet_id,
-            "amount"           : payment_amount
+            "payment_id" : payment.id,
+            "id"         : virtual_account.wallet_id,
+            "amount"     : payment_amount
         }
 
         deposit_response = self._inject(deposit_payload)
@@ -70,8 +116,8 @@ class CallbackController:
 
         # commit log here
         log.set_status(True)
-        db.session.add(log)
-        db.session.commit()
+        session.add(log)
+        session.commit()
 
         return response
     #end def
@@ -164,11 +210,9 @@ class CallbackController:
             try:
                 # credit (+) we increase balance 
                 credit_transaction = Transaction(
-                    source_id=wallet.id,
-                    destination_id=wallet.id,
+                    wallet_id=wallet.id,
                     amount=amount,
-                    transaction_type=WALLET_CONFIG["CREDIT_FLAG"],
-                    transfer_type=WALLET_CONFIG["BANK_TO_VA"],
+                    transaction_type=WALLET_CONFIG["DEPOSIT"],
                     notes=TRANSACTION_NOTES["DEPOSIT"].format(str(amount), str(va_id), str(reference_number))
                 )
                 credit_transaction.generate_trx_id()
@@ -180,6 +224,7 @@ class CallbackController:
                 db.session.rollback()
                 print(traceback.format_exc())
                 return internal_error()
+            #end try
 
             success_message = RESPONSE_MSG["SUCCESS"]["DEPOSIT"].format(str(amount), wallet_id)
             response["data"] = success_message
