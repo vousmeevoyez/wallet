@@ -157,20 +157,13 @@ class WalletController:
     def history(self, wallet_id):
         response = {}
 
-        try:
-            wallet = Wallet.query.filter_by(id=wallet_id).first()
-            if wallet == None:
-                return request_not_found()
-            #end if
+        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        if wallet == None:
+            return request_not_found()
+        #end if
 
-            wallet_response = Transaction.query.filter_by(source_id=wallet.id)
-
-            response["data"] = TransactionSchema(many=True).dump(wallet_response).data
-
-        except Exception as e:
-            print(str(e))
-            return internal_error()
-
+        wallet_response = Transaction.query.filter_by(wallet_id=wallet.id)
+        response["data"] = TransactionSchema(many=True).dump(wallet_response).data
         return response
     #end def
 

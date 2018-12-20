@@ -15,7 +15,7 @@ from app.api.bank.utility       import remote_call
 RESPONSE_MSG = config.Config.RESPONSE_MSG
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 
-@api.route('/deposit')
+@api.route('/bni_va/deposit')
 class CallbackDeposit(Resource):
     def post(self):
         # response that only accepted by BNI
@@ -51,15 +51,16 @@ class CallbackDeposit(Resource):
             return response
         #end if
 
+        # add payment channel key here to know where the request coming from
+        data["payment_channel_key"] = "BNI_VA"
         deposit_response = callback.CallbackController().deposit(data)
-        print(deposit_response)
         if deposit_response["status_code"] != 0:
             response["status"] = str(deposit_response["status_code"])
         return response
     #end def
 #end class
 
-@api.route('/withdraw')
+@api.route('/bni_va/withdraw')
 class CallbackWithdraw(Resource):
     def post(self):
         # response that only accepted by BNI
@@ -95,8 +96,9 @@ class CallbackWithdraw(Resource):
             return response
         #end if
 
+        # add payment channel key here to know where the request coming from
+        data["payment_channel_key"] = "BNI_VA"
         withdraw_response = callback.CallbackController().withdraw(data)
-        print(withdraw_response)
         if withdraw_response["status_code"] != 0:
             response["status"] = str(withdraw_response["status_code"])
 

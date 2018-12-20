@@ -1,4 +1,6 @@
+from os import path
 import json
+import csv
 
 from flask_testing  import TestCase
 from unittest.mock import Mock, patch
@@ -6,7 +8,7 @@ from unittest.mock import Mock, patch
 from manage         import app
 from app.api        import db
 from app.api.config import config
-from app.api.models import User, Role
+from app.api.models import User, Role, VaType, Bank, PaymentChannel
 
 TEST_CONFIG = config.TestingConfig
 
@@ -30,6 +32,9 @@ class BaseTestCase(TestCase):
     def _init_test(self):
         roles = self._create_role()
         self._create_admin(roles["ADMIN"])
+        self._create_va_type()
+        self._import_bank_csv()
+        self._create_payment_channel()
 
     def _create_role(self):
         roles = {
@@ -69,3 +74,50 @@ class BaseTestCase(TestCase):
         db.session.add(admin)
         db.session.commit()
     #end def
+
+    def _create_va_type(self):
+        # REGISTER VA TYPE HERE
+        va_credit = VaType(
+            key="CREDIT"
+        )
+        # debit
+        va_debit = VaType(
+            key="DEBIT"
+        )
+        db.session.add(va_debit)
+        db.session.add(va_credit)
+        db.session.commit()
+    #end def
+
+    def _create_payment_channel(self):
+        bni = Bank.query.filter_by(code="009").first()
+        payment_channel = PaymentChannel(
+            name="BNI Virtual Account",
+            key="BNI_VA",
+            channel_type="VIRTUAL_ACCOUNT",
+            bank_id=bni.id
+        )
+        db.session.add(payment_channel)
+        db.session.commit()
+    #end def
+
+    def _import_bank_csv(self):
+        base_path = path.abspath("data")
+        FILEPATH = base_path + "/bank_list.csv"
+        with open(FILEPATH, "r") as f:
+            csv_reader = csv.DictReader(f)
+            line = 0
+            for row in csv_reader:
+                if line > 0:
+                    bank=Bank(
+                        name=row["bank_name"],
+                        code=row["bank_code"],
+                    )
+                    db.session.add(bank)
+                    db.session.commit()
+                #end if
+                line += 1
+            #end for
+        #end with
+    #end def
+#end class

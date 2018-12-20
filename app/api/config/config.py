@@ -51,11 +51,11 @@ class Config:
 
     # MASTER WALLET SETTINGS
     TRANSACTION_NOTES= {
-        "DEPOSIT"         : "Top up balance {} from Virtual Account {}, Reference Number {}",
+        "DEPOSIT"         : "Top up balance {} from Virtual Account",
         "INJECT"          : "Injected balance {}",
         "SEND_TRANSFER"   : "Transfer balance {}",
         "RECEIVE_TRANSFER": "Received balance {}",
-        "WITHDRAW_NOTIF"  : "Withdraw balance {} from Virtual Account {}, Reference Number {}"
+        "WITHDRAW_NOTIF"  : "Withdraw balance {} from Virtual Account"
     }
 
     # RESPONSE MESSAGE
@@ -66,6 +66,7 @@ class Config:
             "LOCK_WALLET"           : "Wallet successfully locked",
             "UNLOCK_WALLET"         : "Wallet successfuly unlocked",
             "DEPOSIT"               : "Successfully Deposit {} to {}",
+            "WITHDRAW"              : "Successfully Withdraw {} to {}",
             "TRANSFER"              : "Successfully Transfer {} from {} to {}",
             "REQUEST_WITHDRAW"      : "Request Withdraw Success",
             "CREATE_USER"           : "User & Wallet Successfully Created",
@@ -211,7 +212,7 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     DEBUG = True
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'postgresql://modana:password@localhost/unittest_db'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://modana:password@localhost/testing_db_wallet'
     PRESERVE_CONTEXT_ON_EXCEPTION = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 #end class

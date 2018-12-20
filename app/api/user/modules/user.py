@@ -13,7 +13,7 @@ from app.api.serializer import UserSchema, WalletSchema, VirtualAccountSchema
 from app.api.errors     import bad_request, internal_error, request_not_found
 from app.api.config     import config
 
-RESPONSE_MSG      = config.Config.RESPONSE_MSG
+RESPONSE_MSG = config.Config.RESPONSE_MSG
 
 class UserController:
 
@@ -140,15 +140,13 @@ class UserController:
             "data"           : "NONE"
         }
 
-        db.session.begin()
-
         try:
             # parse request data 
             user_id = params["user_id"]
 
             user = User.query.filter_by(id=user_id).first()
             if user == None:
-                return request_not_found()
+                return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
             #end if
 
             db.session.delete(user)
@@ -160,57 +158,7 @@ class UserController:
             print(str(e))
             return internal_error()
 
-        response["data"] = RESPONSE_MSG["USER_REMOVED"]
-
+        response["message"] = RESPONSE_MSG["SUCCESS"]["REMOVE_USER"]
         return response
     #end def
-
-    def update_user(self, params):
-        response = {
-            "status_code"    : 0,
-            "status_message" : "SUCCESS",
-            "data"           : "NONE"
-        }
-
-        db.session.begin()
-
-        try:
-            # parse request data 
-            user_id   = params["user_id" ]
-            name      = params["name"    ]
-            msisdn    = params["msisdn"  ]
-            email     = params["email"   ]
-
-            user = User.query.filter_by(id=user_id).first()
-            if user == None:
-                return request_not_found()
-            #end if
-
-            if user.msisdn == msisdn:
-                return bad_request("No Change on Phone number")
-            #end if
-
-            if user.email == email:
-                return bad_request("No Change on Email")
-            #end if
-
-            #ret = db.session.query(exists().where(User.email==email)).scalar()
-
-            user.name   = name
-            user.msisdn = msisdn
-            user.email  = email
-
-            db.session.commit()
-
-        except Exception as e:
-            db.session.rollback()
-            print(traceback.format_exc())
-            print(str(e))
-            return internal_error()
-
-        response["data"] = RESPONSE_MSG["USER_UPDATED"]
-
-        return response
-    #end def
-
 #end class

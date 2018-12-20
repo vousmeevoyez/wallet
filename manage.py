@@ -139,6 +139,17 @@ def _create_va_type():
     db.session.commit()
 #end def
 
+def _create_payment_channel():
+    bni = Bank.query.filter_by(bank_code="009").first()
+    payment_channel = PaymentChannel(
+        name="BNI Virtual Account",
+        key="BNI_VA",
+        channel_type="VIRTUAL_ACCOUNT",
+        bank_id=bni.id
+    )
+    db.session.add(payment_channel)
+    db.session.commit()
+
 if __name__ == "__main__":
     manager.run()
 

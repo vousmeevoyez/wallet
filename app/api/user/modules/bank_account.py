@@ -82,33 +82,26 @@ class UserBankAccountController:
     def update(self, params):
         response = {}
 
-        try:
-            user_bank_account_id = params["user_bank_account_id"]
-            user_id              = params["user_id"]
+        user_bank_account_id = params["user_bank_account_id"]
+        user_id              = params["user_id"]
 
-            bank_account = BankAccount.query.filter_by(user_id=user_id, id=user_bank_account_id).first()
-            if bank_account == None:
-                return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
-            #end if
+        bank_account = BankAccount.query.filter_by(user_id=user_id, id=user_bank_account_id).first()
+        if bank_account == None:
+            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+        #end if
 
-            # get bank id from bank code
-            bank = Bank.query.filter_by(code=params["bank_code"]).first()
-            if bank == None:
-                return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
-            #end if
+        # get bank id from bank code
+        bank = Bank.query.filter_by(code=params["bank_code"]).first()
+        if bank == None:
+            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+        #end if
 
-            bank_account.label      = params["label"]
-            bank_account.name       = params["name" ]
-            bank_account.account_no = params["account_no"]
-            bank_account.bank_code  = bank.id
+        bank_account.label      = params["label"]
+        bank_account.name       = params["name" ]
+        bank_account.account_no = params["account_no"]
+        bank_account.bank_code  = bank.id
 
-            db.session.commit()
-
-        except IntegrityError as err:
-            print(err)
-            session.rollback()
-            return internal_error(RESPONSE_MSG["FAILED"]["ERROR_ADDING_RECORD"])
-        #end try
+        db.session.commit()
 
         response["message"] = RESPONSE_MSG["SUCCESS"]["UPDATE_BANK_ACCOUNT"]
         return response
@@ -117,23 +110,16 @@ class UserBankAccountController:
     def remove(self, params):
         response = {}
 
-        try:
-            user_bank_account_id = params["user_bank_account_id"]
-            user_id              = params["user_id"]
+        user_bank_account_id = params["user_bank_account_id"]
+        user_id              = params["user_id"]
 
-            bank_account = BankAccount.query.filter_by(user_id=user_id, id=user_bank_account_id).first()
-            if bank_account == None:
-                return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
-            #end if
+        bank_account = BankAccount.query.filter_by(user_id=user_id, id=user_bank_account_id).first()
+        if bank_account == None:
+            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+        #end if
 
-            db.session.delete(bank_account)
-            db.session.commit()
-
-        except IntegrityError as err:
-            print(err)
-            session.rollback()
-            return internal_error(RESPONSE_MSG["FAILED"]["ERROR_ADDING_RECORD"])
-        #end try
+        db.session.delete(bank_account)
+        db.session.commit()
 
         response["message"] = RESPONSE_MSG["SUCCESS"]["REMOVE_BANK_ACCOUNT"]
         return response
