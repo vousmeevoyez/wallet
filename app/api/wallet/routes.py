@@ -78,6 +78,15 @@ class WalletTransaction(Resource):
     #end def
 #end class
 
+@api.route('/<int:wallet_id>/transactions/<int:transaction_id>')
+class WalletTransactionDetails(Resource):
+    @token_required
+    def get(self, wallet_id, transaction_id):
+        response = wallet.WalletController().history_details(wallet_id, transaction_id)
+        return response
+    #end def
+#end class
+
 @api.route('/<int:wallet_id>/pin/')
 class UpdateWalletPin(Resource):
     @token_required

@@ -1,5 +1,6 @@
 from app.test.base      import BaseTestCase
 from app.api.serializer import *
+from app.api.models     import *
 from app.api.config     import config
 
 class TestUserSchema(BaseTestCase):
@@ -371,6 +372,31 @@ class TestUserSchema(BaseTestCase):
             'role': ['Invalid Role']
         }
         self.assertEqual(errors, expected_error)
+
+    def test_deserialize(self):
+        role = Role(
+            description="USER",
+        )
+        db.session.add(role)
+        db.session.commit()
+
+        # create dummy user
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            phone_ext='62',
+            phone_number='81219644314',
+            role_id=role.id,
+        )
+        user.set_password("password")
+        db.session.add(user)
+        db.session.commit()
+
+        result = UserSchema().dump(user).data
+        self.assertEqual(result["msisdn"], "6281219644314")
+        self.assertEqual(result["status"], "ACTIVE")
+        self.assertEqual(result["role"], "USER")
 #end def
 
 class TestWalletSchema(BaseTestCase):
@@ -400,7 +426,7 @@ class TestTransactionSchema(BaseTestCase):
 
     def test_validate_amount(self):
         data = {
-            "wallet_id"        : 123456,
+            "wallet_id"        : "123456",
             "balance"          : 11,
             "amount"           : -1,
             "transaction_type" : 1,
@@ -409,6 +435,58 @@ class TestTransactionSchema(BaseTestCase):
         errors = TransactionSchema().validate(data)
         expected_error = {'amount': ['Invalid Amount, cannot be less than 0']}
         self.assertEqual(errors, expected_error)
+
+    def test_deserialize(self):
+         # create 2 dummy wallet here
+        wallet = Wallet(
+        )
+        wallet2 = Wallet(
+        )
+
+        db.session.add(wallet)
+        db.session.add(wallet2)
+        db.session.flush()
+
+        # add some balance here for test case
+        user = Wallet.query.get(1)
+        user.add_balance(1000)
+        db.session.flush()
+
+        self.assertEqual(user.check_balance(), 1000)
+
+        user2 = Wallet.query.get(2)
+        user2.add_balance(1000)
+        db.session.flush()
+
+        self.assertEqual(user2.check_balance(), 1000)
+
+        #start transaction here
+        trx_amount = 10
+        # first create debit payment
+        debit_payment = Payment(
+            source_account=wallet.id,
+            to=wallet2.id,
+            amount=trx_amount,
+            payment_type=False,
+        )
+        db.session.add(debit_payment)
+
+        #create debit transaction
+        debit_trx = Transaction(
+            wallet_id=wallet.id,
+            amount=trx_amount,
+            payment_id=debit_payment.id
+        )
+        debit_trx.generate_trx_id()
+        debit_trx.current_balance("DEDUCT", trx_amount)
+        db.session.add(debit_trx)
+        # deduct balance
+        user.deduct_balance(trx_amount)
+
+        db.session.commit()
+
+        result = TransactionSchema().dump(debit_trx).data
+        self.assertEqual(result["transaction_type"], "WITHDRAW")
 
 class TestCallbackSchema(BaseTestCase):
 
@@ -675,6 +753,87 @@ class TestBankAccountSchema(BaseTestCase):
             'bank_code': ["Invalid bank code, only number allowed"]
         }
         self.assertEqual(errors, expected_error)
+
+    def test_validate_bank_account_label_min_string(self):
+        data = {
+            "account_no": "1111111110",
+            "name"      : "irene red velvet",
+            "label"     : "a",
+            "bank_code" : "009"
+        }
+        errors = BankAccountSchema().validate(data)
+        expected_error = {
+            "label" : [ "Invalid label, minimum is 2 character" ]
+        }
+        self.assertEqual(errors, expected_error)
+
+    def test_validate_bank_account_label_max_string(self):
+        data = {
+            "account_no": "1111111110",
+            "name"      : "irene red velvet",
+            "label"     : "dsakldsadjalkjdljasjdkjasjdljasjdljalsjdlajsdjaljsdjdasjkjlkjlka",
+            "bank_code" : "009"
+        }
+        errors = BankAccountSchema().validate(data)
+        expected_error = {
+            "label" : [ "Invalid label, max is 30 character" ]
+        }
+        self.assertEqual(errors, expected_error)
+
+    def test_validate_bank_account_label_invalid(self):
+        data = {
+            "account_no": "1111111110",
+            "name"      : "irene red velvet",
+            "label"     : "&@!*#&(@&(",
+            "bank_code" : "009"
+        }
+        errors = BankAccountSchema().validate(data)
+        expected_error = {
+            "label" : [ "Invalid label, only alphabet allowed" ]
+        }
+        self.assertEqual(errors, expected_error)
+
+    def test_bank_id_to_name(self):
+        role = Role(
+            description="USER",
+        )
+        db.session.add(role)
+        db.session.commit()
+
+        # create dummy user
+        user = User(
+            username='lisabp',
+            name='lisa',
+            email='lisa@bp.com',
+            phone_ext='62',
+            phone_number='81219644314',
+            role_id=role.id,
+        )
+        user.set_password("password")
+        db.session.add(user)
+        db.session.commit()
+
+        # create bank here
+        bank_name = "Bank BNI"
+        bni=Bank(
+            key="BNI",
+            name=bank_name,
+            code="99",
+        )
+        db.session.add(bni)
+        db.session.commit()
+
+        # create bank account here
+        bank_account = BankAccount(
+            name="Lisa",
+            bank_id=bni.id,
+            user_id=user.id
+        )
+        db.session.add(bank_account)
+        db.session.commit()
+
+        result = BankAccountSchema().dump(bank_account).data
+        self.assertEqual(result["bank_name"],bank_name)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

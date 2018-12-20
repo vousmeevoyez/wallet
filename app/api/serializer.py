@@ -8,6 +8,7 @@ from app.api.config  import config
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 WALLET_CONFIG          = config.Config.WALLET_CONFIG
+TRANSACTION_CONFIG     = config.Config.TRANSACTION_CONFIG
 
 def cannot_be_blank(string):
     if not string:
@@ -231,13 +232,13 @@ class WalletSchema(ma.Schema):
 #end class
 
 class TransactionSchema(ma.Schema):
-    id               = fields.Int()
-    wallet_id        = fields.Int()
+    id               = fields.Str()
+    wallet_id        = fields.Str()
     balance          = fields.Float()
     amount           = fields.Float()
-    transaction_type = fields.Int()
+    transaction_type = fields.Method("transaction_type_id_to_string")
     notes            = fields.Str()
-    payment_id       = fields.Method("payment_id_to_details")
+    payment_details  = fields.Method("payment_id_to_details")
     created_at       = fields.DateTime('%Y-%m-%d %H:%M:%S')
 
     @validates('amount')
@@ -251,11 +252,40 @@ class TransactionSchema(ma.Schema):
             "source"          : obj.payment.source_account,
             "to"              : obj.payment.to,
             "reference_number": obj.payment.ref_number,
-            "amount"          : obj.payment.amount,
-            "payment_type"    : obj.payment.payment_type,
-            "status"          : obj.payment.status,
+            "payment_amount"  : obj.payment.amount,
+            "payment_type"    : self.payment_type_to_string(obj.payment.payment_type),
+            "status"          : self.payment_status_to_string(obj.payment.status),
         }
         return payment_details
+    #end def
+
+    def transaction_type_id_to_string(self, obj):
+        if obj.transaction_type == 1:
+            return "DEPOSIT"
+        elif obj.transaction_type == 2:
+            return "IN_TRANSFER"
+        elif obj.transaction_type == 3:
+            return "OUT_TRANSFER"
+        else:
+            return "WITHDRAW"
+    #end def
+
+    def payment_type_to_string(self, payment_type):
+        if payment_type == True:
+            return "CREDIT"
+        else:
+            return "DEBIT"
+        #end if
+    #end def
+
+    def payment_status_to_string(self, status):
+        if status == 1:
+            return "COMPLETED"
+        elif status == 2:
+            return "PENDING"
+        elif status == 3:
+            return "FAILED"
+        #end if
     #end def
 #end class
 

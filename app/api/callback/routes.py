@@ -71,7 +71,6 @@ class CallbackWithdraw(Resource):
         # we received encrypted data and we need to decrypt it first
         encrypted_data = request.get_json()
         request_data = remote_call.decrypt( BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"], encrypted_data["data"])
-
         try:
             data = {
                 "virtual_account"           : int(request_data["virtual_account"]),

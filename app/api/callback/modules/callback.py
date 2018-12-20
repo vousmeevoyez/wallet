@@ -70,7 +70,6 @@ class CallbackController:
         # CREATE TRANSACTION SESSION
         try:
             session = db.session(autocommit=True)
-            session.begin(subtransactions=True)
         except InvalidRequestError:
             db.session.commit()
             session = db.session()
@@ -113,6 +112,8 @@ class CallbackController:
         log.save_response(deposit_response) # log the response here
         if deposit_response["status"] != "SUCCESS":
             log.set_status(False) # False it means failed
+            session.add(log)
+            session.commit()
             response["status_code"] = "400"
             response["data"       ] = RESPONSE_MSG["FAILED"]["INJECT"]
             return response
@@ -142,7 +143,6 @@ class CallbackController:
         # CREATE TRANSACTION SESSION
         try:
             session = db.session(autocommit=True)
-            session.begin(subtransactions=True)
         except InvalidRequestError:
             db.session.commit()
             session = db.session()

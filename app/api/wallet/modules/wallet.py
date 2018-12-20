@@ -163,7 +163,20 @@ class WalletController:
         #end if
 
         wallet_response = Transaction.query.filter_by(wallet_id=wallet.id)
-        response["data"] = TransactionSchema(many=True).dump(wallet_response).data
+        response["data"] = TransactionSchema(many=True, exclude=["payment_details",]).dump(wallet_response).data
+        return response
+    #end def
+
+    def history_details(self, wallet_id, transaction_id):
+        response = {}
+
+        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        if wallet == None:
+            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+        #end if
+
+        history_details = Transaction.query.filter_by(wallet_id=wallet.id, id=transaction_id).first()
+        response["data"] = TransactionSchema().dump(history_details).data
         return response
     #end def
 

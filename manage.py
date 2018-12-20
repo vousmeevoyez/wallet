@@ -46,6 +46,8 @@ def init():
     _import_bank_csv()
     # create necessary va type
     _create_va_type()
+    # create payment_channel
+    _create_payment_channel()
 #end def
 
 def make_shell_context():
@@ -140,7 +142,7 @@ def _create_va_type():
 #end def
 
 def _create_payment_channel():
-    bni = Bank.query.filter_by(bank_code="009").first()
+    bni = Bank.query.filter_by(code="009").first()
     payment_channel = PaymentChannel(
         name="BNI Virtual Account",
         key="BNI_VA",
