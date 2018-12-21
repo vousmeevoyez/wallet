@@ -42,7 +42,7 @@ class BankController:
         balance   = result["data"]["bank_account_info"]["balance"]
 
         response["data"] = {
-            "host_name" : customer_name,
+            "host_name" : host_name,
             "balance"   : balance
         }
         return response
