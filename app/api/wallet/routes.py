@@ -180,7 +180,7 @@ class WalletTransfer(Resource):
     #end def
 #end class
 
-@api.route('/<int:source_wallet_id>/transfer/<int:bank_account_id>')
+@api.route('/<int:source_wallet_id>/transfer/bank/<int:bank_account_id>')
 class WalletBankTransfer(Resource):
     @token_required
     def post(self, source_wallet_id, bank_account_id):
