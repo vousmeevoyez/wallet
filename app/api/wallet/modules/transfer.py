@@ -260,7 +260,7 @@ class TransferController:
         inquiry_response = helper.OpgHelper().get_interbank_inquiry(inquiry_payload)
         print(inquiry_response)
         # if the inquiry fail it means the bank account is invalid or not exist
-        if inquiry_response["status"] != "FAILED":
+        if inquiry_response["status"] != "SUCCESS":
             response["status"] = "CLIENT_ERROR"
             response["data"  ] = RESPONSE_MSG["FAILED"]["BANK_ACCOUNT_NOT_FOUND"]
             return response
@@ -281,7 +281,7 @@ class TransferController:
         }
         payment_response = helper.OpgHelper().get_interbank_payment(payment_payload)
         print(payment_response)
-        if payment_response["status"] != "FAILED":
+        if payment_response["status"] != "SUCCESS":
             response["status"] = "SERVER_ERROR"
             response["data"  ] = RESPONSE_MSG["FAILED"]["TRANSFER_FAILED"]
             return response
