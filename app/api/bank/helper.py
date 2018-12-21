@@ -4,7 +4,7 @@ import base64
 import hashlib
 
 from datetime import datetime, timedelta
-from OpenSSL import crypto
+from jose import jws
 
 from app.api        import db
 from app.api.models import ExternalLog, VirtualAccount, Wallet, Bank, VaType
@@ -270,36 +270,90 @@ class OpgHelper(object):
     ROUTES         = BNI_OPG_CONFIG["ROUTES"]
     URL            = BNI_OPG_CONFIG["BASE_URL_DEV"] + ":" + BNI_OPG_CONFIG["PORT"]
 
-    P12_KEY       = "/Users/kelvin/apps/secrets/modana.p12"
-
     def __init__(self):
-        pass
+        token_resp = self._get_token()
+        if token_resp["status"] == "FAILED":
+            self.access_token = None
+        else:
+            self.access_token = token_resp["data"]["access_token"]
+        #end if
     #end def
 
-    def _create_signature(self, string):
-        p12 = crypto.load_pkcs12(open(self.P12_KEY, 'rb').read(), "")
-        priv_key = p12.get_privatekey()
-
-        hash_string = hashlib.sha256(string).digest()
+    def _create_signature(self, payload):
+        signature = jws.sign(
+            payload,
+            self.BNI_OPG_CONFIG["SECRET_API_KEY"],
+            algorithm="HS256")
+        return signature
     #end def
 
-    def _post(self, url, headers, payload):
+    def _generate_ref_number(self):
+        now = datetime.utcnow()
+        value_date = now.strftime("%Y%m%d%H%M%S")
+        code = random.randint(1,99999)
+        return str(value_date) + str(code)
+    #end def
+
+    def _post(self, API_NAME, payload, access_token=None):
         response = {
-            "status" : "SUCCESS"
+            "status" : None,
+            "data"   : None
         }
+
+        # init headers here
+        headers = {
+            "Content-Type" : None,
+        }
+
+        # client_id in payload
+        payload["clientId"] = self.BNI_OPG_CONFIG["CLIENT_NAME"]
+
+        # add signature here
+        signature = self._create_signature(payload)
+        payload["signature"] = signature
+
+        if API_NAME == "GET_TOKEN":
+            base_64 = base64.b64encode(
+                (self.BNI_OPG_CONFIG["USERNAME"] + ":" + self.BNI_OPG_CONFIG["PASSWORD"]).encode("utf-8")
+            )
+            base_64 = base_64.decode("utf-8")
+            headers["Authorization"] = "Basic {}".format(str(base_64))
+            headers["Content-Type" ] = "application/x-www-form-urlencoded"
+
+            url = self.URL + self.ROUTES[API_NAME]
+        else:
+            headers["x-api-key"   ] = self.BNI_OPG_CONFIG["API_KEY"]
+            headers["Content-Type"] = "application/json"
+
+            # check if access_token is missing
+            if access_token == None:
+                response["status"] = "FAILED"
+                response["data"  ] = "ACCESS_TOKEN_MISSING"
+                return response
+            #end if
+
+            # attach access_token on url here
+            url = self.URL + self.ROUTES[API_NAME] + "?access_token=" + access_token
+
+            # convert request to json
+            payload = json.dumps(payload)
+        #end if
 
         try:
             r = requests.post(
                 url,
                 headers=headers,
-                data=payload
+                data=payload,
+                timeout=LOGGING_CONFIG["TIMEOUT"]
             )
             # access the data here
-            response = r.json()
-            if r.status_code != requests.codes.ok:
+            resp = r.json()
+            if r.ok:
+                response["status"] = "SUCCESS"
+            else:
                 response["status"] = "FAILED"
             #end if
-            response["data"] = response
+            response["data"] = resp
         except requests.exceptions.Timeout:
             response["status"] = "FAILED"
             response["data"]   =  "REQUEST_TIMEOUT"
@@ -307,37 +361,26 @@ class OpgHelper(object):
             response["status"] = "FAILED"
             response["data"]   =  "BAD_URL"
         except requests.exceptions.RequestException as e:
+            print(str(e))
             response["status"] = "FAILED"
             response["data"]   =  "FAILURE"
         #end try
         return response
     #end def
 
-    def get_token(self):
+    def _get_token(self):
         API_NAME = "GET_TOKEN"
         # define response here
         response = {
-            "status" : "SUCCESS"
+            "status" : "SUCCESS",
+            "data"   : None,
         }
 
-        # build url here
-        url = self.URL + self.ROUTES[API_NAME]
-
-        # build header here
-        base_64 = base64.b64encode(
-            (self.BNI_OPG_CONFIG["USERNAME"] + ":" + self.BNI_OPG_CONFIG["PASSWORD"]).encode("utf-8")
-        )
-        base_64 = base_64.decode("utf-8")
-        headers = {
-            "Content-Type" : "application/x-www-form-urlencoded",
-            "Authorization": "Basic %s" % str(base_64)
-        }
         # build request body here
         payload = { "grant_type" : "client_credentials" }
 
         # post here
-        post_resp = self._post(url, headers, payload)
-        print(post_resp)
+        post_resp = self._post(API_NAME, payload)
         if post_resp["status"] != "SUCCESS":
             response["status"] = post_resp["status"]
             response["data"  ] = post_resp["data"]
@@ -345,56 +388,51 @@ class OpgHelper(object):
         #end if
 
         # access the data here
-        response["data"] = {
-            "access_token" : post_resp["data"]["access_token"]
-        }
+        access_token = post_resp["data"]["access_token"]
+        response["data"] = { "access_token" : access_token }
+
         return response
     #end def
 
-    def get_balance(self, params):
+    def get_balance(self, params, access_token=None):
         API_NAME = "GET_BALANCE"
+        if access_token == None:
+            access_token = self.access_token
+        #end if
+
         # define response here
         response = {
-            "status" : "SUCCESS"
+            "status" : "SUCCESS",
+            "data"   : None,
         }
 
         account_no = params["account_no"]
 
-        # build url here
-        url = self.URL + self.ROUTES[API_NAME] + "?access_token=" + self.access_token
-
-        # build header here
-        headers = {
-            "Content-Type" : "application/json",
-        }
-
-        # build request body here
-        base_64 = base64.b64encode(
-            (self.BNI_OPG_CONFIG["CLIENT_NAME"]).encode("utf-8")
-        )
-        client_name = base_64.decode("utf-8")
-        client_id = BNI_OPG_CONFIG["CLIENT_ID"]
-
-        # build signature here
-
-        # build payload here
+        # payload
         payload = {
-            "clientId"  : client_id + client_name,
-            "signature" : signature,
             "accountNo" : account_no,
         }
 
         # post here
-        # should log request and response
-        post_resp = self._post(url, headers, payload)
+        # should log something here
+        post_resp = self._post(API_NAME, payload, access_token)
         if post_resp["status"] != "SUCCESS":
             response["status"] = post_resp["status"]
             response["data"  ] = post_resp["data"]
             return response
         #end if
+        # and log something here
 
         # access the data here
         response_data = post_resp["data"]["getBalanceResponse"]["parameters"]
+
+        # check response_code here
+        response_code = response_data["responseCode"]
+        if response_code != "0001":
+            response["status"] = "FAILED"
+            response["data"  ] = response_data["errorMessage"]
+            return response
+        #end if
         response["data"] = {
             "bank_account_info" : {
                 "customer_name" : response_data["customerName"],
@@ -404,8 +442,12 @@ class OpgHelper(object):
         return response
     #end def
 
-    def get_inhouse_inquiry(self, params):
+    def get_inhouse_inquiry(self, params, access_token=None):
         API_NAME = "GET_INHOUSE_INQUIRY"
+        if access_token == None:
+            access_token = self.access_token
+        #end if
+
         # define response here
         response = {
             "status" : "SUCCESS"
@@ -413,33 +455,13 @@ class OpgHelper(object):
 
         account_no = params["account_no"]
 
-        # build url here
-        url = self.URL + self.ROUTES[API_NAME] + "?access_token=" + self.access_token
-
-        # build header here
-        headers = {
-            "Content-Type" : "application/json",
-        }
-
-        # build request body here
-        base_64 = base64.b64encode(
-            (self.BNI_OPG_CONFIG["CLIENT_NAME"]).encode("utf-8")
-        )
-        client_name = base_64.decode("utf-8")
-        client_id = BNI_OPG_CONFIG["CLIENT_ID"]
-
-        # build signature here
-
         # build payload here
         payload = {
-            "clientId"  : client_id + client_name,
-            "signature" : signature,
             "accountNo" : account_no,
         }
 
         # post here
-        # should log request and response
-        post_resp = self._post(url, headers, payload)
+        post_resp = self._post(API_NAME, payload, access_token)
         if post_resp["status"] != "SUCCESS":
             response["status"] = post_resp["status"]
             response["data"  ] = post_resp["data"]
@@ -448,6 +470,14 @@ class OpgHelper(object):
 
         # access the data here
         response_data = post_resp["data"]["getInHouseInquiryResponse"]["parameters"]
+        # check response code
+        response_code = response_data["responseCode"]
+        if response_code != "0001":
+            response["status"] = "FAILED"
+            response["data"  ] = response_data["errorMessage"]
+            return response
+        #end if
+
         # put conditional here, if account currency is missing it means a VA
         try:
             currency = response_data["accountCurrency"]
@@ -468,44 +498,52 @@ class OpgHelper(object):
         return response
     #end def
 
-    def do_payment(self, params):
+    def do_payment(self, params, access_token=None):
         API_NAME = "DO_PAYMENT"
+        if access_token == None:
+            access_token = self.access_token
+        #end if
+
         # define response here
         response = {
             "status" : "SUCCESS"
         }
 
-        payment_method      = params["payment_method"]
-        source_account      = params["source_account"]
-        destination_account = params["destination_account"]
-        amount              = params["amount"]
+        payment_method              = params["payment_method"     ]
+        source_account              = params["source_account"     ]
+        destination_account         = params["destination_account"]
+        amount                      = params["amount"             ]
+        destination_account_email   = params["email"              ]
+        clearing_code               = params["clearing_code"      ]
+        destination_account_name    = params["account_name"       ]
+        destination_account_address = params["address"            ]
+        charge_mode                 = params["charge_mode"        ]
 
-        # build url here
-        url = self.URL + self.ROUTES[API_NAME] + "?access_token=" + self.access_token
+        # convert payment method
+        if payment_method == "IN_HOUSE":
+            payment_method = "0"
+        elif payment_method == "RTGS":
+            payment_method = "1"
+        elif payment_method == "CLEARING":
+            payment_method = "3"
+        #end if
 
-        # build header here
-        headers = {
-            "Content-Type" : "application/json",
-        }
-
-        # build request body here
-        base_64 = base64.b64encode(
-            (self.BNI_OPG_CONFIG["CLIENT_NAME"]).encode("utf-8")
-        )
-        client_name = base_64.decode("utf-8")
-        client_id = BNI_OPG_CONFIG["CLIENT_ID"]
-
-        # build signature here
+        # convert charge mode
+        if charge_mode == "SOURCE":
+            charge_mode = "OUR"
+        elif charge_mode == "DESTINATION":
+            charge_mode = "BEN"
+        elif charge_mode == "SPLIT":
+            charge_mode = "SHA"
+        #end if
 
         # build payload here
-        # generate ref number
-        #ref_number = self._generate_ref_number()
         now = datetime.utcnow()
-        value_date = now.strftime()
+        value_date = now.strftime("%Y%m%d%H%M%S")
         currency = "IDR"
+
+        ref_number = self._generate_ref_number()
         payload = {
-            "clientId"                : client_id + client_name,
-            "signature"               : signature,
             "customerReferenceNumber" : ref_number,
             "paymentMethod"           : payment_method, # 0 IN_HOUSE // 1 RTGS // 3 CLEARING
             "debitAccountNo"          : source_account, # registered BNI account
@@ -515,16 +553,16 @@ class OpgHelper(object):
             "valueAmount"             : amount,
             "remark"                  : "?",
             "beneficiaryEmailAddress" : destination_account_email, # must be filled if not IN_HOUSE
-            "destinationBankCode"     : destination_bank_code, # must be filled if not IN_HOUSE
+            "destinationBankCode"     : clearing_code, # must be filled if not IN_HOUSE
             "beneficiaryName"         : destination_account_name, # must be filled if not IN_HOUSE
             "beneficiaryAddress1"     : destination_account_address,
             "beneficiaryAddress2"     : "",
-            "chargingModelId"         : "NONE",
+            "chargingModelId"         : charge_mode, # whos pay for it (OUR/BEN/SHA)
         }
 
         # post here
         # should log request and response
-        post_resp = self._post(url, headers, payload)
+        post_resp = self._post(API_NAME, payload, access_token)
         if post_resp["status"] != "SUCCESS":
             response["status"] = post_resp["status"]
             response["data"  ] = post_resp["data"]
@@ -533,55 +571,49 @@ class OpgHelper(object):
 
         # access the data here
         response_data = post_resp["data"]["doPaymentResponse"]["parameters"]
+        # check response code here
+        response_code = response_data["responseCode"]
+        if response_code != "0001":
+            response["status"] = "FAILED"
+            response["data"  ] = response_data["errorMessage"]
+            return response
+        #end if
+
         response["data"] = {
-            "bank_account_info" : {
-                "account_no"    : response_data["accountNumber"],
-                "customer_name" : response_data["customerName"],
-                "balance"       : response_data["accountBalance"],
-                "status"        : response_data["accountStatus"],
-                "account_type"  : response_data["accountType"],
-                "type"          : acc_type, # BANK // VA
-            }
+            "transfer_info" : {
+                "source_account"     : response_data["debitAccountNo"],
+                "destination_account": response_data["creditAccountNo"],
+                "amount"             : response_data["valueAmount"],
+                "ref_number"         : response_data["customerReference"],
+                "bank_ref"           : response_data["bankReference"],
+            },
+            "request_ref" : ref_number
         }
         return response
     #end def
 
-    def get_payment_status(self, params):
+    def get_payment_status(self, params, access_token=None):
         API_NAME = "GET_PAYMENT_STATUS"
+
+        if access_token == None:
+            access_token = self.access_token
+        #end if
+
         # define response here
         response = {
             "status" : "SUCCESS"
         }
 
-        ref_number = params["ref_number"]
-
-        # build url here
-        url = self.URL + self.ROUTES[API_NAME] + "?access_token=" + self.access_token
-
-        # build header here
-        headers = {
-            "Content-Type" : "application/json",
-        }
-
-        # build request body here
-        base_64 = base64.b64encode(
-            (self.BNI_OPG_CONFIG["CLIENT_NAME"]).encode("utf-8")
-        )
-        client_name = base_64.decode("utf-8")
-        client_id = BNI_OPG_CONFIG["CLIENT_ID"]
-
-        # build signature here
+        request_ref = params["request_ref"]
 
         # build payload here
         payload = {
-            "clientId"                : client_id + client_name,
-            "signature"               : signature,
-            "customerReferenceNumber" : ref_number,
+            "customerReferenceNumber" : request_ref,
         }
 
         # post here
         # should log request and response
-        post_resp = self._post(url, headers, payload)
+        post_resp = self._post(API_NAME, payload, access_token)
         if post_resp["status"] != "SUCCESS":
             response["status"] = post_resp["status"]
             response["data"  ] = post_resp["data"]
@@ -590,6 +622,16 @@ class OpgHelper(object):
 
         # access the data here
         response_data = post_resp["data"]["getPaymentStatusResponse"]["parameters"]
+        # check response code here
+        response_code = response_data["responseCode"]
+        if response_code != "0001":
+            response["status"] = "FAILED"
+            response["data"  ] = response_data["errorMessage"]
+            return response
+        #end if
+
+        # accessing the inner data
+        response_data = post_resp["data"]["getPaymentStatusResponse"]["parameters"]["previousResponse"]
         response["data"] = {
             "payment_info" : {
                 "status"             : response_data["transactionStatus"],
@@ -601,4 +643,121 @@ class OpgHelper(object):
         return response
     #end def
 
+    def get_interbank_inquiry(self, params, access_token=None):
+        API_NAME = "GET_INTERBANK_INQUIRY"
+
+        if access_token == None:
+            access_token = self.access_token
+        #end if
+
+        # define response here
+        response = {
+            "status" : "SUCCESS"
+        }
+
+        source_account = params["source_account"]
+        bank_code      = params["bank_code"     ]
+        account_no     = params["account_no"    ]
+
+        # build payload here
+        ref_number = self._generate_ref_number()
+        payload = {
+            "customerReferenceNumber": ref_number,
+            "accountNum"             : source_account,
+            "destinationBankCode"    : bank_code,
+            "destinationAccountNum"  : account_no,
+        }
+
+        # post here
+        # should log request and response
+        post_resp = self._post(API_NAME, payload, access_token)
+        if post_resp["status"] != "SUCCESS":
+            response["status"] = post_resp["status"]
+            response["data"  ] = post_resp["data"]
+            return response
+        #end if
+
+        # access the data here
+        response_data = post_resp["data"]["getInterbankInquiryResponse"]["parameters"]
+        # check response code
+        response_code = response_data["responseCode"]
+        if response_code != "0001":
+            response["status"] = "FAILED"
+            response["data"  ] = response_data["errorMessage"]
+            return response
+        #end if
+        response["data"] = {
+            "inquiry_info" : {
+                "account_no"         : response_data["destinationAccountNum"],
+                "account_name"       : response_data["destinationAccountName"],
+                "transfer_bank_name" : response_data["destinationBankName"],
+                "transfer_ref"       : response_data["retrievalReffNum"],
+            },
+            "request_ref" : ref_number
+        }
+        return response
+    #end def
+
+    def get_interbank_payment(self, params, access_token=None):
+        API_NAME = "GET_INTERBANK_PAYMENT"
+
+        if access_token == None:
+            access_token = self.access_token
+        #end if
+
+        # define response here
+        response = {
+            "status" : "SUCCESS"
+        }
+
+        source_account = params["source_account"]
+        account_no     = params["account_no"    ]
+        account_name   = params["account_name"  ]
+        bank_code      = params["bank_code"     ]
+        bank_name      = params["bank_name"     ]
+        amount         = params["amount"        ]
+        transfer_ref   = params["transfer_ref"  ]
+
+        # build payload here
+        ref_number = self._generate_ref_number()
+        payload = {
+            "customerReferenceNumber": ref_number,
+            "amount"                 : amount,
+            "destinationAccountNum"  : account_no,
+            "destinationAccountName" : account_name,
+            "destinationBankCode"    : bank_code,
+            "destinationBankName"    : bank_name,
+            "accountNum"             : source_account,
+            "retrievalReffNum"       : transfer_ref,
+        }
+
+        # post here
+        # should log request and response
+        post_resp = self._post(API_NAME, payload, access_token)
+        if post_resp["status"] != "SUCCESS":
+            response["status"] = post_resp["status"]
+            response["data"  ] = post_resp["data"]
+            return response
+        #end if
+
+        # access the data here
+        response_data = post_resp["data"]["getInterbankPaymentResponse"]["parameters"]
+        # check response code
+        response_code = response_data["responseCode"]
+        if response_code != "0001":
+            response["status"] = "FAILED"
+            response["data"  ] = response_data["errorMessage"]
+            return response
+        #end if
+
+        response["data"] = {
+            "transfer_info" : {
+                "account_no"         : response_data["destinationAccountNum"],
+                "account_name"       : response_data["destinationAccountName"],
+                "ref_number"         : response_data["customerReffNum"],
+            },
+            "request_ref" : ref_number
+        }
+        return response
+    #end def
 #end class
