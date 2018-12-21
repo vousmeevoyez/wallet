@@ -54,7 +54,7 @@ class UserBankAccountController:
 
         except IntegrityError as err:
             print(err)
-            session.rollback()
+            db.session.rollback()
             return internal_error(RESPONSE_MSG["FAILED"]["ERROR_ADDING_RECORD"])
         #end try
 
