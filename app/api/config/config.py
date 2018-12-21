@@ -116,6 +116,8 @@ class Config:
             "REFRESH_TOKEN_ONLY"     : "Only Refresh Token Allowed",
             "INJECT"                 : "Fail injecting balance",
             "DEDUCT"                 : "Fail deducting balance",
+            "BANK_ACCOUNT_NOT_FOUND" : "Bank Account not Found",
+            "TRANSFER_FAILED"        : "Transfer Failed",
         }
     }
 
@@ -145,6 +147,7 @@ class Config:
 
     # BNI OPG CONFIG
     BNI_OPG_CONFIG = {
+        "MASTER_ACCOUNT": "0115476117",
         "BASE_URL_DEV"  : "https://apidev.bni.co.id",
         "PORT"          : "8066",
         "CLIENT_NAME"   : "IDBNITU9EQU5B",

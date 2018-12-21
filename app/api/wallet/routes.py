@@ -180,6 +180,43 @@ class WalletTransfer(Resource):
     #end def
 #end class
 
+@api.route('/<int:source_wallet_id>/transfer/<int:bank_account_id>')
+class WalletBankTransfer(Resource):
+    @token_required
+    def post(self, source_wallet_id, bank_account_id):
+        # fetch payload
+        payload_resp = get_token_payload()
+        if not isinstance(payload_resp, dict):
+            return payload_resp
+        #end if
+
+        # parse request data
+        request_data = transfer_request_schema.parse_args(strict=True)
+        data = {
+            "source"          : source_wallet_id,
+            "bank_account_id" : bank_account_id,
+            "amount"          : request_data["amount"],
+            "notes"           : request_data["notes"],
+            "pin"             : request_data["pin"],
+        }
+
+        # checking token identity to make sure user can only access their wallet information
+        permission_response = auth_helper.AuthenticationHelper().check_wallet_permission(payload_resp["user_id"], source_wallet_id)
+        if permission_response != None:
+            return permission_response
+        #end if
+
+        # request data validator
+        errors = TransactionSchema().validate(data)
+        if errors:
+            return bad_request(errors)
+        #end if
+
+        response = transfer.TransferController().internal_transfer(data)
+        return response
+    #end def
+#end class
+
 @api.route('/<int:user_id>')
 class CreateWallet(Resource):
     @admin_required
