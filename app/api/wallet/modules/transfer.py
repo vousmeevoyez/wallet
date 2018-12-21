@@ -211,15 +211,14 @@ class TransferController:
             "data"   : None
         }
 
-        source         = params["source"         ]
-        bank_account_id= params["bank_account_id"]
-        amount         = params["amount"         ]
-        pin            = params["pin"            ]
+        source         = params["source"     ]
+        bank_account_id= params["destination"]
+        amount         = params["amount"     ]
+        pin            = params["pin"        ]
 
         if session == None:
             session = db.session
         #end if
-        session.begin(subtransactions=True)
 
         source_wallet = Wallet.query.filter_by(id=source).first()
         if source_wallet == None:

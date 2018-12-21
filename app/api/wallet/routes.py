@@ -193,11 +193,11 @@ class WalletBankTransfer(Resource):
         # parse request data
         request_data = transfer_request_schema.parse_args(strict=True)
         data = {
-            "source"          : source_wallet_id,
-            "bank_account_id" : bank_account_id,
-            "amount"          : request_data["amount"],
-            "notes"           : request_data["notes"],
-            "pin"             : request_data["pin"],
+            "source"      : source_wallet_id,
+            "destination" : bank_account_id,
+            "amount"      : request_data["amount"],
+            "notes"       : request_data["notes"],
+            "pin"         : request_data["pin"],
         }
 
         # checking token identity to make sure user can only access their wallet information
