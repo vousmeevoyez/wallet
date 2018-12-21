@@ -70,7 +70,7 @@ class TransferController:
 
         session.commit()
 
-        response["data"] = RESPONSE_MSG["SUCCESS_TRANSFER"].format( str(amount), str(source), str(destination) )
+        response["data"] = RESPONSE_MSG["SUCCESS_TRANSFER"].format( str(params["amount"]), str(params["source"]), str(params["destination"]) )
         return response
     #end def
 
@@ -97,7 +97,7 @@ class TransferController:
 
         session.commit()
 
-        response["data"] = RESPONSE_MSG["SUCCESS_TRANSFER"].format( str(amount), str(source), str(destination) )
+        response["data"] = RESPONSE_MSG["SUCCESS_TRANSFER"].format( str(params["amount"]), str(params["source"]), str(params["destination"]) )
         return response
     #end def
 

@@ -212,7 +212,7 @@ class WalletBankTransfer(Resource):
             return bad_request(errors)
         #end if
 
-        response = transfer.TransferController().internal_transfer(data)
+        response = transfer.TransferController().external_transfer(data)
         return response
     #end def
 #end class
