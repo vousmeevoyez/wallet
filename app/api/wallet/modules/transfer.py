@@ -266,8 +266,8 @@ class TransferController:
             return response
         #end if
 
-        transfer_ref = inquiry_response["data"]["transfer_ref"]
-        bank_name    = inquiry_response["data"]["transfer_bank_name"]
+        transfer_ref = inquiry_response["data"]["inquiry_info"]["transfer_ref"]
+        bank_name    = inquiry_response["data"]["inquiry_info"]["transfer_bank_name"]
 
         # get information needed for transfer
         payment_payload = {
