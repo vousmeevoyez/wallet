@@ -70,7 +70,7 @@ class TransferController:
 
         session.commit()
 
-        response["data"] = RESPONSE_MSG["SUCCESS_TRANSFER"].format( str(params["amount"]), str(params["source"]), str(params["destination"]) )
+        response["data"] = RESPONSE_MSG["SUCCESS"]["TRANSFER"].format( str(params["amount"]), str(params["source"]), str(params["destination"]) )
         return response
     #end def
 
@@ -97,7 +97,7 @@ class TransferController:
 
         session.commit()
 
-        response["data"] = RESPONSE_MSG["SUCCESS_TRANSFER"].format( str(params["amount"]), str(params["source"]), str(params["destination"]) )
+        response["data"] = RESPONSE_MSG["SUCCESS"]["TRANSFER"].format( str(params["amount"]), str(params["source"]), str(params["destination"]) )
         return response
     #end def
 
@@ -116,7 +116,6 @@ class TransferController:
         if session == None:
             session = db.session
         #end if
-        session.begin(subtransactions=True)
 
         source_wallet = Wallet.query.filter_by(id=source).first()
         if source_wallet == None:
@@ -175,7 +174,7 @@ class TransferController:
         debit_payment_id = self._create_payment(params, session)
 
         # debit transaction
-        debit_status = self._debit_transaction(source_wallet.id, debit_payment_id, amount, "IN", session)
+        debit_status = self._debit_transaction(source_wallet, debit_payment_id, amount, "IN", session)
         if debit_status != True:
             response["status"] = "SERVER_ERROR"
             response["data"  ] = "Debit Transaction Failed"
@@ -187,7 +186,7 @@ class TransferController:
         credit_payment_id = self._create_payment(params, session)
 
         # credit transaction
-        credit_status = self._credit_transaction(destination_wallet.id, credit_payment_id, amount, session)
+        credit_status = self._credit_transaction(destination_wallet, credit_payment_id, amount, session)
         if credit_status != True:
             response["status"] = "SERVER_ERROR"
             response["data"  ] = "Credit Transaction Failed"
@@ -298,7 +297,7 @@ class TransferController:
         debit_payment_id = self._create_payment(params, session)
 
         # debit transaction
-        debit_status = self._debit_transaction(source_wallet.id, debit_payment_id, amount, "OUT", session)
+        debit_status = self._debit_transaction(source_wallet, debit_payment_id, amount, "OUT", session)
         if debit_status != True:
             response["status"] = "SERVER_ERROR"
             response["data"  ] = "Debit Transaction Failed"
@@ -374,7 +373,8 @@ class TransferController:
             session.add(debit_transaction)
 
             session.commit()
-        except:
+        except Exception as e:
+            print(e)
             session.rollback()
             return False
         #end try

@@ -47,7 +47,7 @@ class TestWalletTransfer(BaseTestCase):
         db.session.add(debit_payment)
         db.session.flush()
 
-        result = transfer.TransferController()._debit_transaction(wallet, debit_payment.id, 111)
+        result = transfer.TransferController()._debit_transaction(wallet, debit_payment.id, 111, "IN")
         self.assertTrue(result)
 
     def test_credit_transaction(self):
