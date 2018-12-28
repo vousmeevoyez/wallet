@@ -2,11 +2,10 @@
 
 Modana Wallet is a system provide API for Modana system to interact with Local & External Bank and also provide balancing for every transaction
 
-## Build status
-Build status of continus integration i.e. travis, appveyor etc. Ex. - 
+## Build Status
 
 ## Code style
-[![python-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](https://www.python.org/dev/peps/pep-0008/)
+[![PEP8](https://img.shields.io/badge/code%20style-pep8-orange.svg)](https://www.python.org/dev/peps/pep-0008/)
 
 ## Tech Used
 <b>Built with</b>
