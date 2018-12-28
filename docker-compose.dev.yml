@@ -12,6 +12,8 @@ services:
                 - DB_NAME=db_wallet
                 - ENVIRONMENT=dev
                 - HOST=0.0.0.0
+                ports:
+                - 5000:5000
                 depends_on:
                 - postgres
                 links:
