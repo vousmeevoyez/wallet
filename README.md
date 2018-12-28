@@ -1,27 +1,37 @@
-# Project Title
+# Modana Wallet
 
-This is Modana Wallet system, This system provide API for Modana system to interact with Local & External Bank and also provide balancing for every transaction
+Modana Wallet is a system provide API for Modana system to interact with Local & External Bank and also provide balancing for every transaction
+
+## Build status
+Build status of continus integration i.e. travis, appveyor etc. Ex. - 
+
+## Code style
+[![python-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](https://www.python.org/dev/peps/pep-0008/)
+
+## Tech Used
+<b>Built with</b>
+- [Flask](http://flask.pocoo.org)
+- [Docker](https://www.docker.com)
+- [Postgresql](https://www.postgresql.org)
+
 
 ## Getting Started
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+
 
 ### Prerequisites
 
 ```
-python 3.7
-pip
-virtualenv
+docker
+docker-compose
+
 ```
 
 ### Installing
 
 ```
-Clone git repository
-python -m venv venv (To create python virtualenv)
-source venv/bin/activate (activate python virtualenv)
-pip install -r requirement.txt (to install necessary python package)
-setting up databases (config/config)
-flask db upgrade (create table on database)
-flask run 
+git clone https://gitlab.com/kelvindsmn/modana_wallet/tree/master
+./start-sh
 ```
 
 
@@ -32,11 +42,4 @@ version 1.0
 
 ## Authors
 
-* ** Kelvin ** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
-
+* ** Kelvin ** - (https://github.com/vousmeevoyez)

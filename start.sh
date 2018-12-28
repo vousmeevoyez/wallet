@@ -1,3 +1,10 @@
 #!/bin/bash
+set -e
 
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+echo "Start docker in which environment? [dev/prod]:"
+read stage
+if [ "$stage" == "dev" ]; then
+	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+else
+	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+fi
