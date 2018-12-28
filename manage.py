@@ -1,3 +1,8 @@
+"""
+    Manage
+    ___________________
+    This is module for application entry
+"""
 import csv
 import os
 import unittest
@@ -12,7 +17,7 @@ from app.api    import create_app, db
 from app.api        import models
 from app.api.models import *
 
-app = create_app(os.getenv("ENV") or 'dev')
+app = create_app(os.getenv("ENVIRONMENT") or 'dev')
 app.register_blueprint(blueprint, url_prefix="/api/v1")
 
 app.app_context().push()
@@ -24,11 +29,14 @@ manager.add_command('db', MigrateCommand)
 
 @manager.command
 def run():
-    app.run()
+    """ function to start flask apps"""
+    host = os.getenv("HOST") or '127.0.0.1'
+    app.run(host=host)
 #end def
 
 @manager.command
 def test():
+    """ function to run unittest"""
     tests = unittest.TestLoader().discover('app/test', pattern='test*.py')
     result = unittest.TextTestRunner(verbosity=2).run(tests)
     if result.wasSuccessful():
@@ -38,8 +46,11 @@ def test():
 
 @manager.command
 def init():
+    """ create init function here """
+
     # create necessary role for wallet system
     role_list = _create_role()
+    print(role_list)
     # create admin for wallet system
     _create_admin(role_list["ADMIN"])
     # import necessary bank data for wallet system
@@ -51,19 +62,20 @@ def init():
 #end def
 
 def make_shell_context():
+    """ create shell context here"""
     return {
-            'app'            : app,
-            'db'             : db,
-            'Bank'           : Bank,
-            'BankAccount'    : BankAccount,
-            'Role'           : Role,
-            'Wallet'         : Wallet,
-            'VirtualAccount' : VirtualAccount,
-            'Transaction'    : Transaction,
-            'ExternalLog'    : ExternalLog,
-            'ForgotPin'      : ForgotPin,
-            'User'           : User
-           }
+        'app'            : app,
+        'db'             : db,
+        'Bank'           : Bank,
+        'BankAccount'    : BankAccount,
+        'Role'           : Role,
+        'Wallet'         : Wallet,
+        'VirtualAccount' : VirtualAccount,
+        'Transaction'    : Transaction,
+        'ExternalLog'    : ExternalLog,
+        'ForgotPin'      : ForgotPin,
+        'User'           : User
+    }
 #end def
 
 manager.add_command("shell", Shell(make_context=make_shell_context))
@@ -75,83 +87,107 @@ def _create_role():
         "USER"  : None,
     }
 
-    # create record for user role here
-    admin_role = Role(
-        description="ADMIN"
-    )
-    db.session.add(admin_role)
+    role = Role.query.all()
+    if not role:
+        # create record for user role here
+        admin_role = Role(
+            description="ADMIN"
+        )
+        db.session.add(admin_role)
 
-    user_role = Role(
-        description="USER"
-    )
-    db.session.add(user_role)
-    db.session.commit()
+        user_role = Role(
+            description="USER"
+        )
+        db.session.add(user_role)
+        db.session.commit()
 
-    roles["ADMIN"] = admin_role.id
-    roles["USER" ] = user_role.id
-
+        roles["ADMIN"] = admin_role.id
+        roles["USER"] = user_role.id
+    else:
+        for i in role:
+            if i.description == "ADMIN":
+                roles["ADMIN"] = i.id
+            else:
+                roles["USER"] = i.id
+            #end if
+        #end for
+    #end if
     return roles
 #end def
 
 def _create_admin(role_id):
-    # create admin account here
-    admin = User(
-        username="MODANAADMIN",
-        name="Modana Admin",
-        phone_ext="62",
-        phone_number="81212341234",
-        email="admin@modana.id",
-        role_id=role_id
-    )
-    admin.set_password("password")
-    db.session.add(admin)
-    db.session.commit()
+    # only create admin when there are no admin yet
+    user = User.query.count()
+    if user == 0:
+        # create admin account here
+        admin = User(
+            username="MODANAADMIN",
+            name="Modana Admin",
+            phone_ext="62",
+            phone_number="81212341234",
+            email="admin@modana.id",
+            role_id=role_id
+        )
+        admin.set_password("password")
+        db.session.add(admin)
+        db.session.commit()
+    #end if
 #end def
 
 def _import_bank_csv():
-    FILEPATH = "data/bank_list.csv"
-    with open(FILEPATH, "r") as f:
-        csv_reader = csv.DictReader(f)
-        line = 0
-        for row in csv_reader:
-            if line > 0:
-                bank=Bank(
-                    name=row["bank_name"],
-                    code=row["bank_code"],
-                )
-                db.session.add(bank)
-                db.session.commit()
-            #end if
-            line += 1
-        #end for
-    #end with
+    # only imoprt the bank when there are none
+    bank_list = Bank.query.all()
+    if not bank_list:
+        file_path = "data/bank_list.csv"
+        with open(file_path, "r") as files:
+            csv_reader = csv.DictReader(files)
+            line = 0
+            for row in csv_reader:
+                if line > 0:
+                    bank = Bank(
+                        name=row["bank_name"],
+                        code=row["bank_code"],
+                    )
+                    db.session.add(bank)
+                    db.session.commit()
+                #end if
+                line += 1
+            #end for
+        #end with
 #end def
 
 def _create_va_type():
-    # REGISTER VA TYPE HERE
-    va_credit = VaType(
-        key="CREDIT"
-    )
-    # debit
-    va_debit = VaType(
-        key="DEBIT"
-    )
-    db.session.add(va_debit)
-    db.session.add(va_credit)
-    db.session.commit()
+    # only create va type when there are none
+    va_type = VaType.query.count()
+    if va_type == 0:
+        # REGISTER VA TYPE HERE
+        va_credit = VaType(
+            key="CREDIT"
+        )
+        # debit
+        va_debit = VaType(
+            key="DEBIT"
+        )
+        db.session.add(va_debit)
+        db.session.add(va_credit)
+        db.session.commit()
+    #end if
 #end def
 
 def _create_payment_channel():
-    bni = Bank.query.filter_by(code="009").first()
-    payment_channel = PaymentChannel(
-        name="BNI Virtual Account",
-        key="BNI_VA",
-        channel_type="VIRTUAL_ACCOUNT",
-        bank_id=bni.id
-    )
-    db.session.add(payment_channel)
-    db.session.commit()
+    # only create payment if there are none
+    payment_channel = PaymentChannel.query.count()
+    if payment_channel == 0:
+        bni = Bank.query.filter_by(code="009").first()
+        payment_channel = PaymentChannel(
+            name="BNI Virtual Account",
+            key="BNI_VA",
+            channel_type="VIRTUAL_ACCOUNT",
+            bank_id=bni.id
+        )
+        db.session.add(payment_channel)
+        db.session.commit()
+#end def
 
 if __name__ == "__main__":
     manager.run()
-

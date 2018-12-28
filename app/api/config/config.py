@@ -1,14 +1,25 @@
+"""
+    Configuration
+    _______________
+    This is module for storing all configuration for various environments
+"""
 import os
-
-# uncomment the line below for postgres database url from environment variable
-# postgres_local_base = os.environ['DATABASE_URL']
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
+    """ This is base class for configuration """
     SECRET_KEY = os.getenv('SECRET_KEY', 'my_secret_k3y')
     DEBUG = False
     BUNDLE_ERRORS = True #configuration key for flask-restplus to enable bundle erors
+
+    DATABASE = {
+        "DRIVER"   : os.getenv('DB_DRIVER') or "postgresql://", # sqlite // postgresql // mysql
+        "USERNAME" : os.getenv('DB_USERNAME') or "modana",
+        "PASSWORD" : os.getenv('DB_PASSWORD') or "passsword",
+        "HOST_NAME": os.getenv('DB_HOSTNAME') or "localhost",
+        "DB_NAME"  : os.getenv('DB_NAME') or "db_wallet",
+    }
 
     # JSON WEB TOKEN CONFIG
     JWT_CONFIG = {
@@ -205,26 +216,43 @@ class Config:
 
 
 class DevelopmentConfig(Config):
+    """ This is class for development configuration """
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-            'postgresql://modana:password@localhost/db_wallet'
+
+    DATABASE = Config.DATABASE
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or \
+            DATABASE["DRIVER"] + DATABASE["USERNAME"] + ":" + \
+            DATABASE["PASSWORD"] + "@" + DATABASE["HOST_NAME"] + "/" + \
+            DATABASE["DB_NAME"] + "_dev"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 #end class
 
 
 class TestingConfig(Config):
+    """ This is class for testing configuration """
     DEBUG = True
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'postgresql://modana:password@localhost/testing_db_wallet'
+
+    DATABASE = Config.DATABASE
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or \
+            DATABASE["DRIVER"] + DATABASE["USERNAME"] + ":" + \
+            DATABASE["PASSWORD"] + "@" + DATABASE["HOST_NAME"] + "/" + \
+            DATABASE["DB_NAME"] + "_testing"
     PRESERVE_CONTEXT_ON_EXCEPTION = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 #end class
 
 
 class ProductionConfig(Config):
+    """ This is class for production configuration """
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-            'postgresql://postgres:secret@db/postgres'
+
+    DATABASE = Config.DATABASE
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or \
+            DATABASE["DRIVER"] + DATABASE["USERNAME"] + ":" + \
+            DATABASE["PASSWORD"] + "@" + DATABASE["HOST_NAME"] + "/" + \
+            DATABASE["DB_NAME"] + "_prod"
+    PRESERVE_CONTEXT_ON_EXCEPTION = False
 #end class
 
 

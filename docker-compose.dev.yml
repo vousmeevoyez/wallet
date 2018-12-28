@@ -1,0 +1,32 @@
+# Docker Compose Dev 
+version : '3'
+services:
+
+        flask:
+                image: modana-wallet-api
+                entrypoint: make start
+                environment:
+                - DB_USERNAME=modana
+                - DB_PASSWORD=password
+                - DB_HOSTNAME=postgres
+                - DB_NAME=db_wallet
+                - ENVIRONMENT=dev
+                - HOST=0.0.0.0
+                depends_on:
+                - postgres
+                links:
+                - postgres
+                
+        postgres:
+                image: postgres:alpine
+                environment:
+                - POSTGRES_USER=modana
+                - POSTGRES_PASSWORD=password
+                - POSTGRES_DB=db_wallet_dev
+                volumes:
+                - "db_volume:/var/lib/postgresql/data"
+                ports:
+                - 5432:5432
+
+volumes:
+        db_volume:

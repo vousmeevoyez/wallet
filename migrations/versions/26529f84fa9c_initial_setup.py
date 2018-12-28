@@ -1,8 +1,8 @@
-"""init db
+"""initial setup
 
-Revision ID: 307caea1bded
+Revision ID: 26529f84fa9c
 Revises: 
-Create Date: 2018-12-15 10:25:25.497606
+Create Date: 2018-12-28 16:37:13.047714
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '307caea1bded'
+revision = '26529f84fa9c'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -88,14 +88,19 @@ def upgrade():
     )
     op.create_table('bank_account',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('label', sa.String(length=24), nullable=True),
     sa.Column('name', sa.String(length=24), nullable=True),
+    sa.Column('account_no', sa.String(length=24), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('status', sa.Boolean(), nullable=True),
     sa.Column('bank_id', sa.Integer(), nullable=True),
     sa.Column('user_id', sa.BigInteger(), nullable=True),
     sa.ForeignKeyConstraint(['bank_id'], ['bank.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('account_no'),
+    sa.UniqueConstraint('label'),
+    sa.UniqueConstraint('name')
     )
     op.create_table('payment',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
