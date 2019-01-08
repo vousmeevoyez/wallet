@@ -1,117 +1,112 @@
-import pytz
-import requests
+"""
+    BNI Bank Helper
+    _________________
+    this is module to interact with BNI Virtual Account &
+    Core Banking API
+"""
 import base64
-import hashlib
 import json
 import random
-
 from datetime import datetime, timedelta
-from jose import jws
+import pytz
+import requests
+import jwt
+
 
 from app.api        import db
-from app.api.models import ExternalLog, VirtualAccount, Wallet, Bank, VaType
+from app.api.models import ExternalLog, VirtualAccount, Bank, VaType
 from app.api.config import config
 
 from .utility import remote_call
 
 
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG
-WALLET_CONFIG  = config.Config.WALLET_CONFIG
 
-class EcollectionHelper(object):
+class VirtualAccount:
+    """ This is class to interact with BNI E-Collection API"""
 
-    BNI_ECOLLECTION_CONFIG        = config.Config.BNI_ECOLLECTION_CONFIG
+    BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
     BNI_ECOLLECTION_ERROR_HANDLER = config.Config.BNI_ECOLLECTION_ERROR_HANDLER
 
     BASE_URL = BNI_ECOLLECTION_CONFIG["BASE_URL_DEV"]
 
     TIMEZONE = pytz.timezone("Asia/Jakarta")
 
-    def _post(self, resource_type, payload):
+    def _post(self, api_name, resource_type, payload, session=None):
+        # set session if empty
+        if session is None:
+            session = db.session
+        #end if
+        session.begin(subtransactions=True)
+
         if resource_type == "CREDIT":
-            CLIENT_ID  = self.BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
-            SECRET_KEY = self.BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"]
+            client_id = self.BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
+            secret_key = self.BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"]
         elif resource_type == "CARDLESS":
-            CLIENT_ID  = self.BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
-            SECRET_KEY = self.BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"]
+            client_id = self.BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
+            secret_key = self.BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"]
         #end if
 
         # assign client in in payload
-        payload["client_id"] = CLIENT_ID
+        payload["client_id"] = client_id
 
-        remote_response = remote_call.post(self.BASE_URL, CLIENT_ID, SECRET_KEY, payload)
+        # log everything before creating request
+        log = ExternalLog(request=payload,
+                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
+                          api_name=api_name,
+                          api_type=LOGGING_CONFIG["OUTGOING"]
+                         )
+        session.add(log)
+
+        remote_response = remote_call.post(self.BASE_URL, client_id, secret_key, payload)
+
+        # log everything after request
+        log.save_response(remote_response["data"])
+        # if failed change status to false
+        if remote_response["status"] != "000":
+            log.set_status(False)
+        #end if
+
+        # commit everything here
+        session.commit()
         return remote_response
     #end def
 
-    def create_va(self, resource_type, params, session=None):
+    def create_va(self, resource_type, params):
+        """
+            Function to Create Virtual Account on BNI
+            args:
+                resource_type -- CARDLESS/ CREDIT
+                params -- payload
+                session -- database session (optional)
+        """
         response = {
             "status" : "SUCCESS",
             "data"   : {}
         }
 
-        # fetch va type here
-        va_type = VaType.query.filter_by(key=resource_type).first()
-
         if resource_type == "CREDIT":
-            api_type         = self.BNI_ECOLLECTION_CONFIG["BILLING"]
-            billing_type     = self.BNI_ECOLLECTION_CONFIG["CREDIT_BILLING_TYPE"]
-            api_name         = "CREATE_CREDIT_VA"
-            datetime_expired = datetime.now(self.TIMEZONE) + timedelta(hours=WALLET_CONFIG["CREDIT_VA_TIMEOUT"])
+            api_type = self.BNI_ECOLLECTION_CONFIG["BILLING"]
+            billing_type = self.BNI_ECOLLECTION_CONFIG["CREDIT_BILLING_TYPE"]
+            api_name = "CREATE_CREDIT_VA"
         elif resource_type == "CARDLESS":
-            api_type         = self.BNI_ECOLLECTION_CONFIG["CARDLESS"]
-            billing_type     = self.BNI_ECOLLECTION_CONFIG["CARDLESS_BILLING_TYPE"]
-            api_name         = "CREATE_CARDLESS_DEBIT_VA"
-            datetime_expired = datetime.now(self.TIMEZONE) + timedelta(minutes=WALLET_CONFIG["CARDLESS_VA_TIMEOUT"])
+            api_type = self.BNI_ECOLLECTION_CONFIG["CARDLESS"]
+            billing_type = self.BNI_ECOLLECTION_CONFIG["CARDLESS_BILLING_TYPE"]
+            api_name = "CREATE_CARDLESS_DEBIT_VA"
         #end if
-
-        search_va = VirtualAccount.query.filter_by(wallet_id=int(params["wallet_id"]), va_type_id=va_type.id).first()
-        if search_va != None and resource_type == "CREDIT":
-            response["status"] = "FAILED"
-            response["data"  ] = "VA ALREADY EXISTS"
-            return response
-        #end if
-
-        # set session if empty
-        if session == None:
-            session = db.session
-        #end if
-        session.begin(subtransactions=True)
-
-        # BANK ID FIRST
-        # for now we only support BNI but more bank in future
-        bank = Bank.query.filter_by(code="009").first()
-
-        # CREATE VIRTUAL ACCOUNT ON DATABASES FIRST
-        va = VirtualAccount(
-            name=params["customer_name"],
-            wallet_id=int(params["wallet_id"]),
-            status=True,# active
-            bank_id=bank.id,
-            va_type_id=va_type.id,
-            datetime_expired=datetime_expired
-        )
-        va_id  = va.generate_va_number()
-        trx_id = va.generate_trx_id()
-
-        session.add(va)
 
         # modify msisdn so match BNI format
-        msisdn = params["customer_phone"]
-        customer_phone = msisdn[1:]
-        fixed = "62"
-        customer_phone = fixed + customer_phone
-
         payload = {
             'type'            : api_type,
             'client_id'       : None, # set client_id in another function
-            'trx_id'          : str(trx_id),
+            'trx_id'          : params["transaction_id"],
             'trx_amount'      : str(params["amount"]),
             'billing_type'    : billing_type,
             'customer_name'   : params["customer_name"],
             'customer_email'  : '',
-            'customer_phone'  : customer_phone,
-            'virtual_account' : va_id,
-            'datetime_expired': datetime_expired.strftime("%Y-%m-%d %H:%M:%S"),
+            'customer_phone'  : params["customer_phone"],
+            'virtual_account' : params["virtual_account_id"],
+            'datetime_expired': params["datetime_expired"].strftime("%Y-%m-%d %H:%M:%S"),
         }
 
         # to match payload we need to add description on CREDIT VA
@@ -119,41 +114,25 @@ class EcollectionHelper(object):
             payload["description"] = ""
         #end if
 
-        # initialize logging object
-        log = ExternalLog( request=payload,
-                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
-                          api_name=api_name,
-                          api_type=LOGGING_CONFIG["OUTGOING"]
-                         )
-
-        result = self._post(resource_type, payload)
+        result = self._post(api_name, resource_type, payload)
         response["data"] = result["data"]
 
-        log.save_response(result)
-        log.set_status(True)
-
         if result["status"] != "000":
-            log.save_response(result["data"])
-            log.set_status(False)
-
             response["status"] = "FAILED"
-            response["data"  ] = self.BNI_ECOLLECTION_ERROR_HANDLER["VA_ERROR"]
+            response["data"] = self.BNI_ECOLLECTION_ERROR_HANDLER["VA_ERROR"]
         #end if
-
-        session.add(log)
-
-        # delete if cardless VA exist so there can be only 1 VA Debit
-        if resource_type == "CARDLESS" and search_va != None:
-            session.delete(search_va)
-        #end if
-
-        session.commit()
 
         return response
     #end def
 
     def get_inquiry(self, resource_type, params):
-        API_NAME = "GET_INQUIRY"
+        """
+            Function to get Virtual Account Inquiry on BNI
+            args:
+                resource_type -- CARDLESS/ CREDIT
+                params -- payload
+        """
+        api_name = "GET_INQUIRY"
 
         response = {
             "status" : "SUCCESS",
@@ -166,35 +145,24 @@ class EcollectionHelper(object):
             'trx_id'   : params["trx_id"]
         }
 
-        # initialize logging object
-        log = ExternalLog( request=payload,
-                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
-                          api_name=API_NAME,
-                          api_type=LOGGING_CONFIG["OUTGOING"]
-                         )
-
-        result = self._post(resource_type, payload)
+        result = self._post(api_name, resource_type, payload)
         response["data"] = result["data"]
 
-        log.save_response(result)
-        log.set_status(True)
-
         if result["status"] != "000":
-            log.save_response(result["data"])
-            log.set_status(False)
-
             response["status"] = "FAILED"
-            response["data"  ] = self.BNI_ECOLLECTION_ERROR_HANDLER["INQUIRY_ERROR"]
+            response["data"] = self.BNI_ECOLLECTION_ERROR_HANDLER["INQUIRY_ERROR"]
         #end if
-
-        db.session.add(log)
-        db.session.commit()
-
         return response
     #end def
 
     def update_va(self, resource_type, params):
-        API_NAME = "UPDATE_TRANSACTION"
+        """
+            Function to update BNI Virtual Account
+            args:
+                resource_type -- CREDIT/CARDLESS
+                params -- payload
+        """
+        api_name = "UPDATE_TRANSACTION"
 
         response = {
             "status" : "SUCCESS",
@@ -210,93 +178,58 @@ class EcollectionHelper(object):
             'datetime_expired' : params["datetime_expired"].strftime("%Y-%m-%d %H:%M:%S"),
         }
 
-        # initialize logging object
-        log = ExternalLog( request=payload,
-                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
-                          api_name=API_NAME,
-                          api_type=LOGGING_CONFIG["OUTGOING"]
-                         )
-
-        result = self._post(resource_type, payload)
+        result = self._post(api_name, resource_type, payload)
         response["data"] = result["data"]
 
-        log.save_response(result)
-        log.set_status(True)
 
         if result["status"] != "000":
-            log.save_response(result["data"])
-            log.set_status(False)
-
             response["status"] = "FAILED"
-            response["data"  ] = self.BNI_ECOLLECTION_ERROR_HANDLER["INQUIRY_ERROR"]
+            response["data"] = self.BNI_ECOLLECTION_ERROR_HANDLER["INQUIRY_ERROR"]
         #end if
-
-        db.session.add(log)
-        db.session.commit()
-
         return response
     #end def
-
-    def recreate_va(self, params):
-        response = {
-            "status" : "SUCCESS",
-            "data"   : {}
-        }
-
-        # modify datetime_expired so it expire
-        datetime_expired = datetime.now() - timedelta(hours=WALLET_CONFIG["VA_TIMEOUT"])
-        params["datetime_expired"] = datetime_expired
-
-        # first deactivate va
-        va_response = self.update_va(params)
-        if va_response["status"] != "SUCCESS":
-            response["status"] = va_response["status"]
-            response["data"  ] = va_response["data"  ]
-            return response
-        #end if
-
-        # second recreate va with same VA
-        va_response = self.update_va(params)
-        if va_response["status"] != "SUCCESS":
-            response["status"] = va_response["status"]
-            response["data"  ] = va_response["data"  ]
-            return response
-        #end if
-    #end def
-
 #end class
 
-class OpgHelper(object):
+class CoreBank:
+    """ This is class that handle interaction to BNI Core Banking API"""
 
     BNI_OPG_CONFIG = config.Config.BNI_OPG_CONFIG
-    ROUTES         = BNI_OPG_CONFIG["ROUTES"]
-    URL            = BNI_OPG_CONFIG["BASE_URL_DEV"] + ":" + BNI_OPG_CONFIG["PORT"]
+    ROUTES = BNI_OPG_CONFIG["ROUTES"]
+    URL = BNI_OPG_CONFIG["BASE_URL_DEV"] + ":" + BNI_OPG_CONFIG["PORT"]
 
-    def __init__(self):
-        token_resp = self._get_token()
-        if token_resp["status"] == "FAILED":
-            self.access_token = None
+    def __init__(self, access_token=None):
+        """ set access token here"""
+        if access_token is None:
+            self.access_token = self._get_token()
         else:
-            self.access_token = token_resp["data"]["access_token"]
+            self.access_token = access_token
         #end if
     #end def
 
     def _create_signature(self, payload):
-        signature = jws.sign(
+        signature = jwt.encode(
             payload,
             self.BNI_OPG_CONFIG["SECRET_API_KEY"],
             algorithm="HS256")
-        return signature
+        return signature.decode("utf-8")
     #end def
 
     def _generate_ref_number(self):
+        """ generate reference number matched to BNI format"""
         now = datetime.utcnow()
         value_date = now.strftime("%Y%m%d%H%M%S")
-        code = random.randint(1,99999)
+        code = random.randint(1, 99999)
         return str(value_date) + str(code)
     #end def
 
-    def _post(self, API_NAME, payload, access_token=None):
+    def _post(self, api_name, payload):
+        """
+            send request to BNI server and adjust everything
+            according to BNI
+            args :
+                api_name -- Services name
+                payload -- request payload
+        """
         response = {
             "status" : None,
             "data"   : None
@@ -314,28 +247,22 @@ class OpgHelper(object):
         signature = self._create_signature(payload)
         payload["signature"] = signature
 
-        if API_NAME == "GET_TOKEN":
+        if api_name == "GET_TOKEN":
             base_64 = base64.b64encode(
-                (self.BNI_OPG_CONFIG["USERNAME"] + ":" + self.BNI_OPG_CONFIG["PASSWORD"]).encode("utf-8")
+                (self.BNI_OPG_CONFIG["USERNAME"] + ":"
+                 + self.BNI_OPG_CONFIG["PASSWORD"]).encode("utf-8")
             )
             base_64 = base_64.decode("utf-8")
             headers["Authorization"] = "Basic {}".format(str(base_64))
-            headers["Content-Type" ] = "application/x-www-form-urlencoded"
+            headers["Content-Type"] = "application/x-www-form-urlencoded"
 
-            url = self.URL + self.ROUTES[API_NAME]
+            url = self.URL + self.ROUTES[api_name]
         else:
-            headers["x-api-key"   ] = self.BNI_OPG_CONFIG["API_KEY"]
+            headers["x-api-key"] = self.BNI_OPG_CONFIG["API_KEY"]
             headers["Content-Type"] = "application/json"
 
-            # check if access_token is missing
-            if access_token == None:
-                response["status"] = "FAILED"
-                response["data"  ] = "ACCESS_TOKEN_MISSING"
-                return response
-            #end if
-
             # attach access_token on url here
-            url = self.URL + self.ROUTES[API_NAME] + "?access_token=" + access_token
+            url = self.URL + self.ROUTES[api_name] + "?access_token=" + self.access_token
 
             # convert request to json
             payload = json.dumps(payload)
@@ -358,49 +285,43 @@ class OpgHelper(object):
             response["data"] = resp
         except requests.exceptions.Timeout:
             response["status"] = "FAILED"
-            response["data"]   =  "REQUEST_TIMEOUT"
+            response["data"] = "REQUEST_TIMEOUT"
         except requests.exceptions.TooManyRedirects:
             response["status"] = "FAILED"
-            response["data"]   =  "BAD_URL"
-        except requests.exceptions.RequestException as e:
-            print(str(e))
+            response["data"] = "BAD_URL"
+        except requests.exceptions.RequestException as error:
+            print(str(error))
             response["status"] = "FAILED"
-            response["data"]   =  "FAILURE"
+            response["data"] = "FAILURE"
         #end try
         return response
     #end def
 
     def _get_token(self):
-        API_NAME = "GET_TOKEN"
+        api_name = "GET_TOKEN"
         # define response here
-        response = {
-            "status" : "SUCCESS",
-            "data"   : None,
-        }
 
         # build request body here
-        payload = { "grant_type" : "client_credentials" }
+        payload = {"grant_type" : "client_credentials"}
 
         # post here
-        post_resp = self._post(API_NAME, payload)
-        if post_resp["status"] != "SUCCESS":
-            response["status"] = post_resp["status"]
-            response["data"  ] = post_resp["data"]
-            return response
+        response = self._post(api_name, payload)
+        if response["status"] != "SUCCESS":
+            return None
         #end if
 
         # access the data here
-        access_token = post_resp["data"]["access_token"]
-        response["data"] = { "access_token" : access_token }
-
-        return response
+        access_token = response["data"]["access_token"]
+        return access_token
     #end def
 
-    def get_balance(self, params, access_token=None):
-        API_NAME = "GET_BALANCE"
-        if access_token == None:
-            access_token = self.access_token
-        #end if
+    def get_balance(self, params):
+        """
+            Function to check bank account balance using BNI services
+            args :
+                params -- account_no
+        """
+        api_name = "GET_BALANCE"
 
         # define response here
         response = {
@@ -416,14 +337,12 @@ class OpgHelper(object):
         }
 
         # post here
-        # should log something here
-        post_resp = self._post(API_NAME, payload, access_token)
+        post_resp = self._post(api_name, payload)
         if post_resp["status"] != "SUCCESS":
             response["status"] = post_resp["status"]
-            response["data"  ] = post_resp["data"]
+            response["data"] = post_resp["data"]
             return response
         #end if
-        # and log something here
 
         # access the data here
         response_data = post_resp["data"]["getBalanceResponse"]["parameters"]
@@ -432,7 +351,7 @@ class OpgHelper(object):
         response_code = response_data["responseCode"]
         if response_code != "0001":
             response["status"] = "FAILED"
-            response["data"  ] = response_data["errorMessage"]
+            response["data"] = response_data["errorMessage"]
             return response
         #end if
         response["data"] = {
@@ -444,11 +363,13 @@ class OpgHelper(object):
         return response
     #end def
 
-    def get_inhouse_inquiry(self, params, access_token=None):
-        API_NAME = "GET_INHOUSE_INQUIRY"
-        if access_token == None:
-            access_token = self.access_token
-        #end if
+    def get_inhouse_inquiry(self, params):
+        """
+            function to call check Account inquiry that stored in BNI
+            args :
+                params -- account_no // BNI account number
+        """
+        api_name = "GET_INHOUSE_INQUIRY"
 
         # define response here
         response = {
@@ -463,10 +384,10 @@ class OpgHelper(object):
         }
 
         # post here
-        post_resp = self._post(API_NAME, payload, access_token)
+        post_resp = self._post(api_name, payload)
         if post_resp["status"] != "SUCCESS":
             response["status"] = post_resp["status"]
-            response["data"  ] = post_resp["data"]
+            response["data"] = post_resp["data"]
             return response
         #end if
 
@@ -476,7 +397,7 @@ class OpgHelper(object):
         response_code = response_data["responseCode"]
         if response_code != "0001":
             response["status"] = "FAILED"
-            response["data"  ] = response_data["errorMessage"]
+            response["data"] = response_data["errorMessage"]
             return response
         #end if
 
@@ -500,11 +421,14 @@ class OpgHelper(object):
         return response
     #end def
 
-    def do_payment(self, params, access_token=None):
-        API_NAME = "DO_PAYMENT"
-        if access_token == None:
-            access_token = self.access_token
-        #end if
+    def do_payment(self, params):
+        """
+            function to do interbank payment
+            using LLG / Clearing Method
+            args :
+                params -- parameter
+        """
+        api_name = "DO_PAYMENT"
 
         # define response here
         response = {
@@ -564,10 +488,10 @@ class OpgHelper(object):
 
         # post here
         # should log request and response
-        post_resp = self._post(API_NAME, payload, access_token)
+        post_resp = self._post(api_name, payload)
         if post_resp["status"] != "SUCCESS":
             response["status"] = post_resp["status"]
-            response["data"  ] = post_resp["data"]
+            response["data"] = post_resp["data"]
             return response
         #end if
 
@@ -577,7 +501,7 @@ class OpgHelper(object):
         response_code = response_data["responseCode"]
         if response_code != "0001":
             response["status"] = "FAILED"
-            response["data"  ] = response_data["errorMessage"]
+            response["data"] = response_data["errorMessage"]
             return response
         #end if
 
@@ -594,12 +518,13 @@ class OpgHelper(object):
         return response
     #end def
 
-    def get_payment_status(self, params, access_token=None):
-        API_NAME = "GET_PAYMENT_STATUS"
-
-        if access_token == None:
-            access_token = self.access_token
-        #end if
+    def get_payment_status(self, params):
+        """
+            function to check payment status from DO_PAYMENT
+            args:
+                params -- parameter
+        """
+        api_name = "GET_PAYMENT_STATUS"
 
         # define response here
         response = {
@@ -615,10 +540,10 @@ class OpgHelper(object):
 
         # post here
         # should log request and response
-        post_resp = self._post(API_NAME, payload, access_token)
+        post_resp = self._post(api_name, payload)
         if post_resp["status"] != "SUCCESS":
             response["status"] = post_resp["status"]
-            response["data"  ] = post_resp["data"]
+            response["data"] = post_resp["data"]
             return response
         #end if
 
@@ -628,7 +553,7 @@ class OpgHelper(object):
         response_code = response_data["responseCode"]
         if response_code != "0001":
             response["status"] = "FAILED"
-            response["data"  ] = response_data["errorMessage"]
+            response["data"] = response_data["errorMessage"]
             return response
         #end if
 
@@ -645,12 +570,45 @@ class OpgHelper(object):
         return response
     #end def
 
-    def get_interbank_inquiry(self, params, access_token=None):
-        API_NAME = "GET_INTERBANK_INQUIRY"
-
-        if access_token == None:
-            access_token = self.access_token
+    def transfer(self, params):
+        """
+            function that wrap interbank inquiry and interbank payment
+            args :
+                params -- parameter
+        """
+        response = {
+            "status" : "SUCCESS",
+            "data" : None
+        }
+        interbank_response = self.get_interbank_inquiry(params)
+        if interbank_response["status"] != "SUCCESS":
+            response["status"] = "FAILED"
+            response["data"] = "BANK_NOT_FOUND"
+            return response
         #end if
+
+        params["bank_name"] = interbank_response["bank_name"]
+        params["account_name"] = interbank_response["account_name"]
+        params["transfer_ref"] = interbank_response["transfer_ref"]
+
+        payment_response = self.get_interbank_payment(params)
+        if payment_response["status"] != "SUCCESS":
+            response["status"] = "FAILED"
+            response["data"] = "INTERBANK_TRANSFER_FAILED"
+            return response
+        #end if
+
+        response["data"] = payment_response["data"]
+        return response
+    #end def
+
+    def get_interbank_inquiry(self, params):
+        """
+            function to check inquiry OUTSIDE BNI like BCA, etc...
+            args :
+                params -- parameter
+        """
+        api_name = "GET_INTERBANK_INQUIRY"
 
         # define response here
         response = {
@@ -672,10 +630,10 @@ class OpgHelper(object):
 
         # post here
         # should log request and response
-        post_resp = self._post(API_NAME, payload, access_token)
+        post_resp = self._post(api_name, payload)
         if post_resp["status"] != "SUCCESS":
             response["status"] = post_resp["status"]
-            response["data"  ] = post_resp["data"]
+            response["data"] = post_resp["data"]
             return response
         #end if
 
@@ -685,7 +643,7 @@ class OpgHelper(object):
         response_code = response_data["responseCode"]
         if response_code != "0001":
             response["status"] = "FAILED"
-            response["data"  ] = response_data["errorMessage"]
+            response["data"] = response_data["errorMessage"]
             return response
         #end if
         response["data"] = {
@@ -700,12 +658,13 @@ class OpgHelper(object):
         return response
     #end def
 
-    def get_interbank_payment(self, params, access_token=None):
-        API_NAME = "GET_INTERBANK_PAYMENT"
-
-        if access_token == None:
-            access_token = self.access_token
-        #end if
+    def get_interbank_payment(self, params):
+        """
+            function to transfer to external bank like bca, mandiri, etc..
+            args :
+                params -- parameter
+        """
+        api_name = "GET_INTERBANK_PAYMENT"
 
         # define response here
         response = {
@@ -735,10 +694,10 @@ class OpgHelper(object):
 
         # post here
         # should log request and response
-        post_resp = self._post(API_NAME, payload, access_token)
+        post_resp = self._post(api_name, payload)
         if post_resp["status"] != "SUCCESS":
             response["status"] = post_resp["status"]
-            response["data"  ] = post_resp["data"]
+            response["data"] = post_resp["data"]
             return response
         #end if
 
@@ -748,7 +707,7 @@ class OpgHelper(object):
         response_code = response_data["responseCode"]
         if response_code != "0001":
             response["status"] = "FAILED"
-            response["data"  ] = response_data["errorMessage"]
+            response["data"] = response_data["errorMessage"]
             return response
         #end if
 
@@ -760,6 +719,48 @@ class OpgHelper(object):
             },
             "request_ref" : ref_number
         }
+        return response
+    #end def
+#end class
+
+class BNI:
+    """ BNI Object that handle all call"""
+
+    def __init__(self):
+        self.virtual_account = VirtualAccount()
+        self.core_bank = CoreBank()
+    #end def
+
+    def call(self, operation, data):
+        """
+            method to route operation to which object method
+            and convert parameter so understand by the object
+        """
+        if operation == "CREATE_VA_CARDLESS":
+            params = {
+                "customer_name"     : data["name"],
+                "customer_phone"    : data["msisdn"],
+                "amount"            : data["amount"],
+                "datetime_expired"  : data["datetime_expired"],
+                "virtual_account_id": data["virtual_account_id"],
+                "transaction_id"    : data["transaction_id"],
+            }
+            response = self.virtual_account.create_va("CARDLESS", params)
+        elif operation == "CREATE_VA":
+            params = {
+                "customer_name"     : data["name"],
+                "customer_phone"    : data["msisdn"],
+                "amount"            : data["amount"],
+                "datetime_expired"  : data["datetime_expired"],
+                "virtual_account_id": data["virtual_account_id"],
+                "transaction_id"    : data["transaction_id"],
+            }
+            response = self.virtual_account.create_va("CREDIT", params)
+        elif operation == "TRANSFER":
+            response = self.core_bank.transfer(params)
+        elif operation == "CHECK_BALANCE":
+            response = self.core_bank.get_balance(params)
+        #end if
         return response
     #end def
 #end class

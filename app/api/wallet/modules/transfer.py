@@ -9,7 +9,7 @@ from app.api.models     import Wallet, Transaction, Payment, BankAccount
 from app.api.serializer import TransactionSchema
 from app.api.errors     import bad_request, internal_error, request_not_found
 from app.api.config     import config
-from app.api.bank       import helper
+#from app.api.bank       import helper
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 RESPONSE_MSG      = config.Config.RESPONSE_MSG

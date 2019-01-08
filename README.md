@@ -29,7 +29,7 @@ docker-compose
 ### Installing
 
 ```
-git clone https://gitlab.com/kelvindsmn/modana_wallet/tree/master
+git clone https://gitlab.com/kelvindsmn/modana_wallet
 ./start-sh
 ```
 

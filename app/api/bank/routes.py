@@ -7,14 +7,14 @@ from app.api.serializer     import BankSchema
 
 from app.api.authentication.decorator import token_required, admin_required
 
-from app.api.bank.modules   import bank
+from app.api.bank.modules.bank_services   import BankServices
 
 from app.api.errors import bad_request, internal_error, request_not_found
 
 @api.route("/")
 class BankRoutes(Resource):
     def get(self):
-        response = bank.BankController().get_banks({})
+        response = BankServices().get_banks({})
         return response
     #end def
 #end class
@@ -23,7 +23,7 @@ class BankRoutes(Resource):
 class BankHostRoutes(Resource):
     @admin_required
     def get(self, master_id):
-        response = bank.BankController().check_balance(master_id)
+        response = BankServices().check_balance(master_id)
         return response
     #end def
 #end class

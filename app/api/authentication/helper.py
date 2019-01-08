@@ -1,21 +1,20 @@
-from app.api            import db
-from app.api.models     import User, Wallet
-from app.api.errors     import bad_request, internal_error, request_not_found
+"""
+	Authentication Helper
+"""
+from app.api.models     import Wallet
+from app.api.errors     import bad_request
 from app.api.config     import config
 
 RESPONSE_MSG = config.Config.RESPONSE_MSG
 
 class AuthenticationHelper:
-
-    def __init__(self):
-        pass
-    #end def
-
-    def check_wallet_permission(self, user_id, wallet_id):
+    """ this is class for authentication helper """
+    @staticmethod
+    def check_wallet_permission(user_id, wallet_id):
+        """ function to check is the user have access to this wallet or not"""
         result = Wallet.is_owned(user_id, wallet_id)
-        if result != True:
+        if result is not True:
             return bad_request(RESPONSE_MSG["FAILED"]["UNAUTHORIZED_WALLET"])
         return None
     #end def
-
 #end class

@@ -4,7 +4,7 @@ services:
 
         flask:
                 image: modana-wallet-api
-                entrypoint: make start
+                entrypoint: ./build-prod.sh 
                 environment:
                 - DB_USERNAME=modana
                 - DB_PASSWORD=password
@@ -18,6 +18,8 @@ services:
                 - postgres
                 links:
                 - postgres
+                restart: always
+
                 
         postgres:
                 image: postgres:alpine
@@ -32,8 +34,11 @@ services:
 
         nginx:
                 build:
-                        context: .
-                        dockerfile: dockerfiles/nginx/Dockerfile
+                        context: dockerfiles/nginx/
+                ports:
+                - 5000:80
+                depends_on:
+                - flask
 
 volumes:
         db_volume:

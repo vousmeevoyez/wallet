@@ -1,9 +1,14 @@
+""" 
+    Models
+    ___________
+    This is module contain all class models that required
+"""
+from datetime import datetime, timedelta
 import secrets
 import random
-import traceback
 import jwt
+import uuid
 
-from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from app.api        import db
@@ -12,11 +17,14 @@ from app.api.config import config
 now = datetime.utcnow()
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
-WALLET_CONFIG          = config.Config.WALLET_CONFIG
-TRANSACTION_NOTES      = config.Config.TRANSACTION_NOTES
-JWT_CONFIG             = config.Config.JWT_CONFIG
+WALLET_CONFIG = config.Config.WALLET_CONFIG
+TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
+JWT_CONFIG = config.Config.JWT_CONFIG
 
 class Role(db.Model):
+    """
+        This is class that represent Role Database Object
+    """
     id          = db.Column(db.Integer, primary_key=True, autoincrement=True)
     description = db.Column(db.String(24))
     created_at  = db.Column(db.DateTime, default=now)
@@ -25,10 +33,11 @@ class Role(db.Model):
 
     def __repr__(self):
         return '<Role {} {} {}>'.format(self.id, self.description, self.status)
-    #end def
-#end class
 
 class User(db.Model):
+    """
+        This is class that represent User Database Object
+    """
     id              = db.Column(db.BigInteger, primary_key=True)
     username        = db.Column(db.String(144), unique=True)
     name            = db.Column(db.String(144))
@@ -45,30 +54,46 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User {} {} {} {}>'.format(self.username,
-                                     self.name, self.phone_number, self.email,
-                                    )
-    #end def
+                                           self.name, self.phone_number, self.email,
+                                          )
 
     def set_password(self, password):
+        """
+            Function to set hashed password
+            args :
+                password -- password
+        """
         self.password_hash = generate_password_hash(password)
-    #end def
 
     def check_password(self, password):
+        """
+            Function to check hashed password
+            args :
+                password -- password
+        """
         return check_password_hash(self.password_hash, password)
-    #end def
 
     def get_phone_number(self):
+        """
+            Function to return phone number as msisdn format
+        """
         return str(self.phone_ext) + str(self.msisdn)
-    #end def
 
     @staticmethod
     def encode_token(token_type, user_id, role):
+        """
+            Function to create JWT Token
+            args :
+                token_type -- Access / Refresh
+                user_id -- User identity
+                role -- User Role
+        """
         try:
             if token_type == "ACCESS":
                 exp = datetime.utcnow() + timedelta(minutes=JWT_CONFIG["ACCESS_EXPIRE"])
             elif token_type == "REFRESH":
                 exp = datetime.utcnow() + timedelta(days=JWT_CONFIG["ACCESS_EXPIRE"])
-            #end if
+
             payload = {
                 "exp" : exp,
                 "iat" : datetime.utcnow(),
@@ -83,26 +108,29 @@ class User(db.Model):
             )
         except Exception as e:
             return e
-    #end def
 
     @staticmethod
     def decode_token(token):
+        """
+            Function to decode JWT Token
+            args :
+                token -- Jwt token
+        """
         try:
             payload = jwt.decode(token, JWT_CONFIG["SECRET"])
             blacklist_status = BlacklistToken.is_blacklisted(token)
-            if blacklist_status == True:
+            if blacklist_status:
                 return "Token has been revoked"
-            else:
-                return payload
         except jwt.ExpiredSignatureError:
             return "Signature Expired"
         except jwt.InvalidTokenError:
             return "Invalid Token"
-    #end def
-
-#end class
+        return payload
 
 class Wallet(db.Model):
+    """
+        This is class that represent Wallet Database Object
+    """
     id               = db.Column(db.BigInteger, primary_key=True)
     created_at       = db.Column(db.DateTime, default=now) # UTC
     pin_hash         = db.Column(db.String(128))
@@ -120,31 +148,51 @@ class Wallet(db.Model):
     #end def
 
     def check_balance(self):
+        """
+            Function to return wallet balance
+        """
         return self.balance
     #end def
 
     def is_unlocked(self):
+        """
+            Function to return wallet lock status
+        """
         return self.status
     #end def
 
     def add_balance(self, amount):
+        """
+            Function to add wallet balance
+        """
         self.balance = self.balance + float(amount)
     #end def
 
     def deduct_balance(self, amount):
+        """
+            Function to deduct wallet balance
+        """
         self.balance = self.balance - float(amount)
     #end def
 
     def lock(self):
+        """
+            Function to lock wallet
+        """
         self.status = False
     #end def
 
     def unlock(self):
-        if self.status != True:
-            self.status = True
+        """
+            Function to unlock wallet
+        """
+        self.status = True
     #end def
 
     def generate_wallet_id(self):
+        """
+            Function to generate wallet id
+        """
         wallet_id = None
         while True:
             wallet_id_prefix = 11
@@ -154,7 +202,7 @@ class Wallet(db.Model):
             )
             wallet_id = str(wallet_id_prefix) + str(wallet_id_suffix)
             result = Wallet.query.filter_by(id=wallet_id).first()
-            if result == None:
+            if result is None:
                 break
             #end if
         #end while
@@ -163,21 +211,33 @@ class Wallet(db.Model):
     #end def
 
     def set_pin(self, pin):
+        """
+            Function to set wallet pin
+        """
         self.pin_hash = generate_password_hash(pin)
     #end def
 
     def check_pin(self, pin):
+        """
+            Function to check wallet pin
+        """
         return check_password_hash(self.pin_hash, pin)
     #end def
 
     @staticmethod
     def is_owned(user_id, wallet_id):
+        """
+            Function to check are the user is really the owner of this wallet
+        """
         result = Wallet.query.filter_by(user_id=user_id, id=wallet_id).first()
         return bool(result)
     #end def
 #end class
 
 class VaType(db.Model):
+    """
+        This is class that represent VaType Database Object
+    """
     id              = db.Column(db.Integer, primary_key=True, autoincrement=True)
     key             = db.Column(db.String(24))
     created_at      = db.Column(db.DateTime, default=now)
@@ -190,6 +250,9 @@ class VaType(db.Model):
 #end class
 
 class Bank(db.Model):
+    """
+        This is class that represent Bank Database Object
+    """
     id              = db.Column(db.Integer, primary_key=True, autoincrement=True)
     key             = db.Column(db.String(24)) # bank_key
     name            = db.Column(db.String(100)) # bank_name
@@ -201,11 +264,14 @@ class Bank(db.Model):
     payment_channels= db.relationship("PaymentChannel", back_populates="bank") # one to many
 
     def __repr__(self):
-        return '<Bank {} {} {}>'.format(self.id, self.name, self.code, self.status)
+        return '<Bank {} {} {} {}>'.format(self.id, self.name, self.code, self.status)
     #end def
 #end class
 
 class BankAccount(db.Model):
+    """
+        This is class that represent Bank Account Database Object
+    """
     id         = db.Column(db.Integer, primary_key=True, autoincrement=True)
     label      = db.Column(db.String(24), unique=True) # account label
     name       = db.Column(db.String(24), unique=True) # bank account name
@@ -223,6 +289,9 @@ class BankAccount(db.Model):
 #end class
 
 class PaymentChannel(db.Model):
+    """
+        This is class that represent Payment Channel Database Object
+    """
     id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name         = db.Column(db.String(100)) # payment channel name
     key          = db.Column(db.String(100)) # payment channel key
@@ -239,9 +308,12 @@ class PaymentChannel(db.Model):
 #end class
 
 class Payment(db.Model):
+    """
+        This is class that represent Payment Database Object
+    """
     id             = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    source_account = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (where the money comes from)
-    to             = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (where the money goes)
+    source_account = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (money comes from)
+    to             = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount ( money goes)
     ref_number     = db.Column(db.String(100)) # journal number from the bank
     amount         = db.Column(db.Float)
     created_at     = db.Column(db.DateTime, default=now) # UTC
@@ -252,18 +324,15 @@ class Payment(db.Model):
     transaction    = db.relationship("Transaction", back_populates="payment", uselist=False) # one to one
 
     def __repr__(self):
-        return '<Payment {} {} {} {} {}>'.format(self.id, self.source_account, self.ref_number, self.amount, self.status)
+        return '<Payment {} {} {} {} {}>'.format(self.id, self.source_account,
+                                                 self.ref_number, self.amount, self.status)
     #end def
 #end class
 
-"""
-class VaDetails(db.Model):
-    id = db.Column(db.BigInteger, primary_key=True)
-    trx_id     = db.Column(db.BigInteger, unique=True)
-    trx_amount = db.Column(db.Float, default=0)
-"""
-
 class VirtualAccount(db.Model):
+    """
+        This is class that represent Virtual Account Database Object
+    """
     id              = db.Column(db.BigInteger, primary_key=True)
     trx_id          = db.Column(db.BigInteger, unique=True)
     trx_amount      = db.Column(db.Float, default=0)
@@ -283,19 +352,24 @@ class VirtualAccount(db.Model):
     #end def
 
     def is_unlocked(self):
+        """ this is function to check is the va unlocked or not """
         return self.status
     #end def
 
     def lock(self):
+        """ this is function to check is the va locked or not """
         self.status = False
     #end def
 
     def unlock(self):
-        if self.status != True:
-            self.status = True
+        """ this is function to check is the va locked or not """
+        self.status = True
     #end def
 
     def generate_va_number(self):
+        """
+            function to generate va number
+        """
         va_id = None
 
         while True:
@@ -314,7 +388,7 @@ class VirtualAccount(db.Model):
             )
             va_id = str(fixed) + str(client_id) + str(suffix)
             result = VirtualAccount.query.filter_by(id=int(va_id)).first()
-            if result == None:
+            if result is None:
                 break
             #end if
         #end while
@@ -323,6 +397,9 @@ class VirtualAccount(db.Model):
     #end def
 
     def generate_trx_id(self):
+        """
+            function to generate trx_id
+        """
         trx_id = None
         while True:
             trx_id = random.randint(
@@ -330,17 +407,20 @@ class VirtualAccount(db.Model):
                 999999999
             )
             result = VirtualAccount.query.filter_by(trx_id=trx_id).first()
-            if result == None:
+            if result is None:
                 break
             #end if
         #end while
-        self.trx_id= int(trx_id)
+        self.trx_id = int(trx_id)
         return trx_id
     #end def
 #end class
 
 class Transaction(db.Model):
-    id               = db.Column(db.BigInteger, primary_key=True)
+    """
+        This is class that represent Transaction Database Object
+    """
+    id               = db.Column(db.String(255), primary_key=True)
     wallet_id        = db.Column(db.Integer, db.ForeignKey('wallet.id'))
     amount           = db.Column(db.Float, default=0)
     balance          = db.Column(db.Float, default=0) # balance after transaction
@@ -352,41 +432,44 @@ class Transaction(db.Model):
     wallet           = db.relationship("Wallet", back_populates="transactions", uselist=False) # one to one
 
     def __repr__(self):
-        return '<Transaction {} {} {} {} {}>'.format(self.id, self.wallet_id, self.amount, self.transaction_type, self.notes)
+        return '<Transaction {} {} {} {} {}>'.format(self.id, self.wallet_id, self.amount,
+                                                     self.transaction_type, self.notes)
     #end def
 
     def current_balance(self, operation, amount):
+        """
+            function to update balance after a transaction
+            args:
+                operation -- DEDUCT or ADD
+                amount -- how much is it
+        """
         wallet = Wallet.query.filter_by(id=self.wallet_id).first()
         if wallet.balance < amount:
             return False
-        else:
-            if operation == "DEDUCT":
-                self.balance = wallet.balance - amount
-            elif operation == "ADD":
-                self.balance = wallet.balance + amount
-            #end if
-            return True
+        #end if
+        if operation == "DEDUCT":
+            self.balance = wallet.balance - amount
+        elif operation == "ADD":
+            self.balance = wallet.balance + amount
+        #end if
+        return True
         #end if
     #end def
 
     def generate_trx_id(self):
-        trx_id = None
-        while True:
-            trx_id = str(random.randint(
-                100000000,
-                999999999
-            ))
-            result = Transaction.query.filter_by(id=trx_id).first()
-            if result == None:
-                break
-            #end if
-        #end while
-        self.id = int(trx_id)
+        """
+            function to generate trx_id
+        """
+        trx_id = str(uuid.uuid4())
+        self.id = trx_id
         return trx_id
     #end def
 #end class
 
 class ExternalLog(db.Model):
+    """
+        This is class that represent External Database Object
+    """
     id          = db.Column(db.Integer, primary_key=True)
     status      = db.Column(db.Boolean, default=True)
     resource    = db.Column(db.String(255))
@@ -397,25 +480,44 @@ class ExternalLog(db.Model):
     created_at  = db.Column(db.DateTime, default=now)
 
     def set_status(self, status):
+        """ 
+            Function to set Log status 
+            args :
+                status -- True / False
+        """
         self.status = status
     #end def
 
     def save_response(self, response):
+        """ 
+            Function to set log response
+            args :
+                response -- Json response
+        """
         self.response = response
     #end def
 
     def __repr__(self):
-        return '<External Log {} {} {} {} {} {}>'.format(self.id, self.resource, self.api_name, self.status, self.request, self.response)
+        return '<External Log {} {} {} {} {} {}>'.format(self.id, self.resource, self.api_name,
+                                                         self.status, self.request, self.response)
     #end def
 #end class
 
 class BlacklistToken(db.Model):
+    """
+        This is class Model for Blacklisted Token
+    """
     id          = db.Column(db.Integer, primary_key=True)
     token       = db.Column(db.String(255))
     created_at  = db.Column(db.DateTime, default=now)
 
     @staticmethod
     def is_blacklisted(token):
+        """
+            function to check whether token has been blacklisted or not
+            args :
+                token -- JWT Token
+        """
         result = BlacklistToken.query.filter_by(token=token).first()
         return bool(result)
 
@@ -425,6 +527,9 @@ class BlacklistToken(db.Model):
 #end class
 
 class ForgotPin(db.Model):
+    """ 
+        Class model for Forgot Pin
+    """
     id          = db.Column(db.Integer, primary_key=True)
     otp_code    = db.Column(db.String(120))
     otp_key     = db.Column(db.String(120))
@@ -438,14 +543,27 @@ class ForgotPin(db.Model):
     #end def
 
     def set_otp_code(self, otp_code):
+        """
+            function to store hashed otp code
+            args :
+                otp_code -- code that going to send to user inbox
+        """
         self.otp_code = generate_password_hash(otp_code)
     #end def
 
     def check_otp_code(self, otp_code):
+        """
+            function to check hashed otp code
+            args :
+                otp_code -- code that going to send to user inbox
+        """
         return check_password_hash(self.otp_code, otp_code)
     #end def
 
     def generate_otp_key(self):
+        """
+            function to generate otp_key
+        """
         otp_key = secrets.token_hex(16)
         self.otp_key = otp_key
         return otp_key
@@ -453,6 +571,9 @@ class ForgotPin(db.Model):
 #end class
 
 class Withdraw(db.Model):
+    """
+        Class that represent Withdraw Database Model
+    """
     id          = db.Column(db.Integer, primary_key=True)
     amount      = db.Column(db.Float)
     created_at  = db.Column(db.DateTime, default=now)

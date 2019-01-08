@@ -1,3 +1,8 @@
+""" 
+    Test Models
+    ___________
+    test all module here
+"""
 from datetime import datetime, timedelta
 
 from app.test.base  import BaseTestCase
@@ -7,7 +12,9 @@ from app.api.config import config
 
 
 class UserTestCaseModel(BaseTestCase):
+    """ Test User Model"""
     def test_user_role_relation(self):
+        """ test relationship between User & Role"""
         # create user role first
         role = Role(
             description="USER",
@@ -45,6 +52,7 @@ class UserTestCaseModel(BaseTestCase):
         self.assertEqual( len(role.user), 2)
 
     def test_wallet_relation(self):
+        """ test relationship between User & Wallet """
         # create dummy user
         user = User(
             username='lisabp',
@@ -64,11 +72,12 @@ class UserTestCaseModel(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        user = User.query.get(2)
+        user = User.query.get(3)
         # check how many wallet user have
         self.assertEqual( len(user.wallets), 1)
 
     def test_password(self):
+        """ test generate password"""
         # create dummy user
         user = User(
             username='lisabp',
@@ -89,6 +98,7 @@ class UserTestCaseModel(BaseTestCase):
         self.assertFalse(user.check_password("test"))
 
     def test_encode_token(self):
+        """ test encode a token"""
         # create user role first
         role = Role(
             description="USER",
@@ -113,6 +123,7 @@ class UserTestCaseModel(BaseTestCase):
         self.assertTrue(isinstance(token, bytes))
 
     def test_decode_token(self):
+        """ test decode token"""
         # create user role first
         role = Role(
             description="USER",
@@ -136,12 +147,11 @@ class UserTestCaseModel(BaseTestCase):
         token = user.encode_token("ACCESS", user.id, user.role.description)
         self.assertTrue(isinstance(token, bytes))
 
-        utf_token = token.decode("utf-8")
+        token = token.decode("utf-8")
 
         # make sure the decoded token contain following information
-        self.assertEqual(user.decode_token(utf_token)["type"], "ACCESS")
-        self.assertEqual(user.decode_token(utf_token)["sub"], 2)
-        self.assertEqual(user.decode_token(utf_token)["role"], "USER")
+        self.assertEqual(user.decode_token(token)["type"], "ACCESS")
+        self.assertEqual(user.decode_token(token)["role"], "USER")
 
 class WalletModelCase(BaseTestCase):
 
@@ -349,7 +359,7 @@ class WalletModelCase(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        result = Wallet.is_owned(2, wallet_id)
+        result = Wallet.is_owned(3, wallet_id)
         self.assertTrue(result)
 
         result = Wallet.is_owned(1, 456464)

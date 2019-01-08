@@ -20,4 +20,7 @@ shell:
 coverage:
 	coverage run --source app/api -m unittest discover -s app/test/
 
+build:
+		clean upgrade init
+
 start : clean upgrade init run

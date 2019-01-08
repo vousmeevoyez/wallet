@@ -1,14 +1,15 @@
-import traceback
+""" 
+    Auth Decorator
+    ________________
+    this is module that contain various decorator to protect various endpoint
+"""
 from functools import wraps
 
 from flask_restplus     import reqparse
 
-from app.api.authentication         import api
-from app.api.authentication.modules import authentication
-from app.api.serializer             import UserSchema
+from app.api.authentication.modules.auth_services import AuthServices
 from app.api.request_schema         import AuthRequestSchema
 from app.api.errors                 import bad_request, internal_error, insufficient_scope, method_not_allowed
-from app.api.models                 import BlacklistToken, User, Wallet, Role
 from app.api.config                 import config
 
 request_schema = AuthRequestSchema.parser
@@ -17,6 +18,9 @@ RESPONSE_MSG = config.Config.RESPONSE_MSG
 
 # CUSTOM DECORATOR
 def admin_required(fn):
+    """
+        decorator to only allow admin access this function
+    """
     @wraps(fn)
     def wrapper(*args, **kwargs):
         # define header schema
@@ -28,7 +32,7 @@ def admin_required(fn):
         auth_header = header["Authorization"]
         token = auth_header.split(" ")[1]
 
-        response = authentication.AuthController.current_login_user(token)
+        response = AuthServices.current_login_user(token)
 
         if response["status"] != "SUCCESS":
             return bad_request(response["data"])
@@ -54,7 +58,7 @@ def refresh_token_only(fn):
         auth_header = header["Authorization"]
         token = auth_header.split(" ")[1]
 
-        response = authentication.AuthController.current_login_user(token)
+        response = AuthServices.current_login_user(token)
 
         if response["status"] != "SUCCESS":
             return bad_request(response["data"])
@@ -80,7 +84,7 @@ def token_required(fn):
         auth_header = header["Authorization"]
         token = auth_header.split(" ")[1]
 
-        response = authentication.AuthController.current_login_user(token)
+        response = AuthServices.current_login_user(token)
 
         if response["status"] != "SUCCESS":
             return bad_request(response["data"])
@@ -101,7 +105,7 @@ def get_token_payload():
     auth_header = header["Authorization"]
     token = auth_header.split(" ")[1]
 
-    response = authentication.AuthController.current_login_user(token)
+    response = AuthServices.current_login_user(token)
 
     if response["status"] != "SUCCESS":
         return bad_request(response["data"])

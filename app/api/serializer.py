@@ -1,26 +1,44 @@
+"""
+    Serializer
+    _______________
+    this is module to serialize and deserialize object
+"""
+# pylint: disable=R0201
+
 import re
 
 from marshmallow import fields, ValidationError, post_load, validates
 
-from app.api         import ma, db
-from app.api.models  import Wallet, Transaction, VirtualAccount, User, Role
+from app.api         import ma
+from app.api.models  import Wallet, VirtualAccount, User, Role
 from app.api.config  import config
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
-WALLET_CONFIG          = config.Config.WALLET_CONFIG
-TRANSACTION_CONFIG     = config.Config.TRANSACTION_CONFIG
+WALLET_CONFIG = config.Config.WALLET_CONFIG
+TRANSACTION_CONFIG = config.Config.TRANSACTION_CONFIG
 
 def cannot_be_blank(string):
+    """
+        function to make user not enter empty string
+        args :
+            string -- user inputted data
+    """
     if not string:
         raise ValidationError(" Data cannot be blank")
 #end def
 
 class BankSchema(ma.Schema):
+    """
+        This is Class Schema for Bank Object
+    """
     id   = fields.Int(load_only=True)
     name = fields.Str(required=True, validate=cannot_be_blank)
     code = fields.Str(required=True, validate=cannot_be_blank)
 
 class BankAccountSchema(ma.Schema):
+    """
+        This is Class Schema for Bank Account Object
+    """
     id         = fields.Int()
     name       = fields.Str(required=True, validate=cannot_be_blank)
     account_no = fields.Str(required=True, validate=cannot_be_blank)
@@ -29,11 +47,21 @@ class BankAccountSchema(ma.Schema):
     bank_name  = fields.Method("bank_id_to_name")
 
     def bank_id_to_name(self, obj):
+        """ 
+            function to convert bank id to bank name
+            args : 
+                obj -- bank account object
+        """
         return obj.bank.name
     #end def
 
     @validates('name')
     def validate_name(self, name):
+        """
+            function to validate name field
+            args :
+                name -- bank account name
+        """
         # onyl allow alphabet space character
         pattern = r"^[a-zA-Z ]+$"
         if len(name) < 2:
@@ -46,6 +74,11 @@ class BankAccountSchema(ma.Schema):
 
     @validates('label')
     def validate_label(self, label):
+        """
+            function to validate label field
+            args :
+                label -- bank account label
+        """
         # onyl allow alphabet character and space
         pattern = r"^[a-zA-Z ]+$"
         if len(label) < 2:
@@ -58,6 +91,11 @@ class BankAccountSchema(ma.Schema):
 
     @validates('account_no')
     def validate_account_no(self, account_no):
+        """
+            function to validate account_no field
+            args :
+                account_no -- bank account no
+        """
         # only allow 0-9, minimal 10 and maximal is 16 digit
         pattern = r"^[0-9]{10,16}$"
         if re.search(pattern, account_no) is None:
@@ -69,6 +107,11 @@ class BankAccountSchema(ma.Schema):
 
     @validates('bank_code')
     def validate_bank_code(self, bank_code):
+        """
+            function to validate bank_code field
+            args :
+                bank_code -- bank code
+        """
         pattern = r"^[0-9]{1,3}$"
         if re.search(pattern, bank_code) is None:
             raise ValidationError('Invalid bank code, only number allowed')
@@ -79,6 +122,7 @@ class BankAccountSchema(ma.Schema):
 #end def
 
 class UserSchema(ma.Schema):
+    """ this is class schema for user object"""
     id          = fields.Int(load_only=True)
     username    = fields.Str(required=True, validate=cannot_be_blank)
     name        = fields.Str(required=True, validate=cannot_be_blank)
@@ -92,21 +136,33 @@ class UserSchema(ma.Schema):
     created_at  = fields.DateTime('%Y-%m-%d %H:%M:%S')
     status      = fields.Method("bool_to_status")
 
-    class Meta():
-        pass
-
     def phone_to_msisdn(self, obj):
+        """
+            function to convert phone_ext and phone_number into msisdn
+            args:
+                obj - user object
+        """
         return obj.phone_ext + obj.phone_number
     #end def
 
     def bool_to_status(self, obj):
+        """
+            function to convert boolean into human friendly string
+            args:
+                obj - user object
+        """
         status = "ACTIVE"
-        if obj.status != True:
+        if obj.status is not True:
             status = "INACTIVE"
         return status
     #end def
 
     def role_id_to_role(self, obj):
+        """
+            function to convert role id into human friendly string
+            args:
+                obj - user object
+        """
         return obj.role.description
     #end def
 
@@ -117,6 +173,11 @@ class UserSchema(ma.Schema):
 
     @validates('username')
     def validate_username(self, username):
+        """
+            function to validate username
+            args:
+                username -- username
+        """
         # onyl allow alphanumeric character, . _ -
         pattern = r"^[a-zA-Z0-9_.-]+$"
         if len(username) < 5:
@@ -129,6 +190,11 @@ class UserSchema(ma.Schema):
 
     @validates('name')
     def validate_name(self, name):
+        """
+            function to validate name
+            args:
+                name -- name
+        """
         # onyl allow alphabet character
         pattern = r"^[a-zA-Z ]+$"
         if len(name) < 2:
@@ -141,6 +207,11 @@ class UserSchema(ma.Schema):
 
     @validates('phone_ext')
     def validate_phone_ext(self, phone_ext):
+        """
+            function to validate phone_ext
+            args:
+                phone_ext -- phone extension
+        """
         # only allow 0-9, minimal 1 and maximal is 3 digit
         pattern = r"^[0-9]{1,3}$"
         if re.search(pattern, phone_ext) is None:
@@ -152,6 +223,11 @@ class UserSchema(ma.Schema):
 
     @validates('phone_number')
     def validate_phone_number(self, phone_number):
+        """
+            function to validate phone_number
+            args:
+                phone_number -- phone number
+        """
         # only allow 0-9, minimal 9 and maximal is 11 digit
         pattern = r"^[0-9]{9,11}$"
         if re.search(pattern, phone_number) is None:
@@ -163,6 +239,11 @@ class UserSchema(ma.Schema):
 
     @validates('email')
     def validate_email(self, email):
+        """
+            function to validate email
+            args:
+                email -- email
+        """
         if re.search(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email) != None:
             pass
         else:
@@ -171,6 +252,11 @@ class UserSchema(ma.Schema):
 
     @validates('password')
     def validate_password(self, password):
+        """
+            function to validate password
+            args:
+                password -- password
+        """
         if re.match(r'[A-Za-z0-9@#$%^&+=]{6,}', password):
             pass
         else:
@@ -179,6 +265,11 @@ class UserSchema(ma.Schema):
 
     @validates('role')
     def validate_role(self, role):
+        """
+            function to validate role
+            args:
+                role -- role
+        """
         pattern = r"^[a-zA-Z]+$"
         if re.match(pattern, role) is None:
             raise ValidationError("Invalid Role, only alphabet allowed")
@@ -190,6 +281,11 @@ class UserSchema(ma.Schema):
 
     @validates('pin')
     def validate_pin(self, pin):
+        """
+            function to validate pin
+            args:
+                pin -- pin
+        """
         if re.match(r"\d{6}", pin):
             pass
         else:
@@ -198,6 +294,7 @@ class UserSchema(ma.Schema):
 #end class
 
 class WalletSchema(ma.Schema):
+    """ This is class that represent wallet schema"""
     id         = fields.Int()
     user_id    = fields.Int(load_only=True)
     pin        = fields.Str(required=True, attribute="pin_hash", validate=cannot_be_blank, load_only=True)
@@ -205,13 +302,14 @@ class WalletSchema(ma.Schema):
     status     = fields.Method("bool_to_status")
     balance    = fields.Float()
 
-    class Meta():
-        pass
-        #strict = True
-
     def bool_to_status(self, obj):
+        """
+            funtion to convert boolean to human friendly string
+            args:
+                obj -- wallet object
+        """
         status = "ACTIVE"
-        if obj.status != True:
+        if obj.status is not True:
             status = "INACTIVE"
         return status
     #end def
@@ -223,6 +321,11 @@ class WalletSchema(ma.Schema):
 
     @validates('pin')
     def validate_pin(self, pin):
+        """
+        function to validate pin
+            args:
+                pin -- user pin
+        """
         if re.match(r"\d{6}", pin):
             pass
         else:
@@ -232,6 +335,7 @@ class WalletSchema(ma.Schema):
 #end class
 
 class TransactionSchema(ma.Schema):
+    """ This is class that represent Transaction Schema""" 
     id               = fields.Str()
     wallet_id        = fields.Str()
     balance          = fields.Float()
@@ -243,11 +347,21 @@ class TransactionSchema(ma.Schema):
 
     @validates('amount')
     def validate_amount(self, amount):
+        """
+            Function to validate transaction amount
+            args :
+                amount -- Transaction amount
+        """
         if float(amount) <= 0:
             raise ValidationError("Invalid Amount, cannot be less than 0")
     #end def
 
     def payment_id_to_details(self, obj):
+        """
+            Function to convert payment id to readable payment details
+            args :
+                obj -- payment object
+        """
         payment_details = {
             "source"          : obj.payment.source_account,
             "to"              : obj.payment.to,
@@ -260,36 +374,60 @@ class TransactionSchema(ma.Schema):
     #end def
 
     def transaction_type_id_to_string(self, obj):
+        """
+            Function to convert transaction type id to readable transaction
+            type
+            args :
+                obj -- payment object
+        """
+        result = ""
         if obj.transaction_type == 1:
-            return "DEPOSIT"
+            result = "DEPOSIT"
         elif obj.transaction_type == 2:
-            return "IN_TRANSFER"
+            result = "IN_TRANSFER"
         elif obj.transaction_type == 3:
-            return "OUT_TRANSFER"
+            result = "OUT_TRANSFER"
         else:
-            return "WITHDRAW"
+            result = "WITHDRAW"
+        return result
     #end def
 
     def payment_type_to_string(self, payment_type):
-        if payment_type == True:
-            return "CREDIT"
+        """
+            Function to convert transaction type id to readable transaction
+            type
+            args :
+                payment_type -- Payment type
+        """
+        result = ""
+        if payment_type:
+            result = "CREDIT"
         else:
-            return "DEBIT"
+            result = "DEBIT"
         #end if
+        return result
     #end def
 
     def payment_status_to_string(self, status):
+        """
+            Function to convert payment status to readable string
+            args :
+                status -- payment status
+        """
+        result = ""
         if status == 1:
-            return "COMPLETED"
+            result = "COMPLETED"
         elif status == 2:
-            return "PENDING"
+            result = "PENDING"
         elif status == 3:
-            return "FAILED"
+            result = "FAILED"
         #end if
+        return result
     #end def
 #end class
 
 class VirtualAccountSchema(ma.Schema):
+    """ This is class for Virtual Account Schema"""
     id         = fields.Int()
     trx_id     = fields.Int(load_only=True)
     va_type    = fields.Method("va_type_to_string")
@@ -297,23 +435,35 @@ class VirtualAccountSchema(ma.Schema):
     status     = fields.Method("bool_to_status")
 
     @post_load
-    def make_wallet(self, data):
+    def make_va(self, data):
+        """
+            To make va object from data
+            args:
+                data -- data
+        """
         return VirtualAccount(**data)
     #end def
 
     def bool_to_status(self, obj):
+        """
+            function to convert bool to human friendly status
+            args:
+                object -- va object
+        """
         status = "ACTIVE"
-        if obj.status != True:
+        if obj.status is not True:
             status = "INACTIVE"
         return status
     #end def
 
     def va_type_to_string(self, obj):
+        """ function to convert va type to string"""
         return obj.va_type.key
     #end def
 #end class
 
 class CallbackSchema(ma.Schema):
+    """ this is schema for callback object """
     virtual_account           = fields.Int(required=True, validate=cannot_be_blank)
     customer_name             = fields.Str(required=True, validate=cannot_be_blank)
     trx_id                    = fields.Int(required=True, validate=cannot_be_blank)
@@ -325,6 +475,11 @@ class CallbackSchema(ma.Schema):
 
     @validates('virtual_account')
     def validate_va_number(self, va_number):
+        """
+            function to validate virtual_account number
+            args:
+                va_number -- virtual account number
+        """
         va_number = str(va_number)
         valid = True
         # first make sure va_number is 16 digit can't be less or more
@@ -332,7 +487,8 @@ class CallbackSchema(ma.Schema):
             # second make sure 3 first va_number is valid
             if va_number[:3] != "988":
                 # third make sure 3 first va_number is valid
-                if va_number[3:8] != BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"] or va_number[3:8] != BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]:
+                if va_number[3:8] != BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]\
+                or va_number[3:8] != BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]:
                     valid = False
                 #end if
                 valid = False
@@ -340,29 +496,38 @@ class CallbackSchema(ma.Schema):
             valid = False
         #end if
 
-        if valid == False:
+        if valid is not True:
             raise ValidationError("Invalid Virtual Account Number")
         #end if
 
     @validates('payment_amount')
     def validate_payment_amount(self, payment_amount):
+        """
+            function to validate virtual account payment amount
+            args:
+                payment_amount -- Payment amount
+        """
         # if payment amount is positive it means deposit
         if payment_amount > 0:
             if payment_amount < WALLET_CONFIG["MINIMAL_DEPOSIT"]:
-                raise ValidationError("Minimal deposit is {}".format(str(WALLET_CONFIG["MINIMAL_DEPOSIT"])))
+                raise ValidationError("Minimal deposit is {}".
+                                      format(str(WALLET_CONFIG["MINIMAL_DEPOSIT"])))
             #end if
 
             if payment_amount > WALLET_CONFIG["MAX_DEPOSIT"]:
-                raise ValidationError("Maximum deposit is {}".format(str(WALLET_CONFIG["MAX_DEPOSIT"])))
+                raise ValidationError("Maximum deposit is {}".
+                                      format(str(WALLET_CONFIG["MAX_DEPOSIT"])))
             #end if
         # negatives it means withdraw
         elif payment_amount < 0:
             if abs(payment_amount) < WALLET_CONFIG["MINIMAL_WITHDRAW"]:
-                raise ValidationError("Minimal withdraw is {}".format(str(WALLET_CONFIG["MINIMAL_WITHDRAW"])))
+                raise ValidationError("Minimal withdraw is {}".
+                                      format(str(WALLET_CONFIG["MINIMAL_WITHDRAW"])))
             #end if
 
             if abs(payment_amount) > WALLET_CONFIG["MAX_WITHDRAW"]:
-                raise ValidationError("Maximum withdraw is {}".format(str(WALLET_CONFIG["MAX_WITHDRAW"])))
+                raise ValidationError("Maximum withdraw is {}".
+                                      format(str(WALLET_CONFIG["MAX_WITHDRAW"])))
             #end if
         #end if
 #end class

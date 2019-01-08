@@ -1,121 +1,23 @@
-import sys
-from unittest.mock import Mock, patch
-
+""" 
+    Test User Bank Account SErvices
+"""
 from app.api.wallet import helper
 
 from app.test.base          import BaseTestCase
-from app.api.user.modules   import user, bank_account
 from app.api.errors         import *
+
+from app.api.user.modules.user_services import UserServices
+from app.api.user.modules.bank_account_services import BankAccountServices
 
 from app.api.config import config
 
 RESPONSE_MSG = config.Config.RESPONSE_MSG
 
-class TestUserModules(BaseTestCase):
-
-    def test_user_register_success(self):
-        params = {
-            "username"    : "jennie",
-            "name"        : "jennie",
-            "phone_ext"   : "62",
-            "phone_number": "81212341235",
-            "email"       : "jennie@blackpink.com",
-            "password"    : "password",
-            "pin"         : "123456",
-            "role"        : "USER",
-        }
-        result = user.UserController().user_register(params)
-        self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_USER"])
-
-    def test_user_register_failed_duplicate(self):
-        params = {
-            "username"    : "jennie",
-            "name"        : "jennie",
-            "phone_ext"   : "62",
-            "phone_number": "81212341235",
-            "email"       : "jennie@blackpink.com",
-            "password"    : "password",
-            "pin"         : "123456",
-            "role"        : "USER",
-        }
-        result = user.UserController().user_register(params)
-        self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_USER"])
-
-        params = {
-            "username"    : "jennie",
-            "name"        : "jennie",
-            "phone_ext"   : "62",
-            "phone_number": "81212341235",
-            "email"       : "jennie@blackpink.com",
-            "password"    : "password",
-            "pin"         : "123456",
-            "role"        : "USER",
-        }
-        result = user.UserController().user_register(params)
-        self.assertEqual(result[0]["errors"], RESPONSE_MSG["FAILED"]["ERROR_ADDING_RECORD"])
-
-    def test_user_list_success(self):
-        params = {
-        }
-        result = user.UserController().user_list(params)
-        self.assertTrue(len(result["data"]) > 0)
-
-    def test_user_info_success(self):
-        params = {
-            "username"    : "jennie",
-            "name"        : "jennie",
-            "phone_ext"   : "62",
-            "phone_number": "81212341235",
-            "email"       : "jennie@blackpink.com",
-            "password"    : "password",
-            "pin"         : "123456",
-            "role"        : "USER",
-        }
-        result = user.UserController().user_register(params)
-        self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_USER"])
-
-        params = {
-            "user_id" : result["data"]["user_id"]
-        }
-        result = user.UserController().user_info(params)
-        self.assertTrue(result["data"]["user_information"])
-        self.assertTrue(result["data"]["wallet_information"])
-
-    def test_user_info_failed_record_not_found(self):
-        params = {
-            "user_id" : 123
-        }
-        result = user.UserController().user_info(params)
-        self.assertEqual(result[0]["errors"], RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
-
-    def test_remove_user_success(self):
-        params = {
-            "username"    : "jennie",
-            "name"        : "jennie",
-            "phone_ext"   : "62",
-            "phone_number": "81212341235",
-            "email"       : "jennie@blackpink.com",
-            "password"    : "password",
-            "pin"         : "123456",
-            "role"        : "USER",
-        }
-        result = user.UserController().user_register(params)
-        self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_USER"])
-
-        result = user.UserController().remove_user({"user_id" : result["data"]["user_id"]})
-        self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["REMOVE_USER"])
-
-    def test_remove_user_failed_not_found(self):
-        params = {
-            "user_id" : 123
-        }
-        result = user.UserController().remove_user(params)
-        self.assertEqual(result[0]["errors"], RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
-
-
-class TestUserBankAccountModules(BaseTestCase):
+class TestUserBankAccountServices(BaseTestCase):
+    """ Test Class for User Bank Account Services"""
 
     def test_add_bank_account_success(self):
+        """ test add bank account """
         params = {
             "username"    : "jennie",
             "name"        : "jennie",
@@ -126,7 +28,7 @@ class TestUserBankAccountModules(BaseTestCase):
             "pin"         : "123456",
             "role"        : "USER",
         }
-        result = user.UserController().user_register(params)
+        result = UserServices().add(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_USER"])
 
         params = {
@@ -136,10 +38,11 @@ class TestUserBankAccountModules(BaseTestCase):
             "name"      : "jennie",
             "account_no": "1234567891",
         }
-        result = bank_account.UserBankAccountController().add(params)
+        result = BankAccountServices().add(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_BANK_ACCOUNT"])
 
     def test_add_bank_account_failed_user_not_found(self):
+        """ test add bank account but not found"""
         params = {
             "user_id"   : 1234,
             "bank_code" : "009",
@@ -147,10 +50,11 @@ class TestUserBankAccountModules(BaseTestCase):
             "name"      : "jennie",
             "account_no": "1234567891",
         }
-        result = bank_account.UserBankAccountController().add(params)
+        result = BankAccountServices().add(params)
         self.assertEqual(result[0]["errors"], RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
 
     def test_add_bank_account_failed_user_not_found(self):
+        """ test add bank account but bank not found"""
         params = {
             "username"    : "jennie",
             "name"        : "jennie",
@@ -161,7 +65,7 @@ class TestUserBankAccountModules(BaseTestCase):
             "pin"         : "123456",
             "role"        : "USER",
         }
-        result = user.UserController().user_register(params)
+        result = UserServices().add(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_USER"])
 
         params = {
@@ -171,10 +75,11 @@ class TestUserBankAccountModules(BaseTestCase):
             "name"      : "jennie",
             "account_no": "1234567891",
         }
-        result = bank_account.UserBankAccountController().add(params)
+        result = BankAccountServices().add(params)
         self.assertEqual(result[0]["errors"], RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
 
     def test_show_bank_account_success(self):
+        """ test function that show all bank account"""
         params = {
             "username"    : "jennie",
             "name"        : "jennie",
@@ -185,23 +90,25 @@ class TestUserBankAccountModules(BaseTestCase):
             "pin"         : "123456",
             "role"        : "USER",
         }
-        result = user.UserController().user_register(params)
+        result = UserServices().add(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_USER"])
 
         params = {
             "user_id"   : result["data"]["user_id"],
         }
-        result = bank_account.UserBankAccountController().show(params)
+        result = BankAccountServices().show(params)
         self.assertEqual(len(result["data"]) ,0)
 
     def test_show_bank_account_failed_record_not_found(self):
+        """ test function that show all bank account but user not found"""
         params = {
             "user_id"   : 123,
         }
-        result = bank_account.UserBankAccountController().show(params)
+        result = BankAccountServices().show(params)
         self.assertEqual(result[0]["errors"], RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
 
     def test_update_bank_account_success(self):
+        """ test function that update bank account information"""
         params = {
             "username"    : "jennie",
             "name"        : "jennie",
@@ -212,7 +119,7 @@ class TestUserBankAccountModules(BaseTestCase):
             "pin"         : "123456",
             "role"        : "USER",
         }
-        result = user.UserController().user_register(params)
+        result = UserServices().add(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_USER"])
 
         user_id = result["data"]["user_id"]
@@ -224,13 +131,13 @@ class TestUserBankAccountModules(BaseTestCase):
             "name"      : "jennie",
             "account_no": "1234567891",
         }
-        result = bank_account.UserBankAccountController().add(params)
+        result = BankAccountServices().add(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_BANK_ACCOUNT"])
 
         params = {
             "user_id"   : user_id,
         }
-        result = bank_account.UserBankAccountController().show(params)
+        result = BankAccountServices().show(params)
         self.assertEqual(len(result["data"]) ,1)
 
         user_bank_account_id = result["data"][0]["id"]
@@ -243,10 +150,12 @@ class TestUserBankAccountModules(BaseTestCase):
             "name"      : "jennie",
             "account_no": "1234567891",
         }
-        result = bank_account.UserBankAccountController().update(params)
+        result = BankAccountServices().update(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["UPDATE_BANK_ACCOUNT"])
 
     def test_update_bank_account_failed_bank_account_not_found(self):
+        """ test function to update bank account information but account not
+        found"""
         params = {
             "username"    : "jennie",
             "name"        : "jennie",
@@ -257,7 +166,7 @@ class TestUserBankAccountModules(BaseTestCase):
             "pin"         : "123456",
             "role"        : "USER",
         }
-        result = user.UserController().user_register(params)
+        result = UserServices().add(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_USER"])
 
         user_id = result["data"]["user_id"]
@@ -269,13 +178,13 @@ class TestUserBankAccountModules(BaseTestCase):
             "name"      : "jennie",
             "account_no": "1234567891",
         }
-        result = bank_account.UserBankAccountController().add(params)
+        result = BankAccountServices().add(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_BANK_ACCOUNT"])
 
         params = {
             "user_id"   : user_id,
         }
-        result = bank_account.UserBankAccountController().show(params)
+        result = BankAccountServices().show(params)
         self.assertEqual(len(result["data"]) ,1)
 
         user_bank_account_id = result["data"][0]["id"]
@@ -288,11 +197,12 @@ class TestUserBankAccountModules(BaseTestCase):
             "name"      : "jennie",
             "account_no": "1234567891",
         }
-        result = bank_account.UserBankAccountController().update(params)
+        result = BankAccountServices().update(params)
         self.assertEqual(result[0]["errors"], RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
 
 
     def test_update_bank_account_failed_bank_not_found(self):
+        """ test update bank account but bank no tofund"""
         params = {
             "username"    : "jennie",
             "name"        : "jennie",
@@ -303,7 +213,7 @@ class TestUserBankAccountModules(BaseTestCase):
             "pin"         : "123456",
             "role"        : "USER",
         }
-        result = user.UserController().user_register(params)
+        result = UserServices().add(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_USER"])
 
         user_id = result["data"]["user_id"]
@@ -315,13 +225,13 @@ class TestUserBankAccountModules(BaseTestCase):
             "name"      : "jennie",
             "account_no": "1234567891",
         }
-        result = bank_account.UserBankAccountController().add(params)
+        result = BankAccountServices().add(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_BANK_ACCOUNT"])
 
         params = {
             "user_id"   : user_id,
         }
-        result = bank_account.UserBankAccountController().show(params)
+        result = BankAccountServices().show(params)
         self.assertEqual(len(result["data"]) ,1)
 
         user_bank_account_id = result["data"][0]["id"]
@@ -334,10 +244,11 @@ class TestUserBankAccountModules(BaseTestCase):
             "name"      : "jennie",
             "account_no": "1234567891",
         }
-        result = bank_account.UserBankAccountController().update(params)
+        result = BankAccountServices().update(params)
         self.assertEqual(result[0]["errors"], RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
 
     def test_remove_bank_account_success(self):
+        """ tst function to remove bank account """
         params = {
             "username"    : "jennie",
             "name"        : "jennie",
@@ -348,7 +259,7 @@ class TestUserBankAccountModules(BaseTestCase):
             "pin"         : "123456",
             "role"        : "USER",
         }
-        result = user.UserController().user_register(params)
+        result = UserServices().add(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_USER"])
 
         user_id = result["data"]["user_id"]
@@ -360,16 +271,16 @@ class TestUserBankAccountModules(BaseTestCase):
             "name"      : "jennie",
             "account_no": "1234567891",
         }
-        result = bank_account.UserBankAccountController().add(params)
+        result = BankAccountServices().add(params)
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["CREATE_BANK_ACCOUNT"])
 
         params = {
             "user_id"   : user_id,
         }
-        result = bank_account.UserBankAccountController().show(params)
+        result = BankAccountServices().show(params)
         self.assertEqual(len(result["data"]) ,1)
 
         user_bank_account_id = result["data"][0]["id"]
 
-        result = bank_account.UserBankAccountController().remove({"user_bank_account_id" : user_bank_account_id, "user_id" : user_id })
+        result = BankAccountServices().remove({"user_bank_account_id" : user_bank_account_id, "user_id" : user_id })
         self.assertEqual(result["message"], RESPONSE_MSG["SUCCESS"]["REMOVE_BANK_ACCOUNT"])

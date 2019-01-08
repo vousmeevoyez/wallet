@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from app.api            import db
 from app.api.wallet     import helper
 from app.api.common     import helper as common_helper
-from app.api.bank       import helper as bank_helper
+#from app.api.bank       import helper as bank_helper
 from app.api.models     import Wallet, Transaction, VirtualAccount, ForgotPin
 from app.api.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
 from app.api.errors     import bad_request, internal_error, request_not_found

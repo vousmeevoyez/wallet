@@ -82,16 +82,4 @@ class BniEnc:
 		return result
 
 
-# cid = "99099"
-# secret = "8eafc8687722fdd0ef78942309fcd983"
-# xmap ='{"type" : "createbilling", "client_id" : "99099", "trx_id" : "123000003, "trx_amount" : "10000000",\
-#  "billing_type" : "z", "customer_name" : "Mr. Marcio Soares", "customer_email" : "marcio@modana.id", "customer_phone" : "08123123123", \
-#  "virtual_account" : "9889909912345677", "datetime_expired" : "2018-10-10T16:00:00+07:00", "description" : "Payment of Trx 123000001" }'
-# hashing = BniEnc.encrypt(xmap, cid, secret)
-# hashing ="JSpPQldMKiIdIR5mDXkJBk4MCk9aVg8cDiIrT0xWFB0OXBASfgVMESsSIRQfVD9JAhQIYmVeTldLSkwCCxJgXA4rQFNOVCooISApGxxPR1EaTlAJHRRhXVtIUwwLCWBlDis3TEFIE0lmY2RaTwQPfFd2DFUTLAY4TVtVfws_HhNGZhEODgBWYVBgT1pZBD9OC1RRKBIcFxUWChxVUVYLHQ5UEwQTC15UWk9VWEx_CT8jQANRY1VWUSxWYQN0C1MfVUxARkEASWNWZFlPUH4AD0V_E1VVCycNHhkaV0lOIhUcKj5LTFYmIisaIA0XQXh-XQMTUF5XTFBbWVsRAXgUKw4jRUxPSSIXHiAhCxNTV00ZT08gEx4GT01dVwoFCldQU1IXBwQBZRErXlxXV0s_eEoSBGRRX1JKWEFlE3sSWVVNZQN1QVZfZFRcHA1bdxYKTgwKT19mTwQmV2cLf0kUYU1hC38NEEdQXl9lUF9BVz8QQEsSZ0pMXmBKXRQPPywKHRNKPHoBZFJjUGBfVA4CPyMMFFNdHg9NTFVeCAp7UWVlYXo8WT5bCB0SVExWBBEGVnp-U2NXRV9RTVF_DwwqJxMiQFRBRSEgKR0YGxhPVmgaVFklGywgGxcQKVlMTQsdDlV_BQQQWlxNT1VjW38PAk19f2NgKiMSHQssQUVNJCEZGU9HT008ICUqIBIlT01IEFVZICELGQ1QSl0EEAZfTUthfxMDAV9jUFBjWiNVRE4LWA1cXV4ZDUdKZgQQfV9WS112DRN7ZlZVUWRQRn4GEFhNVSAiFB5ZYVVeEw"
-# decode = BniEnc.decrypt(hashing, cid,secret)
-
-# print(decode)
-
-
 

@@ -1,7 +1,7 @@
 """
     Manage
     ___________________
-    This is module for application entry
+    This is flask application entry
 """
 import csv
 import os
@@ -32,7 +32,6 @@ def run():
     """ function to start flask apps"""
     host = os.getenv("HOST") or '127.0.0.1'
     app.run(host=host)
-#end def
 
 @manager.command
 def test():
@@ -42,7 +41,6 @@ def test():
     if result.wasSuccessful():
         return 0
     return 1
-#end def
 
 @manager.command
 def init():
@@ -50,7 +48,6 @@ def init():
 
     # create necessary role for wallet system
     role_list = _create_role()
-    print(role_list)
     # create admin for wallet system
     _create_admin(role_list["ADMIN"])
     # import necessary bank data for wallet system
@@ -59,7 +56,6 @@ def init():
     _create_va_type()
     # create payment_channel
     _create_payment_channel()
-#end def
 
 def make_shell_context():
     """ create shell context here"""
@@ -76,7 +72,6 @@ def make_shell_context():
         'ForgotPin'      : ForgotPin,
         'User'           : User
     }
-#end def
 
 manager.add_command("shell", Shell(make_context=make_shell_context))
 
@@ -109,11 +104,7 @@ def _create_role():
                 roles["ADMIN"] = i.id
             else:
                 roles["USER"] = i.id
-            #end if
-        #end for
-    #end if
     return roles
-#end def
 
 def _create_admin(role_id):
     # only create admin when there are no admin yet
@@ -131,8 +122,6 @@ def _create_admin(role_id):
         admin.set_password("password")
         db.session.add(admin)
         db.session.commit()
-    #end if
-#end def
 
 def _import_bank_csv():
     # only imoprt the bank when there are none
@@ -150,11 +139,7 @@ def _import_bank_csv():
                     )
                     db.session.add(bank)
                     db.session.commit()
-                #end if
                 line += 1
-            #end for
-        #end with
-#end def
 
 def _create_va_type():
     # only create va type when there are none
@@ -171,8 +156,6 @@ def _create_va_type():
         db.session.add(va_debit)
         db.session.add(va_credit)
         db.session.commit()
-    #end if
-#end def
 
 def _create_payment_channel():
     # only create payment if there are none
@@ -187,7 +170,6 @@ def _create_payment_channel():
         )
         db.session.add(payment_channel)
         db.session.commit()
-#end def
 
 if __name__ == "__main__":
     manager.run()

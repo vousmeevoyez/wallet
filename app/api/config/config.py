@@ -28,26 +28,30 @@ class Config:
         "REFRESH_EXPIRE" : 30, # day,
     }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    PRESERVE_CONTEXT_ON_EXCEPTION  = False
+    PRESERVE_CONTEXT_ON_EXCEPTION = False
 
     # FLASK RESTPLUS
     ERROR_INCLUDE_MESSAGE = False
 
+    VIRTUAL_ACCOUNT_CONFIG = {
+        "BNI" : {
+            "CREDIT_VA_TIMEOUT"  : 4350, # 1 year
+            "DEBIT_VA_TIMEOUT": 10, # 10 minutes cardless
+        }
+    }
+
     # MASTER WALLET SETTINGS
-    WALLET_CONFIG= {
+    WALLET_CONFIG = {
         "CREDIT_FLAG"        : True,
         "DEBIT_FLAG"         : False,
         "DEPOSIT"            : 1,
         "IN_TRANSFER"        : 2,
         "OUT_TRANSFER"       : 3,
         "WITHDRAW"           : 4,
-        "CREDIT_VA_TIMEOUT"  : 4350, # 1 years 
-        "CARDLESS_VA_TIMEOUT": 10, # 10 minutes
-        "MINIMAL_WITHDRAW"   : 50000, # 
-        "MAX_WITHDRAW"       : 100000000, # 
-        "MINIMAL_DEPOSIT"    : 50000, # 
-        "MAX_DEPOSIT"        : 100000000, # 
-        "VA_TIMEOUT"         : 87600, # set va expire to 10 years ago 
+        "MINIMAL_WITHDRAW"   : 50000,
+        "MAX_WITHDRAW"       : 100000000,
+        "MINIMAL_DEPOSIT"    : 50000,
+        "MAX_DEPOSIT"        : 100000000,
         "OTP_TIMEOUT"        : 2 # set otp timeout in minutes
     }
 
@@ -61,7 +65,7 @@ class Config:
     }
 
     # MASTER WALLET SETTINGS
-    TRANSACTION_NOTES= {
+    TRANSACTION_NOTES = {
         "DEPOSIT"         : "Top up balance {} from Virtual Account",
         "INJECT"          : "Injected balance {}",
         "SEND_TRANSFER"   : "Transfer balance {}",
@@ -104,7 +108,9 @@ class Config:
             "LOCK_TRANSACTION"       : "Cannot proceed transaction, Wallet is locked",
             "INSUFFICIENT_BALANCE"   : "Insufficient balance for this transaction",
             "ROLLBACK"               : "Transaction failed",
-            "WITHDRAW_PENDING"       : "There's pending Withdraw Process, please wait {} before request again".format(WALLET_CONFIG["CARDLESS_VA_TIMEOUT"]),
+            "WITHDRAW_PENDING"       : "There's pending Withdraw Process\
+                                        ,please wait {} before request again".
+                                       format(VIRTUAL_ACCOUNT_CONFIG["BNI"]["DEBIT_VA_TIMEOUT"]),
             "WITHDRAW"               : "Request Withdraw Failed",
             "VA_CREATION"            : "Virtual Account Creation Failed",
             "WALLET_REMOVAL"         : "Can't remove the main wallet",
@@ -112,7 +118,8 @@ class Config:
             "UNAUTHORIZED_USER"      : "Unauthorized Permission to Access this user information",
             "MIN_WITHDRAW"           : "Minimum withdraw amount is {} ",
             "MAX_WITHDRAW"           : "Maximum withdraw amount is {} ",
-            "UNKNOWN_ERROR"          : "Something wrong happen, Please contact our customer support if error persist",
+            "UNKNOWN_ERROR"          : "Something wrong happen, Please"\
+                                        "customer support if error persist",
             "VA_UPDATE_FAILED"       : "Failed updating Virtual Account",
             "EXPIRED_TOKEN"          : "Token has expired",
             "REVOKED_TOKEN"          : "Token has been revoked",
@@ -120,7 +127,9 @@ class Config:
             "INSUFFICIENT_PERMISSION": "Admin Permission Required",
             "PIN_NOT_MATCH"          : "Pin & Confirm Pin does not match",
             "OLD_PIN"                : "New Pin can't be the same with old one",
-            "OTP_PENDING"            : "There's pending Forgot OTP, Please wait {} minutes before request again".format(str(WALLET_CONFIG["OTP_TIMEOUT"])),
+            "OTP_PENDING"            : "There's pending Forgot OTP, "\
+                                       "Please wait {} minutes before request again".
+                                       format(str(WALLET_CONFIG["OTP_TIMEOUT"])),
             "OTP_NOT_FOUND"          : "Invalid Forgot OTP Record",
             "INVALID_OTP_CODE"       : "Invalid OTP Code",
             "OTP_ALREADY_VERIFIED"   : "OTP Already verified",
@@ -133,7 +142,7 @@ class Config:
     }
 
     # BNI E-COLLECTION ERROR MSG
-    BNI_ECOLLECTION_ERROR_HANDLER= {
+    BNI_ECOLLECTION_ERROR_HANDLER = {
         "VA_ERROR"      : "VA failed to create",
         "INQUIRY_ERROR" : "Get Inquiry failed",
         "UPDATE_ERROR " : "Update VA Transaction failed",
@@ -210,7 +219,8 @@ class Config:
     }
 
     SMS_SERVICES_TEMPLATES = {
-        "FORGOT_PIN" : "This is your FORGOT PIN Code for your Modanaku : {} . DON'T SHARE IT WITH ANYONE (NOT EVENT MODANA)",
+        "FORGOT_PIN" : "This is your FORGOT PIN Code for your Modanaku : {}."\
+        "DON'T SHARE IT WITH ANYONE (NOT EVENT MODANA)",
     }
 #end class
 
@@ -256,10 +266,10 @@ class ProductionConfig(Config):
 #end class
 
 
-config_by_name = dict(
+CONFIG_BY_NAME = dict(
     dev=DevelopmentConfig,
     test=TestingConfig,
     prod=ProductionConfig
 )
 
-key = Config.SECRET_KEY
+KEY = Config.SECRET_KEY

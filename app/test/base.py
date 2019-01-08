@@ -15,6 +15,8 @@ TEST_CONFIG = config.TestingConfig
 class BaseTestCase(TestCase):
     """ This is Base Tests """
 
+    user = None
+
     def create_app(self):
         app.config.from_object(TEST_CONFIG)
         return app
@@ -32,6 +34,7 @@ class BaseTestCase(TestCase):
     def _init_test(self):
         roles = self._create_role()
         self._create_admin(roles["ADMIN"])
+        self._create_user(roles["USER"])
         self._create_va_type()
         self._import_bank_csv()
         self._create_payment_channel()
@@ -72,6 +75,21 @@ class BaseTestCase(TestCase):
         )
         admin.set_password("password")
         db.session.add(admin)
+        db.session.commit()
+    #end def
+
+    def _create_user(self, role_id):
+        # create admin account here
+        user = User(
+            username="jisooo",
+            name="Kim Jisooo",
+            phone_ext="62",
+            phone_number="81102341234",
+            email="jisoo@blackpink.com",
+            role_id=role_id
+        )
+        user.set_password("password")
+        db.session.add(user)
         db.session.commit()
     #end def
 
