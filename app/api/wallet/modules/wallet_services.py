@@ -177,7 +177,7 @@ class WalletServices:
             return request_not_found()
         #end if
 
-        conditions = []
+        conditions = [Transaction.wallet_id == wallet.id]
         # filter by transaction type
         if transaction_type == "IN":
             conditions.append(Payment.payment_type == True)
@@ -194,11 +194,10 @@ class WalletServices:
             conditions.append(Transaction.created_at.between(start_date, \
                                                                  end_date))
         #end if
-        conditions.append(Transaction.wallet_id == Wallet.id)
-
-        wallet_response = Transaction.query.join(Payment, Wallet,
+        wallet_response = Transaction.query.join(Payment,
                                                  Transaction.payment_id == \
-                                                 Payment.id).filter(*conditions)
+                                                 Payment.id,
+                                                 ).filter(*conditions)
         response["data"] = TransactionSchema(many=True,
                                              exclude=["payment_details",]).\
                             dump(wallet_response).data
