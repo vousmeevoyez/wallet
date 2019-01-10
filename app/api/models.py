@@ -433,7 +433,7 @@ class Transaction(db.Model):
     #end def
 
     @aggregated('wallet', db.Column(db.Float))
-    def balance(self):
+    def current_balance(self):
         """ aggregated attributes """
         return Wallet.balance - Transaction.amount
 

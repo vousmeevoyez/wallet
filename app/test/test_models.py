@@ -545,7 +545,7 @@ class TransactionModelCase(BaseTestCase):
         """
 
         trx = Transaction.query.filter_by(id=debit_trx.id).first()
-        self.assertEqual(trx.balance, 1000)
+        self.assertEqual(trx.current_balance, 1000)
 
 class ExternalModelCase(BaseTestCase):
 
