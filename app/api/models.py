@@ -432,11 +432,6 @@ class Transaction(db.Model):
                                                      self.transaction_type, self.notes)
     #end def
 
-    @aggregated('wallet', db.Column(db.Float))
-    def current_balance(self):
-        """ aggregated attributes """
-        return Wallet.balance - Transaction.amount
-
     def generate_trx_id(self):
         """
             function to generate trx_id
