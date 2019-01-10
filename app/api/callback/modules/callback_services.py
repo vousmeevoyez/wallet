@@ -283,7 +283,7 @@ class CallbackServices:
         # parse request data
         payment_id  = params["payment_id"]
         wallet_id   = params["wallet_id"]
-        amount      = float(params["amount"])
+        amount      = params["amount"]
 
         if amount > 0:
             response["status"] = "FAILED"
@@ -304,7 +304,7 @@ class CallbackServices:
             return response
         #end if
 
-        if float(amount) > float(wallet.balance):
+        if abs(amount) > wallet.balance:
             response["status"] = "FAILED"
             response["data"] = RESPONSE_MSG["FAILED"]["INSUFFICIENT_BALANCE"]
             return response

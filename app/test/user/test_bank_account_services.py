@@ -33,7 +33,7 @@ class TestUserBankAccountServices(BaseTestCase):
 
         params = {
             "user_id"   : result["data"]["user_id"],
-            "bank_code" : "009",
+            "bank_code" : "9",
             "label"     : "sample label",
             "name"      : "jennie",
             "account_no": "1234567891",
@@ -45,7 +45,7 @@ class TestUserBankAccountServices(BaseTestCase):
         """ test add bank account but not found"""
         params = {
             "user_id"   : 1234,
-            "bank_code" : "009",
+            "bank_code" : "9",
             "label"     : "sample label",
             "name"      : "jennie",
             "account_no": "1234567891",
@@ -126,7 +126,7 @@ class TestUserBankAccountServices(BaseTestCase):
 
         params = {
             "user_id"   : user_id,
-            "bank_code" : "009",
+            "bank_code" : "9",
             "label"     : "sample label",
             "name"      : "jennie",
             "account_no": "1234567891",
@@ -145,7 +145,7 @@ class TestUserBankAccountServices(BaseTestCase):
         params = {
             "user_bank_account_id" : user_bank_account_id,
             "user_id"   : user_id,
-            "bank_code" : "009",
+            "bank_code" : "9",
             "label"     : "my label",
             "name"      : "jennie",
             "account_no": "1234567891",
@@ -173,7 +173,7 @@ class TestUserBankAccountServices(BaseTestCase):
 
         params = {
             "user_id"   : user_id,
-            "bank_code" : "009",
+            "bank_code" : "9",
             "label"     : "sample label",
             "name"      : "jennie",
             "account_no": "1234567891",
@@ -220,7 +220,7 @@ class TestUserBankAccountServices(BaseTestCase):
 
         params = {
             "user_id"   : user_id,
-            "bank_code" : "009",
+            "bank_code" : "9",
             "label"     : "sample label",
             "name"      : "jennie",
             "account_no": "1234567891",
@@ -266,7 +266,7 @@ class TestUserBankAccountServices(BaseTestCase):
 
         params = {
             "user_id"   : user_id,
-            "bank_code" : "009",
+            "bank_code" : "9",
             "label"     : "sample label",
             "name"      : "jennie",
             "account_no": "1234567891",

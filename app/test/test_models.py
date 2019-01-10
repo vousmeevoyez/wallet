@@ -409,7 +409,7 @@ class TransactionModelCase(BaseTestCase):
         self.assertEqual(user2.check_balance(), 1000)
 
         #start transaction here
-        trx_amount = 10
+        trx_amount = -10
         # first create debit payment
         debit_payment = Payment(
             source_account=wallet.id,
@@ -427,7 +427,7 @@ class TransactionModelCase(BaseTestCase):
         debit_trx.generate_trx_id()
         db.session.add(debit_trx)
         # deduct balance
-        user.deduct_balance(trx_amount)
+        user.add_balance(trx_amount)
 
         db.session.flush()
 

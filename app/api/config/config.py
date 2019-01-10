@@ -150,12 +150,14 @@ class Config:
 
     # BNI E-COLLECTION CONFIG
     BNI_ECOLLECTION_CONFIG = {
-        "BASE_URL_DEV"     : "https://apibeta.bni-ecollection.com/",
-        "BASE_URL_PROD"    : "https://apibeta.bni-ecollection.com/",
-        "DEBIT_SECRET_KEY" : "8eafc8687722fdd0ef78942309fcd983",
-        "CREDIT_SECRET_KEY": "707e501f79c05001a376636c10f7b8cf",
-        "DEBIT_CLIENT_ID"  : "99099",
-        "CREDIT_CLIENT_ID" : "99098",
+        "BASE_URL"         : os.getenv('BNI_VA_URL') or \
+        "https://apibeta.bni-ecollection.com/",
+        "DEBIT_SECRET_KEY" : os.getenv('BNI_VA_DEBIT_SECRET_KEY') or \
+        "8eafc8687722fdd0ef78942309fcd983",
+        "CREDIT_SECRET_KEY": os.getenv('BNI_VA_CREDIT_SECRET_KEY') or \
+        "707e501f79c05001a376636c10f7b8cf",
+        "DEBIT_CLIENT_ID"  : os.getenv('BNI_VA_DEBIT_CLIENT_ID') or "99099",
+        "CREDIT_CLIENT_ID" : os.getenv('BNI_VA_CREDIT_CLIENT_ID') or "99098",
         "BILLING"          : "createbilling",
         "CARDLESS"         : "createdebitcardless",
         "UPDATE"           : "updatebilling",
@@ -167,14 +169,18 @@ class Config:
 
     # BNI OPG CONFIG
     BNI_OPG_CONFIG = {
-        "MASTER_ACCOUNT": "0115476117",
-        "BASE_URL_DEV"  : "https://apidev.bni.co.id",
-        "PORT"          : "8066",
-        "CLIENT_NAME"   : "IDBNITU9EQU5B",
-        "USERNAME"      : "041c7414-00fe-4338-98aa-b905ab5c2972",
-        "PASSWORD"      : "894fe209-4c78-4c22-9925-a23ba36483f0",
-        "API_KEY"       : "09ea583b-6d13-47ed-b675-9648f27826f2",
-        "SECRET_API_KEY": "b854407e-33c9-4987-811d-72f7128b69f9",
+        "MASTER_ACCOUNT": os.getenv('BNI_MASTER_ACCOUNT') or "0115476117",
+        "BASE_URL_DEV"  : os.getenv('BNI_OPG_URL') or "https://apidev.bni.co.id",
+        "PORT"          : os.getenv('BNI_OPG_PORT') or "8066",
+        "CLIENT_NAME"   : os.getenv('BNI_OPG_CLIENT_NAME') or "IDBNITU9EQU5B",
+        "USERNAME"      : os.getenv('BNI_OPG_USERNAME') or \
+        "041c7414-00fe-4338-98aa-b905ab5c2972",
+        "PASSWORD"      : os.getenv('BNI_OPG_PASSWORD') or \
+        "894fe209-4c78-4c22-9925-a23ba36483f0",
+        "API_KEY"       : os.getenv('BNI_OPG_API_KEY') or \
+        "09ea583b-6d13-47ed-b675-9648f27826f2",
+        "SECRET_API_KEY": os.getenv('BNI_OPG_SECRET_API_KEY') or \
+        "b854407e-33c9-4987-811d-72f7128b69f9",
         "ROUTES"        : {
             "GET_TOKEN"            : "/api/oauth/token",
             "GET_BALANCE"          : "/H2H/v2/getbalance",
@@ -206,8 +212,10 @@ class Config:
     }
 
     SMS_SERVICES_CONFIG = {
-        "BASE_URL"   : "https://api.wavecell.com/sms/v1/Modana_OTP/single",
-        "API_KEY"    : "7hH72ACD8DA6EED4DD985D4489A034",
+        "BASE_URL"   : os.getenv('SMS_SERVICES_BASE_URL') or \
+        "https://api.wavecell.com/sms/v1/Modana_OTP/single",
+        "API_KEY"    : os.getenv('API_KEY') or \
+        "7hH72ACD8DA6EED4DD985D4489A034",
         "FROM"       : "MODANA",
     }
 
