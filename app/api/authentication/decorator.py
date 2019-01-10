@@ -42,11 +42,13 @@ def admin_required(fn):
             return insufficient_scope(RESPONSE_MSG["FAILED"]["INSUFFICIENT_PERMISSION"])
         else:
             return fn(*args, **kwargs)
-
     return wrapper
 #end def
 
 def refresh_token_only(fn):
+    """
+        only allow refresh token for certain routes
+    """
     @wraps(fn)
     def wrapper(*args, **kwargs):
         # define header schema
@@ -73,6 +75,9 @@ def refresh_token_only(fn):
 #end def
 
 def token_required(fn):
+    """ 
+        protect routes with token
+    """
     @wraps(fn)
     def wrapper(*args, **kwargs):
         # define header schema
@@ -96,6 +101,7 @@ def token_required(fn):
 #end def
 
 def get_token_payload():
+    """ get token payload """
     # define header schema
     parser = reqparse.RequestParser()
     parser.add_argument('Authorization', location='headers', required=True)
@@ -115,6 +121,7 @@ def get_token_payload():
 #end def
 
 def get_current_token():
+    """ get current token from headers """
     # define header schema
     parser = reqparse.RequestParser()
     parser.add_argument('Authorization', location='headers', required=True)

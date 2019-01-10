@@ -252,7 +252,6 @@ class CallbackServices:
             transaction_type=WALLET_CONFIG["DEPOSIT"],
             notes=TRANSACTION_NOTES["DEPOSIT"].format(str(amount))
         )
-        credit_transaction.current_balance("ADD", amount)
         credit_transaction.generate_trx_id()
 
         try:
@@ -291,7 +290,6 @@ class CallbackServices:
             response["data"] = "Invalid Amount"
             return response
         #end if
-        amount = abs(amount)
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
         if wallet is None:
@@ -320,7 +318,6 @@ class CallbackServices:
             transaction_type=WALLET_CONFIG["WITHDRAW"],
             notes=TRANSACTION_NOTES["WITHDRAW_NOTIF"].format(str(amount))
         )
-        debit_transaction.current_balance("DEDUCT", amount)
         debit_transaction.generate_trx_id()
 
         try:

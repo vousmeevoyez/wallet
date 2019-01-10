@@ -11,29 +11,29 @@ class TestAuthServices(BaseTestCase):
 
     def test_create_access_token(self):
         """ test create access token """
-        user = User.query.filter_by(username="jisooo").first()
+        user = User.query.filter_by(username="MODANAADMIN").first()
         result = AuthServices()._create_access_token(user)
         self.assertIsInstance(result, str)
 
     def test_create_refresh_token(self):
         """ test create refresh token"""
-        user = User.query.filter_by(username="jisooo").first()
+        user = User.query.filter_by(username="MODANAADMIN").first()
         result = AuthServices()._create_refresh_token(user)
         self.assertIsInstance(result, str)
 
     def test_current_login_user(self):
         """ test curren login user"""
-        user = User.query.filter_by(username="jisooo").first()
+        user = User.query.filter_by(username="MODANAADMIN").first()
         token = AuthServices()._create_access_token(user)
 
         result = AuthServices.current_login_user(token)
 
         self.assertEqual(result["data"]["token_type"], "ACCESS")
-        self.assertEqual(result["data"]["user_id"], 2)
+        self.assertEqual(result["data"]["user_id"], 1)
 
     def test_create_token_success(self):
         """ test success create access & refresh token"""
-        result = AuthServices().create_token({"username" : "jisooo",\
+        result = AuthServices().create_token({"username" : "MODANAADMIN",\
                                               "password" : "password"})
 
         self.assertTrue(result["data"]["access_token"])
@@ -58,7 +58,7 @@ class TestAuthServices(BaseTestCase):
     def test_refresh_token_success(self):
         """ test success refreshing token"""
 
-        user = User.query.filter_by(username="jisooo").first()
+        user = User.query.filter_by(username="MODANAADMIN").first()
         result = AuthServices().refresh_token(user.id)
 
         self.assertTrue(result["data"]["access_token"])
@@ -72,7 +72,7 @@ class TestAuthServices(BaseTestCase):
 
     def test_logout_access_token(self):
         """ test blacklist access token """
-        result = AuthServices().create_token({"username" : "jisooo",\
+        result = AuthServices().create_token({"username" : "MODANAADMIN",\
                                               "password" : "password"})
 
         access_token = result["data"]["access_token"]
@@ -82,7 +82,7 @@ class TestAuthServices(BaseTestCase):
 
     def test_logout_refresh_token(self):
         """ test blacklist access token """
-        result = AuthServices().create_token({"username" : "jisooo",\
+        result = AuthServices().create_token({"username" : "MODANAADMIN",\
                                               "password" : "password"})
 
         refresh_token = result["data"]["refresh_token"]

@@ -6,6 +6,7 @@
 """
 import base64
 import json
+import time
 import random
 from datetime import datetime, timedelta
 import pytz
@@ -58,10 +59,13 @@ class VirtualAccount:
                          )
         session.add(log)
 
+        start_time = time.time()
         remote_response = remote_call.post(self.BASE_URL, client_id, secret_key, payload)
 
         # log everything after request
         log.save_response(remote_response["data"])
+        # log response time
+        log.save_response_time(time.time() - start_time)
         # if failed change status to false
         if remote_response["status"] != "000":
             log.set_status(False)
@@ -268,6 +272,15 @@ class CoreBank:
             payload = json.dumps(payload)
         #end if
 
+        # log everything before creating request
+        log = ExternalLog(request=payload,
+                          resource=LOGGING_CONFIG["BNI_OPG"],
+                          api_name=api_name,
+                          api_type=LOGGING_CONFIG["OUTGOING"]
+                         )
+        db.session.add(log)
+
+        start_time = time.time()
         try:
             r = requests.post(
                 url,
@@ -277,11 +290,18 @@ class CoreBank:
             )
             # access the data here
             resp = r.json()
+            log.save_response(resp)
             if r.ok:
                 response["status"] = "SUCCESS"
             else:
+                log.set_status(False) # set as failed request
                 response["status"] = "FAILED"
             #end if
+
+            # SAVE LOG RESPONSE  RESPONE TIME
+            log.save_response_time(time.time() - start_time)
+            db.session.commit()
+
             response["data"] = resp
         except requests.exceptions.Timeout:
             response["status"] = "FAILED"
@@ -726,11 +746,6 @@ class CoreBank:
 class BNI:
     """ BNI Object that handle all call"""
 
-    def __init__(self):
-        self.virtual_account = VirtualAccount()
-        self.core_bank = CoreBank()
-    #end def
-
     def call(self, operation, data):
         """
             method to route operation to which object method
@@ -745,7 +760,7 @@ class BNI:
                 "virtual_account_id": data["virtual_account_id"],
                 "transaction_id"    : data["transaction_id"],
             }
-            response = self.virtual_account.create_va("CARDLESS", params)
+            response = VirtualAccount().create_va("CARDLESS", params)
         elif operation == "CREATE_VA":
             params = {
                 "customer_name"     : data["name"],
@@ -755,11 +770,11 @@ class BNI:
                 "virtual_account_id": data["virtual_account_id"],
                 "transaction_id"    : data["transaction_id"],
             }
-            response = self.virtual_account.create_va("CREDIT", params)
+            response = VirtualAccount().create_va("CREDIT", params)
         elif operation == "TRANSFER":
-            response = self.core_bank.transfer(params)
+            response = CoreBank().transfer(params)
         elif operation == "CHECK_BALANCE":
-            response = self.core_bank.get_balance(params)
+            response = CoreBank().get_balance(params)
         #end if
         return response
     #end def

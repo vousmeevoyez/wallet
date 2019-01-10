@@ -949,6 +949,7 @@ class TestBNI(BaseTestCase):
         # replace return value using expected value here
         mock_post.return_value = expected_value
         result = BNI().call("CREATE_VA_CARDLESS", data)
+        print(result)
         self.assertEqual(result["status"], "SUCCESS")
 
     @patch.object(VirtualAccountHelper, "_post")

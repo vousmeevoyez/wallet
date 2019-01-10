@@ -129,13 +129,14 @@ def _import_bank_csv():
     if not bank_list:
         file_path = "data/bank_list.csv"
         with open(file_path, "r") as files:
-            csv_reader = csv.DictReader(files)
+            csv_reader = csv.reader(files, delimiter=';')
             line = 0
             for row in csv_reader:
                 if line > 0:
                     bank = Bank(
-                        name=row["bank_name"],
-                        code=row["bank_code"],
+                        code=row[0],
+                        name=row[1],
+                        rtgs=row[2]
                     )
                     db.session.add(bank)
                     db.session.commit()
@@ -161,7 +162,7 @@ def _create_payment_channel():
     # only create payment if there are none
     payment_channel = PaymentChannel.query.count()
     if payment_channel == 0:
-        bni = Bank.query.filter_by(code="009").first()
+        bni = Bank.query.filter_by(code="9").first()
         payment_channel = PaymentChannel(
             name="BNI Virtual Account",
             key="BNI_VA",

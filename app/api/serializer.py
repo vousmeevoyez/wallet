@@ -531,3 +531,39 @@ class CallbackSchema(ma.Schema):
             #end if
         #end if
 #end class
+
+class ExternalLogSchema(ma.Schema):
+    """ this is schema for external log object """
+    id         = fields.Int(dump_only=True)
+    status     = fields.Method("bool_to_status", dump_only=True)
+    resource   = fields.Str(dump_only=True)
+    api_name   = fields.Str(dump_only=True)
+    request    = fields.Str(dump_only=True)
+    response   = fields.Str(dump_only=True)
+    api_type   = fields.Method("api_type_to_type", dump_only=True)
+    created_at = fields.DateTime('%Y-%m-%d %H:%M:%S')
+    response_time = fields.Float(dump_only=True)
+
+    def bool_to_status(self, obj):
+        """
+            function to convert boolean into human friendly string
+            args:
+                obj - user object
+        """
+        status = "SUCCESS"
+        if obj.status is not True:
+            status = "FAILED"
+        return status
+    #end def
+
+    def api_type_to_type(self, obj):
+        """
+            function to convert api tpye into human friendly string
+            args:
+                obj - user object
+        """
+        api_type = "OUTGOING"
+        if obj.api_type == 1:
+            api_type = "INCOMING"
+        return api_type
+    #end def

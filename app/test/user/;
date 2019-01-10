@@ -130,7 +130,7 @@ class TestUserRoutes(BaseTestCase):
         )
     #ende def
 
-    """
+    """ 
         TEST BEGIN HERE 
     """
 
@@ -162,7 +162,8 @@ class TestUserRoutes(BaseTestCase):
 
         self.assertEqual(response, expected_value)
 
-    def test_create_user_routes_failed_validate_input(self):
+    @patch.object(UserServices, "add")
+    def test_create_user_routes_failed_validate_input(self, mock_user_services):
         """ test routes function to create user but there are some invalid data
         passed to this routes"""
         params = {

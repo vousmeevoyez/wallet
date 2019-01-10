@@ -14,7 +14,7 @@ from app.api.errors import bad_request, internal_error, request_not_found
 @api.route("/")
 class BankRoutes(Resource):
     def get(self):
-        response = BankServices().get_banks({})
+        response = BankServices().get_banks()
         return response
     #end def
 #end class

@@ -478,7 +478,6 @@ class TestTransactionSchema(BaseTestCase):
             payment_id=debit_payment.id
         )
         debit_trx.generate_trx_id()
-        debit_trx.current_balance("DEDUCT", trx_amount)
         db.session.add(debit_trx)
         # deduct balance
         user.deduct_balance(trx_amount)

@@ -16,16 +16,6 @@ from app.api.bank.bni.helper import BNI
 
 VIRTUAL_ACCOUNT_CONFIG = config.Config.VIRTUAL_ACCOUNT_CONFIG
 
-class Bank_:
-    """ factory method for all bank"""
-    @staticmethod
-    def factory(bank_name):
-        """ static method function to force all bank imported here"""
-        if bank_name == "BNI":
-            return BNI()
-    #end def
-#end class
-
 class BankHandler:
     """ this is class that handle function to various bank module"""
 
@@ -35,9 +25,15 @@ class BankHandler:
         # set necessary information here
         self.bank_name = bank_name
         # assign bank object
-        self.bank = Bank_.factory(bank_name)
+        self.bank = self.factory(bank_name)
         # convert bank name to bank id
         self.bank_id = self._bank_name_to_id(bank_name)
+    #end def
+
+    def factory(self, bank_name):
+        """ static method function to force all bank imported here"""
+        banks = dict(BNI=BNI)
+        return banks[bank_name]()
     #end def
 
     def _get_datetime_expired(self, va_type):
@@ -59,7 +55,7 @@ class BankHandler:
         # for now we only support BNI but more bank in future
         bank_code = ""
         if bank_name == "BNI":
-            bank_code = "009"
+            bank_code = "9"
         bank = Bank.query.filter_by(code=bank_code).first()
         return bank.id
     #end def
@@ -113,6 +109,7 @@ class BankHandler:
         transaction_id = virtual_account.generate_trx_id()
 
         session.add(virtual_account)
+        session.commit()
 
         response["data"] = {
             "datetime_expired" : datetime_expired,

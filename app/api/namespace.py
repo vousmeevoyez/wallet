@@ -27,3 +27,7 @@ class CallbackNamespace:
 class ExceptionNamespace:
     api = Namespace("exception")
 #end class
+
+class LogNamespace:
+    api = Namespace("log")
+#end class

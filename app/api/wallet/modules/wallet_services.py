@@ -1,3 +1,8 @@
+"""
+    Wallet Services
+    ________________
+    This is module that serve everything related to wallet
+"""
 import random
 import traceback
 from datetime import datetime, timedelta
@@ -8,24 +13,26 @@ from sqlalchemy.exc import IntegrityError
 from app.api            import db
 from app.api.wallet     import helper
 from app.api.common     import helper as common_helper
-#from app.api.bank       import helper as bank_helper
-from app.api.models     import Wallet, Transaction, VirtualAccount, ForgotPin
+from app.api.bank.handler import BankHandler
+from app.api.models     import Wallet, Transaction, ForgotPin
 from app.api.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
 from app.api.errors     import bad_request, internal_error, request_not_found
 from app.api.config     import config
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
-RESPONSE_MSG      = config.Config.RESPONSE_MSG
-WALLET_CONFIG     = config.Config.WALLET_CONFIG
+RESPONSE_MSG = config.Config.RESPONSE_MSG
+WALLET_CONFIG = config.Config.WALLET_CONFIG
 
-class WalletController:
+class WalletServices:
+    """ Wallet Services Class"""
 
-    def __init__(self):
-        pass
-    #end def
-
-    def create(self, params):
+    def add(self, params):
+        """
+            function to add new wallet to specific user
+            args :
+                params -
+        """
         response = {}
 
         wallet_creation_resp = helper.WalletHelper().generate_wallet(params)
@@ -38,158 +45,173 @@ class WalletController:
         return response
     #end def
 
-    def all(self, params=None):
+    def show(self, params=None):
+        """
+            function to show all wallet
+            args -- params
+        """
         response = {}
 
-        try:
-            wallet = Wallet.query.all()
-            response["data"] = WalletSchema(many=True).dump(wallet).data
-        except Exception as e:
-            print(str(e))
-            print(traceback.format_exc())
-            return internal_error()
-        #end try
-
+        wallet = Wallet.query.all()
+        response["data"] = WalletSchema(many=True).dump(wallet).data
         return response
     #end def
 
-    def details(self, params):
+    def info(self, params):
+        """
+            function to return wallet information
+            args:
+                params --
+        """
         response = {}
 
-        try:
-            wallet_id  = params["id" ]
+        wallet_id = params["id"]
 
-            wallet = Wallet.query.filter_by(id=wallet_id).first()
-            if wallet == None:
-                return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
-            #end if
+        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        if wallet is None:
+            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+        #end if
 
-            wallet_information = WalletSchema().dump(wallet).data
-            va_information     = VirtualAccountSchema(many=True).dump(wallet.virtual_accounts).data
+        wallet_information = WalletSchema().dump(wallet).data
+        va_information = VirtualAccountSchema(many=True).dump(wallet.virtual_accounts).data
 
-            response["data"] = {
-                "wallet" : wallet_information,
-                "virtual_account" : va_information
-            }
-
-        except Exception as e:
-            print(traceback.format_exc())
-            print(str(e))
-            return internal_error()
-
+        response["data"] = {
+            "wallet" : wallet_information,
+            "virtual_account" : va_information
+        }
         return response
     #end def
 
+    """
     def remove(self, params):
+            function to remove wallet
+            args :
+                params --
         response = {
             "status_code"    : 0,
             "status_message" : "SUCCESS",
             "data"           : "NONE"
         }
 
-        try:
-            wallet_id = params["id"]
-
-            wallet = Wallet.query.filter_by(id=wallet_id).first()
-            if wallet == None:
-                return request_not_found()
-            #end if
-
-            #cannot delete wallet if this the only wallet
-            user_id = wallet.user_id
-            wallet_number = Wallet.query.filter_by(user_id=user_id).count()
-            if wallet_number <= 1:
-                return bad_request(RESPONSE_MSG["WALLET_REMOVAL_FAILED"])
-            #end if
-
-            # deactivating VA
-            va_info = wallet.virtual_accounts
-            datetime_expired = datetime.now() - timedelta(hours=WALLET_CONFIG["CREDIT_VA_TIMEOUT"])
-
-            va_payload = {
-                "trx_id"           : va_info[0].trx_id,
-                "amount"           : "0",
-                "customer_name"    : "NONE",
-                "datetime_expired" : datetime_expired
-            }
-            va_response = bank_helper.EcollectionHelper().update_va("CREDIT", va_payload)
-
-            db.session.delete(wallet)
-            db.session.commit()
-            response["data"] = RESPONSE_MSG["WALLET_REMOVED"]
-
-        except Exception as e:
-            print(str(e))
-            return internal_error()
-
-        return response
-    #end def
-
-    def check_balance(self, params):
-        response = {}
-
-        try:
-            wallet_id  = params["id" ]
-            pin        = params["pin"]
-
-            wallet = Wallet.query.filter_by(id=wallet_id).first()
-            if wallet == None:
-                return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
-            #end if
-
-            if wallet.check_pin(pin) != True:
-                return bad_request(RESPONSE_MSG["FAILED"]["INCORRECT_PIN"])
-            #end if
-
-            response["data"] = {
-                "id" : wallet_id,
-                "balance" : wallet.balance
-            }
-
-        except Exception as e:
-            print(traceback.format_exc())
-            print(str(e))
-            return internal_error()
-
-        return response
-    #end def
-
-    def history(self, wallet_id):
-        response = {}
+        wallet_id = params["id"]
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
         if wallet == None:
             return request_not_found()
         #end if
 
+        #cannot delete wallet if this the only wallet
+        user_id = wallet.user_id
+        wallet_number = Wallet.query.filter_by(user_id=user_id).count()
+        if wallet_number <= 1:
+            return bad_request(RESPONSE_MSG["WALLET_REMOVAL_FAILED"])
+        #end if
+
+        # deactivating VA
+        va_info = wallet.virtual_accounts
+        datetime_expired = datetime.now() - timedelta(hours=WALLET_CONFIG["CREDIT_VA_TIMEOUT"])
+
+        va_payload = {
+            "trx_id"           : va_info[0].trx_id,
+            "amount"           : "0",
+            "customer_name"    : "NONE",
+            "datetime_expired" : datetime_expired
+        }
+        #va_response = BankHandler("BNI").update_va("CREDIT", va_payload)
+
+        try:
+            db.session.delete(wallet)
+            db.session.commit()
+            response["data"] = RESPONSE_MSG["WALLET_REMOVED"]
+        except IntegrityError as error:
+            print(str(error))
+            return internal_error()
+        return response
+    #end def
+    """
+
+    def check_balance(self, params):
+        """
+            function to check wallet balance
+            args:
+                params -- id, pin
+        """
+        response = {}
+
+        wallet_id = params["id"]
+        pin = params["pin"]
+
+        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        if wallet is None:
+            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+        #end if
+
+        if wallet.check_pin(pin) is not True:
+            return bad_request(RESPONSE_MSG["FAILED"]["INCORRECT_PIN"])
+        #end if
+
+        response["data"] = {
+            "id" : wallet_id,
+            "balance" : wallet.balance
+        }
+        return response
+    #end def
+
+    def history(self, wallet_id):
+        """
+            function to check wallet transaction history
+            args :
+                wallet_id --
+        """
+        response = {}
+
+        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        if wallet is None:
+            return request_not_found()
+        #end if
+
         wallet_response = Transaction.query.filter_by(wallet_id=wallet.id)
-        response["data"] = TransactionSchema(many=True, exclude=["payment_details",]).dump(wallet_response).data
+        response["data"] = TransactionSchema(many=True,
+                                             exclude=["payment_details",]).\
+                            dump(wallet_response).data
         return response
     #end def
 
     def history_details(self, wallet_id, transaction_id):
+        """
+            function to check wallet transaction details
+            args :
+                wallet_id --
+                transaction_id --
+        """
         response = {}
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
-        if wallet == None:
+        if wallet is None:
             return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
         #end if
 
-        history_details = Transaction.query.filter_by(wallet_id=wallet.id, id=transaction_id).first()
+        history_details = Transaction.query.filter_by(wallet_id=wallet.id,\
+                                                      id=transaction_id).first()
         response["data"] = TransactionSchema().dump(history_details).data
         return response
     #end def
 
     def update_pin(self, params):
+        """ 
+            function to update wallet pin
+            args :
+                params --
+        """
         response = {}
 
         try:
-            wallet_id   = params["id"]
-            pin         = params["pin"]
+            wallet_id = params["id"]
+            pin = params["pin"]
             confirm_pin = params["confirm_pin"]
 
             wallet = Wallet.query.filter_by(id=wallet_id).first()
-            if wallet == None:
+            if wallet is None:
                 return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
             #end if
 
@@ -199,7 +221,7 @@ class WalletController:
             #end if
 
             # second make sure the new pin is not the same with the old one
-            if wallet.check_pin(pin) == True:
+            if wallet.check_pin(pin) is True:
                 return bad_request(RESPONSE_MSG["FAILED"]["OLD_PIN"])
             #end if
 
@@ -216,24 +238,32 @@ class WalletController:
     #end def
 
     def send_forgot_otp(self, wallet_id):
+        """
+            function to send forgot otp to user phone
+            args :
+                wallet_id
+        """
         response = {}
 
         try:
             wallet = Wallet.query.filter_by(id=wallet_id).first()
-            if wallet == None:
+            if wallet is None:
                 return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
             #end if
 
             # first check if there are any pending otp record
-            pending_otp = ForgotPin.query.filter(ForgotPin.wallet_id==wallet.id, ForgotPin.status==False, ForgotPin.valid_until > datetime.now()).count()
-            if pending_otp != 0:
+            pending_otp = ForgotPin.query.filter(ForgotPin.wallet_id == wallet.id,\
+                                   ForgotPin.status is False,\
+                                   ForgotPin.valid_until > datetime.now() \
+                                ).count()
+            if pending_otp > 0:
                 return bad_request(RESPONSE_MSG["FAILED"]["OTP_PENDING"])
             #end if
 
             # second generate random verify otp number to user phone
-            START_RANGE = 1000
-            END_RANGE   = 9999
-            otp_code = random.randint(START_RANGE, END_RANGE)
+            start_range = 1000
+            end_range = 9999
+            otp_code = random.randint(start_range, end_range)
 
             # third add record to database contain hashed otp code
             valid_until = datetime.now() + timedelta(minutes=WALLET_CONFIG["OTP_TIMEOUT"])
@@ -248,7 +278,7 @@ class WalletController:
             # fourth send the forgot otp sms to user phone
             # fetch required information for sending sms here
             msisdn = str(wallet.user.phone_ext) + str(wallet.user.phone_number)
-            sms_otp_resp = common_helper.SmsHelper().send_sms( msisdn, "FORGOT_PIN", otp_code)
+            sms_otp_resp = common_helper.SmsHelper().send_sms(msisdn, "FORGOT_PIN", otp_code)
 
             if sms_otp_resp["status"] != "SUCCESS":
                 db.session.rollback()
@@ -257,27 +287,31 @@ class WalletController:
 
             db.session.commit()
 
-            response["data"   ] = { "otp_key" : otp_key }
+            response["data"] = {"otp_key" : otp_key}
             response["message"] = RESPONSE_MSG["SUCCESS"]["FORGOT_OTP"].format(msisdn)
         except Exception as e:
             print(traceback.format_exc())
             print(str(e))
             return internal_error()
-
         return response
     #end def
 
     def verify_forgot_otp(self, params):
+        """
+            function to verify forgot otp to user phone
+            args :
+                params -- parameter
+        """
         response = {}
 
         try:
-            wallet_id = params["id"       ]
-            otp_code  = params["otp_code" ]
-            otp_key   = params["otp_key"  ]
-            pin       = params["pin"      ]
+            wallet_id = params["id"]
+            otp_code = params["otp_code"]
+            otp_key = params["otp_key"]
+            pin = params["pin"]
 
             wallet = Wallet.query.filter_by(id=wallet_id).first()
-            if wallet == None:
+            if wallet is None:
                 return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
             #end if
 
@@ -287,15 +321,15 @@ class WalletController:
                 otp_key=otp_key
             ).first()
 
-            if forgot_otp == None:
+            if forgot_otp is None:
                 return request_not_found(RESPONSE_MSG["FAILED"]["OTP_NOT_FOUND"])
             #end if
 
-            if forgot_otp.status != False:
+            if forgot_otp.status is not False:
                 return bad_request(RESPONSE_MSG["FAILED"]["OTP_ALREADY_VERIFIED"])
             #end if
 
-            if forgot_otp.check_otp_code(otp_code) != True:
+            if forgot_otp.check_otp_code(otp_code) is not True:
                 return bad_request(RESPONSE_MSG["FAILED"]["INVALID_OTP_CODE"])
             #end if
 
@@ -307,11 +341,10 @@ class WalletController:
             db.session.commit()
 
             response["message"] = RESPONSE_MSG["SUCCESS"]["FORGOT_PIN"]
-        except Exception as e:
+        except Exception as error:
             print(traceback.format_exc())
-            print(str(e))
+            print(str(error))
             return internal_error()
-
         return response
     #end def
 

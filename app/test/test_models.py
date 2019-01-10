@@ -72,7 +72,7 @@ class UserTestCaseModel(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        user = User.query.get(3)
+        user = User.query.get(2)
         # check how many wallet user have
         self.assertEqual( len(user.wallets), 1)
 
@@ -359,7 +359,7 @@ class WalletModelCase(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        result = Wallet.is_owned(3, wallet_id)
+        result = Wallet.is_owned(2, wallet_id)
         self.assertTrue(result)
 
         result = Wallet.is_owned(1, 456464)
@@ -441,7 +441,6 @@ class TransactionModelCase(BaseTestCase):
             amount=trx_amount,
         )
         debit_trx.generate_trx_id()
-        debit_trx.current_balance("DEDUCT", trx_amount)
         db.session.add(debit_trx)
         # deduct balance
         user.deduct_balance(trx_amount)
@@ -464,7 +463,6 @@ class TransactionModelCase(BaseTestCase):
             amount=trx_amount,
         )
         credit_trx.generate_trx_id()
-        credit_trx.current_balance("ADD", trx_amount)
         db.session.add(credit_trx)
         # deduct user balance here
         user2.add_balance(trx_amount)

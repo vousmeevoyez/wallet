@@ -6,6 +6,7 @@
 """
 import json
 import requests
+import time
 import numpy as np
 
 from app.api.bank.bni.utility import BniEnc3
@@ -69,12 +70,12 @@ def post(base_url, client_id, secret_key, data):
     payload["client_id"] = client_id
     payload["data"] = encrypt(client_id, secret_key, data)
 
+    start_time = time.time()
     try:
         r = requests.post(base_url,
                           data=json.dumps(payload, cls=MyEncoder),
                           headers=headers,
                           timeout=LOGGING_CONFIG["TIMEOUT"])
-
     except requests.exceptions.Timeout as err:
         response["status"] = 400
         response["data"] = str(err)
@@ -95,4 +96,3 @@ def post(base_url, client_id, secret_key, data):
     #end try
     return response
 #end def
-

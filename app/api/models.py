@@ -257,6 +257,7 @@ class Bank(db.Model):
     key             = db.Column(db.String(24)) # bank_key
     name            = db.Column(db.String(100)) # bank_name
     code            = db.Column(db.String(100)) # bank_code
+    rtgs            = db.Column(db.String(100)) # RTGS Code
     created_at      = db.Column(db.DateTime, default=now) # UTC
     status          = db.Column(db.Boolean, default=True) # active / inactive
     virtual_account = db.relationship("VirtualAccount", back_populates="bank") # one to many
@@ -264,7 +265,8 @@ class Bank(db.Model):
     payment_channels= db.relationship("PaymentChannel", back_populates="bank") # one to many
 
     def __repr__(self):
-        return '<Bank {} {} {} {}>'.format(self.id, self.name, self.code, self.status)
+        return '<Bank {} {} {} {} {}>'.format(self.id, self.name, self.code,
+                                              self.rtgs, self.status)
     #end def
 #end class
 
@@ -423,7 +425,6 @@ class Transaction(db.Model):
     id               = db.Column(db.String(255), primary_key=True)
     wallet_id        = db.Column(db.Integer, db.ForeignKey('wallet.id'))
     amount           = db.Column(db.Float, default=0)
-    balance          = db.Column(db.Float, default=0) # balance after transaction
     transaction_type = db.Column(db.Integer) # withdraw / deposit / transfer_bank / transfer_va
     notes            = db.Column(db.String(255)) # transaction notes if there are
     created_at       = db.Column(db.DateTime, default=now) # UTC
@@ -434,26 +435,6 @@ class Transaction(db.Model):
     def __repr__(self):
         return '<Transaction {} {} {} {} {}>'.format(self.id, self.wallet_id, self.amount,
                                                      self.transaction_type, self.notes)
-    #end def
-
-    def current_balance(self, operation, amount):
-        """
-            function to update balance after a transaction
-            args:
-                operation -- DEDUCT or ADD
-                amount -- how much is it
-        """
-        wallet = Wallet.query.filter_by(id=self.wallet_id).first()
-        if wallet.balance < amount:
-            return False
-        #end if
-        if operation == "DEDUCT":
-            self.balance = wallet.balance - amount
-        elif operation == "ADD":
-            self.balance = wallet.balance + amount
-        #end if
-        return True
-        #end if
     #end def
 
     def generate_trx_id(self):
@@ -478,10 +459,11 @@ class ExternalLog(db.Model):
     response    = db.Column(db.JSON)
     api_type    = db.Column(db.Integer, default=0) # 0 mean outgoing
     created_at  = db.Column(db.DateTime, default=now)
+    response_time = db.Column(db.Float, default=0) #seconds
 
     def set_status(self, status):
-        """ 
-            Function to set Log status 
+        """
+            Function to set Log status
             args :
                 status -- True / False
         """
@@ -489,13 +471,23 @@ class ExternalLog(db.Model):
     #end def
 
     def save_response(self, response):
-        """ 
+        """
             Function to set log response
             args :
                 response -- Json response
         """
         self.response = response
     #end def
+
+    def save_response_time(self, response_time):
+        """
+            Function to set log response time
+            args :
+                response -- Json response
+        """
+        self.response_time = response_time
+    #end def
+
 
     def __repr__(self):
         return '<External Log {} {} {} {} {} {}>'.format(self.id, self.resource, self.api_name,

@@ -1,38 +1,44 @@
-import traceback
-
+"""
+    Transfer Services
+    _________________
+    this is module that serve request from wallet transfer :w
+    routes
+"""
 from marshmallow    import ValidationError
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from flask          import request, jsonify
 
 from app.api            import db
 from app.api.models     import Wallet, Transaction, Payment, BankAccount
-from app.api.serializer import TransactionSchema
 from app.api.errors     import bad_request, internal_error, request_not_found
 from app.api.config     import config
-#from app.api.bank       import helper
+from app.api.bank.handler import BankHandler
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
-RESPONSE_MSG      = config.Config.RESPONSE_MSG
-WALLET_CONFIG     = config.Config.WALLET_CONFIG
+RESPONSE_MSG = config.Config.RESPONSE_MSG
+WALLET_CONFIG = config.Config.WALLET_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
-BNI_OPG_CONFIG    = config.Config.BNI_OPG_CONFIG
+BNI_OPG_CONFIG = config.Config.BNI_OPG_CONFIG
 
-class TransferController:
-
-    def __init__(self):
-        pass
-    #end def
+class TransferServices:
+    """ Transfer Services"""
 
     def _create_payment(self, params, session=None):
-        if session == None:
+        """
+            Function to create payment
+            args:
+                params --
+                session -- optional
+        """
+        if session is None:
             session = db.session
         #end if
         session.begin(subtransactions=True)
 
-        source_account      = params["source"        ]
-        to                  = params["destination"   ]
-        amount              = params["amount"        ]
-        payment_type        = params["payment_type"  ]
+        source_account = params["source"]
+        to = params["destination"]
+        amount = params["amount"]
+        payment_type = params["payment_type"]
 
         # build payment object
         payment = Payment(
@@ -48,6 +54,11 @@ class TransferController:
     #end def
 
     def internal_transfer(self, params):
+        """
+            Function to transfer between wallet
+            args:
+                params --
+        """
         response = {
             "data"   : "NONE"
         }
@@ -70,11 +81,17 @@ class TransferController:
 
         session.commit()
 
-        response["data"] = RESPONSE_MSG["SUCCESS"]["TRANSFER"].format( str(params["amount"]), str(params["source"]), str(params["destination"]) )
+        response["data"] =\
+        RESPONSE_MSG["SUCCESS"]["TRANSFER"].format(str(params["amount"]),\
+                                                   str(params["source"]),\
+                                                   str(params["destination"]))
         return response
     #end def
 
     def external_transfer(self, params):
+        """ 
+            Function to handle transfer to External System
+        """
         response = {
             "data"   : "NONE"
         }
@@ -97,10 +114,12 @@ class TransferController:
 
         session.commit()
 
-        response["data"] = RESPONSE_MSG["SUCCESS"]["TRANSFER"].format( str(params["amount"]), str(params["source"]), str(params["destination"]) )
+        response["data"] = \
+        RESPONSE_MSG["SUCCESS"]["TRANSFER"].format(str(params["amount"]),\
+                                                   str(params["source"]),\
+                                                   str(params["destination"]))
         return response
     #end def
-
 
     def _do_transaction(self, params, session=None):
         response = {
@@ -113,59 +132,61 @@ class TransferController:
         amount      = params["amount"     ]
         pin         = params["pin"        ]
 
-        if session == None:
+        if session is None:
             session = db.session
         #end if
 
-        source_wallet = Wallet.query.filter_by(id=source).first()
-        if source_wallet == None:
+        source_wallet = Wallet.query.filter_by(id=source).with_for_update().first()
+        if source_wallet is None:
             response["status"] = "CLIENT_ERROR"
-            response["data"  ] = "Wallet source not found"
+            response["data"] = "Wallet source not found"
             return response
         #end if
 
-        if source_wallet.is_unlocked() == False:
+        if source_wallet.is_unlocked() is False:
             response["status"] = "CLIENT_ERROR"
-            response["data"  ] = "Wallet source is locked"
+            response["data"] = "Wallet source is locked"
             return response
         #end if
 
-        if source_wallet.check_pin(pin) != True:
+        if source_wallet.check_pin(pin) is not True:
             response["status"] = "CLIENT_ERROR"
-            response["data"  ] = "Incorrect Pin"
+            response["data"] = "Incorrect Pin"
             return response
         #end if
 
         if float(amount) > float(source_wallet.balance):
             response["status"] = "CLIENT_ERROR"
-            response["data"  ] = RESPONSE_MSG["FAILED"]["INSUFFICIENT_BALANCE"]
+            response["data"] = RESPONSE_MSG["FAILED"]["INSUFFICIENT_BALANCE"]
             return response
         #end if
 
-        destination_wallet = Wallet.query.filter_by(id=destination).first()
-        if destination_wallet == None:
+        destination_wallet = \
+        Wallet.query.filter_by(id=destination).\
+                with_for_update().first()
+        if destination_wallet is None:
             response["status"] = "CLIENT_ERROR"
-            response["data"  ] = "Wallet destination no found"
+            response["data"] = "Wallet destination no found"
             return response
         #end if
 
-        if destination_wallet.is_unlocked() == False:
+        if destination_wallet.is_unlocked() is False:
             response["status"] = "CLIENT_ERROR"
-            response["data"  ] = "Wallet destination is locked"
+            response["data"] = "Wallet destination is locked"
             return response
         #end if
 
         if destination_wallet == source_wallet:
             response["status"] = "CLIENT_ERROR"
-            response["data"  ] = "Source & Destination wallet can't be same"
+            response["data"] = "Source & Destination wallet can't be same"
             return response
         #end if
 
-        # lock account first 
+        # lock account first
         lock_status = self._lock_account(source_wallet, destination_wallet, session)
-        if lock_status != True:
+        if lock_status is not True:
             response["status"] = "SERVER_ERROR"
-            response["data"  ] = "Locking Failed"
+            response["data"] = "Locking Failed"
             return response
         #end if
 
@@ -174,10 +195,12 @@ class TransferController:
         debit_payment_id = self._create_payment(params, session)
 
         # debit transaction
-        debit_status = self._debit_transaction(source_wallet, debit_payment_id, amount, "IN", session)
-        if debit_status != True:
+        debit_status = self._debit_transaction(source_wallet,\
+                                               debit_payment_id,\
+                                               amount, "IN", session)
+        if debit_status is not True:
             response["status"] = "SERVER_ERROR"
-            response["data"  ] = "Debit Transaction Failed"
+            response["data"] = "Debit Transaction Failed"
             return response
         #end if
 
@@ -186,8 +209,10 @@ class TransferController:
         credit_payment_id = self._create_payment(params, session)
 
         # credit transaction
-        credit_status = self._credit_transaction(destination_wallet, credit_payment_id, amount, session)
-        if credit_status != True:
+        credit_status = self._credit_transaction(destination_wallet,\
+                                                 credit_payment_id,\
+                                                 amount, session)
+        if credit_status is not True:
             response["status"] = "SERVER_ERROR"
             response["data"  ] = "Credit Transaction Failed"
             return response
@@ -195,9 +220,9 @@ class TransferController:
 
         # unlock account
         unlock_status = self._unlock_account(source_wallet, destination_wallet, session)
-        if unlock_status != True:
+        if unlock_status is not True:
             response["status"] = "SERVER_ERROR"
-            response["data"  ] = "Unlocking Failed"
+            response["data"] = "Unlocking Failed"
             return response
         #end if
 
@@ -211,37 +236,37 @@ class TransferController:
             "data"   : None
         }
 
-        source         = params["source"     ]
-        bank_account_id= params["destination"]
-        amount         = params["amount"     ]
-        pin            = params["pin"        ]
+        source = params["source"]
+        bank_account_id = params["destination"]
+        amount = params["amount"]
+        pin = params["pin"]
 
-        if session == None:
+        if session is None:
             session = db.session
         #end if
 
-        source_wallet = Wallet.query.filter_by(id=source).first()
-        if source_wallet == None:
+        source_wallet = Wallet.query.filter_by(id=source).with_for_update().first()
+        if source_wallet is None:
             response["status"] = "CLIENT_ERROR"
-            response["data"  ] = "Wallet source not found"
+            response["data"] = "Wallet source not found"
             return response
         #end if
 
-        if source_wallet.is_unlocked() == False:
+        if source_wallet.is_unlocked() is False:
             response["status"] = "CLIENT_ERROR"
-            response["data"  ] = "Wallet source is locked"
+            response["data"] = "Wallet source is locked"
             return response
         #end if
 
-        if source_wallet.check_pin(pin) != True:
+        if source_wallet.check_pin(pin) is not True:
             response["status"] = "CLIENT_ERROR"
-            response["data"  ] = "Incorrect Pin"
+            response["data"] = "Incorrect Pin"
             return response
         #end if
 
         if float(amount) > float(source_wallet.balance):
             response["status"] = "CLIENT_ERROR"
-            response["data"  ] = RESPONSE_MSG["FAILED"]["INSUFFICIENT_BALANCE"]
+            response["data"] = RESPONSE_MSG["FAILED"]["INSUFFICIENT_BALANCE"]
             return response
         #end if
 
@@ -251,43 +276,22 @@ class TransferController:
         # define source account
         source_account = BNI_OPG_CONFIG["MASTER_ACCOUNT"]
 
-        # check destination bank account using inquiry bank
-        inquiry_payload = {
-            "source_account" : source_account,
-            "bank_code"      : bank_account.bank.code,
-            "account_no"     : bank_account.account_no
-        }
-        inquiry_response = helper.OpgHelper().get_interbank_inquiry(inquiry_payload)
-        print(inquiry_response)
-        # if the inquiry fail it means the bank account is invalid or not exist
-        if inquiry_response["status"] != "SUCCESS":
-            response["status"] = "CLIENT_ERROR"
-            response["data"  ] = RESPONSE_MSG["FAILED"]["BANK_ACCOUNT_NOT_FOUND"]
-            return response
-        #end if
-
-        transfer_ref = inquiry_response["data"]["inquiry_info"]["transfer_ref"]
-        bank_name    = inquiry_response["data"]["inquiry_info"]["transfer_bank_name"]
-
         # get information needed for transfer
         payment_payload = {
             "amount"         : amount,
             "source_account" : source_account,
             "account_no"     : bank_account.account_no,
-            "account_name"   : bank_account.name,
             "bank_code"      : bank_account.bank.code,
-            "bank_name"      : bank_name,
-            "transfer_ref"   : transfer_ref,
         }
-        payment_response = helper.OpgHelper().get_interbank_payment(payment_payload)
-        print(payment_response)
+        payment_response = BankHandler("BNI").dispatch("TRANSFER",
+                                                       payment_payload)
         if payment_response["status"] != "SUCCESS":
             response["status"] = "SERVER_ERROR"
-            response["data"  ] = RESPONSE_MSG["FAILED"]["TRANSFER_FAILED"]
+            response["data"] = RESPONSE_MSG["FAILED"]["TRANSFER_FAILED"]
             return response
         #end if
 
-        # lock account first 
+        # lock account first
         source_wallet.lock()
         session.commit()
 
@@ -296,10 +300,12 @@ class TransferController:
         debit_payment_id = self._create_payment(params, session)
 
         # debit transaction
-        debit_status = self._debit_transaction(source_wallet, debit_payment_id, amount, "OUT", session)
-        if debit_status != True:
+        debit_status = self._debit_transaction(source_wallet,\
+                                               debit_payment_id,\
+                                               amount, "OUT", session)
+        if debit_status is not True:
             response["status"] = "SERVER_ERROR"
-            response["data"  ] = "Debit Transaction Failed"
+            response["data"] = "Debit Transaction Failed"
             return response
         #end if
 
@@ -311,7 +317,8 @@ class TransferController:
     #end def
 
     def _lock_account(self, source, destination, session=None):
-        if session == None:
+        """ function to lock account simultaneously"""
+        if session is None:
             session = db.session
         #end if
         session.begin(subtransactions=True)
@@ -327,7 +334,8 @@ class TransferController:
     #end def
 
     def _unlock_account(self, source, destination, session=None):
-        if session == None:
+        """ function to unlock account simultaneously"""
+        if session is None:
             session = db.session
         #end if
         session.begin(subtransactions=True)
@@ -343,12 +351,12 @@ class TransferController:
     #end def
 
     def _debit_transaction(self, wallet, payment_id, amount, flag, session=None):
-        if session == None:
+        if session is None:
             session = db.session
         #end if
         session.begin(subtransactions=True)
 
-        amount = float(amount)
+        amount = -float(amount)
 
         if flag == "IN":
             transaction_type = WALLET_CONFIG["IN_TRANSFER"]
@@ -365,7 +373,6 @@ class TransferController:
                 transaction_type=transaction_type,
                 notes=TRANSACTION_NOTES["SEND_TRANSFER"].format(str(amount))
             )
-            debit_transaction.current_balance("DEDUCT", amount)
             debit_transaction.generate_trx_id()
 
             wallet.deduct_balance(amount)
@@ -381,7 +388,7 @@ class TransferController:
     #end def
 
     def _credit_transaction(self, wallet, payment_id, amount, session=None):
-        if session == None:
+        if session is None:
             session = db.session
         #end if
         session.begin(subtransactions=True)
@@ -397,7 +404,6 @@ class TransferController:
                 transaction_type=WALLET_CONFIG["IN_TRANSFER"],
                 notes=TRANSACTION_NOTES["RECEIVE_TRANSFER"].format(str(amount))
             )
-            credit_transaction.current_balance("ADD", amount)
             credit_transaction.generate_trx_id()
 
             wallet.add_balance(amount)

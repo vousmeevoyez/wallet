@@ -198,7 +198,7 @@ class Config:
 
     # logging config
     LOGGING_CONFIG = {
-        "TIMEOUT" : 3,
+        "TIMEOUT" : 10,
         "BNI_ECOLLECTION" : "BNI-ECOLLECTION",
         "BNI_OPG"         : "BNI-OPG",
         "OUTGOING"        : 0,

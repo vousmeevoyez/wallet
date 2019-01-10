@@ -19,10 +19,6 @@ RESPONSE_MSG = config.Config.RESPONSE_MSG
 class BankServices:
     """ Bank Services Class"""
 
-    def __init__(self):
-        pass
-    #end def
-
     def get_banks(self):
         """ return all bank available"""
         response = {}
