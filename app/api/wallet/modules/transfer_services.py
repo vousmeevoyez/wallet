@@ -375,7 +375,7 @@ class TransferServices:
             )
             debit_transaction.generate_trx_id()
 
-            wallet.deduct_balance(amount)
+            wallet.add_balance(amount)
             session.add(debit_transaction)
 
             session.commit()

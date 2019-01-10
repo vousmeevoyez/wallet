@@ -321,7 +321,7 @@ class CallbackServices:
         debit_transaction.generate_trx_id()
 
         try:
-            wallet.deduct_balance(amount)
+            wallet.add_balance(amount)
             session.add(debit_transaction)
             session.commit()
         except IntegrityError:

@@ -10,6 +10,8 @@ import jwt
 import uuid
 
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy_utils import aggregated
+from sqlalchemy import func
 
 from app.api        import db
 from app.api.config import config
@@ -166,13 +168,6 @@ class Wallet(db.Model):
             Function to add wallet balance
         """
         self.balance = self.balance + float(amount)
-    #end def
-
-    def deduct_balance(self, amount):
-        """
-            Function to deduct wallet balance
-        """
-        self.balance = self.balance - float(amount)
     #end def
 
     def lock(self):
@@ -436,6 +431,11 @@ class Transaction(db.Model):
         return '<Transaction {} {} {} {} {}>'.format(self.id, self.wallet_id, self.amount,
                                                      self.transaction_type, self.notes)
     #end def
+
+    @aggregated('wallet', db.Column(db.Float))
+    def balance(self):
+        """ aggregated attributes """
+        return Wallet.balance - Transaction.amount
 
     def generate_trx_id(self):
         """

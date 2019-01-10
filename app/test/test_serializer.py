@@ -480,7 +480,6 @@ class TestTransactionSchema(BaseTestCase):
         debit_trx.generate_trx_id()
         db.session.add(debit_trx)
         # deduct balance
-        user.deduct_balance(trx_amount)
 
         db.session.commit()
 
