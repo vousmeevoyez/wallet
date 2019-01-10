@@ -9,12 +9,14 @@ from datetime import datetime, timedelta
 
 from flask          import request
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy     import func
+from sqlalchemy.sql import label
 
 from app.api            import db
 from app.api.wallet     import helper
 from app.api.common     import helper as common_helper
 from app.api.bank.handler import BankHandler
-from app.api.models     import Wallet, Transaction, ForgotPin
+from app.api.models     import Wallet, Transaction, ForgotPin, Payment
 from app.api.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
 from app.api.errors     import bad_request, internal_error, request_not_found
 from app.api.config     import config
@@ -166,8 +168,9 @@ class WalletServices:
         response = {}
 
         wallet_id = params["wallet_id"]
-        start_date= params["start_date"]
-        end_date  = params["end_date"]
+        start_date = params["start_date"]
+        end_date = params["end_date"]
+        transaction_type = params["flag"]
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
         if wallet is None:
@@ -175,15 +178,26 @@ class WalletServices:
         #end if
 
         conditions = []
-        # transaction type filter
+        # filter by transaction type
         if transaction_type == "IN":
-            conditions.append(Transaction.payment.payment_type is True)
+            conditions.append(Payment.payment_type == True)
         elif transaction_type == "OUT":
-            conditions.append(Transaction.payment.payment_type is False)
+            conditions.append(Payment.payment_type == False)
         #end if
 
-        conditions.append(Transaction.wallet_id == wallet_id)
-        wallet_response = Transaction.query.filter(*conditions)
+        # filter by transaction date
+        if start_date is not None and end_date is not None:
+            start_date = datetime.strptime(start_date, "%Y/%m/%d")
+            end_date = datetime.strptime(end_date, "%Y/%m/%d")
+            end_date = end_date + timedelta(hours=23, minutes=59)
+
+            conditions.append(Transaction.created_at.between(start_date, \
+                                                                 end_date))
+        #end if
+
+        wallet_response = Transaction.query.join(Payment,
+                                                 Transaction.payment_id == \
+                                                 Payment.id).filter(*conditions)
         response["data"] = TransactionSchema(many=True,
                                              exclude=["payment_details",]).\
                             dump(wallet_response).data

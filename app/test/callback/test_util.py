@@ -10,9 +10,9 @@ class TestUtil(BaseTestCase):
 
     def test_generate_mockup_deposit_callback(self):
         data = {
-            "virtual_account"           : "9889909877410722",
-            "customer_name"             : "irene",
-            "trx_id"                    : "122359835",
+            "virtual_account"           : "9889909825214406",
+            "customer_name"             : "jennie",
+            "trx_id"                    : "669827448",
             "trx_amount"                : "0",
             "payment_amount"            : "50000",
             "cumulative_payment_amount" : "50000",
@@ -25,15 +25,16 @@ class TestUtil(BaseTestCase):
             "client_id" : BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
-
-        #print(json.dumps(expected_value))
+        print("------------------deposit----------------------")
+        print(json.dumps(expected_value))
+        print("------------------deposit----------------------")
 
     def test_generate_mockup_withdraw_callback(self):
         # CREATE ENCRYPYED WITHDRAW MOCKUP RESPONSE
         data = {
-            "virtual_account"           : "9889909877410722",
-            "customer_name"             : "irene",
-            "trx_id"                    : "122359835",
+            "virtual_account"           : "9889909825214406",
+            "customer_name"             : "jennie",
+            "trx_id"                    : "669827448",
             "trx_amount"                : "0",
             "payment_amount"            : "-50000",
             "cumulative_payment_amount" : "-50000",
@@ -46,4 +47,7 @@ class TestUtil(BaseTestCase):
             "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
+
+        print("------------------withdraw----------------------")
         print(json.dumps(expected_value))
+        print("------------------withdraw----------------------")

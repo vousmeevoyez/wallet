@@ -125,7 +125,7 @@ class WalletTransactionRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:wallet_id>/transactions/<int:transaction_id>')
+@api.route('/<int:wallet_id>/transactions/<transaction_id>')
 class WalletTransactionDetailsRoutes(Resource):
     """
         Wallet Transaction Details Routes

@@ -1,8 +1,8 @@
-"""initial setup
+"""init db
 
-Revision ID: 26529f84fa9c
+Revision ID: e49a3fe50e89
 Revises: 
-Create Date: 2018-12-28 16:37:13.047714
+Create Date: 2019-01-10 21:30:12.648280
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '26529f84fa9c'
+revision = 'e49a3fe50e89'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -23,6 +23,7 @@ def upgrade():
     sa.Column('key', sa.String(length=24), nullable=True),
     sa.Column('name', sa.String(length=100), nullable=True),
     sa.Column('code', sa.String(length=100), nullable=True),
+    sa.Column('rtgs', sa.String(length=100), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('status', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id')
@@ -42,6 +43,7 @@ def upgrade():
     sa.Column('response', sa.JSON(), nullable=True),
     sa.Column('api_type', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('response_time', sa.Float(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('role',
@@ -137,10 +139,9 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('transaction',
-    sa.Column('id', sa.BigInteger(), nullable=False),
+    sa.Column('id', sa.String(length=255), nullable=False),
     sa.Column('wallet_id', sa.Integer(), nullable=True),
     sa.Column('amount', sa.Float(), nullable=True),
-    sa.Column('balance', sa.Float(), nullable=True),
     sa.Column('transaction_type', sa.Integer(), nullable=True),
     sa.Column('notes', sa.String(length=255), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
