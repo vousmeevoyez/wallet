@@ -231,7 +231,7 @@ class CallbackServices:
             return response
         #end if
 
-        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        wallet = Wallet.query.filter_by(id=wallet_id).with_for_update().first()
         if wallet is None:
             response["status"] = "FAILED"
             response["data"] = "Wallet not found"
@@ -291,7 +291,7 @@ class CallbackServices:
             return response
         #end if
 
-        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        wallet = Wallet.query.filter_by(id=wallet_id).with_for_update().first()
         if wallet is None:
             response["status"] = "FAILED"
             response["data"] = "Wallet not found"

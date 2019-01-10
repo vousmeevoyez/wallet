@@ -194,8 +194,9 @@ class WalletServices:
             conditions.append(Transaction.created_at.between(start_date, \
                                                                  end_date))
         #end if
+        conditions.append(Transaction.wallet_id == Wallet.id)
 
-        wallet_response = Transaction.query.join(Payment,
+        wallet_response = Transaction.query.join(Payment, Wallet,
                                                  Transaction.payment_id == \
                                                  Payment.id).filter(*conditions)
         response["data"] = TransactionSchema(many=True,
