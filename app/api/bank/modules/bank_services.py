@@ -23,7 +23,6 @@ class BankServices:
         """ return all bank available"""
         response = {}
 
-        # only show active bank
         banks = Bank.query.filter_by(status=True).all()
 
         response["data"] = BankSchema(many=True).dump(banks).data

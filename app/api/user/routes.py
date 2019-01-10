@@ -35,19 +35,9 @@ class UserRoutes(Resource):
             create user
         """
         request_data = user_request_schema.parse_args(strict=True)
-        data = {
-            "username"    : request_data["username"],
-            "name"        : request_data["name"],
-            "phone_ext"   : request_data["phone_ext"],
-            "phone_number": request_data["phone_number"],
-            "email"       : request_data["email"],
-            "password"    : request_data["password"],
-            "pin"         : request_data["pin"],
-            "role"        : request_data["role"],
-        }
 
         # request data validator
-        errors = UserSchema().validate(data)
+        errors = UserSchema().validate(request_data)
         if errors:
             return bad_request(errors)
         #end if
@@ -100,21 +90,15 @@ class UserBankAccountRoutes(Resource):
             create user bank account
         """
         request_data = user_bank_account_request_schema.parse_args(strict=True)
-        data = {
-            "account_no" : request_data["account_no"],
-            "label"      : request_data["label"],
-            "name"       : request_data["name"],
-            "bank_code"  : request_data["bank_code"],
-        }
 
-        errors = BankAccountSchema().validate(data)
+        errors = BankAccountSchema().validate(request_data)
         if errors:
             return bad_request(errors)
         #end if
 
-        data["user_id"] = user_id
+        request_data["user_id"] = user_id
 
-        response = BankAccountServices().add(data)
+        response = BankAccountServices().add(request_data)
         return response
     #end def
 
@@ -156,22 +140,16 @@ class UserBankAccountDetailsRoutes(Resource):
             api/v1/user/<user_id>/bank_account/<user_bank_account_id>
         """
         request_data = user_bank_account_request_schema.parse_args(strict=True)
-        data = {
-            "account_no" : request_data["account_no"],
-            "label"      : request_data["label"],
-            "name"       : request_data["name"],
-            "bank_code"  : request_data["bank_code"],
-        }
 
-        errors = BankAccountSchema().validate(data)
+        errors = BankAccountSchema().validate(request_data)
         if errors:
             return bad_request(errors)
         #end if
 
-        data["user_id"] = user_id
-        data["user_bank_account_id"] = user_bank_account_id
+        request_data["user_id"] = user_id
+        request_data["user_bank_account_id"] = user_bank_account_id
 
-        response = BankAccountServices().update(data)
+        response = BankAccountServices().update(request_data)
         return response
     #end def
 #end class

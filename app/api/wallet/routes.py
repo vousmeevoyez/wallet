@@ -6,8 +6,16 @@
 from flask_restplus     import Resource
 
 from app.api.wallet             import api
-from app.api.serializer         import WalletSchema, TransactionSchema
-from app.api.request_schema     import WalletRequestSchema, WalletUpdatePinRequestSchema, PinAuthRequestSchema, ForgotPinRequestSchema, TransferRequestSchema
+from app.api.serializer         import WalletSchema, \
+                                       TransactionSchema, \
+                                       WalletTransactionSchema 
+from app.api.request_schema     import WalletRequestSchema, \
+                                       WalletUpdatePinRequestSchema, \
+                                       PinAuthRequestSchema, \
+                                       ForgotPinRequestSchema,\
+                                       TransferRequestSchema,\
+                                       WalletTransactionRequestSchema
+
 from app.api.errors             import bad_request, internal_error, request_not_found
 
 # wallet modules
@@ -28,6 +36,7 @@ update_pin_request_schema = WalletUpdatePinRequestSchema.parser
 pin_auth_request_schema = PinAuthRequestSchema.parser
 forgot_pin_request_schema = ForgotPinRequestSchema.parser
 transfer_request_schema = TransferRequestSchema.parser
+wallet_transaction_request_schema = WalletTransactionRequestSchema.parser
 
 @api.route('/<int:wallet_id>')
 class WalletRoutes(Resource):
@@ -104,7 +113,14 @@ class WalletTransactionRoutes(Resource):
             api/v1/<wallet_id>/transactions
             return wallet transaction list
         """
-        response = WalletServices().history(wallet_id)
+        request_data = wallet_transaction_request_schema.parse_args(strict=True)
+
+        errors = WalletTransactionSchema().validate(request_data)
+        if errors:
+            return bad_request(errors)
+        #end if
+        request_data["wallet_id"] = wallet_id
+        response = WalletServices().history(request_data)
         return response
     #end def
 #end class
@@ -236,13 +252,8 @@ class WalletTransferRoutes(Resource):
 
         # parse request data
         request_data = transfer_request_schema.parse_args(strict=True)
-        data = {
-            "source"      : source_wallet_id,
-            "destination" : destination_wallet_id,
-            "amount"      : request_data["amount"],
-            "notes"       : request_data["notes"],
-            "pin"         : request_data["pin"],
-        }
+        request_data["source"] = source_wallet_id
+        request_data["destination"] = destination_wallet_id
 
         # checking token identity to make sure user can only access their wallet information
         auth_resp = AuthenticationHelper().check_wallet_permission(payload_resp["user_id"],\
@@ -252,12 +263,12 @@ class WalletTransferRoutes(Resource):
         #end if
 
         # request data validator
-        errors = TransactionSchema().validate(data)
+        errors = TransactionSchema().validate(request_data)
         if errors:
             return bad_request(errors)
         #end if
 
-        response = TransferServices().internal_transfer(data)
+        response = TransferServices().internal_transfer(request_data)
         return response
     #end def
 #end class
@@ -283,13 +294,8 @@ class WalletBankTransferRoutes(Resource):
 
         # parse request data
         request_data = transfer_request_schema.parse_args(strict=True)
-        data = {
-            "source"      : source_wallet_id,
-            "destination" : bank_account_id,
-            "amount"      : request_data["amount"],
-            "notes"       : request_data["notes"],
-            "pin"         : request_data["pin"],
-        }
+        request_data["source"] = source_wallet_id
+        request_data["destination"] = bank_account_id
 
         # checking token identity to make sure user can only access their wallet information
         auth_resp = AuthenticationHelper().check_wallet_permission(payload_resp["user_id"],\
@@ -299,12 +305,12 @@ class WalletBankTransferRoutes(Resource):
         #end if
 
         # request data validator
-        errors = TransactionSchema().validate(data)
+        errors = TransactionSchema().validate(request_data)
         if errors:
             return bad_request(errors)
         #end if
 
-        response = TransferServices().external_transfer(data)
+        response = TransferServices().external_transfer(request_data)
         return response
     #end def
 #end class
@@ -322,14 +328,9 @@ class WalletAddRoutes(Resource):
             api/v1/wallet/<user_id>
         """
         request_data = request_schema.parse_args(strict=True)
-        data = {
-            "name"   : request_data["name"],
-            "msisdn" : request_data["msisdn"],
-            "pin"    : request_data["pin"],
-            "user_id": user_id,
-        }
+        request_data["user_id"] = user_id
 
-        response = WalletServices().add(data)
+        response = WalletServices().add(request_data)
         return response
     #end def
 #end class

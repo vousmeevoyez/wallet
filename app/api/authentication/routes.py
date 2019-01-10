@@ -27,19 +27,15 @@ class AccessTokenLogin(Resource):
     def post(self):
         """ handle post method request"""
         request_data = request_schema.parse_args(strict=True)
-        data = {
-            "username"   : request_data["username"],
-            "password"   : request_data["password"],
-        }
 
         # request data validator
-        errors = UserSchema().validate(data, partial=("name", "phone_ext", "phone_number"
+        errors = UserSchema().validate(request_data, partial=("name", "phone_ext", "phone_number"
                                                       , "pin", "role", "email"))
         if errors:
             return bad_request(errors)
         #end if
 
-        response = AuthServices().create_token(data)
+        response = AuthServices().create_token(request_data)
         return response
 #end def
 

@@ -63,3 +63,9 @@ class WithdrawRequestSchema:
     parser.add_argument("amount", type=int, required=True)
     parser.add_argument("pin",    type=str, required=True)
 #end class
+
+class WalletTransactionRequestSchema:
+    parser = reqparse.RequestParser()
+    parser.add_argument("flag", type=str, required=True, location="args")
+    parser.add_argument("start_date", type=str, location="args")
+    parser.add_argument("end_date", type=str, location="args")

@@ -6,7 +6,7 @@
 # pylint: disable=R0201
 
 import re
-
+from datetime import datetime
 from marshmallow import fields, ValidationError, post_load, validates
 
 from app.api         import ma
@@ -567,3 +567,47 @@ class ExternalLogSchema(ma.Schema):
             api_type = "INCOMING"
         return api_type
     #end def
+
+class WalletTransactionSchema(ma.Schema):
+    """ this is schema for transaction log object """
+    flag = fields.Str(load_only=True)
+    start_date = fields.Str(load_only=True)
+    end_date = fields.Str(load_only=True)
+
+    @validates('flag')
+    def validate_flag(self, flag):
+        """
+            function to validate transaction_type
+            args:
+                transaction_type -- Transaction type
+        """
+        if flag not in ["ALL", "IN", "OUT"]:
+            raise ValidationError('Invalid transaction type')
+    #end def
+
+    @validates('start_date')
+    def validate_start_date(self, start_date):
+        """
+            function to validate start_date
+            args:
+                start_date -- start_date
+        """
+        try:
+            start_date = datetime.strptime(start_date, "%Y/%m/%d")
+        except ValueError:
+            raise ValidationError('Invalid start date format')
+    #end def
+
+    @validates('end_date')
+    def validate_end_date(self, end_date):
+        """
+            function to validate end_date
+            args:
+                end_date -- End Date
+        """
+        try:
+            end_date = datetime.strptime(end_date, "%Y/%m/%d")
+        except ValueError:
+            raise ValidationError('Invalid end date format')
+    #end def
+#end class

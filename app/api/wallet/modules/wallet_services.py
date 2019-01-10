@@ -157,20 +157,33 @@ class WalletServices:
         return response
     #end def
 
-    def history(self, wallet_id):
+    def history(self, params):
         """
             function to check wallet transaction history
             args :
-                wallet_id --
+                params -- parameter
         """
         response = {}
+
+        wallet_id = params["wallet_id"]
+        start_date= params["start_date"]
+        end_date  = params["end_date"]
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
         if wallet is None:
             return request_not_found()
         #end if
 
-        wallet_response = Transaction.query.filter_by(wallet_id=wallet.id)
+        conditions = []
+        # transaction type filter
+        if transaction_type == "IN":
+            conditions.append(Transaction.payment.payment_type is True)
+        elif transaction_type == "OUT":
+            conditions.append(Transaction.payment.payment_type is False)
+        #end if
+
+        conditions.append(Transaction.wallet_id == wallet_id)
+        wallet_response = Transaction.query.filter(*conditions)
         response["data"] = TransactionSchema(many=True,
                                              exclude=["payment_details",]).\
                             dump(wallet_response).data
