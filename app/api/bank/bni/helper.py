@@ -772,9 +772,9 @@ class BNI:
             }
             response = VirtualAccount().create_va("CREDIT", params)
         elif operation == "TRANSFER":
-            response = CoreBank().transfer(params)
+            response = CoreBank().transfer(data)
         elif operation == "CHECK_BALANCE":
-            response = CoreBank().get_balance(params)
+            response = CoreBank().get_balance(data)
         #end if
         return response
     #end def
