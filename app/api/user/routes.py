@@ -42,7 +42,7 @@ class UserRoutes(Resource):
             return bad_request(errors)
         #end if
 
-        response = UserServices().add(data)
+        response = UserServices().add(request_data)
         return response
     #end def
 
