@@ -91,7 +91,7 @@ class WalletBalanceRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:wallet_id>/transactions/')
+@api.route('/<int:wallet_id>/transactions')
 class WalletTransactionRoutes(Resource):
     """
         Wallet Transaction Routes
