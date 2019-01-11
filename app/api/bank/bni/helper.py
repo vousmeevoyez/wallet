@@ -607,7 +607,7 @@ class CoreBank:
             return response
         #end if
 
-        params["bank_name"] = interbank_response["bank_name"]
+        params["bank_name"] = interbank_response["transfer_bank_name"]
         params["account_name"] = interbank_response["account_name"]
         params["transfer_ref"] = interbank_response["transfer_ref"]
 
