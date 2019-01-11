@@ -606,10 +606,11 @@ class CoreBank:
             response["data"] = "BANK_NOT_FOUND"
             return response
         #end if
+        print(interbank_response)
 
-        params["bank_name"] = interbank_response["transfer_bank_name"]
-        params["account_name"] = interbank_response["account_name"]
-        params["transfer_ref"] = interbank_response["transfer_ref"]
+        params["bank_name"] = interbank_response['inquiry_info']["transfer_bank_name"]
+        params["account_name"] = interbank_response['inquiry_info']["account_name"]
+        params["transfer_ref"] = interbank_response['inquiry_info']["transfer_ref"]
 
         payment_response = self.get_interbank_payment(params)
         if payment_response["status"] != "SUCCESS":
