@@ -3,11 +3,11 @@
     ________________
     this is module that handle request and dipsatch it to various bank
 """
-import pytz
 from datetime import datetime, timedelta
+import pytz
 
 from app.api        import db
-from app.api.models import VirtualAccount, Wallet, Bank, VaType
+from app.api.models import VirtualAccount, Bank, VaType
 
 from app.api.config import config
 
@@ -55,7 +55,7 @@ class BankHandler:
         # for now we only support BNI but more bank in future
         bank_code = ""
         if bank_name == "BNI":
-            bank_code = "9"
+            bank_code = "009"
         bank = Bank.query.filter_by(code=bank_code).first()
         return bank.id
     #end def
