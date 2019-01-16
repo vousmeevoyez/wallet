@@ -9,16 +9,35 @@ from datetime import datetime, timedelta
 
 from flask          import request
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy     import func
-from sqlalchemy.sql import label
 
-from app.api            import db
-from app.api.wallet     import helper
-from app.api.common     import helper as common_helper
+from app.api import db
+
+# helper
+from app.api.wallet.helper import WalletHelper
+from app.api.common.helper import Sms
+from app.api.common.helper import QR
 from app.api.bank.handler import BankHandler
-from app.api.models     import Wallet, Transaction, ForgotPin, Payment
-from app.api.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
-from app.api.errors     import bad_request, internal_error, request_not_found
+
+# models
+from app.api.models import Wallet
+from app.api.models import Transaction
+from app.api.models import ForgotPin
+from app.api.models import Payment
+
+# serializer
+from app.api.serializer import WalletSchema
+from app.api.serializer import TransactionSchema
+from app.api.serializer import VirtualAccountSchema
+
+# http error
+from app.api.errors import bad_request
+from app.api.errors import internal_error
+from app.api.errors import request_not_found
+
+# exception
+from app.api.common.modules.sms_services import SmsError
+
+# configuration
 from app.api.config     import config
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
@@ -37,7 +56,7 @@ class WalletServices:
         """
         response = {}
 
-        wallet_creation_resp = helper.WalletHelper().generate_wallet(params)
+        wallet_creation_resp = WalletHelper().generate_wallet(params)
         if wallet_creation_resp["status"] != "SUCCESS":
             return bad_request(wallet_creation_resp["data"])
         #end if
@@ -225,42 +244,37 @@ class WalletServices:
     #end def
 
     def update_pin(self, params):
-        """ 
+        """
             function to update wallet pin
             args :
                 params --
         """
         response = {}
 
-        try:
-            wallet_id = params["id"]
-            pin = params["pin"]
-            confirm_pin = params["confirm_pin"]
+        wallet_id = params["id"]
+        pin = params["pin"]
+        confirm_pin = params["confirm_pin"]
 
-            wallet = Wallet.query.filter_by(id=wallet_id).first()
-            if wallet is None:
-                return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
-            #end if
+        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        if wallet is None:
+            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+        #end if
 
-            # first need to check pin and confirmation pin must same
-            if pin != confirm_pin:
-                return bad_request(RESPONSE_MSG["FAILED"]["PIN_NOT_MATCH"])
-            #end if
+        # first need to check pin and confirmation pin must same
+        if pin != confirm_pin:
+            return bad_request(RESPONSE_MSG["FAILED"]["PIN_NOT_MATCH"])
+        #end if
 
-            # second make sure the new pin is not the same with the old one
-            if wallet.check_pin(pin) is True:
-                return bad_request(RESPONSE_MSG["FAILED"]["OLD_PIN"])
-            #end if
+        # second make sure the new pin is not the same with the old one
+        if wallet.check_pin(pin) is True:
+            return bad_request(RESPONSE_MSG["FAILED"]["OLD_PIN"])
+        #end if
 
-            # update the new pin here
-            wallet.set_pin(pin)
-            db.session.commit()
+        # update the new pin here
+        wallet.set_pin(pin)
+        db.session.commit()
 
-            response["message"] = RESPONSE_MSG["SUCCESS"]["UPDATE_PIN"]
-        except Exception as e:
-            print(str(e))
-            return internal_error()
-
+        response["message"] = RESPONSE_MSG["SUCCESS"]["UPDATE_PIN"]
         return response
     #end def
 
@@ -272,54 +286,49 @@ class WalletServices:
         """
         response = {}
 
+        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        if wallet is None:
+            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+        #end if
+
+        # first check if there are any pending otp record
+        pending_otp = ForgotPin.query.filter(ForgotPin.wallet_id == wallet.id,\
+                               ForgotPin.status == False,\
+                               ForgotPin.valid_until > datetime.now() \
+                            ).count()
+        if pending_otp > 0:
+            return bad_request(RESPONSE_MSG["FAILED"]["OTP_PENDING"])
+        #end if
+
+        # second generate random verify otp number to user phone
+        start_range = 1000
+        end_range = 9999
+        otp_code = random.randint(start_range, end_range)
+
+        # third add record to database contain hashed otp code
+        valid_until = datetime.now() + timedelta(minutes=WALLET_CONFIG["OTP_TIMEOUT"])
+        forgot_pin = ForgotPin(
+            wallet_id=wallet.id,
+            valid_until=valid_until,
+        )
+        forgot_pin.set_otp_code(str(otp_code))
+        otp_key = forgot_pin.generate_otp_key()
+        db.session.add(forgot_pin)
+
+        # fourth send the forgot otp sms to user phone
+        # fetch required information for sending sms here
+        msisdn = str(wallet.user.phone_ext) + str(wallet.user.phone_number)
         try:
-            wallet = Wallet.query.filter_by(id=wallet_id).first()
-            if wallet is None:
-                return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
-            #end if
+            result = Sms().send(msisdn, "FORGOT_PIN", otp_code)
+        except SmsError:
+            db.session.rollback()
+            return internal_error(RESPONSE_MSG["FAILED"]["SMS_ERROR"])
+        #end try
 
-            # first check if there are any pending otp record
-            pending_otp = ForgotPin.query.filter(ForgotPin.wallet_id == wallet.id,\
-                                   ForgotPin.status is False,\
-                                   ForgotPin.valid_until > datetime.now() \
-                                ).count()
-            if pending_otp > 0:
-                return bad_request(RESPONSE_MSG["FAILED"]["OTP_PENDING"])
-            #end if
+        db.session.commit()
 
-            # second generate random verify otp number to user phone
-            start_range = 1000
-            end_range = 9999
-            otp_code = random.randint(start_range, end_range)
-
-            # third add record to database contain hashed otp code
-            valid_until = datetime.now() + timedelta(minutes=WALLET_CONFIG["OTP_TIMEOUT"])
-            forgot_pin = ForgotPin(
-                wallet_id=wallet.id,
-                valid_until=valid_until,
-            )
-            forgot_pin.set_otp_code(str(otp_code))
-            otp_key = forgot_pin.generate_otp_key()
-            db.session.add(forgot_pin)
-
-            # fourth send the forgot otp sms to user phone
-            # fetch required information for sending sms here
-            msisdn = str(wallet.user.phone_ext) + str(wallet.user.phone_number)
-            sms_otp_resp = common_helper.SmsHelper().send_sms(msisdn, "FORGOT_PIN", otp_code)
-
-            if sms_otp_resp["status"] != "SUCCESS":
-                db.session.rollback()
-                return internal_error(sms_otp_resp["data"])
-            #end if
-
-            db.session.commit()
-
-            response["data"] = {"otp_key" : otp_key}
-            response["message"] = RESPONSE_MSG["SUCCESS"]["FORGOT_OTP"].format(msisdn)
-        except Exception as e:
-            print(traceback.format_exc())
-            print(str(e))
-            return internal_error()
+        response["data"] = {"otp_key" : otp_key}
+        response["message"] = RESPONSE_MSG["SUCCESS"]["FORGOT_OTP"].format(msisdn)
         return response
     #end def
 
@@ -331,48 +340,67 @@ class WalletServices:
         """
         response = {}
 
-        try:
-            wallet_id = params["id"]
-            otp_code = params["otp_code"]
-            otp_key = params["otp_key"]
-            pin = params["pin"]
+        wallet_id = params["id"]
+        otp_code = params["otp_code"]
+        otp_key = params["otp_key"]
+        pin = params["pin"]
 
-            wallet = Wallet.query.filter_by(id=wallet_id).first()
-            if wallet is None:
-                return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
-            #end if
+        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        if wallet is None:
+            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+        #end if
 
-            # fetch forgot otp record
-            forgot_otp = ForgotPin.query.filter_by(
-                wallet_id=wallet_id,
-                otp_key=otp_key
-            ).first()
+        # fetch forgot otp record
+        forgot_otp = ForgotPin.query.filter_by(
+            wallet_id=wallet_id,
+            otp_key=otp_key
+        ).first()
 
-            if forgot_otp is None:
-                return request_not_found(RESPONSE_MSG["FAILED"]["OTP_NOT_FOUND"])
-            #end if
+        if forgot_otp is None:
+            return request_not_found(RESPONSE_MSG["FAILED"]["OTP_NOT_FOUND"])
+        #end if
 
-            if forgot_otp.status is not False:
-                return bad_request(RESPONSE_MSG["FAILED"]["OTP_ALREADY_VERIFIED"])
-            #end if
+        if forgot_otp.status is not False:
+            return bad_request(RESPONSE_MSG["FAILED"]["OTP_ALREADY_VERIFIED"])
+        #end if
 
-            if forgot_otp.check_otp_code(otp_code) is not True:
-                return bad_request(RESPONSE_MSG["FAILED"]["INVALID_OTP_CODE"])
-            #end if
+        if forgot_otp.check_otp_code(otp_code) is not True:
+            return bad_request(RESPONSE_MSG["FAILED"]["INVALID_OTP_CODE"])
+        #end if
 
-            # update otp record to DONE
-            forgot_otp.status = True
+        # update otp record to DONE
+        forgot_otp.status = True
 
-            # set new pin here
-            wallet.set_pin(pin)
-            db.session.commit()
+        # set new pin here
+        wallet.set_pin(pin)
+        db.session.commit()
 
-            response["message"] = RESPONSE_MSG["SUCCESS"]["FORGOT_PIN"]
-        except Exception as error:
-            print(traceback.format_exc())
-            print(str(error))
-            return internal_error()
+        response["message"] = RESPONSE_MSG["SUCCESS"]["FORGOT_PIN"]
         return response
     #end def
 
+    def get_qr(self, params):
+        """
+            function to return encrypted wallet qr
+            args:
+                params --
+        """
+        response = {}
+
+        wallet_id = params["id"]
+
+        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        if wallet is None:
+            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+        #end if
+
+        # build qr payload here
+        qr_data = {"wallet_id" : wallet.id}
+        qr_string = QR().generate(qr_data)
+
+        response["data"] = {
+            "qr_string" : qr_string
+        }
+        return response
+    #end def
 #end class

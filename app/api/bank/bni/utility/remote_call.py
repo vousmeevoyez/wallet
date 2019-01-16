@@ -6,11 +6,12 @@
 """
 import json
 import requests
-import time
 import numpy as np
 
 from app.api.bank.bni.utility import BniEnc3
-from app.api.config       import config
+from app.api.config import config
+
+from app.api.exception.exceptions import ApiError
 
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
@@ -70,16 +71,16 @@ def post(base_url, client_id, secret_key, data):
     payload["client_id"] = client_id
     payload["data"] = encrypt(client_id, secret_key, data)
 
-    start_time = time.time()
     try:
-        r = requests.post(base_url,
+        r = requests.post(base_url, #pylint: disable=invalid-name
                           data=json.dumps(payload, cls=MyEncoder),
                           headers=headers,
                           timeout=LOGGING_CONFIG["TIMEOUT"])
     except requests.exceptions.Timeout as err:
-        response["status"] = 400
-        response["data"] = str(err)
-        return response
+        raise ApiError("Request Timeout", err)
+    except requests.exceptions.RequestException as err:
+        raise ApiError("Unknown Exception", err)
+    #end try
 
     result = r.json()
 

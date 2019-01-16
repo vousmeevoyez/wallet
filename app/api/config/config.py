@@ -52,7 +52,8 @@ class Config:
         "MAX_WITHDRAW"       : 100000000,
         "MINIMAL_DEPOSIT"    : 50000,
         "MAX_DEPOSIT"        : 100000000,
-        "OTP_TIMEOUT"        : 2 # set otp timeout in minutes
+        "OTP_TIMEOUT"        : 2, # set otp timeout in minutes
+        "QR_SECRET_KEY"      : "1#$@!%2jajdasnknvxivodisufu039021ofjldsjfa@@!"
     }
 
     TRANSACTION_CONFIG = {
@@ -138,6 +139,7 @@ class Config:
             "DEDUCT"                 : "Fail deducting balance",
             "BANK_ACCOUNT_NOT_FOUND" : "Bank Account not Found",
             "TRANSFER_FAILED"        : "Transfer Failed",
+            "SMS_ERROR"              : "Sending SMS Failed",
         }
     }
 
@@ -207,6 +209,7 @@ class Config:
         "TIMEOUT" : 10,
         "BNI_ECOLLECTION" : "BNI-ECOLLECTION",
         "BNI_OPG"         : "BNI-OPG",
+        "WAVECELL"        : "WAVECELL",
         "OUTGOING"        : 0,
         "INGOING"         : 1,
     }

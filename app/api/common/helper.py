@@ -1,76 +1,51 @@
+"""
+    Common Helper
+    ________________
+    This is module that contain for helper like send sms and qr generation
+"""
 import json
-import requests
-
 from app.api.config import config
 
-SMS_SERVICES_CONFIG    = config.Config.SMS_SERVICES_CONFIG
-SMS_SERVICES_TEMPLATES = config.Config.SMS_SERVICES_TEMPLATES
-SMS_OTP_ERRORS         = config.Config.SMS_OTP_ERRORS
+from app.api.common.modules.cipher import AESCipher
+from app.api.common.modules.sms_services import SmsServices
 
-class SmsHelper:
+from app.api.exception.common.exceptions import DecryptError
+
+WALLET_CONFIG = config.Config.WALLET_CONFIG
+SMS_SERVICES_CONFIG = config.Config.SMS_SERVICES_CONFIG
+SMS_SERVICES_TEMPLATES = config.Config.SMS_SERVICES_TEMPLATES
+
+class Sms:
+    """ Class for helping sending SMS """
 
     def __init__(self):
-        pass
+        self.services = SmsServices()
     #end def
 
-    def _post(self, payload):
-        # build header
-        headers = {
-            "content-type": "application/json"
+    def send(self, to, sms_type, content):
+        """ build a sms template and send it using sms services """
+        message = {
+            "from" : SMS_SERVICES_CONFIG["FROM"],
+            "text" : SMS_SERVICES_TEMPLATES[sms_type].format(str(content))
         }
-        headers["Authorization"] = "Bearer {}".format(SMS_SERVICES_CONFIG["API_KEY"])
+        result = self.services.send_sms(to, message)
+        return result
+    #end def
+#end class
 
-        try:
-            r = requests.post(
-                SMS_SERVICES_CONFIG["BASE_URL"],
-                data=json.dumps(payload),
-                headers=headers,
-            )
-            if r.status_code != 200:
-                return "REQUEST_FAILED"
-        except requests.exceptions.Timeout:
-            return "REQUEST_TIMEOUT"
-        except requests.exceptions.TooManyRedirects:
-            return "BAD_URL"
-        except requests.exceptions.RequestException as e:
-            print(str(e))
-            return "FAILURE"
-        #end try
+class QR:
+    """ Class For helping generating QR"""
 
-        return "REQUEST_SUCCESS"
+    def generate(self, data):
+        """ function to generate QR Code using AES256 Encryption """
+        # convert dict to string so it be able to converted to qr code using
+        qr_raw = AESCipher(WALLET_CONFIG["QR_SECRET_KEY"]).encrypt(json.dumps(data))
+        return qr_raw.decode('utf-8')
     #end def
 
-    def send_sms(self, to, sms_type, content):
-        response = {
-            "status" : "SUCCESS",
-            "data"   : None
-        }
-        # build payload
-        payload = {
-            "source"     : SMS_SERVICES_CONFIG["FROM"],
-            "destination": to,
-            "text"       : SMS_SERVICES_TEMPLATES[sms_type].format(str(content)),
-            "encoding"   : "AUTO"
-        }
-
-        resp = self._post(payload)
-        if resp == "REQUEST_FAILED":
-            response["status"] = "FAILED"
-            response["data"  ] = SMS_OTP_ERRORS["FAILURE"]
-            return response
-        elif resp == "REQUEST_TIMEOUT":
-            response["status"] = "FAILED"
-            response["data"  ] = SMS_OTP_ERRORS["TIMEOUT"]
-            return response
-        elif resp == "BAD_URL":
-            response["status"] = "FAILED"
-            response["data"  ] = SMS_OTP_ERRORS["REDIRECT"]
-            return response
-        elif resp == "EXCEPTION":
-            response["status"] = "FAILED"
-            response["data"  ] = SMS_OTP_ERRORS["EXCEPTION"]
-            return response
-        #end if
-        return response
+    def read(self, data):
+        """ function to read encrypyed QR Code """
+        qr_decrypted = AESCipher(WALLET_CONFIG["QR_SECRET_KEY"]).decrypt(data)
+        return json.loads(qr_decrypted)
     #end def
 #end class

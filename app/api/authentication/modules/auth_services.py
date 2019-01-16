@@ -1,37 +1,36 @@
-""" 
+"""
     Auth Services
     _________________
     This services module to handle all incoming authenticaion
 """
-import traceback
-import jwt
 
-from datetime import datetime, timedelta
+from sqlalchemy.exc import IntegrityError
 
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
-
-from app.api            import db
-from app.api.models     import User, BlacklistToken
-from app.api.serializer import UserSchema, WalletSchema, VirtualAccountSchema
-from app.api.errors     import bad_request, internal_error, request_not_found
-from app.api.config     import config
+# database
+from app.api import db
+# models
+from app.api.models import User, BlacklistToken
+# http errors
+from app.api.errors import bad_request
+from app.api.errors import internal_error
+from app.api.errors import request_not_found
+# configuration
+from app.api.config import config
 
 RESPONSE_MSG = config.Config.RESPONSE_MSG
 
 class AuthServices:
     """ Authentication Services Class"""
 
-    def __init__(self):
-        pass
-    #end def
-
-    def _create_access_token(self, user):
+    @staticmethod
+    def _create_access_token(user):
         """ get user object and then create access token"""
         token = User.encode_token("ACCESS", user.id, user.role.description)
         return token.decode()
     #end def
 
-    def _create_refresh_token(self, user):
+    @staticmethod
+    def _create_refresh_token(user):
         """ get user object and then create refresh token"""
         token = User.encode_token("REFRESH", user.id, user.role.description)
         return token.decode()

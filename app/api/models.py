@@ -3,17 +3,22 @@
     ___________
     This is module contain all class models that required
 """
+#pylint: disable=bad-whitespace
+#pylint: disable=line-too-long
+#pylint: disable=import-error
+#pylint: disable=invalid-name
+#pylint: disable=too-few-public-methods
+
 from datetime import datetime, timedelta
 import secrets
 import random
-import jwt
 import uuid
+import jwt
 
-from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy_utils import aggregated
-from sqlalchemy import func
+from werkzeug.security import generate_password_hash 
+from werkzeug.security import check_password_hash
 
-from app.api        import db
+from app.api import db
 from app.api.config import config
 
 now = datetime.utcnow()

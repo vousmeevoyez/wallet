@@ -3,30 +3,42 @@
     _______________
     this is module that handle rquest from url and then forward it to services
 """
+#pylint: disable=import-error
+#pylint: disable=invalid-name
+#pylint: disable=no-self-use
+#pylint: disable=too-few-public-methods
+
 from flask_restplus     import Resource
 
-from app.api.wallet             import api
-from app.api.serializer         import WalletSchema, \
-                                       TransactionSchema, \
-                                       WalletTransactionSchema 
-from app.api.request_schema     import WalletRequestSchema, \
-                                       WalletUpdatePinRequestSchema, \
-                                       PinAuthRequestSchema, \
-                                       ForgotPinRequestSchema,\
-                                       TransferRequestSchema,\
-                                       WalletTransactionRequestSchema
+from app.api.wallet import api
+#serializer
+from app.api.serializer import WalletSchema
+from app.api.serializer import TransactionSchema
+from app.api.serializer import WalletTransactionSchema
+# request schema
+from app.api.request_schema import WalletRequestSchema
+from app.api.request_schema import WalletUpdatePinRequestSchema
+from app.api.request_schema import PinAuthRequestSchema
+from app.api.request_schema import ForgotPinRequestSchema
+from app.api.request_schema import TransferRequestSchema
+from app.api.request_schema import WalletTransactionRequestSchema
+from app.api.request_schema import QRTransferRequestSchema
 
-from app.api.errors             import bad_request, internal_error, request_not_found
+#http errors
+from app.api.errors import bad_request
 
 # wallet modules
 from app.api.wallet.modules.wallet_services import WalletServices
 from app.api.wallet.modules.transfer_services import TransferServices
 
 # authentication
-from app.api.authentication.decorator import refresh_token_only, token_required, get_current_token, get_token_payload, admin_required
+from app.api.authentication.decorator import token_required
+from app.api.authentication.decorator import get_token_payload
+from app.api.authentication.decorator import admin_required
+# helper
 from app.api.authentication.helper import AuthenticationHelper
-
-from app.api.config             import config
+# configuration
+from app.api.config import config
 
 RESPONSE_MSG = config.Config.RESPONSE_MSG
 
@@ -37,10 +49,11 @@ pin_auth_request_schema = PinAuthRequestSchema.parser
 forgot_pin_request_schema = ForgotPinRequestSchema.parser
 transfer_request_schema = TransferRequestSchema.parser
 wallet_transaction_request_schema = WalletTransactionRequestSchema.parser
+qr_transfer_request_schema = QRTransferRequestSchema.parser
 
 @api.route('/<int:wallet_id>')
 class WalletRoutes(Resource):
-    """ 
+    """
         Wallet Routes
         api/v1/wallet/
     """
@@ -65,6 +78,49 @@ class WalletRoutes(Resource):
         #end if
 
         response = WalletServices().info({"id" : wallet_id})
+        return response
+    #end def
+#end class
+
+@api.route('/<int:wallet_id>/qr/')
+class WalletQrRoutes(Resource):
+    """
+        Wallet QR Routes
+        api/v1/<wallet_id>/qr
+    """
+    @token_required
+    def get(self, wallet_id):
+        """
+            handle GET method from
+            api/v1/<wallet_id>/qr
+            return wallet qr
+        """
+        response = WalletServices().get_qr({"id" : wallet_id})
+        return response
+    #end def
+#end class
+
+@api.route('/<int:wallet_id>/qr/transfer')
+class WalletQrTransferRoutes(Resource):
+    """
+        Wallet QR Routes
+        api/v1/<wallet_id>/qr
+    """
+    @token_required
+    def post(self, wallet_id):
+        """
+            handle GET method from
+            api/v1/<wallet_id>/qr
+            return wallet qr
+        """
+        # request data validator
+        request_data = qr_transfer_request_schema.parse_args(strict=True)
+        errors = TransactionSchema().validate(request_data)
+        if errors:
+            return bad_request(errors)
+        #end if
+        request_data["source"] = wallet_id
+        response = TransferServices().qr_transfer(request_data)
         return response
     #end def
 #end class

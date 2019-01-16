@@ -4,22 +4,23 @@
     this is module to interact with BNI Virtual Account &
     Core Banking API
 """
-import base64
-import json
+from datetime import datetime
 import time
 import random
-from datetime import datetime, timedelta
+import base64
+import json
 import pytz
 import requests
 import jwt
 
-
-from app.api        import db
-from app.api.models import ExternalLog, VirtualAccount, Bank, VaType
+from app.api import db
+# models
+from app.api.models import ExternalLog
+# configuration
 from app.api.config import config
 
+# utility
 from .utility import remote_call
-
 
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG
 
