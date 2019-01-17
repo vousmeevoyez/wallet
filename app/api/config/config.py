@@ -143,13 +143,6 @@ class Config:
         }
     }
 
-    # BNI E-COLLECTION ERROR MSG
-    BNI_ECOLLECTION_ERROR_HANDLER = {
-        "VA_ERROR"      : "VA failed to create",
-        "INQUIRY_ERROR" : "Get Inquiry failed",
-        "UPDATE_ERROR " : "Update VA Transaction failed",
-    }
-
     # BNI E-COLLECTION CONFIG
     BNI_ECOLLECTION_CONFIG = {
         "BASE_URL"         : os.getenv('BNI_VA_URL') or \

@@ -15,6 +15,9 @@ from app.api.bank.bni.helper import CoreBank as CoreBankHelper
 from app.api.bank.bni.helper import BNI
 from app.api.bank.bni.utility import remote_call
 
+from app.api.exception.bank.exceptions import ServicesError
+from app.api.exception.bank.exceptions import VirtualAccountError
+
 class TestMockVirtualAccountHelper(BaseTestCase):
     """ This is class to test by mocking all response for e collection helper"""
 
@@ -63,17 +66,12 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             "transaction_id"    : "12345678",
         }
 
-        # expected value from server
-        expected_value = {
-            "status" : "997",
-            "data" : "System is temporarily offline. (502)"
-        }
 
-        # replace return value using expected value here
-        mock_post.return_value = expected_value
+        # replace with mock response here
+        mock_post.side_effect = ServicesError
 
-        result = VirtualAccountHelper().create_va("CREDIT", data)
-        self.assertEqual(result["status"], "FAILED") # data already existed
+        with self.assertRaises(VirtualAccountError):
+            result = VirtualAccountHelper().create_va("CREDIT", data)
 
     @patch.object(VirtualAccountHelper, '_post')
     def test_mock_create_va_cardless_success(self, mock_post):
@@ -119,17 +117,11 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             "transaction_id"    : "12345678",
         }
 
-        # expected value returned from bni
-        expected_value = {
-            "status": "002",
-            "data"  : "IP address not allowed or wrong Client ID."
-        }
-
         # replace with mock response here
-        mock_post.return_value = expected_value
+        mock_post.side_effect = ServicesError
 
-        result = VirtualAccountHelper().create_va("CREDIT", data)
-        self.assertEqual(result["status"], "FAILED") # data already existed
+        with self.assertRaises(VirtualAccountError):
+            result = VirtualAccountHelper().create_va("CARDLESS", data)
 
     @patch.object(VirtualAccountHelper, '_post')
     def test_mock_get_inquiry_success(self, mock_post):
@@ -185,16 +177,11 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             "trx_id"  : "121",
         }
 
-        # expected value from bni server
-        expected_value = {
-            "status"  : "002",
-            "data" : "IP address not allowed or wrong Client ID."
-        }
+        # replace with mock response here
+        mock_post.side_effect = ServicesError
 
-        mock_post.return_value = expected_value
-
-        result = VirtualAccountHelper().get_inquiry("CREDIT", data)
-        self.assertEqual(result["status"], "FAILED")
+        with self.assertRaises(VirtualAccountError):
+            result = VirtualAccountHelper().get_inquiry("CREDIT", data)
 
     @patch.object(VirtualAccountHelper, '_post')
     def test_mock_update_va_success(self, mock_post):
@@ -239,15 +226,10 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             "datetime_expired" : datetime.now(),
         }
 
-        expected_value = {
-            "status"  : "002",
-            "data" : "IP address not allowed or wrong Client ID."
-        }
+        mock_post.side_effect = ServicesError
 
-        mock_post.return_value = expected_value
-
-        result = VirtualAccountHelper().update_va("CREDIT", data)
-        self.assertEqual(result["status"], "FAILED")
+        with self.assertRaises(VirtualAccountError):
+            result = VirtualAccountHelper().update_va("CREDIT", data)
 
     @patch.object(remote_call, "post")
     def test_post_credit_success(self, mock_post):

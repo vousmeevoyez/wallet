@@ -350,7 +350,7 @@ class TransferServices:
             session.commit()
         except IntegrityError as error:
             session.rollback()
-            raise TransactionError(str(error))
+            raise TransactionError(error)
         #end try
     #end def
 #end class

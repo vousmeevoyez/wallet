@@ -18,7 +18,10 @@ from app.api import db
 from app.api.models import ExternalLog
 # configuration
 from app.api.config import config
-
+# exceptions
+from app.api.exception.exceptions import ApiError
+from app.api.exception.bank.exceptions import ServicesError
+from app.api.exception.bank.exceptions import VirtualAccountError
 # utility
 from .utility import remote_call
 
@@ -28,19 +31,12 @@ class VirtualAccount:
     """ This is class to interact with BNI E-Collection API"""
 
     BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
-    BNI_ECOLLECTION_ERROR_HANDLER = config.Config.BNI_ECOLLECTION_ERROR_HANDLER
 
     BASE_URL = BNI_ECOLLECTION_CONFIG["BASE_URL"]
 
     TIMEZONE = pytz.timezone("Asia/Jakarta")
 
-    def _post(self, api_name, resource_type, payload, session=None):
-        # set session if empty
-        if session is None:
-            session = db.session
-        #end if
-        session.begin(subtransactions=True)
-
+    def _post(self, api_name, resource_type, payload):
         if resource_type == "CREDIT":
             client_id = self.BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
             secret_key = self.BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"]
@@ -52,29 +48,13 @@ class VirtualAccount:
         # assign client in in payload
         payload["client_id"] = client_id
 
-        # log everything before creating request
-        log = ExternalLog(request=payload,
-                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
-                          api_name=api_name,
-                          api_type=LOGGING_CONFIG["OUTGOING"]
-                         )
-        session.add(log)
-
-        start_time = time.time()
-        remote_response = remote_call.post(self.BASE_URL, client_id, secret_key, payload)
-
-        # log everything after request
-        log.save_response(remote_response["data"])
-        # log response time
-        log.save_response_time(time.time() - start_time)
-        # if failed change status to false
-        if remote_response["status"] != "000":
-            log.set_status(False)
-        #end if
-
-        # commit everything here
-        session.commit()
-        return remote_response
+        try:
+            remote_response = remote_call.post(api_name, self.BASE_URL, client_id,
+                                               secret_key, payload)
+        except ApiError as error:
+            raise ServicesError(error)
+        else:
+            return remote_response
     #end def
 
     def create_va(self, resource_type, params):
@@ -119,14 +99,13 @@ class VirtualAccount:
             payload["description"] = ""
         #end if
 
-        result = self._post(api_name, resource_type, payload)
+        try:
+            result = self._post(api_name, resource_type, payload)
+        except ServicesError as error:
+            raise VirtualAccountError(error)
+        #end try
+
         response["data"] = result["data"]
-
-        if result["status"] != "000":
-            response["status"] = "FAILED"
-            response["data"] = self.BNI_ECOLLECTION_ERROR_HANDLER["VA_ERROR"]
-        #end if
-
         return response
     #end def
 
@@ -150,13 +129,12 @@ class VirtualAccount:
             'trx_id'   : params["trx_id"]
         }
 
-        result = self._post(api_name, resource_type, payload)
+        try:
+            result = self._post(api_name, resource_type, payload)
+        except ServicesError as error:
+            raise VirtualAccountError(error)
+        #end try
         response["data"] = result["data"]
-
-        if result["status"] != "000":
-            response["status"] = "FAILED"
-            response["data"] = self.BNI_ECOLLECTION_ERROR_HANDLER["INQUIRY_ERROR"]
-        #end if
         return response
     #end def
 
@@ -183,14 +161,13 @@ class VirtualAccount:
             'datetime_expired' : params["datetime_expired"].strftime("%Y-%m-%d %H:%M:%S"),
         }
 
-        result = self._post(api_name, resource_type, payload)
+        try:
+            result = self._post(api_name, resource_type, payload)
+        except ServicesError as error:
+            raise VirtualAccountError(error)
+        #end try
+
         response["data"] = result["data"]
-
-
-        if result["status"] != "000":
-            response["status"] = "FAILED"
-            response["data"] = self.BNI_ECOLLECTION_ERROR_HANDLER["INQUIRY_ERROR"]
-        #end if
         return response
     #end def
 #end class

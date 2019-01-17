@@ -418,19 +418,37 @@ class VirtualAccount(db.Model):
     #end def
 #end class
 
+class MasterTransaction(db.Model):
+    """
+        used as transaction block to ensure each transaction is safe
+    """
+    id             = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    source         = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (money comes from)
+    destination    = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (money comes from)
+    last_modified  = db.Column(db.DateTime, default=now) # UTC
+    amount         = db.Column(db.Float)
+    # 0 = INIT , 1 = PENDING , 2 = APPLIED,  3 = DONE , 4 = CANCELING , 5 =
+    # CANCELLED
+    state          = db.Column(db.Integer, default=0)
+    transaction_id = db.Column(db.String, db.ForeignKey("transaction.id"))
+    transaction    = db.relationship("Transaction",
+                                     back_populates="master_transaction", uselist=False) # one to one
+
 class Transaction(db.Model):
     """
         This is class that represent Transaction Database Object
     """
-    id               = db.Column(db.String(255), primary_key=True)
-    wallet_id        = db.Column(db.Integer, db.ForeignKey('wallet.id'))
-    amount           = db.Column(db.Float, default=0)
-    transaction_type = db.Column(db.Integer) # withdraw / deposit / transfer_bank / transfer_va
-    notes            = db.Column(db.String(255)) # transaction notes if there are
-    created_at       = db.Column(db.DateTime, default=now) # UTC
-    payment_id       = db.Column(db.Integer, db.ForeignKey("payment.id"))
-    payment          = db.relationship("Payment", back_populates="transaction", uselist=False) # one to one
-    wallet           = db.relationship("Wallet", back_populates="transactions", uselist=False) # one to one
+    id                 = db.Column(db.String(255), primary_key=True)
+    wallet_id          = db.Column(db.Integer, db.ForeignKey('wallet.id'))
+    amount             = db.Column(db.Float, default=0)
+    transaction_type   = db.Column(db.Integer) # withdraw / deposit / transfer_bank / transfer_va
+    notes              = db.Column(db.String(255)) # transaction notes if there are
+    created_at         = db.Column(db.DateTime, default=now) # UTC
+    payment_id         = db.Column(db.Integer, db.ForeignKey("payment.id"))
+    payment            = db.relationship("Payment", back_populates="transaction", uselist=False) # one to one
+    wallet             = db.relationship("Wallet", back_populates="transactions", uselist=False) # one to one
+    master_transaction = db.relationship("MasterTransaction",
+                                         back_populates="transaction", uselist=False)
 
     def __repr__(self):
         return '<Transaction {} {} {} {} {}>'.format(self.id, self.wallet_id, self.amount,
