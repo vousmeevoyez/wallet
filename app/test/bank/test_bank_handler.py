@@ -123,5 +123,5 @@ class TestBankHandler(BaseTestCase):
             "status" : "SUCCESS",
             "data"   : "some va data",
         }
-        result = BankHandler("BNI").dispatch("TRANSFER", params)
+        result = BankHandler("BNI").dispatch("DIRECT_TRANSFER", params)
         self.assertEqual(result["status"], "SUCCESS")

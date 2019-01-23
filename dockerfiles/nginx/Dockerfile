@@ -1,13 +1,13 @@
-# Dockerfile-nginx
-FROM nginx:latest
+# get alpine images
+FROM nginx:alpine
 
 # Nginx will listen on this port
-EXPOSE 80
+EXPOSE 8080
 
-# Remove the default config file that
-# /etc/nginx/nginx.conf includes
+# replace NGINX Default Config
+RUN rm /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx
+
+# Remove NGINX Configuration
 RUN rm /etc/nginx/conf.d/default.conf
-
-# We copy the requirements file in order to install
-# Python dependencies
 COPY app.conf /etc/nginx/conf.d

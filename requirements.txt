@@ -24,6 +24,7 @@ Flask-SQLAlchemy==2.3.2
 Flask-Testing==0.7.1
 Flask-WTF==0.14.2
 future==0.17.1
+gunicorn==19.9.0
 idna==2.7
 itsdangerous==1.1.0
 Jinja2==2.10

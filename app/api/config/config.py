@@ -189,7 +189,6 @@ class Config:
         }
     }
 
-
     # ACCESS_KEY CONFIG
     ACCESS_KEY_CONFIG = {
         "TOKEN_LENGTH" : 20,
@@ -213,13 +212,6 @@ class Config:
         "API_KEY"    : os.getenv('API_KEY') or \
         "7hH72ACD8DA6EED4DD985D4489A034",
         "FROM"       : "MODANA",
-    }
-
-    SMS_OTP_ERRORS = {
-        "FAILURE"    : "SMS OTP Failed",
-        "TIMEOUT"    : "SMS OTP Services Timeout",
-        "REDIRECT"   : "Bad URL",
-        "EXCEPTION"  : "Something Unexpected Happen",
     }
 
     SMS_SERVICES_TEMPLATES = {

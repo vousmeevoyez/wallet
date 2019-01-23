@@ -3,10 +3,10 @@
     _____________________
     this is test case where wallet communicate with BNI VA & COre Banking API
 """
+#pylint: disable=import-error
 import unittest
 from unittest.mock import Mock, patch
 from datetime import datetime
-
 from app.test.base        import BaseTestCase
 from app.api              import db
 from app.api.models       import Wallet, ExternalLog
@@ -15,8 +15,10 @@ from app.api.bank.bni.helper import CoreBank as CoreBankHelper
 from app.api.bank.bni.helper import BNI
 from app.api.bank.bni.utility import remote_call
 
+from app.api.exception.exceptions import ApiError
 from app.api.exception.bank.exceptions import ServicesError
 from app.api.exception.bank.exceptions import VirtualAccountError
+from app.api.exception.bank.exceptions import InhouseTransferError
 
 class TestMockVirtualAccountHelper(BaseTestCase):
     """ This is class to test by mocking all response for e collection helper"""
@@ -68,7 +70,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
 
 
         # replace with mock response here
-        mock_post.side_effect = ServicesError
+        mock_post.side_effect = ServicesError("some error", Mock())
 
         with self.assertRaises(VirtualAccountError):
             result = VirtualAccountHelper().create_va("CREDIT", data)
@@ -118,7 +120,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         }
 
         # replace with mock response here
-        mock_post.side_effect = ServicesError
+        mock_post.side_effect = ServicesError("some error", Mock())
 
         with self.assertRaises(VirtualAccountError):
             result = VirtualAccountHelper().create_va("CARDLESS", data)
@@ -178,7 +180,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         }
 
         # replace with mock response here
-        mock_post.side_effect = ServicesError
+        mock_post.side_effect = ServicesError("some error", Mock())
 
         with self.assertRaises(VirtualAccountError):
             result = VirtualAccountHelper().get_inquiry("CREDIT", data)
@@ -226,7 +228,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             "datetime_expired" : datetime.now(),
         }
 
-        mock_post.side_effect = ServicesError
+        mock_post.side_effect = ServicesError("some error", Mock())
 
         with self.assertRaises(VirtualAccountError):
             result = VirtualAccountHelper().update_va("CREDIT", data)
@@ -271,9 +273,10 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             'description': '',
             'billing_type': 'j',
         }
-        mock_post.return_value = { "status" : "001", "data" : "some error" }
-        result = VirtualAccountHelper()._post(api_name, resource_type, payload)
-        self.assertEqual(result["status"], "001")
+
+        mock_post.side_effect = ApiError("test", Mock())
+        with self.assertRaises(ServicesError):
+            result = VirtualAccountHelper()._post(api_name, resource_type, payload)
 
     @patch.object(remote_call, "post")
     def test_post_cardless_success(self, mock_post):
@@ -315,17 +318,27 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             'description': '',
             'billing_type': 'j',
         }
-        mock_post.return_value = { "status" : "001", "data" : "some error" }
-        result = VirtualAccountHelper()._post(api_name, resource_type, payload)
-        self.assertEqual(result["status"], "001")
+        mock_post.side_effect = ApiError("test", Mock())
+        with self.assertRaises(ServicesError):
+            result = VirtualAccountHelper()._post(api_name, resource_type, payload)
 #end class
 
 class TestMockCoreBankHelper(BaseTestCase):
     """ This is class to test by mocking all response from BNI COre Bank helper"""
 
+    def test_generate_ref_number(self):
+        result = CoreBankHelper()._generate_ref_number()
+        self.assertTrue(len(result) > 15)
+    #end def
+
+    def test__check_response_code(self):
+        result = CoreBankHelper()._generate_ref_number()
+    #end def
+
     @patch("requests.post")
     def test_post_form_success(self, mock_post):
-        """ test function to mock success post form request"""
+        """ test function to mock success post form request and get access
+        token"""
         payload = {"grant_type" : "client_credentials"}
 
         # mock the response here
@@ -336,11 +349,29 @@ class TestMockCoreBankHelper(BaseTestCase):
             "scope": "resource.WRITE resource.READ"
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
         response = CoreBankHelper()._post("GET_TOKEN", payload)
         self.assertEqual(response["data"], expected_value)
+    #end def
+
+    @patch("requests.post")
+    def test_post_form_failed(self, mock_post):
+        """ test function to mock failed post form request, because server
+        return 400"""
+        payload = {"grant_type" : "client_credentials"}
+
+        # mock the response here
+        expected_value = {
+            "message": "Some Error"
+        }
+        mock_post.return_value = Mock()
+        mock_post.return_value.status_code = 400
+        mock_post.return_value.json.return_value = expected_value
+
+        with self.assertRaises(ApiError):
+            response = CoreBankHelper()._post("GET_TOKEN", payload)
     #end def
 
     @patch("requests.post")
@@ -368,7 +399,7 @@ class TestMockCoreBankHelper(BaseTestCase):
             }
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
         response = CoreBankHelper(access_token)._post("GET_BALANCE", payload)
@@ -386,7 +417,7 @@ class TestMockCoreBankHelper(BaseTestCase):
             "scope": "resource.WRITE resource.READ"
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
         access_token = CoreBankHelper()._get_token()
@@ -414,7 +445,7 @@ class TestMockCoreBankHelper(BaseTestCase):
             }
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
         response = CoreBankHelper(access_token).get_balance({"account_no" : "12345"})
@@ -443,11 +474,11 @@ class TestMockCoreBankHelper(BaseTestCase):
             }
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        response = CoreBankHelper(access_token).get_balance({"account_no" : "12345"})
-        self.assertTrue(response["status"], "FAILED")
+        with self.assertRaises(ServicesError):
+            response = CoreBankHelper(access_token).get_balance({"account_no" : "12345"})
     #end def
 
     def test_create_signature(self):
@@ -483,7 +514,7 @@ class TestMockCoreBankHelper(BaseTestCase):
             }
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
         response = CoreBankHelper(access_token).get_inhouse_inquiry({"account_no" : "12345"})
@@ -500,7 +531,7 @@ class TestMockCoreBankHelper(BaseTestCase):
 
     @patch("requests.post")
     def test_get_inhouse_inquiry_bank_account_failed(self, mock_post):
-        """ test function to get failed inhouse inquiry"""
+        """ test function to get inhouse inquiry but failed"""
         # use mock token here
         access_token = "x3LyfeWKbeaARhd2PfU4F4OeNi43CrDFdi6XnzScKIuk5VmvFiq0B2"
 
@@ -517,11 +548,11 @@ class TestMockCoreBankHelper(BaseTestCase):
             }
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        response = CoreBankHelper(access_token).get_inhouse_inquiry({"account_no" : "12345"})
-        self.assertTrue(response["status"], "FAILED")
+        with self.assertRaises(ServicesError):
+            response = CoreBankHelper(access_token).get_inhouse_inquiry({"account_no" : "12345"})
     #end def
 
     @patch("requests.post")
@@ -546,7 +577,7 @@ class TestMockCoreBankHelper(BaseTestCase):
             }
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
         response = CoreBankHelper(access_token).get_inhouse_inquiry({"account_no" : "12345"})
@@ -569,16 +600,16 @@ class TestMockCoreBankHelper(BaseTestCase):
 
         # define required data to execute transfer here
         data = {
-            "payment_method"      : "IN_HOUSE",
-            "source_account"      : "113183203",
-            "destination_account" : "115471119",
-            "amount"              : "100500",
-            "ref_number"          : "20170227000000000020",
-            "email"               : "jennie@blackpink.com",
-            "clearing_code"       : "CENAIDJAXXX",
-            "account_name"        : "Jennie",
-            "address"             : "Jl. Buntu",
-            "charge_mode"         : "SOURCE",
+            "method" : "IN_HOUSE",
+            "source_account" : "113183203",
+            "account_no"     : "115471119",
+            "amount"         : "100500",
+            "ref_number"     : "20170227000000000020",
+            "email"          : "jennie@blackpink.com",
+            "clearing_code"  : "CENAIDJAXXX",
+            "account_name"   : "Jennie",
+            "address"        : "Jl. Buntu",
+            "charge_mode"    : "SOURCE",
         }
 
         # mock the response here
@@ -599,7 +630,7 @@ class TestMockCoreBankHelper(BaseTestCase):
             }
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
         response = CoreBankHelper(access_token).do_payment(data)
@@ -617,22 +648,22 @@ class TestMockCoreBankHelper(BaseTestCase):
 
     @patch("requests.post")
     def test_do_payment_failed(self, mock_post):
-        """ test successfull request to do payment"""
+        """ test request to do payment but failed"""
         # use mock token here
         access_token = "x3LyfeWKbeaARhd2PfU4F4OeNi43CrDFdi6XnzScKIuk5VmvFiq0B2"
 
         # define required data to execute transfer here
         data = {
-            "payment_method"      : "IN_HOUSE",
-            "source_account"      : "113183203",
-            "destination_account" : "115471119",
-            "amount"              : "100500",
-            "ref_number"          : "20170227000000000020",
-            "email"               : "jennie@blackpink.com",
-            "clearing_code"       : "CENAIDJAXXX",
-            "account_name"        : "Jennie",
-            "address"             : "Jl. Buntu",
-            "charge_mode"         : "SOURCE",
+            "method" : "IN_HOUSE",
+            "source_account" : "113183203",
+            "account_no"     : "115471119",
+            "amount"         : "100500",
+            "ref_number"     : "20170227000000000020",
+            "email"          : "jennie@blackpink.com",
+            "clearing_code"  : "CENAIDJAXXX",
+            "account_name"   : "Jennie",
+            "address"        : "Jl. Buntu",
+            "charge_mode"    : "SOURCE",
         }
 
         # mock the response here
@@ -648,11 +679,11 @@ class TestMockCoreBankHelper(BaseTestCase):
             }
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        response = CoreBankHelper(access_token).do_payment(data)
-        self.assertTrue(response["status"], "FAILED")
+        with self.assertRaises(ServicesError):
+            response = CoreBankHelper(access_token).do_payment(data)
     #end def
 
     @patch("requests.post")
@@ -690,7 +721,7 @@ class TestMockCoreBankHelper(BaseTestCase):
             }
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
         response = CoreBankHelper(access_token).get_payment_status(data)
@@ -731,11 +762,11 @@ class TestMockCoreBankHelper(BaseTestCase):
             }
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        response = CoreBankHelper(access_token).get_payment_status(data)
-        self.assertTrue(response["status"], "FAILED")
+        with self.assertRaises(ServicesError):
+            response = CoreBankHelper(access_token).get_payment_status(data)
 
     @patch("requests.post")
     def test_get_interbank_inquiry_success(self, mock_post):
@@ -767,7 +798,7 @@ class TestMockCoreBankHelper(BaseTestCase):
             }
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
         response = CoreBankHelper(access_token).get_interbank_inquiry(data)
@@ -812,11 +843,11 @@ class TestMockCoreBankHelper(BaseTestCase):
             }
         }
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        response = CoreBankHelper(access_token).get_interbank_inquiry(data)
-        self.assertTrue(response["status"], "FAILED")
+        with self.assertRaises(ServicesError):
+            response = CoreBankHelper(access_token).get_interbank_inquiry(data)
     #end def
 
     @patch("requests.post")
@@ -853,7 +884,7 @@ class TestMockCoreBankHelper(BaseTestCase):
         }
         # mock the response here
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
         response = CoreBankHelper(access_token).get_interbank_payment(data)
@@ -899,11 +930,93 @@ class TestMockCoreBankHelper(BaseTestCase):
         }
         # mock the response here
         mock_post.return_value = Mock()
-        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        response = CoreBankHelper(access_token).get_interbank_payment(data)
-        self.assertTrue(response["status"], "FAILED")
+        with self.assertRaises(ServicesError):
+            response = CoreBankHelper(access_token).get_interbank_payment(data)
+    #end def
+
+    @patch("requests.post")
+    def test_bni_transfer_success(self, mock_post):
+        """ test successfull transfer between BNI to BNI"""
+        # use mock token here
+        access_token = "x3LyfeWKbeaARhd2PfU4F4OeNi43CrDFdi6XnzScKIuk5VmvFiq0B2"
+
+        # define required data to execute transfer here
+        data = {
+            "source_account": "113183203",
+            "account_no"    : "115471119",
+            "amount"        : "100500",
+            "bank_code"     : "009",
+        }
+
+        # mock the response here
+        expected_value = {
+            "doPaymentResponse" : {
+                "clientId" : "BNISERVICE",
+                "parameters" : {
+                    "responseCode"      : "0001",
+                    "responseMessage"   : "Request has been processed successfully",
+                    "responseTimestamp" : "2017-02-27T14:46:55.084Z",
+                    "debitAccountNo"    : 113183203,
+                    "creditAccountNo"   : 115471119,
+                    "valueAmount"       : 100500,
+                    "valueCurrency"     : "IDR",
+                    "bankReference"     : 953403,
+                    "customerReference" : 20170227000000000020
+                }
+            }
+        }
+        mock_post.return_value = Mock()
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = expected_value
+
+        response = CoreBankHelper(access_token).transfer(data)
+        self.assertEqual(response["data"]["transfer_info"]["source_account"],
+                         expected_value["doPaymentResponse"]["parameters"]["debitAccountNo"])
+        self.assertEqual(response["data"]["transfer_info"]["destination_account"],
+                         expected_value["doPaymentResponse"]["parameters"]["creditAccountNo"])
+        self.assertEqual(response["data"]["transfer_info"]["amount"],
+                         expected_value["doPaymentResponse"]["parameters"]["valueAmount"])
+        self.assertEqual(response["data"]["transfer_info"]["ref_number"],
+                         expected_value["doPaymentResponse"]["parameters"]["customerReference"])
+        self.assertEqual(response["data"]["transfer_info"]["bank_ref"],
+                         expected_value["doPaymentResponse"]["parameters"]["bankReference"])
+    #end def
+
+    @patch("requests.post")
+    def test_bni_transfer_failed(self, mock_post):
+        """ test transfer between BNI to BNI but raise and error"""
+        # use mock token here
+        access_token = "x3LyfeWKbeaARhd2PfU4F4OeNi43CrDFdi6XnzScKIuk5VmvFiq0B2"
+
+        # define required data to execute transfer here
+        data = {
+            "source_account": "113183203",
+            "account_no"    : "115471119",
+            "amount"        : "100500",
+            "bank_code"     : "009",
+        }
+
+        # mock the response here
+        expected_value = {
+            "doPaymentResponse" : {
+                "clientId" : "BNISERVICE",
+                "parameters" : {
+                    "responseCode" : "0000",
+                    "responseMessage"   : "Request Failed",
+                    "responseTimestamp" : "2017-02-27T15:04:00.927Z",
+                    "errorMessage"      : "Some Error Message"
+                }
+            }
+        }
+        mock_post.return_value = Mock()
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = expected_value
+
+        with self.assertRaises(InhouseTransferError):
+            CoreBankHelper(access_token).transfer(data)
     #end def
 #end class
 
@@ -931,7 +1044,6 @@ class TestBNI(BaseTestCase):
         # replace return value using expected value here
         mock_post.return_value = expected_value
         result = BNI().call("CREATE_VA_CARDLESS", data)
-        print(result)
         self.assertEqual(result["status"], "SUCCESS")
 
     @patch.object(VirtualAccountHelper, "_post")

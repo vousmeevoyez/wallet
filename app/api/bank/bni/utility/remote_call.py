@@ -93,9 +93,9 @@ def post(api_name, base_url, client_id, secret_key, data):
         # save response time
         log.save_response_time(time.time() - start_time)
     except requests.exceptions.Timeout as err:
-        raise ApiError("Request Timeout", err)
+        raise ApiError("TIMEOUT", err)
     except requests.exceptions.RequestException as err:
-        raise ApiError("Unknown Exception", err)
+        raise ApiError("UNKNOWN", err)
     #end try
 
     result = r.json()
@@ -108,7 +108,7 @@ def post(api_name, base_url, client_id, secret_key, data):
     except KeyError:
         log.set_status(False)
         response["data"] = result["message"]
-        raise ApiError("Communication Failed", result["message"])
+        raise ApiError("RESPONSE_FAILED", result["message"])
     finally:
         log.save_response(response["data"])
     return response

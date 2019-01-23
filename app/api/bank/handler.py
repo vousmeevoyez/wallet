@@ -3,6 +3,8 @@
     ________________
     this is module that handle request and dipsatch it to various bank
 """
+#pylint: disable=bad-whitespace
+#pylint: disable=unsubscriptable-object
 from datetime import datetime, timedelta
 import pytz
 
@@ -30,7 +32,8 @@ class BankHandler:
         self.bank_id = self._bank_name_to_id(bank_name)
     #end def
 
-    def factory(self, bank_name):
+    @staticmethod
+    def factory(bank_name):
         """ static method function to force all bank imported here"""
         banks = dict(BNI=BNI)
         return banks[bank_name]()
@@ -132,16 +135,18 @@ class BankHandler:
             va_creation_resp = self._create_va(params)
 
             # add more information to params
-            params["datetime_expired"] = va_creation_resp["data"]["datetime_expired"]
+            params["datetime_expired"  ] = va_creation_resp["data"]["datetime_expired"]
             params["virtual_account_id"] = va_creation_resp["data"]["virtual_account_id"]
-            params["transaction_id"] = va_creation_resp["data"]["transaction_id"]
+            params["transaction_id"    ] = va_creation_resp["data"]["transaction_id"]
 
             if params["type"] == "DEBIT" and self.bank_name == "BNI":
                 result = self.bank.call("CREATE_VA_CARDLESS", params)
             #end if
             result = self.bank.call("CREATE_VA", params)
-        elif operation == "TRANSFER":
-            result = self.bank.call("TRANSFER", params)
+        elif operation == "DIRECT_TRANSFER":
+            result = self.bank.call("DIRECT_TRANSFER", params)
+        elif operation == "NON_DIRECT_TRANSFER":
+            result = self.bank.call("NON_DIRECT_TRANSFER", params)
         elif operation == "CHECK_BALANCE":
             result = self.bank.call("CHECK_BALANCE", params)
         #end if

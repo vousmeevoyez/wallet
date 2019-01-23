@@ -26,19 +26,21 @@ services:
                 environment:
                 - POSTGRES_USER=modana
                 - POSTGRES_PASSWORD=password
-                - POSTGRES_DB=db_wallet_dev
+                - POSTGRES_DB=db_wallet_prod
                 volumes:
                 - "db_volume:/var/lib/postgresql/data"
                 ports:
                 - 5432:5432
+                restart: always
 
         nginx:
                 build:
                         context: dockerfiles/nginx/
                 ports:
-                - 5000:80
+                - 8080:80
                 depends_on:
                 - flask
+                restart: always
 
 volumes:
         db_volume:

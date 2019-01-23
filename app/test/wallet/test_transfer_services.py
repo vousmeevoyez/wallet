@@ -8,6 +8,7 @@ from app.test.base          import BaseTestCase
 from app.api.models         import Payment
 from app.api.models         import Wallet
 from app.api.models         import Transaction
+from app.api.models         import MasterTransaction
 from app.api.wallet.modules.transfer_services import TransferServices
 
 # exceptions
@@ -104,7 +105,9 @@ class TestTransferServices(BaseTestCase):
         }
 
         result = TransferServices()._do_transaction(params)
-        
+
+        master_trx = MasterTransaction.query.all()
+        self.assertTrue(len(master_trx) > 0)
         transaction = Transaction.query.all()
         self.assertTrue(len(transaction) > 0)
         payment = Payment.query.all()
@@ -332,6 +335,19 @@ class TestTransferServices(BaseTestCase):
         with self.assertRaises(TransferError):
             TransferServices()._do_transaction(params)
 
+        # make sure maste transaction record everything
+        master_trx = MasterTransaction.query.all()
+        self.assertTrue(len(master_trx) > 0)
+        # make sure transaction is not recorded on user transaction
+        trx = Transaction.query.all()
+        self.assertTrue(len(trx) == 0)
+        # make sure the wallet balance isstill same
+        wallet = Wallet.query.get(1)
+        self.assertEqual(wallet.balance, 1000)
+
+        wallet2 = Wallet.query.get(2)
+        self.assertEqual(wallet2.balance, 0)
+
     @patch.object(TransferServices, "_credit_transaction")
     def test_do_transaction_failed_credit(self, mock_transfer_services):
         """ test function to create main transaction """
@@ -360,6 +376,21 @@ class TestTransferServices(BaseTestCase):
         mock_transfer_services.side_effect = TransactionError("test")
         with self.assertRaises(TransferError):
             TransferServices()._do_transaction(params)
+
+        # make sure maste transaction record everything
+        master_trx = MasterTransaction.query.all()
+        print(master_trx)
+        self.assertTrue(len(master_trx) > 0)
+        # make sure transaction is not recorded on user transaction
+        trx = Transaction.query.all()
+        print(trx)
+        self.assertTrue(len(trx) == 0)
+        # make sure the wallet balance isstill same
+        wallet = Wallet.query.get(1)
+        self.assertEqual(wallet.balance, 1000)
+
+        wallet2 = Wallet.query.get(2)
+        self.assertEqual(wallet2.balance, 0)
 
     def test_debit_transaction_success(self):
         wallet = Wallet()

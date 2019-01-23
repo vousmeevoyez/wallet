@@ -4,6 +4,10 @@
     this is module to interact with BNI Virtual Account &
     Core Banking API
 """
+#pylint: disable=too-many-nested-blocks
+#pylint: disable=redefined-outer-name
+#pylint: disable=bad-whitespace
+
 from datetime import datetime
 import time
 import random
@@ -22,6 +26,10 @@ from app.api.config import config
 from app.api.exception.exceptions import ApiError
 from app.api.exception.bank.exceptions import ServicesError
 from app.api.exception.bank.exceptions import VirtualAccountError
+from app.api.exception.bank.exceptions import TokenError
+from app.api.exception.bank.exceptions import InvalidInterbankAccountError
+from app.api.exception.bank.exceptions import InterbankTransferError
+from app.api.exception.bank.exceptions import InhouseTransferError
 # utility
 from .utility import remote_call
 
@@ -52,7 +60,7 @@ class VirtualAccount:
             remote_response = remote_call.post(api_name, self.BASE_URL, client_id,
                                                secret_key, payload)
         except ApiError as error:
-            raise ServicesError(error)
+            raise ServicesError("REMOTE_CALL_FAILED", error)
         else:
             return remote_response
     #end def
@@ -102,7 +110,7 @@ class VirtualAccount:
         try:
             result = self._post(api_name, resource_type, payload)
         except ServicesError as error:
-            raise VirtualAccountError(error)
+            raise VirtualAccountError("CREATE_VA_FAILED", error)
         #end try
 
         response["data"] = result["data"]
@@ -132,7 +140,7 @@ class VirtualAccount:
         try:
             result = self._post(api_name, resource_type, payload)
         except ServicesError as error:
-            raise VirtualAccountError(error)
+            raise VirtualAccountError("GET_INQUIRY_FAILED", error)
         #end try
         response["data"] = result["data"]
         return response
@@ -164,7 +172,7 @@ class VirtualAccount:
         try:
             result = self._post(api_name, resource_type, payload)
         except ServicesError as error:
-            raise VirtualAccountError(error)
+            raise VirtualAccountError("UPDATE_VA_FAILED", error)
         #end try
 
         response["data"] = result["data"]
@@ -196,12 +204,28 @@ class CoreBank:
         return signature.decode("utf-8")
     #end def
 
-    def _generate_ref_number(self):
+    @staticmethod
+    def _generate_ref_number():
         """ generate reference number matched to BNI format"""
         now = datetime.utcnow()
         value_date = now.strftime("%Y%m%d%H%M%S")
         code = random.randint(1, 99999)
         return str(value_date) + str(code)
+    #end def
+
+    @staticmethod
+    def _check_response_code(response):
+        """ special function to check response code according to BNI response """
+        for (key, value) in response.items():
+            for (key, value) in value.items():
+                if key == "parameters":
+                    for key, value in value.items():
+                        if key == "responseCode":
+                            # check response code here
+                            if value != "0001":
+                             # mark request as failed
+                                return False
+        return True
     #end def
 
     def _post(self, api_name, payload):
@@ -213,8 +237,7 @@ class CoreBank:
                 payload -- request payload
         """
         response = {
-            "status" : None,
-            "data"   : None
+            "data" : None
         }
 
         # init headers here
@@ -269,28 +292,33 @@ class CoreBank:
             # access the data here
             resp = r.json()
             log.save_response(resp)
-            if r.ok:
-                response["status"] = "SUCCESS"
-            else:
+
+            # when http status code failing we mark the request as fail
+            if r.status_code != 200:
                 log.set_status(False) # set as failed request
-                response["status"] = "FAILED"
+                raise ApiError("HTTP_FAILED", resp)
             #end if
 
             # SAVE LOG RESPONSE  RESPONE TIME
             log.save_response_time(time.time() - start_time)
+
+            # checking response code here
+            if api_name != "GET_TOKEN":
+                response_status = self._check_response_code(resp)
+                # if response code inside the response is not 0000 we mark it as
+                # fail too
+                if response_status is False:
+                    log.set_status(False)
+                    raise ApiError("RESPONSE_FAILED", resp)
+                #end if
+            #end if
             db.session.commit()
 
             response["data"] = resp
-        except requests.exceptions.Timeout:
-            response["status"] = "FAILED"
-            response["data"] = "REQUEST_TIMEOUT"
-        except requests.exceptions.TooManyRedirects:
-            response["status"] = "FAILED"
-            response["data"] = "BAD_URL"
+        except requests.exceptions.Timeout as error:
+            raise ApiError("TIMEOUT", error)
         except requests.exceptions.RequestException as error:
-            print(str(error))
-            response["status"] = "FAILED"
-            response["data"] = "FAILURE"
+            raise ApiError("UNKNOWN", error)
         #end try
         return response
     #end def
@@ -303,14 +331,13 @@ class CoreBank:
         payload = {"grant_type" : "client_credentials"}
 
         # post here
-        response = self._post(api_name, payload)
-        if response["status"] != "SUCCESS":
-            return None
-        #end if
-
-        # access the data here
-        access_token = response["data"]["access_token"]
-        return access_token
+        try:
+            response = self._post(api_name, payload)
+        except ApiError:
+            self.access_token = None
+        else:
+            access_token = response["data"]["access_token"]
+            return access_token
     #end def
 
     def get_balance(self, params):
@@ -319,13 +346,9 @@ class CoreBank:
             args :
                 params -- account_no
         """
-        api_name = "GET_BALANCE"
+        response = {}
 
-        # define response here
-        response = {
-            "status" : "SUCCESS",
-            "data"   : None,
-        }
+        api_name = "GET_BALANCE"
 
         account_no = params["account_no"]
 
@@ -335,23 +358,15 @@ class CoreBank:
         }
 
         # post here
-        post_resp = self._post(api_name, payload)
-        if post_resp["status"] != "SUCCESS":
-            response["status"] = post_resp["status"]
-            response["data"] = post_resp["data"]
-            return response
-        #end if
+        try:
+            post_resp = self._post(api_name, payload)
+        except ApiError as error:
+            raise ServicesError("GET_BALANCE_FAILED", error)
+        #end try
 
         # access the data here
         response_data = post_resp["data"]["getBalanceResponse"]["parameters"]
 
-        # check response_code here
-        response_code = response_data["responseCode"]
-        if response_code != "0001":
-            response["status"] = "FAILED"
-            response["data"] = response_data["errorMessage"]
-            return response
-        #end if
         response["data"] = {
             "bank_account_info" : {
                 "customer_name" : response_data["customerName"],
@@ -370,9 +385,7 @@ class CoreBank:
         api_name = "GET_INHOUSE_INQUIRY"
 
         # define response here
-        response = {
-            "status" : "SUCCESS"
-        }
+        response = {}
 
         account_no = params["account_no"]
 
@@ -381,29 +394,20 @@ class CoreBank:
             "accountNo" : account_no,
         }
 
-        # post here
-        post_resp = self._post(api_name, payload)
-        if post_resp["status"] != "SUCCESS":
-            response["status"] = post_resp["status"]
-            response["data"] = post_resp["data"]
-            return response
-        #end if
+        try:
+            post_resp = self._post(api_name, payload)
+        except ApiError as error:
+            raise ServicesError("GET_INHOUSE_INQUIRY_FAILED", error)
+        #end try
 
         # access the data here
         response_data = post_resp["data"]["getInHouseInquiryResponse"]["parameters"]
-        # check response code
-        response_code = response_data["responseCode"]
-        if response_code != "0001":
-            response["status"] = "FAILED"
-            response["data"] = response_data["errorMessage"]
-            return response
-        #end if
 
         # put conditional here, if account currency is missing it means a VA
         try:
             currency = response_data["accountCurrency"]
             acc_type = "BANK_ACCOUNT"
-        except:
+        except KeyError:
             acc_type = "VIRTUAL_ACCOUNT"
         #end try
 
@@ -429,37 +433,17 @@ class CoreBank:
         api_name = "DO_PAYMENT"
 
         # define response here
-        response = {
-            "status" : "SUCCESS"
-        }
+        response = {}
 
-        payment_method              = params["payment_method"     ]
-        source_account              = params["source_account"     ]
-        destination_account         = params["destination_account"]
-        amount                      = params["amount"             ]
-        destination_account_email   = params["email"              ]
-        clearing_code               = params["clearing_code"      ]
-        destination_account_name    = params["account_name"       ]
-        destination_account_address = params["address"            ]
-        charge_mode                 = params["charge_mode"        ]
-
-        # convert payment method
-        if payment_method == "IN_HOUSE":
-            payment_method = "0"
-        elif payment_method == "RTGS":
-            payment_method = "1"
-        elif payment_method == "CLEARING":
-            payment_method = "3"
-        #end if
-
-        # convert charge mode
-        if charge_mode == "SOURCE":
-            charge_mode = "OUR"
-        elif charge_mode == "DESTINATION":
-            charge_mode = "BEN"
-        elif charge_mode == "SPLIT":
-            charge_mode = "SHA"
-        #end if
+        payment_method              = params["method"       ]
+        source_account              = params["source_account"]
+        destination_account         = params["account_no"   ]
+        amount                      = params["amount"       ]
+        destination_account_email   = params["email"        ]
+        clearing_code               = params["clearing_code"]
+        destination_account_name    = params["account_name" ]
+        destination_account_address = params["address"      ]
+        charge_mode                 = params["charge_mode"  ]
 
         # build payload here
         now = datetime.utcnow()
@@ -486,22 +470,14 @@ class CoreBank:
 
         # post here
         # should log request and response
-        post_resp = self._post(api_name, payload)
-        if post_resp["status"] != "SUCCESS":
-            response["status"] = post_resp["status"]
-            response["data"] = post_resp["data"]
-            return response
+        try:
+            post_resp = self._post(api_name, payload)
+        except ApiError as error:
+            raise ServicesError("DO_PAYMENT_FAILED", error)
         #end if
 
         # access the data here
         response_data = post_resp["data"]["doPaymentResponse"]["parameters"]
-        # check response code here
-        response_code = response_data["responseCode"]
-        if response_code != "0001":
-            response["status"] = "FAILED"
-            response["data"] = response_data["errorMessage"]
-            return response
-        #end if
 
         response["data"] = {
             "transfer_info" : {
@@ -525,9 +501,7 @@ class CoreBank:
         api_name = "GET_PAYMENT_STATUS"
 
         # define response here
-        response = {
-            "status" : "SUCCESS"
-        }
+        response = {}
 
         request_ref = params["request_ref"]
 
@@ -538,22 +512,11 @@ class CoreBank:
 
         # post here
         # should log request and response
-        post_resp = self._post(api_name, payload)
-        if post_resp["status"] != "SUCCESS":
-            response["status"] = post_resp["status"]
-            response["data"] = post_resp["data"]
-            return response
-        #end if
-
-        # access the data here
-        response_data = post_resp["data"]["getPaymentStatusResponse"]["parameters"]
-        # check response code here
-        response_code = response_data["responseCode"]
-        if response_code != "0001":
-            response["status"] = "FAILED"
-            response["data"] = response_data["errorMessage"]
-            return response
-        #end if
+        try:
+            post_resp = self._post(api_name, payload)
+        except ApiError as error:
+            raise ServicesError("GET_PAYMENT_STATUS_FAILED", error)
+        #end try
 
         # accessing the inner data
         response_data = post_resp["data"]["getPaymentStatusResponse"]["parameters"]["previousResponse"]
@@ -570,34 +533,45 @@ class CoreBank:
 
     def transfer(self, params):
         """
-            function that wrap interbank inquiry and interbank payment
+            function that wrap interbank inquiry do_payment and interbank payment
             args :
                 params -- parameter
         """
-        response = {
-            "status" : "SUCCESS",
-            "data" : None
-        }
-        interbank_response = self.get_interbank_inquiry(params)
-        if interbank_response["status"] != "SUCCESS":
-            response["status"] = "FAILED"
-            response["data"] = "BANK_NOT_FOUND"
-            return response
-        #end if
-        print(interbank_response)
+        response = {}
+        # if bank code is BNI then use do_payment
+        if params["bank_code"] == "009":
+            # adjust required parameter here and replace with empty string
+            params["method"        ] = "0" # inhouse
+            params["email"         ] = ""
+            params["clearing_code" ] = ""
+            params["account_name"  ] = ""
+            params["address"       ] = ""
+            params["charge_mode"   ] = ""
+            try:
+                response = self.do_payment(params)
+            except ServicesError as error:
+                raise InhouseTransferError("BNI_TRANSFER", error)
+        else:
+            try:
+                interbank_response = self.get_interbank_inquiry(params)
+            except ServicesError as error:
+                # should raise invalid account
+                text = "Account {} on {} not found".format(params["account_no"], \
+                                                           params["bank_code"])
+                raise InvalidInterbankAccountError(text, error)
+            #end try
 
-        params["bank_name"] = interbank_response['data']['inquiry_info']["transfer_bank_name"]
-        params["account_name"] = interbank_response['data']['inquiry_info']["account_name"]
-        params["transfer_ref"] = interbank_response['data']['inquiry_info']["transfer_ref"]
+            params["bank_name"] = interbank_response['data']['inquiry_info']["transfer_bank_name"]
+            params["account_name"] = interbank_response['data']['inquiry_info']["account_name"]
+            params["transfer_ref"] = interbank_response['data']['inquiry_info']["transfer_ref"]
 
-        payment_response = self.get_interbank_payment(params)
-        if payment_response["status"] != "SUCCESS":
-            response["status"] = "FAILED"
-            response["data"] = "INTERBANK_TRANSFER_FAILED"
-            return response
-        #end if
+            try:
+                payment_response = self.get_interbank_payment(params)
+            except ServicesError as error:
+                raise InterbankTransferError(error)
+            #end try
 
-        response["data"] = payment_response["data"]
+            response["data"] = payment_response["data"]
         return response
     #end def
 
@@ -610,9 +584,7 @@ class CoreBank:
         api_name = "GET_INTERBANK_INQUIRY"
 
         # define response here
-        response = {
-            "status" : "SUCCESS"
-        }
+        response = {}
 
         source_account = params["source_account"]
         bank_code      = params["bank_code"     ]
@@ -629,22 +601,17 @@ class CoreBank:
 
         # post here
         # should log request and response
-        post_resp = self._post(api_name, payload)
-        if post_resp["status"] != "SUCCESS":
-            response["status"] = post_resp["status"]
-            response["data"] = post_resp["data"]
-            return response
-        #end if
+        try:
+            post_resp = self._post(api_name, payload)
+        except ApiError as error:
+            raise ServicesError("INTERBANK_INQUIRY_FAILED", error)
+        #end try
 
         # access the data here
         response_data = post_resp["data"]["getInterbankInquiryResponse"]["parameters"]
         # check response code
         response_code = response_data["responseCode"]
-        if response_code != "0001":
-            response["status"] = "FAILED"
-            response["data"] = response_data["errorMessage"]
-            return response
-        #end if
+
         response["data"] = {
             "inquiry_info" : {
                 "account_no"         : response_data["destinationAccountNum"],
@@ -666,9 +633,7 @@ class CoreBank:
         api_name = "GET_INTERBANK_PAYMENT"
 
         # define response here
-        response = {
-            "status" : "SUCCESS"
-        }
+        response = {}
 
         source_account = params["source_account"]
         account_no     = params["account_no"    ]
@@ -693,28 +658,20 @@ class CoreBank:
 
         # post here
         # should log request and response
-        post_resp = self._post(api_name, payload)
-        if post_resp["status"] != "SUCCESS":
-            response["status"] = post_resp["status"]
-            response["data"] = post_resp["data"]
-            return response
-        #end if
+        try:
+            post_resp = self._post(api_name, payload)
+        except ApiError as error:
+            raise ServicesError("INTERBANK_PAYMENT_FAILED", error)
+        #end try
 
         # access the data here
         response_data = post_resp["data"]["getInterbankPaymentResponse"]["parameters"]
-        # check response code
-        response_code = response_data["responseCode"]
-        if response_code != "0001":
-            response["status"] = "FAILED"
-            response["data"] = response_data["errorMessage"]
-            return response
-        #end if
 
         response["data"] = {
             "transfer_info" : {
-                "account_no"         : response_data["destinationAccountNum"],
-                "account_name"       : response_data["destinationAccountName"],
-                "ref_number"         : response_data["customerReffNum"],
+                "account_no"   : response_data["destinationAccountNum"],
+                "account_name" : response_data["destinationAccountName"],
+                "ref_number"   : response_data["customerReffNum"],
             },
             "request_ref" : ref_number
         }
@@ -750,8 +707,10 @@ class BNI:
                 "transaction_id"    : data["transaction_id"],
             }
             response = VirtualAccount().create_va("CREDIT", params)
-        elif operation == "TRANSFER":
+        elif operation == "DIRECT_TRANSFER":
             response = CoreBank().transfer(data)
+        elif operation == "NON_DIRECT_TRANSFER":
+            response = CoreBank().do_payment(data)
         elif operation == "CHECK_BALANCE":
             response = CoreBank().get_balance(data)
         #end if

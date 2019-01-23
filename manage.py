@@ -134,9 +134,9 @@ def _import_bank_csv():
             for row in csv_reader:
                 if line > 0:
                     bank = Bank(
-                        code=row[2],
-                        name=row[1],
-                        rtgs=row[0]
+                        code=row[0],
+                        name=row[2],
+                        rtgs=row[1]
                     )
                     db.session.add(bank)
                     db.session.commit()
