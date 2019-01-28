@@ -71,8 +71,6 @@ class AuthServices:
             args:
                 params -- parameter
         """
-        response = {}
-
         username = params["username"]
         password = params["password"]
 
@@ -89,12 +87,10 @@ class AuthServices:
         access_token = self._create_access_token(user)
         refresh_token = self._create_refresh_token(user)
 
-        response["data"] = {
+        response = {
             "access_token" : access_token,
             "refresh_token": refresh_token
         }
-
-        response["message"] = RESPONSE_MSG["SUCCESS"]["ACCESS_AUTH"]
         return response
     #end def
 
@@ -113,11 +109,9 @@ class AuthServices:
 
         access_token = self._create_access_token(user)
 
-        response["data"] = {
+        response = {
             "access_token" : access_token,
         }
-
-        response["message"] = RESPONSE_MSG["SUCCESS"]["REFRESH_AUTH"]
         return response
     #end def
 

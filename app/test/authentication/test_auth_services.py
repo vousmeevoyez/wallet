@@ -36,8 +36,8 @@ class TestAuthServices(BaseTestCase):
         result = AuthServices().create_token({"username" : "MODANAADMIN",\
                                               "password" : "password"})
 
-        self.assertTrue(result["data"]["access_token"])
-        self.assertTrue(result["data"]["refresh_token"])
+        self.assertTrue(result["access_token"])
+        self.assertTrue(result["refresh_token"])
 
     def test_create_token_failed_not_found(self):
         """ test failed create access & refresh token because user is not
@@ -61,7 +61,7 @@ class TestAuthServices(BaseTestCase):
         user = User.query.filter_by(username="MODANAADMIN").first()
         result = AuthServices().refresh_token(user.id)
 
-        self.assertTrue(result["data"]["access_token"])
+        self.assertTrue(result["access_token"])
 
     def test_refresh_token_failed_not_found(self):
         """ test success refreshing token"""
@@ -75,7 +75,7 @@ class TestAuthServices(BaseTestCase):
         result = AuthServices().create_token({"username" : "MODANAADMIN",\
                                               "password" : "password"})
 
-        access_token = result["data"]["access_token"]
+        access_token = result["access_token"]
         result = AuthServices().logout_access_token(access_token)
 
         self.assertTrue(result["message"])
@@ -85,7 +85,7 @@ class TestAuthServices(BaseTestCase):
         result = AuthServices().create_token({"username" : "MODANAADMIN",\
                                               "password" : "password"})
 
-        refresh_token = result["data"]["refresh_token"]
+        refresh_token = result["refresh_token"]
         result = AuthServices().logout_access_token(refresh_token)
 
         self.assertTrue(result["message"])

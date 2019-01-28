@@ -259,6 +259,7 @@ class ProductionConfig(Config):
             DATABASE["PASSWORD"] + "@" + DATABASE["HOST_NAME"] + "/" + \
             DATABASE["DB_NAME"] + "_prod"
     PRESERVE_CONTEXT_ON_EXCEPTION = False
+    PROPAGATE_EXCEPTIONS = True
 #end class
 
 
