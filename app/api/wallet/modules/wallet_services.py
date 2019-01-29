@@ -3,8 +3,9 @@
     ________________
     This is module that serve everything related to wallet
 """
+#pylint: disable=bad-whitespace
+#pylint: disable=no-self-use
 import random
-import traceback
 from datetime import datetime, timedelta
 
 from flask          import request
@@ -251,8 +252,9 @@ class WalletServices:
         """
         response = {}
 
-        wallet_id = params["id"]
-        pin = params["pin"]
+        wallet_id   = params["id"]
+        old_pin     = params["old_pin"]
+        pin         = params["pin"]
         confirm_pin = params["confirm_pin"]
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
@@ -260,12 +262,17 @@ class WalletServices:
             return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
         #end if
 
-        # first need to check pin and confirmation pin must same
+        # first make sure the old pin is correct
+        if wallet.check_pin(old_pin) is True:
+            return bad_request(RESPONSE_MSG["FAILED"]["INVALID_OLD_PIN"])
+        #end if
+
+        # second need to check pin and confirmation pin must same
         if pin != confirm_pin:
             return bad_request(RESPONSE_MSG["FAILED"]["PIN_NOT_MATCH"])
         #end if
 
-        # second make sure the new pin is not the same with the old one
+        # third make sure the new pin is not the same with the old one
         if wallet.check_pin(pin) is True:
             return bad_request(RESPONSE_MSG["FAILED"]["OLD_PIN"])
         #end if
@@ -319,7 +326,7 @@ class WalletServices:
         # fetch required information for sending sms here
         msisdn = str(wallet.user.phone_ext) + str(wallet.user.phone_number)
         try:
-            result = Sms().send(msisdn, "FORGOT_PIN", otp_code)
+            Sms().send(msisdn, "FORGOT_PIN", otp_code)
         except SmsError:
             db.session.rollback()
             return internal_error(RESPONSE_MSG["FAILED"]["SMS_ERROR"])
@@ -341,9 +348,9 @@ class WalletServices:
         response = {}
 
         wallet_id = params["id"]
-        otp_code = params["otp_code"]
-        otp_key = params["otp_key"]
-        pin = params["pin"]
+        otp_code  = params["otp_code"]
+        otp_key   = params["otp_key"]
+        pin       = params["pin"]
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
         if wallet is None:

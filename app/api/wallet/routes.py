@@ -214,6 +214,7 @@ class WalletPinRoutes(Resource):
         """
         request_data = update_pin_request_schema.parse_args(strict=True)
         data = {
+            "old_pin"     : request_data["old_pin"],
             "pin"         : request_data["pin"],
             "confirm_pin" : request_data["confirm_pin"],
             "id"          : wallet_id

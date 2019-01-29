@@ -127,6 +127,7 @@ class Config:
             "INVALID_TOKEN"          : "Invalid Token",
             "INSUFFICIENT_PERMISSION": "Admin Permission Required",
             "PIN_NOT_MATCH"          : "Pin & Confirm Pin does not match",
+            "INVALID_OLD_PIN"        : "Wrong old pin",
             "OLD_PIN"                : "New Pin can't be the same with old one",
             "OTP_PENDING"            : "There's pending Forgot OTP, "\
                                        "Please wait {} minutes before request again".
@@ -259,7 +260,6 @@ class ProductionConfig(Config):
             DATABASE["PASSWORD"] + "@" + DATABASE["HOST_NAME"] + "/" + \
             DATABASE["DB_NAME"] + "_prod"
     PRESERVE_CONTEXT_ON_EXCEPTION = False
-    PROPAGATE_EXCEPTIONS = True
 #end class
 
 

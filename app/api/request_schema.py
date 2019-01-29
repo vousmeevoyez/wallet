@@ -47,6 +47,7 @@ class WalletRequestSchema:
 class WalletUpdatePinRequestSchema:
     """Define all mandatory argument for updating pin"""
     parser = reqparse.RequestParser()
+    parser.add_argument("old_pin",    type=str, required=True)
     parser.add_argument("pin",        type=str, required=True)
     parser.add_argument("confirm_pin",type=str, required=True)
 #end class

@@ -3,7 +3,11 @@
     ______________________
     Package Initialization
 """
-from flask              import Flask, request, current_app
+from flask  import Flask
+from flask  import request
+from flask  import current_app
+from flask  import jsonify
+
 from flask_sqlalchemy   import SQLAlchemy
 from flask_marshmallow  import Marshmallow
 
