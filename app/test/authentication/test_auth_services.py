@@ -1,10 +1,19 @@
-""" 
+"""
     Test Authentication Services
 """
 
 from app.test.base import BaseTestCase
 from app.api.models import User
+
+from unittest.mock import patch, Mock
+
 from app.api.authentication.modules.auth_services import AuthServices
+
+from app.api.exception.authentication.exceptions import TokenError
+from app.api.exception.authentication.exceptions import RevokedTokenError
+from app.api.exception.authentication.exceptions import SignatureExpiredError
+from app.api.exception.authentication.exceptions import InvalidTokenError
+from app.api.exception.authentication.exceptions import EmptyPayloadError
 
 class TestAuthServices(BaseTestCase):
     """ test auth services class"""
@@ -28,8 +37,40 @@ class TestAuthServices(BaseTestCase):
 
         result = AuthServices.current_login_user(token)
 
-        self.assertEqual(result["data"]["token_type"], "ACCESS")
-        self.assertEqual(result["data"]["user_id"], 1)
+        self.assertEqual(result["token_type"], "ACCESS")
+        self.assertEqual(result["user_id"], 1)
+
+    @patch.object(User, "decode_token")
+    def test_current_login_user_revoked_token(self, mock_decode):
+        """ test curren login user but using revoked token"""
+
+        mock_decode.side_effect = RevokedTokenError
+        with self.assertRaises(TokenError):
+            AuthServices.current_login_user("lkadsjlkjaskljdkjaskdjlajldaslkjdak")
+
+    @patch.object(User, "decode_token")
+    def test_current_login_user_signature_expired_token(self, mock_decode):
+        """ test curren login user but using signature expired token """
+
+        mock_decode.side_effect = SignatureExpiredError
+        with self.assertRaises(TokenError):
+            AuthServices.current_login_user("lkadsjlkjaskljdkjaskdjlajldaslkjdak")
+
+    @patch.object(User, "decode_token")
+    def test_current_login_user_invalid_token(self, mock_decode):
+        """ test curren login user but using invalid token """
+
+        mock_decode.side_effect = InvalidTokenError
+        with self.assertRaises(TokenError):
+            AuthServices.current_login_user("lkadsjlkjaskljdkjaskdjlajldaslkjdak")
+
+    @patch.object(User, "decode_token")
+    def test_current_login_user_empty_payload(self, mock_decode):
+        """ test curren login user but using empty payload token"""
+
+        mock_decode.side_effect = EmptyPayloadError
+        with self.assertRaises(TokenError):
+            AuthServices.current_login_user("lkadsjlkjaskljdkjaskdjlajldaslkjdak")
 
     def test_create_token_success(self):
         """ test success create access & refresh token"""
@@ -77,8 +118,39 @@ class TestAuthServices(BaseTestCase):
 
         access_token = result["access_token"]
         result = AuthServices().logout_access_token(access_token)
+        self.assertTrue(result[1], 204) # no content
 
-        self.assertTrue(result["message"])
+    @patch.object(User, "decode_token")
+    def test_logout_access_token_revoked_token(self, mock_decode):
+        """ test blacklist access token using revoked token"""
+        mock_decode.side_effect = RevokedTokenError
+
+        result = AuthServices().logout_access_token("123123k123k12;3j12j3j21jj")
+        self.assertTrue(result[1], 401) # no content
+
+    @patch.object(User, "decode_token")
+    def test_logout_access_token_signature_expired(self, mock_decode):
+        """ test blacklist access token using expired token"""
+        mock_decode.side_effect = SignatureExpiredError
+
+        result = AuthServices().logout_access_token("123123k123k12;3j12j3j21jj")
+        self.assertTrue(result[1], 401) # no content
+
+    @patch.object(User, "decode_token")
+    def test_logout_access_token_invalid(self, mock_decode):
+        """ test blacklist access token using invalid token"""
+        mock_decode.side_effect = InvalidTokenError 
+
+        result = AuthServices().logout_access_token("123123k123k12;3j12j3j21jj")
+        self.assertTrue(result[1], 401) # no content
+
+    @patch.object(User, "decode_token")
+    def test_logout_access_token_empty_payload(self, mock_decode):
+        """ test blacklist access token using invalid token"""
+        mock_decode.side_effect = EmptyPayloadError
+
+        result = AuthServices().logout_access_token("123123k123k12;3j12j3j21jj")
+        self.assertTrue(result[1], 401) # no content
 
     def test_logout_refresh_token(self):
         """ test blacklist access token """
@@ -86,6 +158,38 @@ class TestAuthServices(BaseTestCase):
                                               "password" : "password"})
 
         refresh_token = result["refresh_token"]
-        result = AuthServices().logout_access_token(refresh_token)
+        result = AuthServices().logout_refresh_token(refresh_token)
 
-        self.assertTrue(result["message"])
+        self.assertTrue(result[1], 204) # no content
+
+    @patch.object(User, "decode_token")
+    def test_logout_refresh_token_revoked(self, mock_decode):
+        """ test blacklist refresh token using revoked token"""
+        mock_decode.side_effect = RevokedTokenError
+
+        result = AuthServices().logout_refresh_token("123123k123k12;3j12j3j21jj")
+        self.assertTrue(result[1], 401) # no content
+
+    @patch.object(User, "decode_token")
+    def test_logout_refresh_token_signature_expired(self, mock_decode):
+        """ test blacklist refresh token using revoked token"""
+        mock_decode.side_effect = SignatureExpiredError
+
+        result = AuthServices().logout_refresh_token("123123k123k12;3j12j3j21jj")
+        self.assertTrue(result[1], 401) # no content
+
+    @patch.object(User, "decode_token")
+    def test_logout_refresh_token_invalid_token(self, mock_decode):
+        """ test blacklist refresh token using revoked token"""
+        mock_decode.side_effect = InvalidTokenError
+
+        result = AuthServices().logout_refresh_token("123123k123k12;3j12j3j21jj")
+        self.assertTrue(result[1], 401) # no content
+
+    @patch.object(User, "decode_token")
+    def test_logout_refresh_token_empty_payload(self, mock_decode):
+        """ test blacklist refresh token using empty payload """
+        mock_decode.side_effect = EmptyPayloadError
+
+        result = AuthServices().logout_refresh_token("123123k123k12;3j12j3j21jj")
+        self.assertTrue(result[1], 401) # no content

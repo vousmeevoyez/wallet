@@ -10,8 +10,8 @@ from flask import request, jsonify
 from app.api            import db
 from app.api.models     import Bank
 from app.api.serializer import BankSchema
-from app.api.errors     import bad_request, internal_error, request_not_found
-from app.api.config     import config
+from app.api.http_response     import bad_request, internal_error, request_not_found
+from app.config     import config
 from app.api.bank.handler import BankHandler
 
 RESPONSE_MSG = config.Config.RESPONSE_MSG

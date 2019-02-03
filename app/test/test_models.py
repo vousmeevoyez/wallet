@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from app.test.base  import BaseTestCase
 from app.api        import db
 from app.api.models import *
-from app.api.config import config
+from app.config import config
 
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
@@ -153,6 +153,8 @@ class UserTestCaseModel(BaseTestCase):
         # make sure the decoded token contain following information
         self.assertEqual(user.decode_token(token)["type"], "ACCESS")
         self.assertEqual(user.decode_token(token)["role"], "USER")
+
+        user.decode_token("eyJhbGciOiJIUzI1NiIsInR5cCI6Im5vbmUifQ.e30.kligm-MjaliTD584hBs6v52XSZcixYU9BlmAAwmjOB0")
 
 class WalletModelCase(BaseTestCase):
 

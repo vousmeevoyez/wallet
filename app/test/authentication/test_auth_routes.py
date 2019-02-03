@@ -61,8 +61,14 @@ class TestAuthRoutes(BaseTestCase):
         response = result.get_json()
 
         self.assertEqual(result.status_code, 200)
-        self.assertTrue(response["data"]["access_token"])
-        self.assertTrue(response["data"]["refresh_token"])
+        self.assertTrue(response["access_token"])
+        self.assertTrue(response["refresh_token"])
+    #end def
+
+    def test_get_access_token_invalid_params(self):
+        """ test get access token using invalid params"""
+        result = self.get_access_token("MO", "pa")
+        self.assertEqual(result.status_code, 400)
     #end def
 
     def test_get_access_token_failed_record_not_found(self):
@@ -78,7 +84,7 @@ class TestAuthRoutes(BaseTestCase):
         result = self.get_access_token("MODANAADMIN", "pa3sword")
         response = result.get_json()
 
-        self.assertEqual(result.status_code, 400)
+        self.assertEqual(result.status_code, 401)
     #end def
 
     def test_get_refresh_token_success(self):
@@ -87,7 +93,7 @@ class TestAuthRoutes(BaseTestCase):
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
 
-        refresh_token = response["data"]["refresh_token"]
+        refresh_token = response["refresh_token"]
 
         result = self.get_refresh_token(refresh_token)
         response = result.get_json()
@@ -101,7 +107,7 @@ class TestAuthRoutes(BaseTestCase):
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
 
-        access_token = response["data"]["access_token"]
+        access_token = response["access_token"]
 
         result = self.get_refresh_token(access_token)
         response = result.get_json()
@@ -114,9 +120,7 @@ class TestAuthRoutes(BaseTestCase):
         refresh_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
         result = self.get_refresh_token(refresh_token)
-        response = result.get_json()
-
-        self.assertEqual(result.status_code, 400)
+        self.assertEqual(result.status_code, 401)
     #end def
 
     def test_revoke_access_token_success(self):
@@ -125,12 +129,10 @@ class TestAuthRoutes(BaseTestCase):
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
 
-        access_token = response["data"]["access_token"]
+        access_token = response["access_token"]
 
         result = self.revoke_access_token(access_token)
-        response = result.get_json()
-
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.status_code, 204)
     #end def
 
     def test_revoke_access_token_failed_invalid_token(self):
@@ -138,9 +140,7 @@ class TestAuthRoutes(BaseTestCase):
         access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
         result = self.revoke_access_token(access_token)
-        response = result.get_json()
-
-        self.assertEqual(result.status_code, 400)
+        self.assertEqual(result.status_code, 401)
     #end def
 
     def test_revoke_refresh_token_success(self):
@@ -149,12 +149,10 @@ class TestAuthRoutes(BaseTestCase):
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
 
-        refresh_token = response["data"]["refresh_token"]
+        refresh_token = response["refresh_token"]
 
         result = self.revoke_refresh_token(refresh_token)
-        response = result.get_json()
-
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.status_code, 204)
     #end def
 
     def test_revoke_refresh_token_failed_invalid_token(self):
@@ -162,7 +160,5 @@ class TestAuthRoutes(BaseTestCase):
         refresh_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
         result = self.revoke_refresh_token(refresh_token)
-        response = result.get_json()
-
-        self.assertEqual(result.status_code, 400)
+        self.assertEqual(result.status_code, 401)
     #end def

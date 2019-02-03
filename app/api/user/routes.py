@@ -16,7 +16,9 @@ from app.api.authentication.decorator import token_required, admin_required
 from app.api.user.modules.bank_account_services import BankAccountServices
 from app.api.user.modules.user_services import UserServices
 
-from app.api.errors import bad_request, internal_error, request_not_found
+from app.api.http_response import internal_error
+from app.api.http_response import bad_request
+from app.api.http_response import request_not_found
 
 user_request_schema = UserRequestSchema.parser
 user_bank_account_request_schema = BankAccountRequestSchema.parser

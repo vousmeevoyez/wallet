@@ -2,7 +2,7 @@ import json
 
 from app.test.base              import BaseTestCase
 from app.api.bank.bni.utility   import remote_call
-from app.api.config             import config
+from app.config             import config
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 

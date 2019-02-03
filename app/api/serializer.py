@@ -11,7 +11,7 @@ from marshmallow import fields, ValidationError, post_load, validates
 
 from app.api         import ma
 from app.api.models  import Wallet, VirtualAccount, User, Role
-from app.api.config  import config
+from app.config  import config
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 WALLET_CONFIG = config.Config.WALLET_CONFIG
@@ -295,7 +295,7 @@ class UserSchema(ma.Schema):
 
 class WalletSchema(ma.Schema):
     """ This is class that represent wallet schema"""
-    id         = fields.Int()
+    id         = fields.Str()
     user_id    = fields.Int(load_only=True)
     pin        = fields.Str(required=True, attribute="pin_hash", validate=cannot_be_blank, load_only=True)
     created_at = fields.DateTime('%Y-%m-%d %H:%M:%S', load_only=True)
@@ -309,8 +309,10 @@ class WalletSchema(ma.Schema):
                 obj -- wallet object
         """
         status = "ACTIVE"
-        if obj.status is not True:
+        if obj.status == 0:
             status = "INACTIVE"
+        elif obj.status == 2:
+            status = "LOCKED"
         return status
     #end def
 

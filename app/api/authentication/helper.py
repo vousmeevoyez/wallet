@@ -2,8 +2,8 @@
 	Authentication Helper
 """
 from app.api.models     import Wallet
-from app.api.errors     import bad_request
-from app.api.config     import config
+from app.api.http_response     import bad_request
+from app.config     import config
 
 RESPONSE_MSG = config.Config.RESPONSE_MSG
 

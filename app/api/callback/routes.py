@@ -8,8 +8,8 @@ from flask              import request
 
 from app.api.callback           import api
 from app.api.serializer         import CallbackSchema
-from app.api.errors             import bad_request, internal_error, request_not_found
-from app.api.config             import config
+from app.api.http_response             import bad_request, internal_error, request_not_found
+from app.config             import config
 from app.api.bank.bni.utility   import remote_call as bni_utility
 from app.api.callback.modules.callback_services import CallbackServices
 

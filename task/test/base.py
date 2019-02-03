@@ -1,12 +1,11 @@
-from os import path
-import json
-import csv
-
 from flask_testing  import TestCase
+
 from unittest.mock import Mock, patch
 
-from manage         import app, init
-from app.api        import db
+from manage  import init
+from manage  import app
+
+from app.api import db
 # configuration
 from app.config import config
 # models
@@ -30,7 +29,7 @@ class BaseTestCase(TestCase):
     def setUp(self):
         db.create_all()
         # wrap everything for initialization here
-        self._init_test()
+        #self._init_test()
         db.session.commit()
 
     def tearDown(self):

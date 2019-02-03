@@ -21,7 +21,7 @@ from app.api import db
 # models
 from app.api.models import ExternalLog
 # configuration
-from app.api.config import config
+from app.config import config
 # exceptions
 from app.api.exception.exceptions import ApiError
 from app.api.exception.bank.exceptions import ServicesError

@@ -18,7 +18,7 @@ from app.api.models import ExternalLog
 from app.api.exception.exceptions import ApiError
 from app.api.exception.bank.exceptions import DecryptError
 
-from app.api.config import config
+from app.config import config
 
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG

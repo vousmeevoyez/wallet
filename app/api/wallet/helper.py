@@ -11,8 +11,8 @@ from sqlalchemy.exc import IntegrityError
 from app.api            import db
 from app.api.bank.handler import BankHandler
 from app.api.serializer import WalletSchema
-from app.api.errors     import bad_request, internal_error, request_not_found
-from app.api.config     import config
+from app.api.http_response     import bad_request, internal_error, request_not_found
+from app.config     import config
 
 RESPONSE_MSG = config.Config.RESPONSE_MSG
 
@@ -26,20 +26,15 @@ class WalletHelper:
                 params -- name, msisdn, user_id, pin
                 session -- database session (optional)
         """
-        response = {
-            "status" : "SUCCESS",
-            "data"   : "NONE"
-        }
-
         # request data validator
         wallet, errors = WalletSchema().load({
             "user_id" : params["user_id"],
             "pin"     : params["pin"]
         })
+
         if errors:
-            response["status"] = "FAILED"
-            response["data"] = errors
-            return response
+            # should raise wallet not valid
+            pass
         #end if
 
         if session is None:
@@ -74,14 +69,8 @@ class WalletHelper:
             session.commit()
 
         except IntegrityError as err:
-            print(err)
             session.rollback()
-            response["status"] = "FAILED"
-            response["data"] = RESPONSE_MSG["FAILED"]["ERROR_ADDING_RECORD"]
-            return response
         #end try
-
-        response["data"] = {"wallet_id" : wallet_id}
-        return response
+        return wallet_id
     #end def
 #end class

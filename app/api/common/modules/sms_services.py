@@ -17,7 +17,7 @@ from app.api.exception.exceptions import ApiError
 from app.api.exception.common.exceptions import SmsError
 
 # configuration
-from app.api.config import config
+from app.config import config
 
 WALLET_CONFIG = config.Config.WALLET_CONFIG
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG

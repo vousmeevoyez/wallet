@@ -3,8 +3,6 @@
     _______________________
     this module aggregate all wallet modules
 """
-#pylint: disable=invalid-name
-#pylint: disable=too-few-public-methods
 from flask_restplus import Api
 
 from flask import Blueprint

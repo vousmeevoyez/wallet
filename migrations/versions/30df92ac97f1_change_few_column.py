@@ -1,8 +1,8 @@
-"""init db
+"""change few column
 
-Revision ID: 9df2cb2746a4
+Revision ID: 30df92ac97f1
 Revises: 
-Create Date: 2019-01-17 10:15:44.179372
+Create Date: 2019-02-01 10:21:39.987498
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '9df2cb2746a4'
+revision = '30df92ac97f1'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -80,7 +80,7 @@ def upgrade():
     sa.Column('email', sa.String(length=144), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('password_hash', sa.String(length=128), nullable=True),
-    sa.Column('status', sa.Boolean(), nullable=True),
+    sa.Column('status', sa.Integer(), nullable=True),
     sa.Column('role_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['role_id'], ['role.id'], ),
     sa.PrimaryKeyConstraint('id'),
@@ -121,7 +121,7 @@ def upgrade():
     sa.Column('id', sa.BigInteger(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('pin_hash', sa.String(length=128), nullable=True),
-    sa.Column('status', sa.Boolean(), nullable=True),
+    sa.Column('status', sa.Integer(), nullable=True),
     sa.Column('balance', sa.Float(), nullable=True),
     sa.Column('user_id', sa.BigInteger(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
@@ -156,7 +156,7 @@ def upgrade():
     sa.Column('trx_amount', sa.Float(), nullable=True),
     sa.Column('name', sa.String(length=144), nullable=True),
     sa.Column('datetime_expired', sa.DateTime(), nullable=True),
-    sa.Column('status', sa.Boolean(), nullable=True),
+    sa.Column('status', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('wallet_id', sa.BigInteger(), nullable=True),
     sa.Column('va_type_id', sa.Integer(), nullable=True),
@@ -183,8 +183,10 @@ def upgrade():
     sa.Column('last_modified', sa.DateTime(), nullable=True),
     sa.Column('amount', sa.Float(), nullable=True),
     sa.Column('state', sa.Integer(), nullable=True),
-    sa.Column('transaction_id', sa.String(), nullable=True),
-    sa.ForeignKeyConstraint(['transaction_id'], ['transaction.id'], ),
+    sa.Column('debit_transaction_id', sa.String(), nullable=True),
+    sa.Column('credit_transaction_id', sa.String(), nullable=True),
+    sa.ForeignKeyConstraint(['credit_transaction_id'], ['transaction.id'], ),
+    sa.ForeignKeyConstraint(['debit_transaction_id'], ['transaction.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###

@@ -25,7 +25,7 @@ from app.api.request_schema import WalletTransactionRequestSchema
 from app.api.request_schema import QRTransferRequestSchema
 
 #http errors
-from app.api.errors import bad_request
+from app.api.http_response import bad_request
 
 # wallet modules
 from app.api.wallet.modules.wallet_services import WalletServices
@@ -38,7 +38,7 @@ from app.api.authentication.decorator import admin_required
 # helper
 from app.api.authentication.helper import AuthenticationHelper
 # configuration
-from app.api.config import config
+from app.config import config
 
 RESPONSE_MSG = config.Config.RESPONSE_MSG
 

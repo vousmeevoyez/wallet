@@ -3,22 +3,28 @@
     _______________
     this is module that serve request from user routes
 """
-import traceback
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import InvalidRequestError
 
-from flask          import request, jsonify
-from sqlalchemy     import exists
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
-from marshmallow    import ValidationError
+from app.api  import db
+from app.api.wallet import helper
 
-from app.api            import db
-from app.api.wallet     import helper
-from app.api.models     import User, Role
+from app.api.models import Role
+from app.api.models import User
+
 from app.api.serializer import UserSchema
 from app.api.serializer import WalletSchema
-from app.api.errors     import bad_request, internal_error, request_not_found
-from app.api.config     import config
+# http response
+from app.api.http_response import created
+from app.api.http_response import no_content
+from app.api.http_response import request_not_found
+from app.api.http_response import unprocessable_entity
 
-RESPONSE_MSG = config.Config.RESPONSE_MSG
+# configuration
+from app.config import config
+
+ERROR = config.Config.ERROR_HEADER
+STATUS_CONFIG = config.Config.STATUS_CONFIG
 
 class UserServices:
     """ User Services Class"""
@@ -27,15 +33,9 @@ class UserServices:
         """
             add new user
         """
-        response = {}
-
         # CREATE TRANSACTION SESSION
-        try:
-            session = db.session(autocommit=True)
-            session.begin(subtransactions=True)
-        except InvalidRequestError:
-            db.session.commit()
-            session = db.session()
+        session = db.session()
+        session.begin(nested=True)
 
         # fetch user role first
         role = Role.query.filter_by(description=params["role"]).first()
@@ -56,9 +56,9 @@ class UserServices:
             session.add(user)
             session.flush()
         except IntegrityError as err:
-            print(err)
+            #print(err.orig)
             session.rollback()
-            return internal_error(RESPONSE_MSG["FAILED"]["ERROR_ADDING_RECORD"])
+            return unprocessable_entity(ERROR["DUPLICATE_USER"])
         #end try
 
         params["user_id"] = user.id
@@ -66,50 +66,38 @@ class UserServices:
         msisdn = "0" + params["phone_number"]
         params["msisdn"] = msisdn
 
-        wallet_response = helper.WalletHelper().generate_wallet(params, session)
-
-        if wallet_response["status"] != "SUCCESS":
-            session.rollback()
-            return internal_error(wallet_response["data"])
-        #end if
+        # create wallet
+        # create va
 
         session.commit()
 
-        wallet_id = wallet_response["data"]["wallet_id"]
-
-        response["data"] = {
+        response = {
             "user_id"   : user.id,
-            "wallet_id" : wallet_id
+            "wallet_id" : None
         }
-        response["message"] = RESPONSE_MSG["SUCCESS"]["CREATE_USER"]
-        return response
+        return created(response)
     #end def
 
     def show(self, page):
-        """ show all stored user"""
-        response = {}
-
+        """ show all stored user for admin"""
         users = User.query.all()
-        response["data"] = UserSchema(many=True).dump(users).data
-
+        response = UserSchema(many=True).dump(users).data
         return response
     #end def
 
     def info(self, params):
         """ return single user information"""
-        response = {}
-
         user_id = params["user_id"]
 
-        user = User.query.filter_by(id=user_id).first()
+        user = User.query.filter_by(id=user_id, status=STATUS_CONFIG["ACTIVE"]).first()
         if user is None:
-            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+            return request_not_found()
         #end if
 
-        user_information   = UserSchema().dump(user).data
+        user_information = UserSchema().dump(user).data
         wallet_information = WalletSchema(many=True).dump(user.wallets).data
 
-        response["data"] = {
+        response = {
             "user_information"   : user_information,
             "wallet_information" : wallet_information
         }
@@ -117,28 +105,24 @@ class UserServices:
     #end def
 
     def remove(self, params):
-        """ remove user"""
-        response = {}
+        """ remove user, just deactivate their account """
+
+        # parse request data
+        user_id = params["user_id"]
+
+        user = User.query.filter_by(id=user_id).first()
+        if user is None:
+            return request_not_found()
+        #end if
 
         try:
-            # parse request data 
-            user_id = params["user_id"]
-
-            user = User.query.filter_by(id=user_id).first()
-            if user is None:
-                return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
-            #end if
-
-            db.session.delete(user)
+            user.status = STATUS_CONFIG["DEACTIVE"]
             db.session.commit()
-
-        except Exception as e:
+        except IntegrityError as error:
+            #print(err.orig)
             db.session.rollback()
-            print(traceback.format_exc())
-            print(str(e))
-            return internal_error()
-
-        response["message"] = RESPONSE_MSG["SUCCESS"]["REMOVE_USER"]
-        return response
+            return unprocessable_entity("Failed removing user")
+        #end try
+        return no_content()
     #end def
 #end class

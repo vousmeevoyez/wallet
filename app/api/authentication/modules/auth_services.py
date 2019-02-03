@@ -10,12 +10,20 @@ from sqlalchemy.exc import IntegrityError
 from app.api import db
 # models
 from app.api.models import User, BlacklistToken
-# http errors
-from app.api.errors import bad_request
-from app.api.errors import internal_error
-from app.api.errors import request_not_found
+# http response
+from app.api.http_response import bad_request
+from app.api.http_response import unauthorized
+from app.api.http_response import request_not_found
+from app.api.http_response import no_content
+from app.api.http_response import unprocessable_entity
+# exceptions
+from app.api.exception.authentication.exceptions import RevokedTokenError
+from app.api.exception.authentication.exceptions import SignatureExpiredError
+from app.api.exception.authentication.exceptions import InvalidTokenError
+from app.api.exception.authentication.exceptions import TokenError
+from app.api.exception.authentication.exceptions import EmptyPayloadError
 # configuration
-from app.api.config import config
+from app.config import config
 
 RESPONSE_MSG = config.Config.RESPONSE_MSG
 
@@ -43,21 +51,19 @@ class AuthServices:
             args:
                 token -- jwt token
         """
-
-        response = {
-            "status" : "SUCCESS"
-        }
-
-        payload = User.decode_token(token)
-
-        if not isinstance(payload, dict):
-            response["status"] = "FAILED"
-            response["data"] = payload # append the error here
-            return response
-        #end if
+        try:
+            payload = User.decode_token(token)
+        except RevokedTokenError:
+            raise TokenError("Revoked Token")
+        except SignatureExpiredError:
+            raise TokenError("Signature Expired")
+        except InvalidTokenError:
+            raise TokenError("Invalid Token")
+        except EmptyPayloadError:
+            raise TokenError("Empty Payload")
 
         # fetch user information
-        response["data"] = {
+        response = {
             "token_type": payload["type"],
             "user_id"   : payload["sub"],
             "role"      : payload["role"],
@@ -76,11 +82,11 @@ class AuthServices:
 
         user = User.query.filter_by(username=username).first()
         if user is None:
-            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+            return request_not_found()
         #end if
 
         if user.check_password(password) is not True:
-            return bad_request(RESPONSE_MSG["FAILED"]["INCORRECT_LOGIN"])
+            return unauthorized("Invalid Credentials")
         #end if
 
         # generate token here
@@ -104,7 +110,7 @@ class AuthServices:
 
         user = User.query.filter_by(id=current_user).first()
         if user is None:
-            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+            return request_not_found()
         #end if
 
         access_token = self._create_access_token(user)
@@ -121,14 +127,18 @@ class AuthServices:
             args:
                 token -- access token
         """
-        response = {}
-
         # decode the token first
-        resp = User.decode_token(token)
-
-        if not isinstance(resp, dict):
-            return bad_request(resp)
-        #end if
+        try:
+            payload = User.decode_token(token)
+        except RevokedTokenError:
+            return unauthorized("Revoked Token")
+        except SignatureExpiredError:
+            return unauthorized("Signature Expired")
+        except InvalidTokenError:
+            return unauthorized("Invalid Token")
+        except EmptyPayloadError:
+            return unauthorized("Empty Payload")
+        #end try
 
         blacklist_token = BlacklistToken(token=token)
 
@@ -136,12 +146,9 @@ class AuthServices:
             db.session.add(blacklist_token)
             db.session.commit()
         except IntegrityError as error:
-            print(str(error))
-            return internal_error()
+            return unprocessable_entity("Failed logging out token")
         #end try
-
-        response["message"] = RESPONSE_MSG["SUCCESS"]["LOGOUT_AUTH"]
-        return response
+        return no_content()
     #end def
 
     def logout_refresh_token(self, token):
@@ -150,14 +157,17 @@ class AuthServices:
             args:
                 token -- refresh token
         """
-        response = {}
-
         # decode the token first
-        resp = User.decode_token(token)
-
-        if not isinstance(resp, dict):
-            return bad_request(resp)
-        #end if
+        try:
+            payload = User.decode_token(token)
+        except RevokedTokenError:
+            return unauthorized("Revoked Token")
+        except SignatureExpiredError:
+            return unauthorized("Signature Expired")
+        except InvalidTokenError:
+            return unauthorized("Invalid Token")
+        except EmptyPayloadError:
+            return unauthorized("Empty Payload")
 
         blacklist_token = BlacklistToken(token=token)
 
@@ -165,11 +175,8 @@ class AuthServices:
             db.session.add(blacklist_token)
             db.session.commit()
         except IntegrityError as error:
-            print(str(error))
-            return internal_error()
+            return unprocessable_entity("Failed logging out token")
         #end try
-
-        response["message"] = RESPONSE_MSG["SUCCESS"]["LOGOUT_REFRESH"]
-        return response
+        return no_content()
     #end def
 #end class

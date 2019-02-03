@@ -31,10 +31,10 @@ from app.api.exception.wallet.exceptions import TransferError
 
 from app.api.exception.common.exceptions import DecryptError
 #ttp errors
-from app.api.errors import bad_request
-from app.api.errors import internal_error
+from app.api.http_response import bad_request
+from app.api.http_response import internal_error
 # configuration
-from app.api.config import config
+from app.config import config
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 RESPONSE_MSG      = config.Config.RESPONSE_MSG

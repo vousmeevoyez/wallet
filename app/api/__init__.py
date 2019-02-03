@@ -11,10 +11,13 @@ from flask  import jsonify
 from flask_sqlalchemy   import SQLAlchemy
 from flask_marshmallow  import Marshmallow
 
-from app.api.config import config
+from raven.contrib.flask import Sentry
+
+from app.config import config
 
 db = SQLAlchemy()
 ma = Marshmallow()
+sentry = Sentry()
 
 def create_app(config_name):
     """
@@ -28,5 +31,8 @@ def create_app(config_name):
 
     db.init_app(app)
     ma.init_app(app)
+
+    if not app.testing and not app.debug:
+        sentry.init_app(app)
 
     return app

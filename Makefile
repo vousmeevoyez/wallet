@@ -8,7 +8,7 @@ upgrade:
 tests:
 	python manage.py test
 
-run:
+run-dev:
 	python manage.py run
 
 init:
@@ -21,6 +21,7 @@ coverage:
 	coverage run --source app/api -m unittest discover -s app/test/
 
 build:
-		clean upgrade init
+	clean upgrade init
 
-start : clean upgrade init run
+start-dev: 
+	clean upgrade init run

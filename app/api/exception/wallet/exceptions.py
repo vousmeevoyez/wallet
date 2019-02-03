@@ -45,3 +45,5 @@ class TransferError(WalletError):
         super(TransferError, self).__init__(original_exception)
         self.msg = "Transfer Failed"
         self.original_exception = original_exception
+
+

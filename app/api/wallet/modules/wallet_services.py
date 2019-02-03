@@ -8,7 +8,6 @@
 import random
 from datetime import datetime, timedelta
 
-from flask          import request
 from sqlalchemy.exc import IntegrityError
 
 from app.api import db
@@ -17,7 +16,6 @@ from app.api import db
 from app.api.wallet.helper import WalletHelper
 from app.api.common.helper import Sms
 from app.api.common.helper import QR
-from app.api.bank.handler import BankHandler
 
 # models
 from app.api.models import Wallet
@@ -25,132 +23,114 @@ from app.api.models import Transaction
 from app.api.models import ForgotPin
 from app.api.models import Payment
 
+# decorator
+from app.api.wallet.decorator import wallet_exist
+
 # serializer
 from app.api.serializer import WalletSchema
 from app.api.serializer import TransactionSchema
 from app.api.serializer import VirtualAccountSchema
 
 # http error
-from app.api.errors import bad_request
-from app.api.errors import internal_error
-from app.api.errors import request_not_found
+from app.api.http_response import bad_request
+from app.api.http_response import unprocessable_entity
+from app.api.http_response import request_not_found
+from app.api.http_response import created
+from app.api.http_response import no_content
 
 # exception
 from app.api.common.modules.sms_services import SmsError
 
 # configuration
-from app.api.config     import config
+from app.config import config
 
-ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
-RESPONSE_MSG = config.Config.RESPONSE_MSG
 WALLET_CONFIG = config.Config.WALLET_CONFIG
+ERROR  = config.Config.ERROR_HEADER
 
 class WalletServices:
     """ Wallet Services Class"""
 
-    def add(self, params):
+    @staticmethod
+    def add(params, session=None):
         """
-            function to add new wallet to specific user
-            args :
-                params -
+            create wallet record
+            args:
+                params -- name, msisdn, user_id, pin
+                session -- database session (optional)
         """
-        response = {}
-
-        wallet_creation_resp = WalletHelper().generate_wallet(params)
-        if wallet_creation_resp["status"] != "SUCCESS":
-            return bad_request(wallet_creation_resp["data"])
+        if session is None:
+            #session = db.session(autocommit=True)
+            session = db.session
         #end if
+        session.begin(nested=True)
 
-        response["data"] = wallet_creation_resp["data"]
-        response["message"] = RESPONSE_MSG["SUCCESS"]["CREATE_WALLET"]
-        return response
+        wallet = Wallet(user_id=params["user_id"])
+        wallet_id = wallet.generate_wallet_id()
+        wallet.set_pin(params["pin"])
+
+        try:
+            session.add(wallet)
+            session.commit()
+        except IntegrityError as error:
+            #print(error.origin)
+            session.rollback()
+            return unprocessable_entity(ERROR["DUPLICATE_WALLET"])
+        #end try
+        response = {
+            "wallet_id" : wallet_id
+        }
+        return created(response)
     #end def
 
-    def show(self, params=None):
+    @staticmethod
+    def show(params=None):
         """
             function to show all wallet
             args -- params
         """
-        response = {}
-
         wallet = Wallet.query.all()
-        response["data"] = WalletSchema(many=True).dump(wallet).data
+        response = WalletSchema(many=True).dump(wallet).data
         return response
     #end def
 
+    @staticmethod
+    @wallet_exist
     def info(self, params):
         """
             function to return wallet information
             args:
                 params --
         """
-        response = {}
-
-        wallet_id = params["id"]
-
-        wallet = Wallet.query.filter_by(id=wallet_id).first()
-        if wallet is None:
-            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
-        #end if
-
         wallet_information = WalletSchema().dump(wallet).data
         va_information = VirtualAccountSchema(many=True).dump(wallet.virtual_accounts).data
 
-        response["data"] = {
+        response = {
             "wallet" : wallet_information,
             "virtual_account" : va_information
         }
         return response
     #end def
 
-    """
-    def remove(self, params):
-            function to remove wallet
-            args :
-                params --
-        response = {
-            "status_code"    : 0,
-            "status_message" : "SUCCESS",
-            "data"           : "NONE"
-        }
+    def remove(self):
+        """ remove wallet but just change it to deactivate """
 
-        wallet_id = params["id"]
-
-        wallet = Wallet.query.filter_by(id=wallet_id).first()
-        if wallet == None:
+        if self.wallet is None:
             return request_not_found()
         #end if
 
         #cannot delete wallet if this the only wallet
-        user_id = wallet.user_id
+        user_id = self.wallet.user_id
         wallet_number = Wallet.query.filter_by(user_id=user_id).count()
         if wallet_number <= 1:
-            return bad_request(RESPONSE_MSG["WALLET_REMOVAL_FAILED"])
+            return bad_request(ERROR["ONLY_WALLET"])
         #end if
 
-        # deactivating VA
-        va_info = wallet.virtual_accounts
-        datetime_expired = datetime.now() - timedelta(hours=WALLET_CONFIG["CREDIT_VA_TIMEOUT"])
+        self.wallet.status = 0 # deactive
+        db.session.commit()
 
-        va_payload = {
-            "trx_id"           : va_info[0].trx_id,
-            "amount"           : "0",
-            "customer_name"    : "NONE",
-            "datetime_expired" : datetime_expired
-        }
-        #va_response = BankHandler("BNI").update_va("CREDIT", va_payload)
-
-        try:
-            db.session.delete(wallet)
-            db.session.commit()
-            response["data"] = RESPONSE_MSG["WALLET_REMOVED"]
-        except IntegrityError as error:
-            print(str(error))
-            return internal_error()
-        return response
+        return no_content()
     #end def
-    """
 
     def check_balance(self, params):
         """
@@ -158,23 +138,19 @@ class WalletServices:
             args:
                 params -- id, pin
         """
-        response = {}
-
-        wallet_id = params["id"]
         pin = params["pin"]
 
-        wallet = Wallet.query.filter_by(id=wallet_id).first()
-        if wallet is None:
-            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+        if self.wallet is None:
+            return request_not_found()
         #end if
 
-        if wallet.check_pin(pin) is not True:
-            return bad_request(RESPONSE_MSG["FAILED"]["INCORRECT_PIN"])
+        if self.wallet.check_pin(pin) is not True:
+            return bad_request(ERROR["INCORRECT_PIN"])
         #end if
 
-        response["data"] = {
-            "id" : wallet_id,
-            "balance" : wallet.balance
+        response = {
+            "id"      : self.wallet.id,
+            "balance" : self.wallet.balance
         }
         return response
     #end def
@@ -185,19 +161,15 @@ class WalletServices:
             args :
                 params -- parameter
         """
-        response = {}
-
-        wallet_id = params["wallet_id"]
         start_date = params["start_date"]
         end_date = params["end_date"]
         transaction_type = params["flag"]
 
-        wallet = Wallet.query.filter_by(id=wallet_id).first()
-        if wallet is None:
+        if self.wallet is None:
             return request_not_found()
         #end if
 
-        conditions = [Transaction.wallet_id == wallet.id]
+        conditions = [Transaction.wallet_id == self.wallet.id]
         # filter by transaction type
         if transaction_type == "IN":
             conditions.append(Payment.payment_type == True)
@@ -218,9 +190,9 @@ class WalletServices:
                                                  Transaction.payment_id == \
                                                  Payment.id,
                                                  ).filter(*conditions)
-        response["data"] = TransactionSchema(many=True,
-                                             exclude=["payment_details",]).\
-                            dump(wallet_response).data
+        response = TransactionSchema(many=True,
+                                     exclude=["payment_details",]).\
+                                     dump(wallet_response).data
         return response
     #end def
 
@@ -231,16 +203,14 @@ class WalletServices:
                 wallet_id --
                 transaction_id --
         """
-        response = {}
-
         wallet = Wallet.query.filter_by(id=wallet_id).first()
         if wallet is None:
-            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+            return request_not_found()
         #end if
 
         history_details = Transaction.query.filter_by(wallet_id=wallet.id,\
                                                       id=transaction_id).first()
-        response["data"] = TransactionSchema().dump(history_details).data
+        response = TransactionSchema().dump(history_details).data
         return response
     #end def
 
@@ -250,8 +220,6 @@ class WalletServices:
             args :
                 params --
         """
-        response = {}
-
         wallet_id   = params["id"]
         old_pin     = params["old_pin"]
         pin         = params["pin"]
@@ -259,30 +227,29 @@ class WalletServices:
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
         if wallet is None:
-            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+            return request_not_found()
         #end if
 
         # first make sure the old pin is correct
         if wallet.check_pin(old_pin) is True:
-            return bad_request(RESPONSE_MSG["FAILED"]["INVALID_OLD_PIN"])
+            return bad_request(ERROR["INCORRECT_PIN"])
         #end if
 
         # second need to check pin and confirmation pin must same
         if pin != confirm_pin:
-            return bad_request(RESPONSE_MSG["FAILED"]["PIN_NOT_MATCH"])
+            return bad_request(ERROR["PIN_NOT_MATCH"])
         #end if
 
         # third make sure the new pin is not the same with the old one
         if wallet.check_pin(pin) is True:
-            return bad_request(RESPONSE_MSG["FAILED"]["OLD_PIN"])
+            return bad_request(ERROR["DUPLICATE_PIN"])
         #end if
 
         # update the new pin here
         wallet.set_pin(pin)
         db.session.commit()
 
-        response["message"] = RESPONSE_MSG["SUCCESS"]["UPDATE_PIN"]
-        return response
+        return no_content()
     #end def
 
     def send_forgot_otp(self, wallet_id):
@@ -295,7 +262,7 @@ class WalletServices:
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
         if wallet is None:
-            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+            return request_not_found()
         #end if
 
         # first check if there are any pending otp record
@@ -304,7 +271,7 @@ class WalletServices:
                                ForgotPin.valid_until > datetime.now() \
                             ).count()
         if pending_otp > 0:
-            return bad_request(RESPONSE_MSG["FAILED"]["OTP_PENDING"])
+            return bad_request(ERROR["PENDING_OTP"])
         #end if
 
         # second generate random verify otp number to user phone
@@ -382,7 +349,6 @@ class WalletServices:
         wallet.set_pin(pin)
         db.session.commit()
 
-        response["message"] = RESPONSE_MSG["SUCCESS"]["FORGOT_PIN"]
         return response
     #end def
 
@@ -398,7 +364,7 @@ class WalletServices:
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
         if wallet is None:
-            return request_not_found(RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"])
+            return request_not_found()
         #end if
 
         # build qr payload here

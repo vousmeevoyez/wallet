@@ -9,8 +9,8 @@ import jwt
 from app.api            import db
 from app.api.models     import ExternalLog
 from app.api.serializer import ExternalLogSchema
-from app.api.errors     import bad_request, internal_error, request_not_found
-from app.api.config     import config
+from app.api.http_response     import bad_request, internal_error, request_not_found
+from app.config     import config
 
 RESPONSE_MSG = config.Config.RESPONSE_MSG
 

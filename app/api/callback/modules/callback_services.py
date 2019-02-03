@@ -11,8 +11,8 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from app.api            import db
 from app.api.models     import Wallet, Transaction, VirtualAccount, ExternalLog, Payment, PaymentChannel
-from app.api.errors     import bad_request, internal_error, request_not_found
-from app.api.config     import config
+from app.api.http_response     import bad_request, internal_error, request_not_found
+from app.config     import config
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES

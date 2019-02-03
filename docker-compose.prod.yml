@@ -4,7 +4,7 @@ services:
 
         flask:
                 image: modana-wallet-api
-                entrypoint: ./build-prod.sh 
+                entrypoint: ./build-prod.sh
                 environment:
                 - DB_USERNAME=modana
                 - DB_PASSWORD=password

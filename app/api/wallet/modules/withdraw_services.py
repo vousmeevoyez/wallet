@@ -8,8 +8,11 @@ from app.api.withdraw   import bp
 from app.api.bank       import helper as bank_helper
 from app.api.models     import Wallet, Transaction, VirtualAccount, Withdraw
 from app.api.serializer import WalletSchema, TransactionSchema, VirtualAccountSchema
-from app.api.errors     import bad_request, internal_error, request_not_found
-from app.api.config     import config
+# http response
+from app.api.http_response import bad_request
+from app.api.http_response import internal_error
+from app.api.http_response import request_not_found
+from app.config     import config
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES

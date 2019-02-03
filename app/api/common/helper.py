@@ -4,7 +4,7 @@
     This is module that contain for helper like send sms and qr generation
 """
 import json
-from app.api.config import config
+from app.config import config
 
 from app.api.common.modules.cipher import AESCipher
 from app.api.common.modules.sms_services import SmsServices

@@ -11,7 +11,7 @@ import pytz
 from app.api        import db
 from app.api.models import VirtualAccount, Bank, VaType
 
-from app.api.config import config
+from app.config import config
 
 # import all bank here
 from app.api.bank.bni.helper import BNI

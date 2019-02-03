@@ -19,7 +19,13 @@ from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 
 from app.api import db
-from app.api.config import config
+from app.config import config
+
+# exceptions
+from app.api.exception.authentication.exceptions import RevokedTokenError
+from app.api.exception.authentication.exceptions import SignatureExpiredError
+from app.api.exception.authentication.exceptions import InvalidTokenError
+from app.api.exception.authentication.exceptions import EmptyPayloadError
 
 now = datetime.utcnow()
 
@@ -53,7 +59,7 @@ class User(db.Model):
     email           = db.Column(db.String(144), unique=True)
     created_at      = db.Column(db.DateTime, default=now) # UTC
     password_hash   = db.Column(db.String(128)) # hashed password
-    status          = db.Column(db.Boolean, default=True) # active / inactive
+    status          = db.Column(db.Integer, default=1) # active
     role_id         = db.Column(db.Integer, db.ForeignKey("role.id"))
     role            = db.relationship("Role", back_populates="user") # one to one
     wallets         = db.relationship("Wallet", back_populates="user", cascade="delete") # one to many
@@ -95,26 +101,23 @@ class User(db.Model):
                 user_id -- User identity
                 role -- User Role
         """
-        try:
-            if token_type == "ACCESS":
-                exp = datetime.utcnow() + timedelta(minutes=JWT_CONFIG["ACCESS_EXPIRE"])
-            elif token_type == "REFRESH":
-                exp = datetime.utcnow() + timedelta(days=JWT_CONFIG["ACCESS_EXPIRE"])
+        if token_type == "ACCESS":
+            exp = datetime.utcnow() + timedelta(minutes=JWT_CONFIG["ACCESS_EXPIRE"])
+        elif token_type == "REFRESH":
+            exp = datetime.utcnow() + timedelta(days=JWT_CONFIG["ACCESS_EXPIRE"])
 
-            payload = {
-                "exp" : exp,
-                "iat" : datetime.utcnow(),
-                "sub" : user_id,
-                "type": token_type,
-                "role": role,
-            }
-            return jwt.encode(
-                payload,
-                JWT_CONFIG["SECRET"],
-                algorithm="HS256"
-            )
-        except Exception as e:
-            return e
+        payload = {
+            "exp" : exp,
+            "iat" : datetime.utcnow(),
+            "sub" : user_id,
+            "type": token_type,
+            "role": role,
+        }
+        return jwt.encode(
+            payload,
+            JWT_CONFIG["SECRET"],
+            algorithm=JWT_CONFIG["ALGORITHM"]
+        )
 
     @staticmethod
     def decode_token(token):
@@ -124,14 +127,17 @@ class User(db.Model):
                 token -- Jwt token
         """
         try:
-            payload = jwt.decode(token, JWT_CONFIG["SECRET"])
+            payload = jwt.decode(token, JWT_CONFIG["SECRET"],
+                                 JWT_CONFIG["ALGORITHM"])
             blacklist_status = BlacklistToken.is_blacklisted(token)
             if blacklist_status:
-                return "Token has been revoked"
+                raise RevokedTokenError
+            if not payload:
+                raise EmptyPayloadError
         except jwt.ExpiredSignatureError:
-            return "Signature Expired"
+            raise SignatureExpiredError
         except jwt.InvalidTokenError:
-            return "Invalid Token"
+            raise InvalidTokenError
         return payload
 
 class Wallet(db.Model):
@@ -141,7 +147,7 @@ class Wallet(db.Model):
     id               = db.Column(db.BigInteger, primary_key=True)
     created_at       = db.Column(db.DateTime, default=now) # UTC
     pin_hash         = db.Column(db.String(128))
-    status           = db.Column(db.Boolean, default=True)
+    status           = db.Column(db.Integer, default=1) # active
     balance          = db.Column(db.Float, default=0)
     user_id          = db.Column(db.BigInteger, db.ForeignKey('user.id'))
     user             = db.relationship("User", back_populates="wallets") # many to one
@@ -340,7 +346,7 @@ class VirtualAccount(db.Model):
     trx_amount      = db.Column(db.Float, default=0)
     name            = db.Column(db.String(144))
     datetime_expired= db.Column(db.DateTime)
-    status          = db.Column(db.Boolean, default=False)
+    status          = db.Column(db.Integer, default=0)
     created_at      = db.Column(db.DateTime, default=now)
     wallet_id       = db.Column(db.BigInteger, db.ForeignKey('wallet.id'))
     wallet          = db.relationship("Wallet", back_populates="virtual_accounts", cascade="delete")

@@ -1,7 +1,7 @@
 from app.test.base      import BaseTestCase
 from app.api.serializer import *
 from app.api.models     import *
-from app.api.config     import config
+from app.config     import config
 
 class TestUserSchema(BaseTestCase):
 
