@@ -10,6 +10,7 @@
 #pylint: disable=too-few-public-methods
 
 from datetime import datetime, timedelta
+import pytz
 import secrets
 import random
 import uuid
@@ -22,10 +23,10 @@ from app.api import db
 from app.config import config
 
 # exceptions
-from app.api.exception.authentication.exceptions import RevokedTokenError
-from app.api.exception.authentication.exceptions import SignatureExpiredError
-from app.api.exception.authentication.exceptions import InvalidTokenError
-from app.api.exception.authentication.exceptions import EmptyPayloadError
+from app.api.exception.authentication import RevokedTokenError
+from app.api.exception.authentication import SignatureExpiredError
+from app.api.exception.authentication import InvalidTokenError
+from app.api.exception.authentication import EmptyPayloadError
 
 now = datetime.utcnow()
 
@@ -33,6 +34,8 @@ BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 WALLET_CONFIG = config.Config.WALLET_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 JWT_CONFIG = config.Config.JWT_CONFIG
+VIRTUAL_ACCOUNT_CONFIG = config.Config.VIRTUAL_ACCOUNT_CONFIG
+
 
 class Role(db.Model):
     """
@@ -134,10 +137,10 @@ class User(db.Model):
                 raise RevokedTokenError
             if not payload:
                 raise EmptyPayloadError
-        except jwt.ExpiredSignatureError:
-            raise SignatureExpiredError
-        except jwt.InvalidTokenError:
-            raise InvalidTokenError
+        except jwt.ExpiredSignatureError as error:
+            raise SignatureExpiredError(error)
+        except jwt.InvalidTokenError as error:
+            raise InvalidTokenError(error)
         return payload
 
 class Wallet(db.Model):
@@ -146,6 +149,7 @@ class Wallet(db.Model):
     """
     id               = db.Column(db.BigInteger, primary_key=True)
     created_at       = db.Column(db.DateTime, default=now) # UTC
+    label            = db.Column(db.String(100))
     pin_hash         = db.Column(db.String(128))
     status           = db.Column(db.Integer, default=1) # active
     balance          = db.Column(db.Float, default=0)
@@ -185,14 +189,14 @@ class Wallet(db.Model):
         """
             Function to lock wallet
         """
-        self.status = False
+        self.status = 3
     #end def
 
     def unlock(self):
         """
             Function to unlock wallet
         """
-        self.status = True
+        self.status = 1
     #end def
 
     def generate_wallet_id(self):
@@ -355,8 +359,10 @@ class VirtualAccount(db.Model):
     bank_id         = db.Column(db.Integer, db.ForeignKey("bank.id"))
     bank            = db.relationship("Bank", back_populates="virtual_account")
 
+    TIMEZONE = pytz.timezone("Asia/Jakarta")
+
     def __repr__(self):
-        return '<VirtualAccount {} {} {} {} {}>'.format(self.id, self.trx_id, self.name, self.status, self.va_type)
+        return '<VirtualAccount {} {} {} {} {} {}>'.format(self.id, self.trx_id, self.name, self.status, self.va_type, self.bank_id)
     #end def
 
     def is_unlocked(self):
@@ -366,13 +372,29 @@ class VirtualAccount(db.Model):
 
     def lock(self):
         """ this is function to check is the va locked or not """
-        self.status = False
+        self.status = 3
     #end def
 
     def unlock(self):
         """ this is function to check is the va locked or not """
-        self.status = True
+        self.status = 1
     #end def
+
+    def get_datetime_expired(self, bank_name, va_type):
+        """ function to set virtual account datetime_expired based on which
+        bank and which type"""
+        timeout = VIRTUAL_ACCOUNT_CONFIG[bank_name]
+
+        if va_type == "CREDIT":
+            datetime_expired = datetime.now(self.TIMEZONE) \
+                               + timedelta(hours=timeout["CREDIT_VA_TIMEOUT"])
+        elif va_type == "DEBIT":
+            datetime_expired = datetime.now(self.TIMEZONE) \
+                               + timedelta(minutes=timeout["DEBIT_VA_TIMEOUT"])
+
+        self.datetime_expired = datetime_expired
+        return datetime_expired
+      #end def
 
     def generate_va_number(self):
         """

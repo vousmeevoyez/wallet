@@ -25,12 +25,18 @@ from app.api.authentication.decorator import token_required
 from app.api.authentication.decorator import get_current_token
 from app.api.authentication.decorator import get_token_payload
 # exceptions
-from app.api.exception.authentication.exceptions import TokenError
-# configuration
-from app.config import config
+from app.api.exception.general import SerializeError
+from app.api.exception.general import RecordNotFoundError
+from app.api.exception.general import CommitError
+
+from app.api.exception.authentication import TokenError
+from app.api.exception.authentication import InvalidCredentialsError
+from app.api.exception.authentication import InvalidAuthorizationError
+from app.api.exception.authentication import FailedRevokedTokenError
+
+from app.api.exception.user import UserNotFoundError
 
 REQUEST_SCHEMA = AuthRequestSchema.parser
-RESPONSE_MSG = config.Config.RESPONSE_MSG
 
 @api.route("/token")
 class TokenRoutes(Resource):
@@ -51,10 +57,15 @@ class TokenRoutes(Resource):
         excluded = "name", "phone_ext", "phone_number", "pin", "role", "email"
         errors = UserSchema().validate(request_data, partial=(excluded))
         if errors:
-            return bad_request(errors)
+            raise SerializeError(None, errors)
         #end if
 
-        response = AuthServices().create_token(request_data)
+        try:
+            response = AuthServices().create_token(request_data)
+        except UserNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        except InvalidCredentialsError as error:
+            raise InvalidCredentialsError(error.msg, error.title)
         return response
 #end def
 
@@ -76,7 +87,7 @@ class RefreshTokenRoutes(Resource):
         try:
             payload = get_token_payload()
         except TokenError as error:
-            return unauthorized(error)
+            raise InvalidAuthorizationError(error)
         #end try
         response = AuthServices().refresh_token(payload["user_id"])
         return response
@@ -98,9 +109,17 @@ class TokenRevokeRoutes(Resource):
             blacklist the token
         """
         # fetch token from header
-        token = get_current_token()
+        try:
+            token = get_current_token()
+        except TokenError as error:
+            raise InvalidAuthorizationError(error)
+        #end try
 
-        response = AuthServices().logout_access_token(token)
+        try:
+            response = AuthServices().logout_access_token(token)
+        except FailedRevokedTokenError as error:
+            raise CommitError(error.msg)
+        #end try
         return response
     #end def
 #end class
@@ -120,9 +139,16 @@ class RefreshTokenRevokeRoutes(Resource):
             blacklist the token
         """
         # fetch token from header
-        token = get_current_token()
-
-        response = AuthServices().logout_refresh_token(token)
+        try:
+            token = get_current_token()
+        except TokenError as error:
+            raise InvalidAuthorizationError(error)
+        #end try
+        try:
+            response = AuthServices().logout_refresh_token(token)
+        except FailedRevokedTokenError as error:
+            raise CommitError(error.msg)
+        #end try
         return response
     #end def
 #end class

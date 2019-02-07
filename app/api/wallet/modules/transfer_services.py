@@ -21,15 +21,15 @@ from app.api.models import Payment
 from app.api.models import BankAccount
 from app.api.models import MasterTransaction
 # exceptions
-from app.api.exception.wallet.exceptions import WalletNotFoundError
-from app.api.exception.wallet.exceptions import WalletLockedError
-from app.api.exception.wallet.exceptions import IncorrectPinError
-from app.api.exception.wallet.exceptions import InsufficientBalanceError
-from app.api.exception.wallet.exceptions import InvalidDestinationError
-from app.api.exception.wallet.exceptions import TransactionError
-from app.api.exception.wallet.exceptions import TransferError
+from app.api.exception.wallet import WalletNotFoundError
+from app.api.exception.wallet import WalletLockedError
+from app.api.exception.wallet import IncorrectPinError
+from app.api.exception.wallet import InsufficientBalanceError
+from app.api.exception.wallet import InvalidDestinationError
+from app.api.exception.wallet import TransactionError
+from app.api.exception.wallet import TransferError
 
-from app.api.exception.common.exceptions import DecryptError
+from app.api.exception.common import DecryptError
 #ttp errors
 from app.api.http_response import bad_request
 from app.api.http_response import internal_error
@@ -37,7 +37,6 @@ from app.api.http_response import internal_error
 from app.config import config
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
-RESPONSE_MSG      = config.Config.RESPONSE_MSG
 WALLET_CONFIG     = config.Config.WALLET_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 BNI_OPG_CONFIG    = config.Config.BNI_OPG_CONFIG

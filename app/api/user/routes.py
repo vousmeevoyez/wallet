@@ -3,25 +3,43 @@
     _______________
     this is module that handle rquest from url and then forward it to services
 """
-from flask              import request
 from flask_restplus     import Resource
+from marshmallow import ValidationError
 
-from app.api                import db
-from app.api.user           import api
-from app.api.serializer     import UserSchema, BankAccountSchema
-from app.api.request_schema import UserRequestSchema, BankAccountRequestSchema
+from app.api      import db
+from app.api.user import api
 
-from app.api.authentication.decorator import token_required, admin_required
+# serializer
+from app.api.serializer     import UserSchema
+from app.api.serializer     import BankAccountSchema
+# request schema
+from app.api.request_schema import BankAccountRequestSchema
+from app.api.request_schema import UserRequestSchema
+from app.api.request_schema import UserUpdateRequestSchema
 
+# decorator
+from app.api.authentication.decorator import token_required
+from app.api.authentication.decorator import admin_required
+# services
 from app.api.user.modules.bank_account_services import BankAccountServices
 from app.api.user.modules.user_services import UserServices
 
-from app.api.http_response import internal_error
-from app.api.http_response import bad_request
-from app.api.http_response import request_not_found
+#http exception
+from app.api.exception.general import SerializeError
+from app.api.exception.general import RecordNotFoundError
+from app.api.exception.general import CommitError
 
-user_request_schema = UserRequestSchema.parser
-user_bank_account_request_schema = BankAccountRequestSchema.parser
+from app.api.exception.user import UserDuplicateError
+from app.api.exception.user import UserNotFoundError
+from app.api.exception.user import OldRecordError
+
+from app.api.exception.bank import BankNotFoundError
+from app.api.exception.bank import BankAccountNotFoundError
+from app.api.exception.bank import DuplicateBankAccountError
+
+USER_REQUEST_SCHEMA = UserRequestSchema.parser
+USER_UPDATE_REQUEST_SCHEMA = UserUpdateRequestSchema.parser
+USER_BANK_ACC_REQUEST_SCHEMA = BankAccountRequestSchema.parser
 
 @api.route("/")
 class UserRoutes(Resource):
@@ -36,15 +54,19 @@ class UserRoutes(Resource):
             api/v1/user/
             create user
         """
-        request_data = user_request_schema.parse_args(strict=True)
+        request_data = USER_REQUEST_SCHEMA.parse_args(strict=True)
 
         # request data validator
-        errors = UserSchema().validate(request_data)
-        if errors:
-            return bad_request(errors)
-        #end if
+        try:
+            user = UserSchema(strict=True).load(request_data)
+        except ValidationError as error:
+            raise SerializeError(None, error.messages)
 
-        response = UserServices().add(request_data)
+        try:
+            response = UserServices.add(user.data, request_data["password"],
+                                        request_data["pin"])
+        except UserDuplicateError as error:
+            raise CommitError(error.msg, None, error.title, None)
         return response
     #end def
 
@@ -55,7 +77,7 @@ class UserRoutes(Resource):
             api/v1/user/
             return all stored user
         """
-        response = UserServices().show(1)
+        response = UserServices.show(1)
         return response
 #end class
 
@@ -72,9 +94,47 @@ class UserInfoRoutes(Resource):
             api/v1/user/<user_id>
             return single user information
         """
-        response = UserServices().info({"user_id" : user_id})
+        try:
+            response = UserServices(user_id).info()
+        except UserNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
         return response
-    #end def
+
+    @token_required
+    def put(self, user_id):
+        """
+            handle PUT method from
+            api/v1/user/<user_id>
+            return updated user information
+        """
+        request_data = USER_UPDATE_REQUEST_SCHEMA.parse_args(strict=True)
+        
+        excluded = "username", "pin", "role"
+        errors = UserSchema(strict=True).validate(request_data,
+                                                  partial=(excluded))
+        if errors:
+            raise SerializeError(None, errors)
+
+        try:
+            response = UserServices(user_id).update(request_data)
+        except UserNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        except OldRecordError as error:
+            raise CommitError(error.msg, error.title, error.details)
+        return response
+
+    @token_required
+    def delete(self, user_id):
+        """
+            handle DELETE method from
+            api/v1/user/<user_id>
+            return updated user information
+        """
+        try:
+            response = UserServices(user_id).remove()
+        except UserNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        return response
 #end class
 
 
@@ -91,16 +151,22 @@ class UserBankAccountRoutes(Resource):
             api/v1/user/<user_id>/bank_account/
             create user bank account
         """
-        request_data = user_bank_account_request_schema.parse_args(strict=True)
+        request_data = USER_BANK_ACC_REQUEST_SCHEMA.parse_args(strict=True)
 
-        errors = BankAccountSchema().validate(request_data)
-        if errors:
-            return bad_request(errors)
-        #end if
-
-        request_data["user_id"] = user_id
-
-        response = BankAccountServices().add(request_data)
+        try:
+            bank_account = BankAccountSchema(strict=True).load(request_data)
+        except ValidationError as error:
+            raise SerializeError(error.messages)
+        #end try
+        try:
+            response = BankAccountServices(user_id, request_data["bank_code"]).add(bank_account.data)
+        except (UserNotFoundError,
+                BankNotFoundError,
+                BankAccountNotFoundError) as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        except DuplicateBankAccountError as error:
+            print(error)
+            raise CommitError(error.msg, None, error.title)
         return response
     #end def
 
@@ -111,7 +177,7 @@ class UserBankAccountRoutes(Resource):
             api/v1/user/<user_id>/bank_account/
             get all user bank account information
         """
-        response = BankAccountServices().show({"user_id" : user_id})
+        response = BankAccountServices(user_id).show()
         return response
     #end def
 #end class
@@ -128,10 +194,8 @@ class UserBankAccountDetailsRoutes(Resource):
             Handle DELETE Method
             api/v1/user/<user_id>/bank_account/<user_bank_account_id>
         """
-        response = BankAccountServices().remove({
-            "user_id" : user_id,
-            "user_bank_account_id" : user_bank_account_id
-        })
+        response = BankAccountServices(user_id, None,
+                                       user_bank_account_id).remove()
         return response
     #end def
 
@@ -141,17 +205,13 @@ class UserBankAccountDetailsRoutes(Resource):
             Handle Put Method
             api/v1/user/<user_id>/bank_account/<user_bank_account_id>
         """
-        request_data = user_bank_account_request_schema.parse_args(strict=True)
+        request_data = USER_BANK_ACC_REQUEST_SCHEMA.parse_args(strict=True)
 
         errors = BankAccountSchema().validate(request_data)
         if errors:
-            return bad_request(errors)
+            raise SerializeError(errors)
         #end if
-
-        request_data["user_id"] = user_id
-        request_data["user_bank_account_id"] = user_bank_account_id
-
-        response = BankAccountServices().update(request_data)
+        response = BankAccountServices(user_id, request_data["bank_code"], user_bank_account_id).update(request_data)
         return response
     #end def
 #end class

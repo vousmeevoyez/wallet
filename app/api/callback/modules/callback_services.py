@@ -16,7 +16,6 @@ from app.config     import config
 
 ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
-RESPONSE_MSG = config.Config.RESPONSE_MSG
 WALLET_CONFIG = config.Config.WALLET_CONFIG
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG
 

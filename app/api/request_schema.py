@@ -20,6 +20,16 @@ class UserRequestSchema:
     parser.add_argument("role",        type=str, required=True)
 #end class
 
+class UserUpdateRequestSchema:
+    """Define all mandatory argument for updating User"""
+    parser = reqparse.RequestParser()
+    parser.add_argument("name",        type=str, required=True)
+    parser.add_argument("phone_ext",   type=str, required=True)
+    parser.add_argument("phone_number",type=str, required=True)
+    parser.add_argument("email",       type=str, required=True)
+    parser.add_argument("password",    type=str, required=True)
+#end class
+
 class BankAccountRequestSchema:
     """Define all mandatory argument for creating bank account"""
     parser = reqparse.RequestParser()
@@ -39,9 +49,8 @@ class AuthRequestSchema:
 class WalletRequestSchema:
     """Define all mandatory argument for creating wallet"""
     parser = reqparse.RequestParser()
-    parser.add_argument("name",   type=str, required=True)
-    parser.add_argument("msisdn", type=str, required=True)
-    parser.add_argument("pin",    type=str, required=True)
+    parser.add_argument("label", type=str, required=True)
+    parser.add_argument("pin", type=str, required=True)
 #end class
 
 class WalletUpdatePinRequestSchema:
@@ -50,12 +59,6 @@ class WalletUpdatePinRequestSchema:
     parser.add_argument("old_pin",    type=str, required=True)
     parser.add_argument("pin",        type=str, required=True)
     parser.add_argument("confirm_pin",type=str, required=True)
-#end class
-
-class PinAuthRequestSchema:
-    """Define all mandatory argument for checking balance """
-    parser = reqparse.RequestParser()
-    parser.add_argument("pin",type=str, required=True)
 #end class
 
 class ForgotPinRequestSchema:

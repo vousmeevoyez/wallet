@@ -5,8 +5,6 @@ from app.api.models     import Wallet
 from app.api.http_response     import bad_request
 from app.config     import config
 
-RESPONSE_MSG = config.Config.RESPONSE_MSG
-
 class AuthenticationHelper:
     """ this is class for authentication helper """
     @staticmethod

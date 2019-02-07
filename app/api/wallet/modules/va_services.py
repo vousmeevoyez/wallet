@@ -5,14 +5,11 @@
 """
 #pylint: disable=bad-whitespace
 #pylint: disable=no-self-use
-from datetime import datetime, timedelta
-import pytz
-
 from sqlalchemy.exc import IntegrityError
 
 from app.api import db
-
 # models
+from app.api.models import Bank
 from app.api.models import Wallet
 from app.api.models import VirtualAccount
 from app.api.models import VaType
@@ -22,34 +19,25 @@ from app.api.serializer import WalletSchema
 from app.api.serializer import TransactionSchema
 from app.api.serializer import VirtualAccountSchema
 
-from app.api.http_response import request_not_found
-
 # configuration
 from app.config import config
 
+from app.api.http_response import created
+
+from app.api.exception.virtual_account import *
+
 VIRTUAL_ACCOUNT_CONFIG = config.Config.VIRTUAL_ACCOUNT_CONFIG
-TASK_CONFIG = config.Config.TASK_CONFIG
+STATUS_CONFIG = config.Config.STATUS_CONFIG
 
 class VirtualAccountServices:
     """ Virtual Account Services Class"""
+    def __init__(self, va_id):
+        va_record = VirtualAccount.query.filter_by(id=va_id).first()
+        if va_record is None:
+            raise VaNotFoundError
 
-    TIMEZONE = pytz.timezone("Asia/Jakarta")
-
-    def _get_datetime_expired(self, bank_id, va_type):
-        """ function to set virtual account datetime_expired based on which
-        bank and which type"""
-        timeout = VIRTUAL_ACCOUNT_CONFIG[bank_id]
-
-        if va_type == "CREDIT":
-            datetime_expired = datetime.now(self.TIMEZONE) \
-                             + timedelta(hours=timeout["CREDIT_VA_TIMEOUT"])
-        elif va_type == "DEBIT":
-            datetime_expired = datetime.now(self.TIMEZONE) \
-                             + timedelta(minutes=timeout["DEBIT_VA_TIMEOUT"])
-        return datetime_expired
-    #end def
-
-    def add(self, params, session=None):
+    @staticmethod
+    def add(virtual_account, params):
         """
             create virtual account record on database here and return system
             generated transaction and virtual account id
@@ -58,55 +46,38 @@ class VirtualAccountServices:
                 params -- wallet_id, name, type
                 session -- database session (optional)
         """
-        wallet_id = int(params["wallet_id"])
-        bank_id = params["bank_id"]
-        name = params["name"]
+        bank_name = params["bank_name"]
         va_type = params["type"]
-        # fetch va type here
+        wallet_id =params["wallet_id"]
+
+        # fetch va type id
         va_type = VaType.query.filter_by(key=va_type).first()
 
-        # check is the user already have a VA or not
-        search_va = VirtualAccount.query.filter_by(
-            wallet_id=wallet_id,
-            va_type_id=va_type.id,
-            bank_id=bank_id
-        ).first()
-        if search_va is not None:
-            raise AlreadyExistVAError
-        #end if
+        # fetch bank id
+        keyword = "%{}%".format(bank_name)
+        bank = Bank.query.filter(Bank.name.like(keyword)).first()
 
-        # set session if empty
-        if session is None:
-            session = db.session
-        #end if
-        session.begin(nested=True)
+        # put va creation in the queue
+        virtual_account.status = STATUS_CONFIG["PENDING"]
+        virtual_account.wallet_id = wallet_id
+        virtual_account.va_type_id = va_type.id
+        virtual_account.bank_id = bank.id
 
-        datetime_expired = self._get_datetime_expired(bank_id, params["type"])
-
-        # CREATE VIRTUAL ACCOUNT ON DATABASES FIRST
-        virtual_account = VirtualAccount(
-            name=name,
-            wallet_id=wallet_id,
-            status=TASK_CONFIG["PENDING"],# PENDING FIRST
-            bank_id=bank_id,
-            va_type_id=va_type.id,
-            datetime_expired=datetime_expired
-        )
         virtual_account_id = virtual_account.generate_va_number()
         transaction_id = virtual_account.generate_trx_id()
+        datetime_expired = virtual_account.get_datetime_expired(bank_name, params["type"])
 
         try:
-            session.add(virtual_account)
-            session.commit()
+            db.session.add(virtual_account)
+            db.session.commit()
         except IntegrityError as error:
-            raise AlreadyExistVAError()
+            db.session.rollback()
+            raise AlreadyExistVAError
         #end try
 
         response = {
-            "datetime_expired" : datetime_expired,
             "virtual_account_id" : virtual_account_id,
-            "transaction_id" : transaction_id
         }
-        return response
+        return created(response)
     #end def
 #end class

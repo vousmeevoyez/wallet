@@ -4,12 +4,15 @@
 from unittest.mock import patch, Mock
 from app.api import db
 
-from app.test.base          import BaseTestCase
+from app.test.base import BaseTestCase
 
-from app.api.models         import Payment
-from app.api.models         import Wallet
-from app.api.models         import User
-from app.api.models         import ForgotPin
+from app.api.models import *
+
+from app.api.common.helper import Sms
+
+from app.api.exception.common import SmsError
+
+from app.api.exception.wallet import *
 
 from app.api.wallet.modules.wallet_services import WalletServices
 
@@ -28,18 +31,14 @@ class TestWalletServices(BaseTestCase):
         db.session.add(user)
         db.session.commit()
 
-        result = WalletServices.add({"user_id" : user.id, "pin" : "123456"})
-        response = {
-            "user_id" : user.id,
-            "wallet_id" : result[0]["wallet_id"],
-        }
-        return response
+        wallet = Wallet()
+        result = WalletServices.add(wallet, user.id, "123456")
+        return result[0]["data"]
     #end def
 
     def test_add_wallet(self):
         """ test method for creating wallet"""
         response = self._create_wallet()
-        self.assertTrue(response["user_id"])
         self.assertTrue(response["wallet_id"])
 
     def test_show_wallet(self):
@@ -53,67 +52,37 @@ class TestWalletServices(BaseTestCase):
 
         wallet_id = response["wallet_id"]
 
-        result = WalletServices().info({"wallet_id" : wallet_id})
+        result = WalletServices(wallet_id).info()
         self.assertTrue(result["wallet"])
 
-    '''
     def test_wallet_info_failed_not_found(self):
         """ test method for get wallet info but not found """
-        result = WalletServices("1234").info()
-        self.assertTrue(result[1], 404)
+        with self.assertRaises(WalletNotFoundError):
+            result = WalletServices("1234").info()
 
     def test_wallet_remove_failed_only_wallet(self):
         """ test method for removing wallet but failed because wallet can't be
         less than zero """
 
         response = self._create_wallet()
-
         wallet_id = response["wallet_id"]
 
-        result = WalletServices(wallet_id).remove()
-        self.assertEqual(result[1], 400)
-
-
-    def test_wallet_remove(self):
-        """ test method for removing wallet """
-
-        response = self._create_wallet()
-
-        user_id = response["user_id"]
-        wallet_id = response["wallet_id"]
-
-        result = WalletServices().add({"user_id" : user_id, "pin" : "123456"})
-        self.assertEqual(result[1], 201) # created
-
-        result = WalletServices().remove({"id" : result[0]["wallet_id"]})
-        self.assertEqual(result[1], 204) # no content
+        with self.assertRaises(OnlyWalletError):
+            result = WalletServices(wallet_id).remove()
 
     def test_wallet_balance(self):
-        """ test method for checking wallet balance """
 
         response = self._create_wallet()
 
         wallet_id = response["wallet_id"]
 
-        result = WalletServices().check_balance({"id" : wallet_id,
-                                                 "pin" : "123456"})
+        result = WalletServices(wallet_id).check_balance()
         self.assertEqual(result["balance"], 0)
 
     def test_wallet_not_found(self):
         """ test method for checking wallet balance but not found"""
-        result = WalletServices().check_balance({"id" : "12345",
-                                                 "pin" : "123456"})
-        self.assertEqual(result[1], 404)
-
-    def test_wallet_incorrect_pin(self):
-        """ test method for checking wallet balance but pin is incorrect """
-
-        response = self._create_wallet()
-
-        wallet_id = response["wallet_id"]
-        result = WalletServices().check_balance({"id" : wallet_id,
-                                                 "pin" : "113456"})
-        self.assertEqual(result[1], 400)
+        with self.assertRaises(WalletNotFoundError):
+            result = WalletServices("123456").check_balance()
 
     def test_wallet_in_history(self):
         """ test method for checking wallet in transaction on wallet history """
@@ -122,10 +91,12 @@ class TestWalletServices(BaseTestCase):
 
         wallet_id = response["wallet_id"]
 
-        result = WalletServices().history({"wallet_id" : wallet_id,
-                                           "start_date" : "2019/02/01",
-                                           "end_date" : "2019/02/02",
-                                           "flag" : "IN"})
+        params = {
+            "start_date" : "2019/02/01",
+            "end_date" : "2019/02/02",
+            "flag" : "IN"
+        }
+        result = WalletServices(wallet_id).history(params)
         self.assertEqual(result, [])
 
     def test_wallet_out_history(self):
@@ -135,47 +106,145 @@ class TestWalletServices(BaseTestCase):
 
         wallet_id = response["wallet_id"]
 
-        result = WalletServices().history({"wallet_id" : wallet_id,
+        result = WalletServices(wallet_id).history({
                                            "start_date" : "2019/02/01",
                                            "end_date" : "2019/02/02",
                                            "flag" : "OUT"})
         self.assertEqual(result, [])
-    def test_send_forgot_otp_success(self):
-        """ test method for sending forgot otp sms """
-        wallet = self._create_dummy_user_wallet()
 
-        result = WalletServices().send_forgot_otp(wallet.id)
-        self.assertTrue(result["data"]["otp_key"])
+    @patch.object(Sms, "send")
+    def test_send_forgot_otp_success(self, mock_send_sms):
+        """ test method for sending forgot otp sms """
+        response = self._create_wallet()
+
+        wallet_id = response["wallet_id"]
+
+        mock_send_sms.return_value = "test"
+
+        result = WalletServices(wallet_id).send_forgot_otp()
+        self.assertTrue(result[0]["data"]["otp_key"])
 
     def test_send_forgot_otp_failed_wallet_not_found(self):
         """ test method for sending forgot otp sms but wallet id is not found"""
-        result = WalletServices().send_forgot_otp("1234")
-        self.assertEqual(result[1], 404)
+        with self.assertRaises(WalletNotFoundError):
+            result = WalletServices("1234").send_forgot_otp()
 
-    def test_send_forgot_otp_failed_pending(self):
+    @patch.object(Sms, "send")
+    def test_send_forgot_otp_failed_pending(self, mock_send_sms):
         """ test method for sending forgot otp sms but there's still pending
         request"""
-        wallet = self._create_dummy_user_wallet()
+        response = self._create_wallet()
+        wallet_id = response["wallet_id"]
 
-        result = WalletServices().send_forgot_otp(wallet.id)
-        self.assertTrue(result["data"]["otp_key"])
+        mock_send_sms.return_value = "test"
+        result = WalletServices(wallet_id).send_forgot_otp()
+        self.assertTrue(result[0]["data"]["otp_key"])
 
-        result = WalletServices().send_forgot_otp(wallet.id)
-        self.assertEqual(result[1], 400)
+        with self.assertRaises(PendingOtpError):
+            result = WalletServices(wallet_id).send_forgot_otp()
 
-    def test_send_forgot_otp_failed_raise_sms_error(self):
+    @patch.object(Sms, "send")
+    def test_send_forgot_otp_failed_raise_sms_error(self, mock_send_sms):
         """ test method for sending forgot otp sms but there's an error when
         sending the message """
-        wallet = self._create_dummy_user_wallet()
+        response = self._create_wallet()
+        wallet_id = response["wallet_id"]
 
-        result = WalletServices().send_forgot_otp(wallet.id)
-        self.assertTrue(result["data"]["otp_key"])
-
-        result = WalletServices().send_forgot_otp(wallet.id)
-        self.assertEqual(result[1], 400)
+        mock_send_sms.side_effect = SmsError
+        with self.assertRaises(WalletOtpError):
+            result = WalletServices(wallet_id).send_forgot_otp()
 
     def test_get_qr(self):
-        wallet = self._create_dummy_user_wallet()
-        result = WalletServices().get_qr({"id" : wallet.id})
+        """ test method to generate qr code wallet """
+        response = self._create_wallet()
+        wallet_id = response["wallet_id"]
+
+        result = WalletServices(wallet_id).get_qr()
         self.assertTrue(result["data"]["qr_string"])
-    '''
+
+    @patch.object(Sms, "send")
+    def test_verify_forgot_otp(self, mock_send_sms):
+        """ test method for sending forgot otp sms """
+        response = self._create_wallet()
+
+        wallet_id = response["wallet_id"]
+
+        mock_send_sms.return_value = "test"
+
+        result = WalletServices(wallet_id).send_forgot_otp()
+        otp_code = result[0]["data"]["otp_code"]
+        otp_key = result[0]["data"]["otp_key"]
+
+        result = WalletServices(wallet_id).verify_forgot_otp({
+            "otp_code" : otp_code,
+            "otp_key"  : otp_key,
+            "pin"      : "111111",
+        })
+        self.assertEqual(result[1], 204)
+
+    @patch.object(Sms, "send")
+    def test_verify_forgot_otp_but_already_verified(self, mock_send_sms):
+        """ test method for sending forgot otp sms but already veirfied"""
+        response = self._create_wallet()
+
+        wallet_id = response["wallet_id"]
+
+        mock_send_sms.return_value = "test"
+
+        result = WalletServices(wallet_id).send_forgot_otp()
+        otp_code = result[0]["data"]["otp_code"]
+        otp_key = result[0]["data"]["otp_key"]
+
+        result = WalletServices(wallet_id).verify_forgot_otp({
+            "otp_code" : otp_code,
+            "otp_key"  : otp_key,
+            "pin"      : "111111",
+        })
+        self.assertEqual(result[1], 204)
+
+        with self.assertRaises(OtpVerifiedError):
+            result = WalletServices(wallet_id).verify_forgot_otp({
+                "otp_code" : otp_code,
+                "otp_key"  : otp_key,
+                "pin"      : "111111",
+            })
+
+    @patch.object(Sms, "send")
+    def test_verify_forgot_otp_but_invalid_otp_code(self, mock_send_sms):
+        """ test method for sending forgot otp sms but already veirfied"""
+        response = self._create_wallet()
+
+        wallet_id = response["wallet_id"]
+
+        mock_send_sms.return_value = "test"
+
+        result = WalletServices(wallet_id).send_forgot_otp()
+        otp_code = result[0]["data"]["otp_code"]
+        otp_key = result[0]["data"]["otp_key"]
+
+        with self.assertRaises(InvalidOtpError):
+            result = WalletServices(wallet_id).verify_forgot_otp({
+                "otp_code" : "1234",
+                "otp_key"  : otp_key,
+                "pin"      : "111111",
+            })
+
+    @patch.object(Sms, "send")
+    def test_verify_forgot_otp_but_invalid_otp_code(self, mock_send_sms):
+        """ test method for sending forgot otp sms but already veirfied"""
+        response = self._create_wallet()
+
+        wallet_id = response["wallet_id"]
+
+        mock_send_sms.return_value = "test"
+
+        result = WalletServices(wallet_id).send_forgot_otp()
+        otp_code = result[0]["data"]["otp_code"]
+        otp_key = result[0]["data"]["otp_key"]
+
+        with self.assertRaises(OtpNotFoundError):
+            result = WalletServices(wallet_id).verify_forgot_otp({
+                "otp_code" : "1234",
+                "otp_key"  : "46464654654654",
+                "pin"      : "111111",
+            })

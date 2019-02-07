@@ -9,8 +9,6 @@ from app.config import config
 from app.api.common.modules.cipher import AESCipher
 from app.api.common.modules.sms_services import SmsServices
 
-from app.api.exception.common.exceptions import DecryptError
-
 WALLET_CONFIG = config.Config.WALLET_CONFIG
 SMS_SERVICES_CONFIG = config.Config.SMS_SERVICES_CONFIG
 SMS_SERVICES_TEMPLATES = config.Config.SMS_SERVICES_TEMPLATES

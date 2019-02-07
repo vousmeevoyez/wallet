@@ -9,6 +9,7 @@
 #pylint: disable=too-few-public-methods
 
 from flask_restplus     import Resource
+from marshmallow import ValidationError
 
 from app.api.wallet import api
 #serializer
@@ -16,13 +17,7 @@ from app.api.serializer import WalletSchema
 from app.api.serializer import TransactionSchema
 from app.api.serializer import WalletTransactionSchema
 # request schema
-from app.api.request_schema import WalletRequestSchema
-from app.api.request_schema import WalletUpdatePinRequestSchema
-from app.api.request_schema import PinAuthRequestSchema
-from app.api.request_schema import ForgotPinRequestSchema
-from app.api.request_schema import TransferRequestSchema
-from app.api.request_schema import WalletTransactionRequestSchema
-from app.api.request_schema import QRTransferRequestSchema
+from app.api.request_schema import *
 
 #http errors
 from app.api.http_response import bad_request
@@ -35,21 +30,70 @@ from app.api.wallet.modules.transfer_services import TransferServices
 from app.api.authentication.decorator import token_required
 from app.api.authentication.decorator import get_token_payload
 from app.api.authentication.decorator import admin_required
-# helper
-from app.api.authentication.helper import AuthenticationHelper
+# exceptions
+from app.api.exception.general import SerializeError
+from app.api.exception.general import RecordNotFoundError
+from app.api.exception.general import CommitError
+from app.api.exception.user import UserNotFoundError
+
+from app.api.exception.wallet import *
 # configuration
 from app.config import config
 
-RESPONSE_MSG = config.Config.RESPONSE_MSG
-
 # REQUEST SCHEMA HERE
-request_schema = WalletRequestSchema.parser
+wallet_request_schema = WalletRequestSchema.parser
 update_pin_request_schema = WalletUpdatePinRequestSchema.parser
-pin_auth_request_schema = PinAuthRequestSchema.parser
 forgot_pin_request_schema = ForgotPinRequestSchema.parser
 transfer_request_schema = TransferRequestSchema.parser
 wallet_transaction_request_schema = WalletTransactionRequestSchema.parser
 qr_transfer_request_schema = QRTransferRequestSchema.parser
+
+@api.route('/')
+class WalletAddRoutes(Resource):
+    """
+        Wallet add Routes
+        api/v1/wallet/<user_id>
+    """
+    @token_required
+    def post(self):
+        """
+            Handle POST request from
+            api/v1/wallet/<user_id>
+        """
+        payload = get_token_payload()
+        user_id = payload["user_id"]
+
+        request_data = wallet_request_schema.parse_args(strict=True)
+        try:
+            wallet = WalletSchema(strict=True).load(request_data)
+        except ValidationError as error:
+            raise SerializeError(None, error.messages)
+
+        try:
+            response = WalletServices.add(wallet.data, user_id, request_data["pin"])
+        except UserNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        except DuplicateWalletError as error:
+            raise CommitError(error.msg, None, error.title, None)
+        return response
+    #end def
+
+    @token_required
+    def get(self):
+        """
+            Handle GET request from
+            api/v1/wallet/<user_id>
+        """
+        payload = get_token_payload()
+        user_id = payload["user_id"]
+
+        try:
+            response = WalletServices(None, user_id).show()
+        except UserNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        return response
+    #end def
+#end class
 
 @api.route('/<int:wallet_id>')
 class WalletRoutes(Resource):
@@ -64,20 +108,22 @@ class WalletRoutes(Resource):
             api/v1/wallet/
             return wallet information
         """
-        # fetch payload
-        payload_resp = get_token_payload()
-        if not isinstance(payload_resp, dict):
-            return payload_resp
-        #end if
+        try:
+            response = WalletServices(wallet_id).info()
+        except WalletNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        return response
+    #end def
 
-        # checking token identity to make sure user can only access their wallet information
-        auth_resp = AuthenticationHelper().check_wallet_permission(payload_resp["user_id"],\
-                                             wallet_id)
-        if auth_resp is None:
-            return auth_resp
-        #end if
-
-        response = WalletServices().info({"id" : wallet_id})
+    def delete(self, wallet_id):
+        """
+            handle DELETE method from
+            api/v1/wallet/
+        """
+        try:
+            response = WalletServices(wallet_id).remove()
+        except WalletNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
         return response
     #end def
 #end class
@@ -95,7 +141,10 @@ class WalletQrRoutes(Resource):
             api/v1/<wallet_id>/qr
             return wallet qr
         """
-        response = WalletServices().get_qr({"id" : wallet_id})
+        try:
+            response = WalletServices(wallet_id).get_qr()
+        except WalletNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
         return response
     #end def
 #end class
@@ -132,26 +181,16 @@ class WalletBalanceRoutes(Resource):
         api/v1/<wallet_id>/balance
     """
     @token_required
-    def post(self, wallet_id):
+    def get(self, wallet_id):
         """
             handle GET method from
             api/v1/<wallet_id>/balance
             return wallet balance
         """
-        request_data = pin_auth_request_schema.parse_args(strict=True)
-        data = {
-            "pin" : request_data["pin"],
-        }
-
-        # serialize input here
-        errors = WalletSchema().validate(data, partial=("user_id", "created_at"))
-        if errors:
-            return bad_request(errors)
-        #end if
-
-        data["id"] = wallet_id
-
-        response = WalletServices().check_balance(data)
+        try:
+            response = WalletServices(wallet_id).check_balance()
+        except WalletNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
         return response
     #end def
 #end class
@@ -170,13 +209,15 @@ class WalletTransactionRoutes(Resource):
             return wallet transaction list
         """
         request_data = wallet_transaction_request_schema.parse_args(strict=True)
+        try:
+            wallet = WalletTransactionSchema(strict=True).validate(request_data)
+        except ValidationError as error:
+            raise SerializeError(None, error.messages)
 
-        errors = WalletTransactionSchema().validate(request_data)
-        if errors:
-            return bad_request(errors)
-        #end if
-        request_data["wallet_id"] = wallet_id
-        response = WalletServices().history(request_data)
+        try:
+            response = WalletServices(wallet_id).history(request_data)
+        except WalletNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
         return response
     #end def
 #end class
@@ -194,7 +235,10 @@ class WalletTransactionDetailsRoutes(Resource):
             api/v1/<wallet_id>/transactions/<transaction_id>
             return wallet transaction details
         """
-        response = WalletServices().history_details(wallet_id, transaction_id)
+        try:
+            response = WalletServices(wallet_id).history_details(transaction_id)
+        except (WalletNotFoundError, TransactionDetailsNotFoundError) as error:
+            raise RecordNotFoundError(error.msg, error.title)
         return response
     #end def
 #end class
@@ -213,14 +257,14 @@ class WalletPinRoutes(Resource):
             update wallet pin
         """
         request_data = update_pin_request_schema.parse_args(strict=True)
-        data = {
-            "old_pin"     : request_data["old_pin"],
-            "pin"         : request_data["pin"],
-            "confirm_pin" : request_data["confirm_pin"],
-            "id"          : wallet_id
-        }
         # need to serialize here
-        response = WalletServices().update_pin(data)
+        try:
+            response = WalletServices(wallet_id).update_pin(request_data)
+        except WalletNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        except (IncorrectPinError, UnmatchPinError, DuplicatePinError) as \
+        error:
+            raise CommitError(error.msg, None, error.title, None)
         return response
     #end def
 #end class
@@ -238,7 +282,12 @@ class WalletForgotPinRoutes(Resource):
             api/v1/<wallet_id>/forgot/
             send forgot pin otp via sms
         """
-        response = WalletServices().send_forgot_otp(wallet_id)
+        try:
+            response = WalletServices(wallet_id).send_forgot_otp()
+        except WalletNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        except (PendingOtpError, WalletOtpError) as error:
+            raise CommitError(error.msg, None, error.title, None)
         return response
     #end def
 
@@ -250,14 +299,13 @@ class WalletForgotPinRoutes(Resource):
             verify forgot pin
         """
         request_data = forgot_pin_request_schema.parse_args(strict=True)
-        data = {
-            "pin"      : request_data["pin"],
-            "otp_code" : request_data["otp_code"],
-            "otp_key"  : request_data["otp_key"],
-            "id"       : wallet_id,
-        }
         # need to serialize here
-        response = WalletServices().verify_forgot_otp(data)
+        try:
+            response = WalletServices(wallet_id).verify_forgot_otp(request_data)
+        except (WalletNotFoundError, OtpNotFoundError) as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        except (OtpVerifiedError, InvalidOtpError) as error:
+            raise CommitError(error.msg, None, error.title, None)
         return response
     #end def
 #end class
@@ -368,43 +416,6 @@ class WalletBankTransferRoutes(Resource):
         #end if
 
         response = TransferServices().external_transfer(request_data)
-        return response
-    #end def
-#end class
-
-@api.route('/<int:user_id>')
-class WalletAddRoutes(Resource):
-    """
-        Wallet add Routes
-        api/v1/wallet/<user_id>
-    """
-    @admin_required
-    def post(self, user_id):
-        """
-            Handle POST request from
-            api/v1/wallet/<user_id>
-        """
-        request_data = request_schema.parse_args(strict=True)
-        request_data["user_id"] = user_id
-
-        response = WalletServices().add(request_data)
-        return response
-    #end def
-#end class
-
-@api.route('/')
-class WalletListRoutes(Resource):
-    """
-        Wallet List Routes
-        api/v1/wallet/
-    """
-    @admin_required
-    def get(self):
-        """
-            Handle GET request from
-            api/v1/wallet/
-        """
-        response = WalletServices().show()
         return response
     #end def
 #end class

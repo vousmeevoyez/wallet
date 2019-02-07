@@ -1,17 +1,19 @@
 """ 
     Test User Services
 """
-from app.api.wallet import helper
-
-from app.test.base          import BaseTestCase
-from app.api.http_response         import *
+from app.test.base import BaseTestCase
+from app.api.http_response import *
 
 from app.api.user.modules.user_services import UserServices
 from app.api.user.modules.bank_account_services import BankAccountServices
 
-from app.config import config
+from app.api.models import *
 
-RESPONSE_MSG = config.Config.RESPONSE_MSG
+from app.api.exception.user import UserDuplicateError
+from app.api.exception.user import UserNotFoundError
+from app.api.exception.user import OldRecordError
+
+from app.config import config
 
 class TestUserServices(BaseTestCase):
     """ Test User Services"""
@@ -24,11 +26,11 @@ class TestUserServices(BaseTestCase):
             "phone_ext"   : "62",
             "phone_number": "81212341235",
             "email"       : "jennie@blackpink.com",
-            "password"    : "password",
-            "pin"         : "123456",
-            "role"        : "USER",
+            "role_id"     : 1,
         }
-        result = UserServices().add(params)
+        user = User(**params)
+        result = UserServices.add(user, "password", "123456")
+        print(result)
         self.assertEqual(result[1], 201) # created
 
     def test_user_add_failed_duplicate(self):
@@ -39,11 +41,10 @@ class TestUserServices(BaseTestCase):
             "phone_ext"   : "62",
             "phone_number": "81212341235",
             "email"       : "jennie@blackpink.com",
-            "password"    : "password",
-            "pin"         : "123456",
-            "role"        : "USER",
+            "role_id"     : 1,
         }
-        result = UserServices().add(params)
+        user = User(**params)
+        result = UserServices.add(user, "password", "123456")
         self.assertEqual(result[1], 201) # created
 
         params = {
@@ -52,19 +53,15 @@ class TestUserServices(BaseTestCase):
             "phone_ext"   : "62",
             "phone_number": "81212341235",
             "email"       : "jennie@blackpink.com",
-            "password"    : "password",
-            "pin"         : "123456",
-            "role"        : "USER",
+            "role_id"     : 1,
         }
-        result = UserServices().add(params)
-        self.assertEqual(result[1], 422)
-        self.assertEqual(result[0]["error"], "DUPLICATE_USER")
+        user = User(**params)
+        with self.assertRaises(UserDuplicateError):
+            result = UserServices.add(user, "password", "123456")
 
     def test_user_list_success(self):
         """ test get list of users"""
-        params = {
-        }
-        result = UserServices().show(params)
+        result = UserServices.show({})
         self.assertTrue(len(result) > 0)
 
     def test_user_info_success(self):
@@ -75,27 +72,21 @@ class TestUserServices(BaseTestCase):
             "phone_ext"   : "62",
             "phone_number": "81212341235",
             "email"       : "jennie@blackpink.com",
-            "password"    : "password",
-            "pin"         : "123456",
-            "role"        : "USER",
+            "role_id"     : 1,
         }
-        result = UserServices().add(params)
+        user = User(**params)
+        result = UserServices.add(user, "password", "123456")
         self.assertEqual(result[1], 201) # created
 
-        params = {
-            "user_id" : result[0]["user_id"]
-        }
-        result = UserServices().info(params)
+        user_id = result[0]["data"]["user_id"]
+        result = UserServices(user_id).info()
         self.assertTrue(result["user_information"])
         #self.assertTrue(result["wallet_information"])
 
     def test_user_info_failed_record_not_found(self):
         """ test get single user info but user not found"""
-        params = {
-            "user_id" : 123
-        }
-        result = UserServices().info(params)
-        self.assertEqual(result[1], 404)
+        with self.assertRaises(UserNotFoundError):
+            result = UserServices(123).info()
 
     def test_remove_user_success(self):
         """ test removing user """
@@ -105,25 +96,76 @@ class TestUserServices(BaseTestCase):
             "phone_ext"   : "62",
             "phone_number": "81212341235",
             "email"       : "jennie@blackpink.com",
-            "password"    : "password",
-            "pin"         : "123456",
-            "role"        : "USER",
+            "role_id"     : 1,
         }
-        result = UserServices().add(params)
+        user = User(**params)
+        result = UserServices.add(user, "password", "123456")
         self.assertEqual(result[1], 201) # created
 
-        user_id = result[0]["user_id"]
+        user_id = result[0]["data"]["user_id"]
 
-        result = UserServices().remove({"user_id" : user_id})
-        self.assertEqual(result[1], 204) # no contento
+        result = UserServices(user_id).remove()
+        self.assertEqual(result[1], 204) # no content
 
-        result = UserServices().info({"user_id" : user_id})
-        self.assertEqual(result[1], 404)
+        with self.assertRaises(UserNotFoundError):
+            result = UserServices(user_id).info()
 
     def test_remove_user_failed_not_found(self):
         """ test removing user but not found"""
+        with self.assertRaises(UserNotFoundError):
+            result = UserServices("1234").info()
+
+    def test_update_user_success(self):
+        """ test updating user information """
         params = {
-            "user_id" : 123
+            "username"    : "jennie",
+            "name"        : "jennie",
+            "phone_ext"   : "62",
+            "phone_number": "81212341235",
+            "email"       : "jennie@blackpink.com",
+            "role_id"     : 1,
         }
-        result = UserServices().remove(params)
-        self.assertEqual(result[1], 404) # not found
+        user = User(**params)
+        result = UserServices.add(user, "password", "123456")
+        self.assertEqual(result[1], 201) # created
+
+        user_id = result[0]["data"]["user_id"]
+
+        params = {
+            "name"        : "jisooo",
+            "phone_ext"   : "62",
+            "phone_number": "81212222222",
+            "email"       : "jisooo@blackpink.com",
+            "password"    : "password",
+        }
+
+        result = UserServices(user_id).update(params)
+        self.assertEqual(result[1], 204)
+
+
+        result = UserServices(user_id).info()
+
+    def test_update_user_old(self):
+        """ test updating user information """
+        params = {
+            "username"    : "jennie",
+            "name"        : "jennie",
+            "phone_ext"   : "62",
+            "phone_number": "81212341235",
+            "email"       : "jennie@blackpink.com",
+            "role_id"     : 1,
+        }
+        user = User(**params)
+        result = UserServices.add(user, "password", "123456")
+        self.assertEqual(result[1], 201) # created
+
+        user_id = result[0]["data"]["user_id"]
+
+        params = {
+            "name"        : "jennie",
+            "phone_ext"   : "62",
+            "phone_number": "81212341235",
+            "email"       : "jennie@blackpink.com",
+        }
+        with self.assertRaises(OldRecordError):
+            result = UserServices(user_id).update(params)

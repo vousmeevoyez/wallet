@@ -9,23 +9,23 @@ from sqlalchemy.exc import IntegrityError
 # database
 from app.api import db
 # models
-from app.api.models import User, BlacklistToken
-# http response
-from app.api.http_response import bad_request
-from app.api.http_response import unauthorized
-from app.api.http_response import request_not_found
-from app.api.http_response import no_content
-from app.api.http_response import unprocessable_entity
+from app.api.models import User
+from app.api.models import BlacklistToken
 # exceptions
-from app.api.exception.authentication.exceptions import RevokedTokenError
-from app.api.exception.authentication.exceptions import SignatureExpiredError
-from app.api.exception.authentication.exceptions import InvalidTokenError
-from app.api.exception.authentication.exceptions import TokenError
-from app.api.exception.authentication.exceptions import EmptyPayloadError
+from app.api.exception.authentication import EmptyPayloadError
+from app.api.exception.authentication import RevokedTokenError
+from app.api.exception.authentication import SignatureExpiredError
+from app.api.exception.authentication import InvalidTokenError
+from app.api.exception.authentication import TokenError
+from app.api.exception.authentication import InvalidCredentialsError
+
+from app.api.exception.user import UserNotFoundError
+from app.api.exception.authentication import FailedRevokedTokenError
+
+# http response
+from app.api.http_response import no_content
 # configuration
 from app.config import config
-
-RESPONSE_MSG = config.Config.RESPONSE_MSG
 
 class AuthServices:
     """ Authentication Services Class"""
@@ -45,9 +45,10 @@ class AuthServices:
     #end def
 
     @staticmethod
-    def current_login_user(token):
+    def _current_login_user(token):
         """
-            function to check who is currently login by ddecode their token
+            function to check who is currently login by decode their token
+            used in decorator
             args:
                 token -- jwt token
         """
@@ -55,9 +56,11 @@ class AuthServices:
             payload = User.decode_token(token)
         except RevokedTokenError:
             raise TokenError("Revoked Token")
-        except SignatureExpiredError:
+        except SignatureExpiredError as error:
+            #print(error)
             raise TokenError("Signature Expired")
-        except InvalidTokenError:
+        except InvalidTokenError as error:
+            #print(error)
             raise TokenError("Invalid Token")
         except EmptyPayloadError:
             raise TokenError("Empty Payload")
@@ -82,11 +85,11 @@ class AuthServices:
 
         user = User.query.filter_by(username=username).first()
         if user is None:
-            return request_not_found()
+            raise UserNotFoundError
         #end if
 
         if user.check_password(password) is not True:
-            return unauthorized("Invalid Credentials")
+            raise InvalidCredentialsError("Incorrect Credentials")
         #end if
 
         # generate token here
@@ -106,11 +109,9 @@ class AuthServices:
             args:
                 current_user -- get current user id
         """
-        response = {}
-
         user = User.query.filter_by(id=current_user).first()
         if user is None:
-            return request_not_found()
+            raise UserNotFoundError
         #end if
 
         access_token = self._create_access_token(user)
@@ -129,24 +130,18 @@ class AuthServices:
         """
         # decode the token first
         try:
-            payload = User.decode_token(token)
-        except RevokedTokenError:
-            return unauthorized("Revoked Token")
-        except SignatureExpiredError:
-            return unauthorized("Signature Expired")
-        except InvalidTokenError:
-            return unauthorized("Invalid Token")
-        except EmptyPayloadError:
-            return unauthorized("Empty Payload")
+            payload = self._current_login_user(token)
+        except TokenError as error:
+            # catch and re rise to be captured by error handler
+            raise TokenError(error)
         #end try
-
         blacklist_token = BlacklistToken(token=token)
 
         try:
             db.session.add(blacklist_token)
             db.session.commit()
         except IntegrityError as error:
-            return unprocessable_entity("Failed logging out token")
+            raise FailedRevokedTokenError("Failed logging out token", error)
         #end try
         return no_content()
     #end def
@@ -159,15 +154,11 @@ class AuthServices:
         """
         # decode the token first
         try:
-            payload = User.decode_token(token)
-        except RevokedTokenError:
-            return unauthorized("Revoked Token")
-        except SignatureExpiredError:
-            return unauthorized("Signature Expired")
-        except InvalidTokenError:
-            return unauthorized("Invalid Token")
-        except EmptyPayloadError:
-            return unauthorized("Empty Payload")
+            payload = self._current_login_user(token)
+        except TokenError as error:
+            # catch and re rise to be captured by error handler
+            raise TokenError(error)
+        #end try
 
         blacklist_token = BlacklistToken(token=token)
 
@@ -175,7 +166,7 @@ class AuthServices:
             db.session.add(blacklist_token)
             db.session.commit()
         except IntegrityError as error:
-            return unprocessable_entity("Failed logging out token")
+            raise FailedRevokedTokenError("Failed logging out token", error)
         #end try
         return no_content()
     #end def

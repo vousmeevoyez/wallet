@@ -17,7 +17,7 @@ RESOURCE = "/users/"
 class TestUserRoutes(BaseTestCase):
     """ Test Class for User Routes"""
 
-    """ 
+    """
         HELPER function to request to specific URL
     """
     def get_access_token(self, username, password):
@@ -47,6 +47,24 @@ class TestUserRoutes(BaseTestCase):
                 password=params["password"],
                 pin=params["pin"],
                 role=params["role"]
+            ),
+            headers=headers
+        )
+    #end def
+
+    def update_user(self, params, user_id, access_token):
+        """ update user """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.put(
+            BASE_URL + RESOURCE + str(user_id),
+            data=dict(
+                name=params["name"],
+                phone_ext=params["phone_ext"],
+                phone_number=params["phone_number"],
+                email=params["email"],
+                password=params["password"],
             ),
             headers=headers
         )
@@ -134,8 +152,7 @@ class TestUserRoutes(BaseTestCase):
         TEST BEGIN HERE 
     """
 
-    @patch.object(UserServices, "add")
-    def test_create_user_routes_success(self, mock_user_services):
+    def test_create_user_routes_success(self):
         """ test routes function to create user"""
         params = {
             "username"     : "jennie",
@@ -149,18 +166,12 @@ class TestUserRoutes(BaseTestCase):
         }
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
-        access_token = response["data"]["access_token"]
+        access_token = response["access_token"]
 
-        expected_value = {
-            "message" : "some message",
-            "data" : "some data"
-        }
-
-        mock_user_services.return_value = expected_value
         result = self.create_user(params, access_token)
-        response = result.get_json()
+        response = result.get_json()["data"]
 
-        self.assertEqual(response, expected_value)
+        self.assertTrue(response["user_id"])
 
     def test_create_user_routes_failed_validate_input(self):
         """ test routes function to create user but there are some invalid data
@@ -177,51 +188,68 @@ class TestUserRoutes(BaseTestCase):
         }
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
-        access_token = response["data"]["access_token"]
+        access_token = response["access_token"]
 
         result = self.create_user(params, access_token)
-        status_code = result.status_code
+        self.assertEqual(result.status_code, 400) # bad request
 
-        self.assertEqual(status_code, 400) # bad request
-
-    @patch.object(UserServices, "show")
-    def test_get_all_user(self, mock_user_services):
+    def test_get_all_user(self):
         """ test method that return all user """
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
-        access_token = response["data"]["access_token"]
+        access_token = response["access_token"]
 
-
-        mock_user_services.return_value = {
-            "data" : "some data"
-        }
         result = self.get_all_user(access_token)
         status_code = result.status_code
 
+        response = result.get_json()
         self.assertEqual(status_code, 200) # ok
 
-    @patch.object(UserServices, "info")
-    def test_get_user(self, mock_user_services):
+
+    def test_update_user(self):
+        """ test routes function to update user"""
+        params = {
+            "username"     : "jennie",
+            "name"         : "jennie",
+            "phone_ext"    : "62",
+            "phone_number" : "81219643444",
+            "email"        : "jennie@blackpink.com",
+            "password"     : "password",
+            "pin"          : "123456",
+            "role"         : "USER"
+        }
+        result = self.get_access_token("MODANAADMIN", "password")
+        response = result.get_json()
+        access_token = response["access_token"]
+
+        result = self.create_user(params, access_token)
+        response = result.get_json()["data"]
+
+        user_id = response["user_id"]
+
+        result = self.update_user(params, user_id, access_token)
+        print(result)
+
+    def test_get_user(self):
         """ test method that get user info"""
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
-        access_token = response["data"]["access_token"]
+        access_token = response["access_token"]
 
-        mock_user_services.return_value = {
-            "data" : "some data"
-        }
         result = self.get_user("1", access_token)
         status_code = result.status_code
 
         self.assertEqual(status_code, 200) # ok
 
-    @patch.object(BankAccountServices, "add")
-    def test_create_user_bank_account_success(self, mock_bank_account_services):
+        result = self.get_user("123", access_token)
+        print(result.get_json())
+
+    def test_create_user_bank_account_success(self):
         """ test method that get user info"""
         # get access token first
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
-        access_token = response["data"]["access_token"]
+        access_token = response["access_token"]
 
         params = {
             "account_no": "3333333333",
@@ -230,14 +258,10 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        # mock response here
-        mock_bank_account_services.return_value = {
-            "data" : "some data"
-        }
         result = self.create_user_bank_account("1", params, access_token)
         status_code = result.status_code
 
-        self.assertEqual(status_code, 200) # ok
+        self.assertEqual(status_code, 201) # created
 
     def test_create_user_bank_account_validate_failed(self):
         """ test method that get user info but failed because some invalid
@@ -245,7 +269,7 @@ class TestUserRoutes(BaseTestCase):
         # get access token first
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
-        access_token = response["data"]["access_token"]
+        access_token = response["access_token"]
 
         params = {
             "account_no": "",
@@ -259,43 +283,12 @@ class TestUserRoutes(BaseTestCase):
 
         self.assertEqual(status_code, 400) # ok
 
-    @patch.object(BankAccountServices, "show")
-    def test_get_user_bank_account(self, mock_bank_account_services):
+    def test_get_user_bank_account(self):
         """ test routes that return bank account information"""
         # get access token first
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
-        access_token = response["data"]["access_token"]
-
-        # mock function
-        mock_bank_account_services.return_value = {"data" : "Some data"}
-        result = self.get_bank_account("1", access_token)
-        status_code = result.status_code
-
-        self.assertEqual(status_code, 200) # ok
-
-    @patch.object(BankAccountServices, "remove")
-    def test_remove_bank_account(self, mock_bank_account_services):
-        """ test routes that remove bank account"""
-        # get access token first
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["data"]["access_token"]
-
-        # mock function
-        mock_bank_account_services.return_value = {"data" : "Some data"}
-        result = self.remove_bank_account("1", "1", access_token)
-        status_code = result.status_code
-
-        self.assertEqual(status_code, 200) # ok
-
-    @patch.object(BankAccountServices, "update")
-    def test_update_user_bank_account_success(self, mock_bank_account_services):
-        """ test method that update user bank account information"""
-        # get access token first
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["data"]["access_token"]
+        access_token = response["access_token"]
 
         params = {
             "account_no": "3333333333",
@@ -304,11 +297,58 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        # mock response here
-        mock_bank_account_services.return_value = {
-            "data" : "some data"
+        result = self.create_user_bank_account("1", params, access_token)
+        status_code = result.status_code
+
+        result = self.get_bank_account("1", access_token)
+        status_code = result.status_code
+
+        self.assertEqual(status_code, 200) # ok
+
+    def test_remove_bank_account(self):
+        """ test routes that remove bank account"""
+        # get access token first
+        result = self.get_access_token("MODANAADMIN", "password")
+        response = result.get_json()
+        access_token = response["access_token"]
+
+        params = {
+            "account_no": "3333333333",
+            "name"      : "Bpk KEN AROK",
+            "label"     : "Irene Bank Account",
+            "bank_code" : "014"
+        }
+
+        result = self.create_user_bank_account("1", params, access_token)
+        self.assertEqual(result.status_code, 201) # ok
+
+        result = self.remove_bank_account("1", "1", access_token)
+        self.assertEqual(result.status_code, 204) # no content
+
+    def test_update_user_bank_account_success(self):
+        """ test method that update user bank account information"""
+        result = self.get_access_token("MODANAADMIN", "password")
+        response = result.get_json()
+        access_token = response["access_token"]
+
+        params = {
+            "account_no": "3333333333",
+            "name"      : "Bpk KEN AROK",
+            "label"     : "Irene Bank Account",
+            "bank_code" : "014"
+        }
+
+        result = self.create_user_bank_account("1", params, access_token)
+        self.assertEqual(result.status_code, 201) # ok
+
+        # get access token first
+        params = {
+            "account_no": "1111333333",
+            "name"      : "Bpk KEN AROK",
+            "label"     : "Kelvin Bank Accounts",
+            "bank_code" : "014"
         }
         result = self.update_bank_account("1", "1", params, access_token)
         status_code = result.status_code
 
-        self.assertEqual(status_code, 200) # ok
+        self.assertEqual(status_code, 204) # ok

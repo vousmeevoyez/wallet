@@ -18,7 +18,6 @@ from app.api.log.modules.log_services import LogServices
 
 request_schema = AuthRequestSchema.parser
 
-RESPONSE_MSG = config.Config.RESPONSE_MSG
 
 @api.route("/")
 class LogRoutes(Resource):

@@ -13,6 +13,8 @@ from app.api.wallet         import api as wallet_ns
 from app.api.bank           import api as bank_ns
 from app.api.callback       import api as callback_ns
 from app.api.log            import api as log_ns
+from app.api.exception      import api as exception
+
 
 blueprint = Blueprint("api", __name__)
 
@@ -43,3 +45,4 @@ api.add_namespace(wallet_ns, path="/wallets")
 api.add_namespace(callback_ns, path="/callback")
 api.add_namespace(bank_ns, path="/banks")
 api.add_namespace(log_ns, path="/logs")
+api.add_namespace(exception)

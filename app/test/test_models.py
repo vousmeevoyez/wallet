@@ -10,6 +10,8 @@ from app.api        import db
 from app.api.models import *
 from app.config import config
 
+from app.api.exception.authentication import *
+
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 class UserTestCaseModel(BaseTestCase):
@@ -38,11 +40,11 @@ class UserTestCaseModel(BaseTestCase):
 
         # create dummy user
         user2 = User(
-            username='jenniebp',
-            name='jennie',
-            email='jennie@bp.com',
+            username='janejane',
+            name='jane',
+            email='jane@bp.com',
             phone_ext='62',
-            phone_number='82219644314',
+            phone_number='82229644314',
             role_id=role.id,
         )
         user2.set_password("password")
@@ -73,7 +75,7 @@ class UserTestCaseModel(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        user = User.query.get(2)
+        user = User.query.get(3)
         # check how many wallet user have
         self.assertEqual( len(user.wallets), 1)
 
@@ -154,7 +156,8 @@ class UserTestCaseModel(BaseTestCase):
         self.assertEqual(user.decode_token(token)["type"], "ACCESS")
         self.assertEqual(user.decode_token(token)["role"], "USER")
 
-        user.decode_token("eyJhbGciOiJIUzI1NiIsInR5cCI6Im5vbmUifQ.e30.kligm-MjaliTD584hBs6v52XSZcixYU9BlmAAwmjOB0")
+        with self.assertRaises(EmptyPayloadError):
+            user.decode_token("eyJhbGciOiJIUzI1NiIsInR5cCI6Im5vbmUifQ.e30.kligm-MjaliTD584hBs6v52XSZcixYU9BlmAAwmjOB0")
 
 class WalletModelCase(BaseTestCase):
 
@@ -221,7 +224,7 @@ class WalletModelCase(BaseTestCase):
 
         # check lock here
         lock_status = wallet.is_unlocked()
-        self.assertEqual( lock_status, False)
+        self.assertEqual( lock_status, 3)
 
     def test_unlock(self):
         # create dummy wallet
@@ -346,7 +349,7 @@ class WalletModelCase(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        result = Wallet.is_owned(2, wallet_id)
+        result = Wallet.is_owned(3, wallet_id)
         self.assertTrue(result)
 
         result = Wallet.is_owned(1, 456464)
@@ -378,6 +381,7 @@ class VirtualAccountModelCase(BaseTestCase):
         )
         va_id  = va.generate_va_number()
         trx_id = va.generate_trx_id()
+        datetime_expired = va.get_datetime_expired("BNI", "CREDIT")
         db.session.add(va)
         db.session.commit()
 

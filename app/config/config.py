@@ -13,12 +13,20 @@ class Config:
     DEBUG = False
     BUNDLE_ERRORS = True #configuration key for flask-restplus to enable bundle erors
 
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    PRESERVE_CONTEXT_ON_EXCEPTION = False
+
+
     DATABASE = {
         "DRIVER"   : os.getenv('DB_DRIVER') or "postgresql://", # sqlite // postgresql // mysql
         "USERNAME" : os.getenv('DB_USERNAME') or "modana",
         "PASSWORD" : os.getenv('DB_PASSWORD') or "passsword",
         "HOST_NAME": os.getenv('DB_HOSTNAME') or "localhost",
         "DB_NAME"  : os.getenv('DB_NAME') or "db_wallet",
+    }
+
+    SENTRY = {
+        "DSN" : "https://c864361a612b47a3827e2c5b3280a727@sentry.io/1385947"
     }
 
     CELERY_BROKER_URL = os.getenv("BROKER_URL") or 'amqp://guest:guest@localhost:5672'
@@ -30,8 +38,6 @@ class Config:
         "ACCESS_EXPIRE"  : 30, # minutes,
         "REFRESH_EXPIRE" : 30, # day,
     }
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    PRESERVE_CONTEXT_ON_EXCEPTION = False
 
     # FLASK RESTPLUS
     ERROR_INCLUDE_MESSAGE = False
@@ -82,93 +88,6 @@ class Config:
         "SEND_TRANSFER"   : "Transfer balance {}",
         "RECEIVE_TRANSFER": "Received balance {}",
         "WITHDRAW_NOTIF"  : "Withdraw balance {} from Virtual Account"
-    }
-
-    ERROR_HEADER = {
-        "USER_NOT_FOUND"    : "USER_ID_DOES_NOT_EXIST",
-        "BANK_NOT_FOUND"    : "BANK_CODE_DOES_NOT_EXIST",
-        "BANK_ACC_NOT_FOUND": "BANK_ACCOUNT_DOES_NOT_EXIST",
-        "REVOKED_TOKEN"     : "REVOKED_TOKEN",
-        "SIGNATURE_EXPIRED" : "SIGNATURE_EXPIRED",
-        "INVALID_TOKEN"     : "INVALID_TOKEN",
-        "DUPLICATE_BANK_ACC": "DUPLICATE_BANK_ACCOUNT",
-        "DUPLICATE_USER"    : "DUPLICATE_USER",
-        "DUPLICATE_WALLET"  : "DUPLICATE_WALLET",
-        "ONLY_WALLET"       : "ONLY_WALLET",
-        "INCORRECT_PIN"     : "INCORRECT_PIN",
-        "PIN_NOT_MATCH"     : "PIN_NOT_MATCH",
-        "PIN_NOT_MATCH"     : "PIN_NOT_MATCH",
-        "DUPLICATE_PIN"     : "DUPLICATE_PIN",
-        "PENDING_OTP"       : "PENDING_OTP",
-    }
-
-    # RESPONSE MESSAGE
-    RESPONSE_MSG = {
-        "SUCCESS" : {
-            "CREATE_WALLET"         : "Wallet successfully created",
-            "REMOVE_WALLET"         : "Wallet successfully removed",
-            "LOCK_WALLET"           : "Wallet successfully locked",
-            "UNLOCK_WALLET"         : "Wallet successfuly unlocked",
-            "DEPOSIT"               : "Successfully Deposit {} to {}",
-            "WITHDRAW"              : "Successfully Withdraw {} to {}",
-            "TRANSFER"              : "Successfully Transfer {} from {} to {}",
-            "REQUEST_WITHDRAW"      : "Request Withdraw Success",
-            "CREATE_USER"           : "User & Wallet Successfully Created",
-            "CREATE_BANK_ACCOUNT"   : "Bank Account Sucessfully Added",
-            "UPDATE_BANK_ACCOUNT"   : "Bank Account Sucessfully Updated",
-            "REMOVE_BANK_ACCOUNT"   : "Bank Account Succesfully Removed",
-            "REMOVE_USER"           : "User successfully removed",
-            "UPDATE_USER"           : "User information successfully updated",
-            "ACCESS_AUTH"           : "Authentication success, Token generated",
-            "REFRESH_AUTH"          : "Token Successfully refreshed",
-            "LOGOUT_AUTH"           : "Access Token Successfully revoked",
-            "LOGOUT_REFRESH"        : "Refresh Token Successfully revoked",
-            "UPDATE_PIN"            : "Pin Successfully updated",
-            "FORGOT_OTP"            : "Forgot OTP Code has been sent to {}",
-            "FORGOT_PIN"            : "Forgot Pin Success",
-        },
-        "FAILED" : {
-            "ERROR_ADDING_RECORD"    : "Duplicate Record",
-            "INCORRECT_LOGIN"        : "Incorrect Login",
-            "INCORRECT_PIN"          : "Incorrect Pin",
-            "LOCK_WALLET"            : "Wallet already locked",
-            "UNLOCK_WALLET"          : "Wallet already unlocked",
-            "LOCK_TRANSACTION"       : "Cannot proceed transaction, Wallet is locked",
-            "INSUFFICIENT_BALANCE"   : "Insufficient balance for this transaction",
-            "ROLLBACK"               : "Transaction failed",
-            "WITHDRAW_PENDING"       : "There's pending Withdraw Process\
-                                        ,please wait {} before request again".
-                                       format(VIRTUAL_ACCOUNT_CONFIG["BNI"]["DEBIT_VA_TIMEOUT"]),
-            "WITHDRAW"               : "Request Withdraw Failed",
-            "VA_CREATION"            : "Virtual Account Creation Failed",
-            "WALLET_REMOVAL"         : "Can't remove the main wallet",
-            "UNAUTHORIZED_WALLET"    : "Unauthorized Permission to Wallet",
-            "UNAUTHORIZED_USER"      : "Unauthorized Permission to Access this user information",
-            "MIN_WITHDRAW"           : "Minimum withdraw amount is {} ",
-            "MAX_WITHDRAW"           : "Maximum withdraw amount is {} ",
-            "UNKNOWN_ERROR"          : "Something wrong happen, Please"\
-                                        "customer support if error persist",
-            "VA_UPDATE_FAILED"       : "Failed updating Virtual Account",
-            "EXPIRED_TOKEN"          : "Token has expired",
-            "REVOKED_TOKEN"          : "Token has been revoked",
-            "INVALID_TOKEN"          : "Invalid Token",
-            "INSUFFICIENT_PERMISSION": "Admin Permission Required",
-            "PIN_NOT_MATCH"          : "Pin & Confirm Pin does not match",
-            "INVALID_OLD_PIN"        : "Wrong old pin",
-            "OLD_PIN"                : "New Pin can't be the same with old one",
-            "OTP_PENDING"            : "There's pending Forgot OTP, "\
-                                       "Please wait {} minutes before request again".
-                                       format(str(WALLET_CONFIG["OTP_TIMEOUT"])),
-            "OTP_NOT_FOUND"          : "Invalid Forgot OTP Record",
-            "INVALID_OTP_CODE"       : "Invalid OTP Code",
-            "OTP_ALREADY_VERIFIED"   : "OTP Already verified",
-            "REFRESH_TOKEN_ONLY"     : "Refresh Token Only",
-            "INJECT"                 : "Fail injecting balance",
-            "DEDUCT"                 : "Fail deducting balance",
-            "BANK_ACCOUNT_NOT_FOUND" : "Bank Account not Found",
-            "TRANSFER_FAILED"        : "Transfer Failed",
-            "SMS_ERROR"              : "Sending SMS Failed",
-        }
     }
 
     # BNI E-COLLECTION CONFIG

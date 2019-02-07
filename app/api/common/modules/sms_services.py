@@ -13,8 +13,8 @@ from app.api.common.modules.cipher import AESCipher
 # models
 from app.api.models import ExternalLog
 # exception
-from app.api.exception.exceptions import ApiError
-from app.api.exception.common.exceptions import SmsError
+from app.api.exception.general import ApiError
+from app.api.exception.common import SmsError
 
 # configuration
 from app.config import config

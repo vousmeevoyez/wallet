@@ -14,8 +14,6 @@ from app.api.http_response     import bad_request, internal_error, request_not_f
 from app.config     import config
 from app.api.bank.handler import BankHandler
 
-RESPONSE_MSG = config.Config.RESPONSE_MSG
-
 class BankServices:
     """ Bank Services Class"""
 

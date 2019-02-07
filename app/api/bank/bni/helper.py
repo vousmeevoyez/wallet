@@ -23,13 +23,13 @@ from app.api.models import ExternalLog
 # configuration
 from app.config import config
 # exceptions
-from app.api.exception.exceptions import ApiError
-from app.api.exception.bank.exceptions import ServicesError
-from app.api.exception.bank.exceptions import VirtualAccountError
-from app.api.exception.bank.exceptions import TokenError
-from app.api.exception.bank.exceptions import InvalidInterbankAccountError
-from app.api.exception.bank.exceptions import InterbankTransferError
-from app.api.exception.bank.exceptions import InhouseTransferError
+from app.api.exception.general import ApiError
+from app.api.exception.bni.exceptions import ServicesError
+from app.api.exception.bni.exceptions import VirtualAccountError
+from app.api.exception.bni.exceptions import TokenError
+from app.api.exception.bni.exceptions import InvalidInterbankAccountError
+from app.api.exception.bni.exceptions import InterbankTransferError
+from app.api.exception.bni.exceptions import InhouseTransferError
 # utility
 from .utility import remote_call
 

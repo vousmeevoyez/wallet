@@ -3,15 +3,18 @@
     ________________
     this is module that contain various decorator to protect various endpoint
 """
-from flask import request
 from functools import wraps
+from flask import request
 
 from flask_restplus import reqparse
 
 from app.api.authentication.modules.auth_services import AuthServices
 
-from app.api.exception.authentication.exceptions import ParseTokenError
-from app.api.exception.authentication.exceptions import TokenError
+from app.api.exception.authentication import ParseTokenError
+from app.api.exception.authentication import TokenError
+from app.api.exception.authentication import InvalidAuthorizationError
+from app.api.exception.authentication import InsufficientScopeError
+from app.api.exception.authentication import MethodNotAllowedError
 
 from app.api.http_response import bad_request
 from app.api.http_response import unauthorized
@@ -20,13 +23,11 @@ from app.api.http_response import method_not_allowed
 
 from app.config  import config
 
-RESPONSE_MSG = config.Config.RESPONSE_MSG
-
 def _parse_token():
     """ parse token from header """
     parser = reqparse.RequestParser()
     parser.add_argument('Authorization', location='headers', required=True)
-    header = parser.parse_args(strict=True)
+    header = parser.parse_args()
 
     # accessing token from header
     auth_header = header["Authorization"]
@@ -42,6 +43,24 @@ def _parse_token():
     return token
 #end def
 
+def get_token_payload():
+    """ get token payload """
+    # define header schema
+
+    try:
+        token = _parse_token()
+    except ParseTokenError as error:
+        raise InvalidAuthorizationError(error.msg)
+    #end def
+
+    try:
+        response = AuthServices._current_login_user(token)
+    except TokenError as error:
+        raise InvalidAuthorizationError(error.msg)
+    #end try
+    return response
+#end def
+
 # CUSTOM DECORATOR
 def admin_required(fn):
     """
@@ -50,21 +69,13 @@ def admin_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
 
-        try:
-            token = _parse_token()
-        except ParseTokenError as error:
-            return bad_request(error.msg)
-        #end def
+        response = get_token_payload()
 
-        try:
-            response = AuthServices.current_login_user(token)
-        except TokenError as error:
-            return unauthorized(error.msg)
-        #end try
+        # check permission here
         if response["role"] != "ADMIN":
-            return insufficient_scope()
-        else:
-            return fn(*args, **kwargs)
+            raise InsufficientScopeError("Require admin permission")
+
+        return fn(*args, **kwargs)
         #end if
     return wrapper
 #end def
@@ -75,19 +86,10 @@ def refresh_token_only(fn):
     """
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        try:
-            token = _parse_token()
-        except ParseTokenError as error:
-            return bad_request(error.msg)
-        #end def
-
-        try:
-            response = AuthServices.current_login_user(token)
-        except TokenError as error:
-            return unauthorized(error.msg)
+        response = get_token_payload()
 
         if response["token_type"] != "REFRESH":
-            return method_not_allowed(RESPONSE_MSG["FAILED"]["REFRESH_TOKEN_ONLY"])
+            raise MethodNotAllowedError("Refresh token only")
         else:
             return fn(*args, **kwargs)
     return wrapper
@@ -100,35 +102,10 @@ def token_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
 
-        try:
-            token = _parse_token()
-        except ParseTokenError as error:
-            return bad_request(error.msg)
-        #end try
-        try:
-            response = AuthServices.current_login_user(token)
-        except TokenError as error:
-            return unauthorized(error.msg)
-        #end try
+        response = get_token_payload()
+
         return fn(*args, **kwargs)
     return wrapper
-#end def
-
-def get_token_payload():
-    """ get token payload """
-    # define header schema
-
-    try:
-        token = _parse_token()
-    except ParseTokenError as error:
-        return bad_request(error.msg)
-    #end try
-    try:
-        response = AuthServices.current_login_user(token)
-    except TokenError as error:
-        return unauthorized(error.msg)
-    #end try
-    return response
 #end def
 
 def get_current_token():
@@ -137,6 +114,7 @@ def get_current_token():
     try:
         token = _parse_token()
     except ParseTokenError as error:
-        return bad_request(error.msg)
+        raise InvalidAuthorizationError(error.msg)
+    #end def
     return token
 #end def

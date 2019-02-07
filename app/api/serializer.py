@@ -10,7 +10,7 @@ from datetime import datetime
 from marshmallow import fields, ValidationError, post_load, validates
 
 from app.api         import ma
-from app.api.models  import Wallet, VirtualAccount, User, Role
+from app.api.models  import *
 from app.config  import config
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
@@ -119,6 +119,12 @@ class BankAccountSchema(ma.Schema):
             raise ValidationError("bank code can't be 0")
         #end if
     #end def
+
+    @post_load
+    def make_object(self, request_data):
+        del request_data["bank_code"]
+        return BankAccount(**request_data)
+
 #end def
 
 class UserSchema(ma.Schema):
@@ -152,8 +158,10 @@ class UserSchema(ma.Schema):
                 obj - user object
         """
         status = "ACTIVE"
-        if obj.status is not True:
-            status = "INACTIVE"
+        if obj.status == 2:
+            status = "DEACTIVE"
+        elif obj.status == 3:
+            status = "LOCKED"
         return status
     #end def
 
@@ -168,6 +176,14 @@ class UserSchema(ma.Schema):
 
     @post_load
     def make_user(self, data):
+        """ create user object from data"""
+        role = Role.query.filter_by(description=data["role"]).first()
+        del data["role"]
+        data["role_id"] = role.id
+        # remove pin and password
+        del data["pin"]
+        del data["password_hash"]
+
         return User(**data)
     #end def
 
@@ -296,6 +312,7 @@ class UserSchema(ma.Schema):
 class WalletSchema(ma.Schema):
     """ This is class that represent wallet schema"""
     id         = fields.Str()
+    label      = fields.Str(required=True, load_only=True, validate=cannot_be_blank)
     user_id    = fields.Int(load_only=True)
     pin        = fields.Str(required=True, attribute="pin_hash", validate=cannot_be_blank, load_only=True)
     created_at = fields.DateTime('%Y-%m-%d %H:%M:%S', load_only=True)
@@ -319,6 +336,23 @@ class WalletSchema(ma.Schema):
     @post_load
     def make_wallet(self, data):
         return Wallet(**data)
+    #end def
+
+    @validates('label')
+    def validate_label(self, name):
+        """
+            function to validate wallet label
+            args:
+                name -- name
+        """
+        # onyl allow alphabet character
+        pattern = r"^[a-zA-Z ]+$"
+        if len(name) < 2:
+            raise ValidationError('Invalid label, minimum is 2 character')
+        if len(name) > 70:
+            raise ValidationError('Invalid label, max is 100 character')
+        if  re.match(pattern, name) is None:
+            raise ValidationError('Invalid label, only alphabet allowed')
     #end def
 
     @validates('pin')
@@ -430,10 +464,11 @@ class TransactionSchema(ma.Schema):
 
 class VirtualAccountSchema(ma.Schema):
     """ This is class for Virtual Account Schema"""
-    id         = fields.Int()
+    id         = fields.Str()
     trx_id     = fields.Int(load_only=True)
     va_type    = fields.Method("va_type_to_string")
     name       = fields.Str(required=True, validate=cannot_be_blank)
+    bank_name  = fields.Method("bank_id_to_name")
     status     = fields.Method("bool_to_status")
 
     @post_load
@@ -453,9 +488,22 @@ class VirtualAccountSchema(ma.Schema):
                 object -- va object
         """
         status = "ACTIVE"
-        if obj.status is not True:
-            status = "INACTIVE"
+        if obj.status == 0:
+            status = "PENDING"
+        elif obj.status == 2:
+            status = "DEACTIVE"
+        elif obj.status == 3:
+            status = "LOCKED"
         return status
+    #end def
+
+    def bank_id_to_name(self, obj):
+        """ 
+            function to convert bank id to bank name
+            args : 
+                obj -- bank account object
+        """
+        return obj.bank.name
     #end def
 
     def va_type_to_string(self, obj):

@@ -13,7 +13,6 @@ from app.config             import config
 from app.api.bank.bni.utility   import remote_call as bni_utility
 from app.api.callback.modules.callback_services import CallbackServices
 
-RESPONSE_MSG = config.Config.RESPONSE_MSG
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 
 @api.route('/bni_va/deposit')

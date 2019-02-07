@@ -7,7 +7,7 @@ import hashlib
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 
-from app.api.exception.common.exceptions import DecryptError
+from app.api.exception.common import DecryptError
 
 class AESCipher:
     """ Encryption using AES """

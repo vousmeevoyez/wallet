@@ -1,12 +1,44 @@
 """ 
     Test Authentication Routes
 """
-import json
+from unittest.mock import Mock, patch
 
 from app.test.base  import BaseTestCase
 
+from app.api.authentication.modules.auth_services import AuthServices
+
 BASE_URL = "/api/v1"
 RESOURCE = "/auth/"
+
+class TestMockAuthRoutes(BaseTestCase):
+    """ test auth routes using mock """
+
+    def get_access_token(self, username, password):
+        """ function to get access token by hitting the access token url API"""
+        return self.client.post(
+            BASE_URL + RESOURCE + "token",
+            data=dict(
+                username=username,
+                password=password
+            )
+        )
+    #end def
+
+    @patch.object(AuthServices, "create_token")
+    def test_get_access_token_success(self, mock_create_token):
+        """ test using mock get access token"""
+
+        mock_create_token.return_value = {
+            "access_token" : "some_access_token",
+            "refresh_token" : "some_refresh_token",
+        }
+
+        result = self.get_access_token("MODANAADMIN", "password")
+        response = result.get_json()
+
+        self.assertTrue(response["access_token"])
+        self.assertTrue(response["refresh_token"])
+    #end def
 
 class TestAuthRoutes(BaseTestCase):
     """ Test Auth ROutes Class"""
@@ -68,6 +100,8 @@ class TestAuthRoutes(BaseTestCase):
     def test_get_access_token_invalid_params(self):
         """ test get access token using invalid params"""
         result = self.get_access_token("MO", "pa")
+        response = result.get_json()
+        #print(response)
         self.assertEqual(result.status_code, 400)
     #end def
 
@@ -75,7 +109,7 @@ class TestAuthRoutes(BaseTestCase):
         """ test failed record not found get access token"""
         result = self.get_access_token("jennie", "password")
         response = result.get_json()
-
+        #print(response)
         self.assertEqual(result.status_code, 404)
     #end def
 
@@ -83,7 +117,7 @@ class TestAuthRoutes(BaseTestCase):
         """ tes invalid login get access token"""
         result = self.get_access_token("MODANAADMIN", "pa3sword")
         response = result.get_json()
-
+        #print(response)
         self.assertEqual(result.status_code, 401)
     #end def
 

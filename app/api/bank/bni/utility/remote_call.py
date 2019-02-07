@@ -15,8 +15,8 @@ from app.api.bank.bni.utility import BniEnc3
 
 from app.api.models import ExternalLog
 
-from app.api.exception.exceptions import ApiError
-from app.api.exception.bank.exceptions import DecryptError
+from app.api.exception.general import ApiError
+from app.api.exception.bni.exceptions import DecryptError
 
 from app.config import config
 
