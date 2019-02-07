@@ -3,5 +3,7 @@
 # this is custom bash script to run flask in prod app because we need to run the flask
 # using uwsgi
 
-make build
+make clean
+make upgrade
+make init
 uwsgi --http :5000 --wsgi-file manage.py --callable app --master --processes 2 --threads 1

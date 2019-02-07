@@ -4,6 +4,7 @@ aniso8601==4.0.1
 asn1crypto==0.24.0
 autopep8==1.4.2
 billiard==3.5.0.4
+blinker==1.4
 celery==4.2.1
 certifi==2018.10.15
 cffi==1.11.5
@@ -13,6 +14,7 @@ coverage==4.5.1
 cryptography==2.3.1
 ecdsa==0.13
 Flask==1.0.2
+Flask-CeleryExt==0.3.1
 Flask-HTTPAuth==3.2.4
 Flask-Inputs==0.3.0
 Flask-JWT-Extended==3.13.1
@@ -24,7 +26,6 @@ Flask-SQLAlchemy==2.3.2
 Flask-Testing==0.7.1
 Flask-WTF==0.14.2
 future==0.17.1
-gunicorn==19.9.0
 idna==2.7
 itsdangerous==1.1.0
 Jinja2==2.10
@@ -50,6 +51,7 @@ python-dotenv==0.9.1
 python-editor==1.0.3
 pytz==2018.7
 PyYAML==3.13
+raven==6.10.0
 requests==2.20.0
 rsa==4.0
 shellescape==3.4.1

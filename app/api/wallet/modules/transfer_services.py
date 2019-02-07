@@ -44,18 +44,13 @@ BNI_OPG_CONFIG    = config.Config.BNI_OPG_CONFIG
 class TransferServices:
     """ Transfer Services"""
 
-    def _create_payment(self, params, session=None):
+    def _create_payment(self, params):
         """
             Function to create payment
             args:
                 params --
                 session -- optional
         """
-        if session is None:
-            session = db.session
-        #end if
-        session.begin(nested=True)
-
         source_account = params["source"]
         to             = params["destination"]
         amount         = params["amount"]
