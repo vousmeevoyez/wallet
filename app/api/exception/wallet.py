@@ -4,8 +4,10 @@ class WalletError(Exception):
 
 class WalletNotFoundError(WalletError):
     """ When wallet is not found """
-    msg = "Wallet not found"
-    title = "WALLET_NOT_FOUND"
+    def __init__(self, origin):
+        super().__init__(origin)
+        self.msg = "{} Wallet not found".format(origin)
+        self.title = "WALLET_NOT_FOUND"
 
 class WalletLockedError(WalletError):
     """ When source wallet is locked """
@@ -13,6 +15,7 @@ class WalletLockedError(WalletError):
     def __init__(self, source):
         super(WalletLockedError, self).__init__(source)
         self.msg = "Wallet {} is locked".format(source)
+        self.title = "WALLET_LOCKED"
 
 class IncorrectPinError(WalletError):
     """ When incorrect pin entered"""
@@ -37,9 +40,8 @@ class InsufficientBalanceError(WalletError):
 
 class InvalidDestinationError(WalletError):
     """ When try to transfer destination and source is the same"""
-    def __init__(self):
-        super(InvalidDestinationError, self).__init__()
-        self.msg = "Can't transfer to same wallet"
+    msg = "Can't transfer to same wallet"
+    title = "INVALID_DESTINATION"
 
 class TransactionError(WalletError):
     """ When something occured on database when creating transaction """

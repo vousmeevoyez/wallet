@@ -129,7 +129,7 @@ class BankAccountSchema(ma.Schema):
 
 class UserSchema(ma.Schema):
     """ this is class schema for user object"""
-    id          = fields.Int(load_only=True)
+    id          = fields.Str()
     username    = fields.Str(required=True, validate=cannot_be_blank)
     name        = fields.Str(required=True, validate=cannot_be_blank)
     phone_ext   = fields.Str(required=True, validate=cannot_be_blank, load_only=True)

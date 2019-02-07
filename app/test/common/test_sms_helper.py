@@ -6,7 +6,7 @@ import requests
 
 from app.api.models import ExternalLog
 
-from app.api.exception.exceptions import ApiError
+from app.api.exception.general import ApiError
 from app.test.base import BaseTestCase
 
 from app.api.common.modules.sms_services import SmsServices

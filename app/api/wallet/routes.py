@@ -164,12 +164,20 @@ class WalletQrTransferRoutes(Resource):
         """
         # request data validator
         request_data = qr_transfer_request_schema.parse_args(strict=True)
-        errors = TransactionSchema().validate(request_data)
-        if errors:
-            return bad_request(errors)
+        try:
+            transfer = TransactionSchema(strict=True).validate(request_data)
+        except ValidationError as error:
+            raise SerializeError(None, error.messages)
         #end if
-        request_data["source"] = wallet_id
-        response = TransferServices().qr_transfer(request_data)
+
+        try:
+            response = TransferServices(wallet_id,
+                                        request_data["pin"]).qr_transfer(request_data)
+        except WalletNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        except (WalletLockedError, IncorrectPinError, InvalidDestinationError,
+                InsufficientBalanceError, TransferError) as error:
+            raise CommitError(error.msg, None, error.title, None)
         return response
     #end def
 #end class
@@ -349,31 +357,21 @@ class WalletTransferRoutes(Resource):
             api/v1/<source>/transfer/<destination>
             send money between VA
         """
-        # fetch payload
-        payload_resp = get_token_payload()
-        if not isinstance(payload_resp, dict):
-            return payload_resp
-        #end if
-
         # parse request data
         request_data = transfer_request_schema.parse_args(strict=True)
-        request_data["source"] = source_wallet_id
-        request_data["destination"] = destination_wallet_id
-
-        # checking token identity to make sure user can only access their wallet information
-        auth_resp = AuthenticationHelper().check_wallet_permission(payload_resp["user_id"],\
-                                             source_wallet_id)
-        if auth_resp is not None:
-            return auth_resp
+        try:
+            transfer = TransactionSchema(strict=True).validate(request_data)
+        except ValidationError as error:
+            raise SerializeError(None, error.messages)
         #end if
-
-        # request data validator
-        errors = TransactionSchema().validate(request_data)
-        if errors:
-            return bad_request(errors)
-        #end if
-
-        response = TransferServices().internal_transfer(request_data)
+        try:
+            response = TransferServices(source_wallet_id, request_data["pin"],
+                                        destination_wallet_id).internal_transfer(request_data)
+        except WalletNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        except (WalletLockedError, IncorrectPinError, InvalidDestinationError,
+                InsufficientBalanceError, TransferError) as error:
+            raise CommitError(error.msg, None, error.title, None)
         return response
     #end def
 #end class
@@ -391,31 +389,23 @@ class WalletBankTransferRoutes(Resource):
             api/v1/<source>/transfer/bank/<bank_account_id>
             send money to bank account
         """
-        # fetch payload
-        payload_resp = get_token_payload()
-        if not isinstance(payload_resp, dict):
-            return payload_resp
-        #end if
-
         # parse request data
         request_data = transfer_request_schema.parse_args(strict=True)
-        request_data["source"] = source_wallet_id
+        try:
+            transfer = TransactionSchema(strict=True).validate(request_data)
+        except ValidationError as error:
+            raise SerializeError(None, error.messages)
+        #end if
+
         request_data["destination"] = bank_account_id
-
-        # checking token identity to make sure user can only access their wallet information
-        auth_resp = AuthenticationHelper().check_wallet_permission(payload_resp["user_id"],\
-                                                       source_wallet_id)
-        if auth_resp is not None:
-            return auth_resp
-        #end if
-
-        # request data validator
-        errors = TransactionSchema().validate(request_data)
-        if errors:
-            return bad_request(errors)
-        #end if
-
-        response = TransferServices().external_transfer(request_data)
+        try:
+            response = TransferServices(source_wallet_id,
+                                        request_data["pin"]).external_transfer(request_data)
+        except WalletNotFoundError as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        except (WalletLockedError, IncorrectPinError, InvalidDestinationError,
+                InsufficientBalanceError, TransferError) as error:
+            raise CommitError(error.msg, None, error.title, None)
         return response
     #end def
 #end class

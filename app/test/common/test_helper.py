@@ -9,9 +9,8 @@ from app.api.common.helper import Sms
 from app.api.common.helper import QR
 
 from app.api.common.modules.sms_services import SmsServices
-from app.api.exception.exceptions import ApiError
-from app.api.common.modules.sms_services import SmsError
-
+from app.api.exception.general import ApiError
+from app.api.exception.common import SmsError
 
 class TestSms(BaseTestCase):
     """ Test class for SMS helper interface """
@@ -39,7 +38,6 @@ class TestQR(BaseTestCase):
             "data"      : "More Data",
         }
         result = QR().generate(data)
-        print(result)
 
     def test_read_qr(self):
         """ test function that decrypt and read the qr code"""

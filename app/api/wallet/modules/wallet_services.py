@@ -13,7 +13,6 @@ from sqlalchemy.exc import IntegrityError
 from app.api import db
 
 # helper
-from app.api.wallet.helper import WalletHelper
 from app.api.common.helper import Sms
 from app.api.common.helper import QR
 
@@ -52,7 +51,7 @@ class WalletServices:
             wallet_record = Wallet.query.filter_by(id=wallet_id,
                                                    status=STATUS_CONFIG["ACTIVE"]).first()
             if wallet_record is None:
-                raise WalletNotFoundError
+                raise WalletNotFoundError(str(wallet_id))
             #end if
 
         user_record = None

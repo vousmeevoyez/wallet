@@ -14,12 +14,10 @@ from app.api.http_response import internal_error
 from app.api.http_response import request_not_found
 from app.config     import config
 
-ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
-RESPONSE_MSG      = config.Config.RESPONSE_MSG
 WALLET_CONFIG     = config.Config.WALLET_CONFIG
 
-class WithdrawController:
+class WithdrawServices:
 
     def __init__(self):
         pass

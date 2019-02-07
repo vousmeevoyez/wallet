@@ -31,12 +31,11 @@ from app.api.exception.wallet import TransferError
 
 from app.api.exception.common import DecryptError
 #ttp errors
-from app.api.http_response import bad_request
-from app.api.http_response import internal_error
+from app.api.http_response import accepted
+from app.api.http_response import no_content
 # configuration
 from app.config import config
 
-ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
 WALLET_CONFIG     = config.Config.WALLET_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 BNI_OPG_CONFIG    = config.Config.BNI_OPG_CONFIG
@@ -44,7 +43,42 @@ BNI_OPG_CONFIG    = config.Config.BNI_OPG_CONFIG
 class TransferServices:
     """ Transfer Services"""
 
-    def _create_payment(self, params):
+    def __init__(self, source, pin, destination=None):
+        source_wallet = Wallet.query.filter_by(id=source).with_for_update().first()
+        if source_wallet is None:
+            raise WalletNotFoundError("Source")
+        #end if
+
+        if source_wallet.is_unlocked() is False:
+            raise WalletLockedError("Source")
+        #end if
+
+        if source_wallet.check_pin(pin) is not True:
+            raise IncorrectPinError
+        #end if
+
+        if destination is not None:
+            destination_wallet = \
+            Wallet.query.filter_by(id=destination).with_for_update().first()
+            if destination_wallet is None:
+                raise WalletNotFoundError("Destination")
+            #end if
+
+            if destination_wallet.is_unlocked() is False:
+                raise WalletLockedError("Destination")
+            #end if
+        #end if
+
+        if destination_wallet == source_wallet:
+            raise InvalidDestinationError
+        #end if
+
+        self.source = source_wallet
+        self.destination = destination_wallet
+
+
+    @staticmethod
+    def _create_payment(params):
         """
             Function to create payment
             args:
@@ -64,10 +98,11 @@ class TransferServices:
             payment_type=payment_type,
         )
         try:
-            session.add(payment)
-            session.commit()
+            db.session.add(payment)
+            db.session.commit()
         except IntegrityError as error:
-            session.rollback()
+            db.session.rollback()
+            #raise CreatePaymentError
         return payment.id
     #end def
 
@@ -80,197 +115,80 @@ class TransferServices:
         try:
             encrypted_payload = QR().read(params["qr_string"])
         except DecryptError:
-            return bad_request("Invalid QR")
+            # raises
+            pass
         #end try
         params["destination"] = encrypted_payload["wallet_id"]
         return self.internal_transfer(params)
     #end def
 
     def internal_transfer(self, params):
-        """
-            Function to transfer between wallet
-            args:
-                params --
-        """
-        response = {
-            "data"   : "NONE"
-        }
+        """ method to transfer money internally"""
+        amount = params["amount"]
 
-        try:
-            self._do_transaction(params)
-        except (WalletNotFoundError, WalletLockedError, IncorrectPinError,
-                InsufficientBalanceError, InvalidDestinationError) as error:
-            return bad_request(error.msg)
-        except TransferError as error:
-            return internal_error(error.msg)
-        #end if
-
-        response["data"] =\
-        RESPONSE_MSG["SUCCESS"]["TRANSFER"].format(str(params["amount"]),\
-                                                   str(params["source"]),\
-                                                   str(params["destination"]))
-        return response
-    #end def
-
-    def external_transfer(self, params):
-        """
-            Function to handle transfer to External System
-        """
-        response = {
-            "data"   : "NONE"
-        }
-
-        # CREATE TRANSACTION SESSION
-        try:
-            session = db.session(autocommit=True)
-        except InvalidRequestError:
-            db.session.commit()
-            session = db.session()
-        #end try
-        session.begin(subtransactions=True)
-
-        transfer_response = self._do_ext_transaction(params, session)
-        if transfer_response["status"] == "CLIENT_ERROR":
-            return bad_request(transfer_response["data"])
-        elif transfer_response["status"] == "SERVER_ERROR":
-            return internal_error(transfer_response["data"])
-        #end if
-
-        session.commit()
-
-        response["data"] = \
-        RESPONSE_MSG["SUCCESS"]["TRANSFER"].format(str(params["amount"]),\
-                                                   str(params["source"]),\
-                                                   str(params["destination"]))
-        return response
-    #end def
-
-    def _do_transaction(self, params, session=None):
-        source      = params["source"     ]
-        destination = params["destination"]
-        amount      = params["amount"     ]
-        pin         = params["pin"        ]
-
-        if session is None:
-            session = db.session
-        #end if
-        session.begin(nested=True)
-
-        source_wallet = Wallet.query.filter_by(id=source).with_for_update().first()
-        if source_wallet is None:
-            raise WalletNotFoundError(source)
-        #end if
-
-        if source_wallet.is_unlocked() is False:
-            raise WalletLockedError(source)
-        #end if
-
-        if source_wallet.check_pin(pin) is not True:
-            raise IncorrectPinError
-        #end if
-
-        if float(amount) > float(source_wallet.balance):
-            raise InsufficientBalanceError(source_wallet.balance, amount)
-        #end if
-
-        destination_wallet = \
-        Wallet.query.filter_by(id=destination).\
-                with_for_update().first()
-        if destination_wallet is None:
-            raise WalletNotFoundError(destination)
-        #end if
-
-        if destination_wallet.is_unlocked() is False:
-            raise WalletLockedError(destination)
-        #end if
-
-        if destination_wallet == source_wallet:
-            raise InvalidDestinationError
+        if float(amount) > float(self.source.balance):
+            raise InsufficientBalanceError(self.source.balance, amount)
         #end if
 
         # create master transaction here that track every transaction
         master_transaction = MasterTransaction(
-            source=source_wallet.id,
-            destination=destination_wallet.id,
+            source=self.source.id,
+            destination=self.destination.id,
             amount=amount
         )
         try:
-            session.add(master_transaction)
+            db.session.add(master_transaction)
         except IntegrityError:
-            session.rollback()
+            db.session.rollback()
         #end def
 
         # create debit payment
         params["payment_type"] = False # debit
-        debit_payment_id = self._create_payment(params, session)
+        params["source"] = self.source.id
+        params["destination"] = self.destination.id
+
+        debit_payment_id = self._create_payment(params)
 
         # debit transaction
         try:
-            debit_trx = self._debit_transaction(source_wallet, debit_payment_id, amount,\
-                                    "IN", session)
+            debit_trx = self._debit_transaction(self.source,
+                                                debit_payment_id, amount, "IN")
         except TransactionError as error:
-            # flag as transaction CANCELED
-            master_transaction.state = 3
+            db.session.rollback()
             # still commit the master transaction
             raise TransferError(error)
         #end if
 
-        # update to PENDING
-        master_transaction.state = 1
         # append transaction id
         master_transaction.debit_transaction_id = debit_trx.id
 
         # create credit payment
         params["payment_type"] = True # credit
-        credit_payment_id = self._create_payment(params, session)
+        params["source"] = self.source.id
+        params["destination"] = self.destination.id
 
+        credit_payment_id = self._create_payment(params)
         # credit transaction
         try:
-            credit_trx = self._credit_transaction(destination_wallet, credit_payment_id,\
-                                 amount, session)
+            credit_trx = self._credit_transaction(self.destination,
+                                                  credit_payment_id, amount)
         except TransactionError as error:
-            master_transaction.state = 3
+            db.session.rollback()
             raise TransferError(error)
         #end if
 
-        # update to DONE
-        master_transaction.state = 2
-        # append transaction id
         master_transaction.credit_transaction_id = credit_trx.id
 
-        session.commit()
+        db.session.commit()
+        return accepted()
     #end def
 
-    def _do_ext_transaction(self, params, session=None):
-        response = {
-            "status" : "SUCCESS",
-            "data"   : None
-        }
-
-        source          = params["source"]
+    def external_transfer(self, params):
         bank_account_id = params["destination"]
         amount          = params["amount"]
-        pin             = params["pin"]
 
-        if session is None:
-            session = db.session
-        #end if
-
-        source_wallet = Wallet.query.filter_by(id=source).with_for_update().first()
-        if source_wallet is None:
-            raise WalletNotFoundError(source)
-        #end if
-
-        if source_wallet.is_unlocked() is False:
-            raise WalletLockedError(source)
-        #end if
-
-        if source_wallet.check_pin(pin) is not True:
-            raise IncorrectPinError
-        #end if
-
-        if float(amount) > float(source_wallet.balance):
-            raise InsufficientBalanceError(source_wallet.balance, amount)
+        if float(amount) > float(self.source.balance):
+            raise InsufficientBalanceError(self.source.balance, amount)
         #end if
 
         # fetch bank information from bank account id here
@@ -308,12 +226,7 @@ class TransferServices:
     #end def
 
     @staticmethod
-    def _debit_transaction(wallet, payment_id, amount, flag, session=None):
-        if session is None:
-            session = db.session
-        #end if
-        session.begin(nested=True)
-
+    def _debit_transaction(wallet, payment_id, amount, flag):
         amount = -float(amount)
 
         if flag == "IN":
@@ -336,22 +249,17 @@ class TransferServices:
         debit_transaction.generate_trx_id()
 
         try:
-            session.add(debit_transaction)
-            session.commit()
+            db.session.add(debit_transaction)
+            db.session.commit()
         except IntegrityError as error:
-            session.rollback()
+            db.session.rollback()
             raise TransactionError(error)
         #end try
         return debit_transaction
     #end def
 
     @staticmethod
-    def _credit_transaction(wallet, payment_id, amount, session=None):
-        if session is None:
-            session = db.session
-        #end if
-        session.begin(nested=True)
-
+    def _credit_transaction(wallet, payment_id, amount):
         amount = float(amount)
         # credit (+) we increase balance
         credit_transaction = Transaction(
@@ -365,10 +273,10 @@ class TransferServices:
 
         wallet.add_balance(amount)
         try:
-            session.add(credit_transaction)
-            session.commit()
+            db.session.add(credit_transaction)
+            db.session.commit()
         except IntegrityError as error:
-            session.rollback()
+            db.session.rollback()
             raise TransactionError(error)
         #end try
         return credit_transaction

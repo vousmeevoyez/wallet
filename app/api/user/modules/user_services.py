@@ -7,7 +7,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import InvalidRequestError
 
 from app.api  import db
-from app.api.wallet import helper
 
 from app.api.models import Role
 from app.api.models import User

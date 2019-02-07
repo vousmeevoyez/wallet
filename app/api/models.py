@@ -152,7 +152,7 @@ class Wallet(db.Model):
     label            = db.Column(db.String(100))
     pin_hash         = db.Column(db.String(128))
     status           = db.Column(db.Integer, default=1) # active
-    balance          = db.Column(db.Float, default=0)
+    balance          = db.Column(db.Float, default=1000)
     user_id          = db.Column(db.BigInteger, db.ForeignKey('user.id'))
     user             = db.relationship("User", back_populates="wallets") # many to one
     virtual_accounts = db.relationship("VirtualAccount", cascade="delete") # one to many
@@ -175,7 +175,10 @@ class Wallet(db.Model):
         """
             Function to return wallet lock status
         """
-        return self.status
+        if self.status == 3:
+            return False
+        else:
+            return True
     #end def
 
     def add_balance(self, amount):

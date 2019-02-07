@@ -11,6 +11,7 @@ from app.api.exception.authentication import TokenError
 from app.api.exception.authentication import InvalidCredentialsError
 from app.api.exception.authentication import MethodNotAllowedError
 from app.api.exception.authentication import InvalidAuthorizationError
+from app.api.exception.authentication import InsufficientScopeError
 
 @api.errorhandler(SerializeError)
 def handle_serialize_error(error):
@@ -49,6 +50,11 @@ def handle_commit_error(error):
 def handle_token_error(error):
     """ handle raised token error routes """
     return unauthorized(None, error.msg, None)
+
+@api.errorhandler(InsufficientScopeError)
+def handle_insufficient_scope(error):
+    """ handle raised invalid credentials from routes """
+    return insufficient_scope(None, error.msg, None)
 
 @api.errorhandler(InvalidCredentialsError)
 def handle_invalid_credentials(error):
