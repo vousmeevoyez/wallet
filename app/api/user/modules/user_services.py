@@ -62,10 +62,10 @@ class UserServices:
             raise UserDuplicateError
         #end try
 
-        # create wallet here
+        # create wallet object first
         try:
             wallet = Wallet()
-            result = WalletServices.add(wallet, user.id, pin)
+            result = WalletServices.add(user, wallet, pin)
         except DuplicateWalletError as error:
             #raise CommitError(error.msg, None, error.title, None)
             pass

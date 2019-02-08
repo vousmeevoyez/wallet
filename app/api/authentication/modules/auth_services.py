@@ -11,6 +11,7 @@ from app.api import db
 # models
 from app.api.models import User
 from app.api.models import BlacklistToken
+from app.api.models import Wallet
 # exceptions
 from app.api.exception.authentication import EmptyPayloadError
 from app.api.exception.authentication import RevokedTokenError
@@ -21,6 +22,7 @@ from app.api.exception.authentication import InvalidCredentialsError
 
 from app.api.exception.user import UserNotFoundError
 from app.api.exception.authentication import FailedRevokedTokenError
+from app.api.exception.general import RecordNotFoundError
 
 # http response
 from app.api.http_response import no_content
@@ -33,14 +35,14 @@ class AuthServices:
     @staticmethod
     def _create_access_token(user):
         """ get user object and then create access token"""
-        token = User.encode_token("ACCESS", user.id, user.role.description)
+        token = User.encode_token("ACCESS", user.id)
         return token.decode()
     #end def
 
     @staticmethod
     def _create_refresh_token(user):
         """ get user object and then create refresh token"""
-        token = User.encode_token("REFRESH", user.id, user.role.description)
+        token = User.encode_token("REFRESH", user.id)
         return token.decode()
     #end def
 
@@ -66,10 +68,14 @@ class AuthServices:
             raise TokenError("Empty Payload")
 
         # fetch user information
+        # convert user id to user object here
+        user = User.query.filter_by(id=payload["sub"]).first()
+        if user is None:
+            raise RecordNotFoundError("User not Found", "USER_NOT_FOUND")
+
         response = {
             "token_type": payload["type"],
-            "user_id"   : payload["sub"],
-            "role"      : payload["role"],
+            "user"      : user,
         }
         return response
     #end def
@@ -109,13 +115,7 @@ class AuthServices:
             args:
                 current_user -- get current user id
         """
-        user = User.query.filter_by(id=current_user).first()
-        if user is None:
-            raise UserNotFoundError
-        #end if
-
-        access_token = self._create_access_token(user)
-
+        access_token = self._create_access_token(current_user)
         response = {
             "access_token" : access_token,
         }

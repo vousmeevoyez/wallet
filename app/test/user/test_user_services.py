@@ -30,7 +30,6 @@ class TestUserServices(BaseTestCase):
         }
         user = User(**params)
         result = UserServices.add(user, "password", "123456")
-        print(result)
         self.assertEqual(result[1], 201) # created
 
     def test_user_add_failed_duplicate(self):

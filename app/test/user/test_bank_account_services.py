@@ -9,9 +9,8 @@ from app.api.models import BankAccount
 
 from app.config import config
 
-from app.api.exception.general import RecordNotFoundError
-
-ERROR = config.Config.ERROR_HEADER
+from app.api.exception.user import *
+from app.api.exception.bank import *
 
 class TestUserBankAccountServices(BaseTestCase):
     """ Test Class for User Bank Account Services"""
@@ -37,7 +36,7 @@ class TestUserBankAccountServices(BaseTestCase):
         }
         bank_account = BankAccount(**params)
 
-        with self.assertRaises(RecordNotFoundError):
+        with self.assertRaises(UserNotFoundError):
             result = BankAccountServices(22, "009").add(bank_account)
 
     def test_add_bank_account_failed_bank_not_found(self):
@@ -49,7 +48,7 @@ class TestUserBankAccountServices(BaseTestCase):
         }
         bank_account = BankAccount(**params)
 
-        with self.assertRaises(RecordNotFoundError):
+        with self.assertRaises(BankNotFoundError):
             result = BankAccountServices(2, "999").add(bank_account)
 
     def test_show_bank_account_success(self):
@@ -59,7 +58,7 @@ class TestUserBankAccountServices(BaseTestCase):
 
     def test_show_bank_account_failed_record_not_found(self):
         """ test function that show all bank account but user not found"""
-        with self.assertRaises(RecordNotFoundError):
+        with self.assertRaises(UserNotFoundError):
             result = BankAccountServices(1234).show()
 
     def test_update_bank_account_success(self):
@@ -109,7 +108,7 @@ class TestUserBankAccountServices(BaseTestCase):
             "name"      : "jennie",
             "account_no": "1234567891",
         }
-        with self.assertRaises(RecordNotFoundError):
+        with self.assertRaises(BankAccountNotFoundError):
             result = BankAccountServices(2, "009", "5445445").update(params)
 
     def test_update_bank_account_failed_bank_not_found(self):
@@ -134,7 +133,7 @@ class TestUserBankAccountServices(BaseTestCase):
             "name"      : "jennie",
             "account_no": "1234567891",
         }
-        with self.assertRaises(RecordNotFoundError):
+        with self.assertRaises(BankAccountNotFoundError):
             result = BankAccountServices(2, "009", "12345").update(params)
 
     def test_remove_bank_account_success(self):

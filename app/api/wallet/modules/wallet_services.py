@@ -45,33 +45,23 @@ WALLET_CONFIG = config.Config.WALLET_CONFIG
 class WalletServices:
     """ Wallet Services Class"""
 
-    def __init__(self, wallet_id=None, user_id=None):
-        wallet_record = None
-        if wallet_id is not None:
-            wallet_record = Wallet.query.filter_by(id=wallet_id,
-                                                   status=STATUS_CONFIG["ACTIVE"]).first()
-            if wallet_record is None:
-                raise WalletNotFoundError(str(wallet_id))
-            #end if
-
-        user_record = None
-        if user_id is not None:
-            user_record = User.query.filter_by(id=user_id, status=STATUS_CONFIG["ACTIVE"]).first()
-            if user_record is None:
-                raise UserNotFoundError
+    def __init__(self, wallet_id):
+        wallet_record = Wallet.query.filter_by(id=wallet_id,
+                                               status=STATUS_CONFIG["ACTIVE"]).first()
+        if wallet_record is None:
+            raise WalletNotFoundError(wallet_id)
         #end if
         self.wallet = wallet_record
-        self.user = user_record
 
     @staticmethod
-    def add(wallet, user_id, pin):
+    def add(user, wallet, pin):
         """
             create wallet record
             args:
                 params -- name, msisdn, user_id, pin
                 session -- database session (optional)
         """
-        wallet.user_id = user_id
+        wallet.user_id = user.id
         wallet.set_pin(pin)
         wallet.generate_wallet_id()
         try:
@@ -88,12 +78,13 @@ class WalletServices:
         return created(response)
     #end def
 
-    def show(self):
+    @staticmethod
+    def show(user):
         """
             function to show all user wallet
             args -- params
         """
-        response = WalletSchema(many=True).dump(self.user.wallets).data
+        response = WalletSchema(many=True).dump(user.wallets).data
         return response
     #end def
 
@@ -187,7 +178,7 @@ class WalletServices:
         history_details = Transaction.query.filter_by(wallet_id=self.wallet.id,\
                                                       id=transaction_id).first()
         if history_details is None:
-            raise TransactionDetailsNotFoundError
+            raise TransactionNotFoundError
         #end if
         response = TransactionSchema().dump(history_details).data
         return response

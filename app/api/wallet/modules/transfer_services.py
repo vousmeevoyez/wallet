@@ -8,26 +8,19 @@
 #pylint: disable=import-error
 #pylint: disable=bad-whitespace
 #pylint: disable=invalid-name
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import InvalidRequestError
 
 from app.api import db
 #helper
 from app.api.bank.handler import BankHandler
 from app.api.common.helper import QR
 #models
-from app.api.models import Wallet
-from app.api.models import Transaction
-from app.api.models import Payment
-from app.api.models import BankAccount
-from app.api.models import MasterTransaction
+from app.api.models import *
 # exceptions
-from app.api.exception.wallet import WalletNotFoundError
-from app.api.exception.wallet import WalletLockedError
-from app.api.exception.wallet import IncorrectPinError
-from app.api.exception.wallet import InsufficientBalanceError
-from app.api.exception.wallet import InvalidDestinationError
-from app.api.exception.wallet import TransactionError
-from app.api.exception.wallet import TransferError
+from app.api.exception.wallet import *
+
+from app.api.exception.bank import BankAccountNotFoundError
 
 from app.api.exception.common import DecryptError
 #ttp errors
@@ -67,15 +60,16 @@ class TransferServices:
             if destination_wallet.is_unlocked() is False:
                 raise WalletLockedError("Destination")
             #end if
-        #end if
 
-        if destination_wallet == source_wallet:
-            raise InvalidDestinationError
+            if destination_wallet == source_wallet:
+                raise InvalidDestinationError
+            #end if
+
+            # set attributes here
+            self.destination = destination_wallet
         #end if
 
         self.source = source_wallet
-        self.destination = destination_wallet
-
 
     @staticmethod
     def _create_payment(params):
@@ -184,8 +178,9 @@ class TransferServices:
     #end def
 
     def external_transfer(self, params):
+        """ method to transfer money externally"""
         bank_account_id = params["destination"]
-        amount          = params["amount"]
+        amount = params["amount"]
 
         if float(amount) > float(self.source.balance):
             raise InsufficientBalanceError(self.source.balance, amount)
@@ -193,6 +188,21 @@ class TransferServices:
 
         # fetch bank information from bank account id here
         bank_account = BankAccount.query.filter_by(id=bank_account_id).first()
+        if bank_account is None:
+            raise BankAccountNotFoundError
+
+        # create master transaction here that track every transaction
+        master_transaction = MasterTransaction(
+            source=self.source.id,
+            destination=bank_account_id,
+            amount=amount
+        )
+        try:
+            db.session.add(master_transaction)
+        except IntegrityError as error:
+            db.session.rollback()
+            raise TransferError(error)
+        #end def
 
         # get information needed for transfer
         payment_payload = {
@@ -201,28 +211,30 @@ class TransferServices:
             "account_no"     : bank_account.account_no,
             "bank_code"      : bank_account.bank.code,
         }
-        payment_response = BankHandler("BNI").dispatch("DIRECT_TRANSFER",
-                                                       payment_payload)
-        if payment_response["status"] != "SUCCESS":
-            response["status"] = "SERVER_ERROR"
-            response["data"] = RESPONSE_MSG["FAILED"]["TRANSFER_FAILED"]
-            return response
-        #end if
 
         # create debit payment
         params["payment_type"] = False # debit
-        debit_payment_id = self._create_payment(params, session)
+        params["source"] = self.source.id
+        params["destination"] = bank_account_id
 
+        debit_payment_id = self._create_payment(params)
         # debit transaction
         try:
-            self._debit_transaction(source_wallet, debit_payment_id, amount,\
-                                    "OUT", session)
+            debit_trx = self._debit_transaction(self.source,
+                                                debit_payment_id, amount, "IN")
         except TransactionError as error:
+            db.session.rollback()
+            # still commit the master transaction
             raise TransferError(error)
         #end if
 
-        session.commit()
-        return response
+        # append transaction id
+        master_transaction.debit_transaction_id = debit_trx.id
+
+        master_transaction.credit_transaction_id = None
+
+        db.session.commit()
+        return accepted()
     #end def
 
     @staticmethod

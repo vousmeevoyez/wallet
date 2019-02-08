@@ -12,7 +12,7 @@ from app.api.models import ExternalLog
 from app.test.base            import BaseTestCase
 from app.api.bank.bni.utility import remote_call
 
-from app.api.exception.exceptions import ApiError
+from app.api.exception.general import ApiError
 from app.api.exception.bank.exceptions import DecryptError
 
 

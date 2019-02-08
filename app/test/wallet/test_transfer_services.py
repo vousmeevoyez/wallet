@@ -4,24 +4,41 @@
 from unittest.mock import patch, Mock
 from app.api import db
 
-from app.test.base          import BaseTestCase
-from app.api.models         import Payment
-from app.api.models         import Wallet
-from app.api.models         import Transaction
-from app.api.models         import MasterTransaction
+from app.test.base  import BaseTestCase
+
+from app.api.models import Payment
+from app.api.models import Wallet
+from app.api.models import Transaction
+from app.api.models import MasterTransaction
+from app.api.models import Bank
+from app.api.models import BankAccount
+
 from app.api.wallet.modules.transfer_services import TransferServices
 
 # exceptions
-from app.api.exception.wallet import WalletNotFoundError
-from app.api.exception.wallet import WalletLockedError
-from app.api.exception.wallet import IncorrectPinError
-from app.api.exception.wallet import InsufficientBalanceError
-from app.api.exception.wallet import InvalidDestinationError
-from app.api.exception.wallet import TransactionError
-from app.api.exception.wallet import TransferError
+from app.api.exception.wallet import *
+
+from app.api.exception.bank import BankAccountNotFoundError
 
 class TestTransferServices(BaseTestCase):
     """ Test Class for Transfer Services"""
+
+    def _create_source_destination(self):
+        source_wallet = Wallet()
+        source_wallet.set_pin("123456")
+        db.session.add(source_wallet)
+        db.session.commit()
+
+        source_wallet.add_balance(1000)
+        db.session.flush()
+
+        # create destination wallet secondly
+        destination_wallet = Wallet()
+        destination_wallet.set_pin("123456")
+        db.session.add(destination_wallet)
+        db.session.commit()
+
+        return source_wallet, destination_wallet
 
     def test_create_payment_success(self):
         """ test create payment record"""
@@ -36,27 +53,14 @@ class TestTransferServices(BaseTestCase):
 
     def test_internal_transfer_success(self):
         """ test function to create main transaction """
-        # create sourc wallet first
-        source_wallet = Wallet()
-        source_wallet.set_pin("123456")
-        db.session.add(source_wallet)
-        db.session.commit()
-
-        source_wallet.add_balance(1000)
-        db.session.flush()
-
-        # create destination wallet secondly
-        destination_wallet = Wallet()
-        destination_wallet.set_pin("123456")
-        db.session.add(destination_wallet)
-        db.session.commit()
+        source, destination = self._create_source_destination()
 
         params = {
             "amount" : 1,
         }
 
-        result = TransferServices(source_wallet.id, "123456",
-                                  destination_wallet.id).internal_transfer(params)
+        result = TransferServices(source.id, "123456",
+                                  destination.id).internal_transfer(params)
 
         master_trx = MasterTransaction.query.all()
         self.assertTrue(len(master_trx) > 0)
@@ -68,47 +72,25 @@ class TestTransferServices(BaseTestCase):
     def test_internal_transfer_failed_source_not_found(self):
         """ test function to create main transaction """
         # create sourc wallet first
-        source_wallet = Wallet()
-        source_wallet.set_pin("123456")
-        db.session.add(source_wallet)
-        db.session.commit()
-
-        source_wallet.add_balance(1000)
-        db.session.flush()
-
-        # create destination wallet secondly
-        destination_wallet = Wallet()
-        destination_wallet.set_pin("123456")
-        db.session.add(destination_wallet)
-        db.session.commit()
+        source, destination = self._create_source_destination()
 
         params = {
             "source" : "12345",
-            "destination" : destination_wallet.id,
+            "destination" : destination.id,
             "amount" : 1,
             "pin" : "123456",
         }
 
         with self.assertRaises(WalletNotFoundError):
             result = TransferServices("90", "123456",
-                                      destination_wallet.id).internal_transfer(params)
+                                      destination.id).internal_transfer(params)
 
     def test_internal_transfer_failed_source_locked(self):
         """ test function to create main transaction """
         # create sourc wallet first
-        source_wallet = Wallet()
-        source_wallet.set_pin("123456")
-        db.session.add(source_wallet)
-        db.session.commit()
+        source, destination = self._create_source_destination()
 
-        source_wallet.add_balance(1000)
-        source_wallet.lock()
-        db.session.commit()
-
-        # create destination wallet secondly
-        destination_wallet = Wallet()
-        destination_wallet.set_pin("123456")
-        db.session.add(destination_wallet)
+        source.lock()
         db.session.commit()
 
         params = {
@@ -116,49 +98,26 @@ class TestTransferServices(BaseTestCase):
         }
 
         with self.assertRaises(WalletLockedError):
-            result = TransferServices(source_wallet.id, "123456",
-                                     destination_wallet.id).internal_transfer(params)
+            result = TransferServices(source.id, "123456",
+                                      destination.id).internal_transfer(params)
 
     def test_internal_transfer_failed_source_wrong_pin(self):
         """ test function to create main transaction """
-        # create sourc wallet first
-        source_wallet = Wallet()
-        source_wallet.set_pin("123456")
-        db.session.add(source_wallet)
-        db.session.commit()
-
-        source_wallet.add_balance(1000)
-        db.session.flush()
-
-        # create destination wallet secondly
-        destination_wallet = Wallet()
-        destination_wallet.set_pin("123456")
-        db.session.add(destination_wallet)
-        db.session.commit()
+        source, destination = self._create_source_destination()
 
         params = {
             "amount" : 1,
         }
 
         with self.assertRaises(IncorrectPinError):
-            result = TransferServices(source_wallet.id, "111111",
-                                      destination_wallet.id).internal_transfer(params)
+            result = TransferServices(source.id, "111111",
+                                      destination.id).internal_transfer(params)
 
     def test_internal_transfer_failed_source_insufficient_balance(self):
         """ test function to create main transaction """
         # create sourc wallet first
-        source_wallet = Wallet()
-        source_wallet.set_pin("123456")
-        db.session.add(source_wallet)
-        db.session.commit()
-
-        source_wallet.add_balance(1)
-        db.session.flush()
-
-        # create destination wallet secondly
-        destination_wallet = Wallet()
-        destination_wallet.set_pin("123456")
-        db.session.add(destination_wallet)
+        source, destination = self._create_source_destination()
+        source.balance = 0
         db.session.commit()
 
         params = {
@@ -166,50 +125,26 @@ class TestTransferServices(BaseTestCase):
         }
 
         with self.assertRaises(InsufficientBalanceError):
-            result = TransferServices(source_wallet.id, "123456",
-                                      destination_wallet.id).internal_transfer(params)
+            result = TransferServices(source.id, "123456",
+                                      destination.id).internal_transfer(params)
 
     def test_internal_transfer_failed_destination_not_found(self):
         """ test function to create main transaction """
-        # create sourc wallet first
-        source_wallet = Wallet()
-        source_wallet.set_pin("123456")
-        db.session.add(source_wallet)
-        db.session.commit()
-
-        source_wallet.add_balance(1000)
-        db.session.flush()
-
-        # create destination wallet secondly
-        destination_wallet = Wallet()
-        destination_wallet.set_pin("123456")
-        db.session.add(destination_wallet)
-        db.session.commit()
+        source, destination = self._create_source_destination()
 
         params = {
             "amount" : 1,
         }
 
         with self.assertRaises(WalletNotFoundError):
-            result = TransferServices(source_wallet.id, "123456", "9090").internal_transfer(params)
+            result = TransferServices(source.id, "123456", "9090").internal_transfer(params)
 
     def test_internal_transfer_failed_destination_locked(self):
         """ test function to create main transaction """
         # create sourc wallet first
-        source_wallet = Wallet()
-        source_wallet.set_pin("123456")
-        db.session.add(source_wallet)
-        db.session.commit()
+        source, destination = self._create_source_destination()
 
-        source_wallet.add_balance(1000)
-        db.session.flush()
-
-        # create destination wallet secondly
-        destination_wallet = Wallet()
-        destination_wallet.set_pin("123456")
-        db.session.add(destination_wallet)
-        db.session.flush()
-        destination_wallet.lock()
+        destination.lock()
         db.session.commit()
 
         params = {
@@ -217,51 +152,26 @@ class TestTransferServices(BaseTestCase):
         }
 
         with self.assertRaises(WalletLockedError):
-            result = TransferServices(source_wallet.id, "123456",
-                                      destination_wallet.id).internal_transfer(params)
+            result = TransferServices(source.id, "123456",
+                                      destination.id).internal_transfer(params)
 
     def test_internal_transfer_failed_destination_source_same(self):
         """ test function to create main transaction """
         # create sourc wallet first
-        source_wallet = Wallet()
-        source_wallet.set_pin("123456")
-        db.session.add(source_wallet)
-        db.session.commit()
-
-        source_wallet.add_balance(1000)
-        db.session.flush()
-
-        # create destination wallet secondly
-        destination_wallet = Wallet()
-        destination_wallet.set_pin("123456")
-        db.session.add(destination_wallet)
-        db.session.commit()
+        source, destination = self._create_source_destination()
 
         params = {
             "amount" : 1,
         }
 
         with self.assertRaises(InvalidDestinationError):
-            result = TransferServices(source_wallet.id, "123456",
-                                      source_wallet.id).internal_transfer(params)
+            result = TransferServices(source.id, "123456",
+                                      source.id).internal_transfer(params)
 
     @patch.object(TransferServices, "_debit_transaction")
     def test_internal_transfer_failed_debit(self, mock_transfer_services):
         """ test function to create main transaction """
-        # create sourc wallet first
-        source_wallet = Wallet()
-        source_wallet.set_pin("123456")
-        db.session.add(source_wallet)
-        db.session.commit()
-
-        source_wallet.add_balance(1000)
-        db.session.flush()
-
-        # create destination wallet secondly
-        destination_wallet = Wallet()
-        destination_wallet.set_pin("123456")
-        db.session.add(destination_wallet)
-        db.session.commit()
+        source, destination = self._create_source_destination()
 
         params = {
             "amount" : 1,
@@ -269,7 +179,7 @@ class TestTransferServices(BaseTestCase):
 
         mock_transfer_services.side_effect = TransactionError("test")
         with self.assertRaises(TransferError):
-            TransferServices(source_wallet.id, "123456", destination_wallet.id).internal_transfer(params)
+            TransferServices(source.id, "123456", destination.id).internal_transfer(params)
 
         # make sure maste transaction record everything
         master_trx = MasterTransaction.query.all()
@@ -287,20 +197,7 @@ class TestTransferServices(BaseTestCase):
     @patch.object(TransferServices, "_credit_transaction")
     def test_internal_transfer_failed_credit(self, mock_transfer_services):
         """ test function to create main transaction """
-        # create sourc wallet first
-        source_wallet = Wallet()
-        source_wallet.set_pin("123456")
-        db.session.add(source_wallet)
-        db.session.commit()
-
-        source_wallet.add_balance(1000)
-        db.session.flush()
-
-        # create destination wallet secondly
-        destination_wallet = Wallet()
-        destination_wallet.set_pin("123456")
-        db.session.add(destination_wallet)
-        db.session.commit()
+        source, destination = self._create_source_destination()
 
         params = {
             "amount" : 1,
@@ -308,7 +205,7 @@ class TestTransferServices(BaseTestCase):
 
         mock_transfer_services.side_effect = TransactionError("test")
         with self.assertRaises(TransferError):
-            TransferServices(source_wallet.id, "123456", destination_wallet.id).internal_transfer(params)
+            TransferServices(source.id, "123456", destination.id).internal_transfer(params)
 
         # make sure maste transaction record everything
         master_trx = MasterTransaction.query.all()
@@ -422,3 +319,125 @@ class TestTransferServices(BaseTestCase):
 
         with self.assertRaises(TransactionError):
             TransferServices._credit_transaction(wallet, 1234, trx_amount)
+
+    def test_external_transfer(self):
+        """ test function to create main transaction """
+        # create sourc wallet first
+        source_wallet = Wallet()
+        source_wallet.set_pin("123456")
+        db.session.add(source_wallet)
+        db.session.commit()
+
+        source_wallet.add_balance(1000)
+        db.session.flush()
+
+        # add bank account
+        bank = Bank.query.filter_by(code="009").first()
+        bank_account = BankAccount(account_no="123456", bank_id=bank.id)
+        db.session.add(bank_account)
+        db.session.commit()
+
+        params = {
+            "amount" : 1,
+            "destination" : bank_account.id,
+        }
+
+        result = TransferServices(source_wallet.id,
+                                  "123456").external_transfer(params)
+
+        master_trx = MasterTransaction.query.all()
+        self.assertTrue(len(master_trx) > 0)
+        transaction = Transaction.query.all()
+        self.assertTrue(len(transaction) > 0)
+        payment = Payment.query.all()
+        self.assertTrue(len(payment) > 0)
+
+    def test_external_transfer_insufficient(self):
+        """ test function to create main transaction """
+        # create sourc wallet first
+        source_wallet = Wallet()
+        source_wallet.set_pin("123456")
+        db.session.add(source_wallet)
+        db.session.commit()
+
+        source_wallet.add_balance(1000)
+        db.session.flush()
+
+        # add bank account
+        bank = Bank.query.filter_by(code="009").first()
+        bank_account = BankAccount(account_no="123456", bank_id=bank.id)
+        db.session.add(bank_account)
+        db.session.commit()
+
+        params = {
+            "amount" : 10000,
+            "destination" : bank_account.id,
+        }
+
+        with self.assertRaises(InsufficientBalanceError):
+            result = TransferServices(source_wallet.id,
+                                      "123456").external_transfer(params)
+
+    def test_external_transfer_bank_account_error(self):
+        """ test function to create main transaction """
+        # create sourc wallet first
+        source_wallet = Wallet()
+        source_wallet.set_pin("123456")
+        db.session.add(source_wallet)
+        db.session.commit()
+
+        source_wallet.add_balance(1000)
+        db.session.flush()
+
+        # add bank account
+        bank = Bank.query.filter_by(code="009").first()
+        bank_account = BankAccount(account_no="123456", bank_id=bank.id)
+        db.session.add(bank_account)
+        db.session.commit()
+
+        params = {
+            "amount" : 1,
+            "destination" : "123444",
+        }
+
+        with self.assertRaises(BankAccountNotFoundError):
+            result = TransferServices(source_wallet.id,
+                                      "123456").external_transfer(params)
+
+    @patch.object(TransferServices, "_debit_transaction")
+    def test_external_transfer_debit_failed(self, mock_transfer_services):
+        """ test function to create main transaction """
+        # create sourc wallet first
+        source_wallet = Wallet()
+        source_wallet.set_pin("123456")
+        db.session.add(source_wallet)
+        db.session.commit()
+
+        source_wallet.add_balance(1000)
+        db.session.flush()
+
+        # add bank account
+        bank = Bank.query.filter_by(code="009").first()
+        bank_account = BankAccount(account_no="123456", bank_id=bank.id)
+        db.session.add(bank_account)
+        db.session.commit()
+
+        params = {
+            "amount" : 1,
+            "destination" : bank_account.id,
+        }
+
+        mock_transfer_services.side_effect = TransactionError("test")
+        with self.assertRaises(TransferError):
+            TransferServices(source_wallet.id,
+                             "123456").external_transfer(params)
+
+        # make sure maste transaction record everything
+        master_trx = MasterTransaction.query.all()
+        self.assertTrue(len(master_trx) > 0)
+        # make sure transaction is not recorded on user transaction
+        trx = Transaction.query.all()
+        self.assertTrue(len(trx) == 0)
+        # make sure the wallet balance isstill same
+        wallet = Wallet.query.get(1)
+        self.assertEqual(wallet.balance, 1000)

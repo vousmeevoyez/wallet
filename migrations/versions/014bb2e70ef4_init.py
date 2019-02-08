@@ -1,8 +1,8 @@
-"""change few column
+"""init
 
-Revision ID: 30df92ac97f1
+Revision ID: 014bb2e70ef4
 Revises: 
-Create Date: 2019-02-01 10:21:39.987498
+Create Date: 2019-02-08 05:27:11.514601
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '30df92ac97f1'
+revision = '014bb2e70ef4'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -120,6 +120,7 @@ def upgrade():
     op.create_table('wallet',
     sa.Column('id', sa.BigInteger(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('label', sa.String(length=100), nullable=True),
     sa.Column('pin_hash', sa.String(length=128), nullable=True),
     sa.Column('status', sa.Integer(), nullable=True),
     sa.Column('balance', sa.Float(), nullable=True),

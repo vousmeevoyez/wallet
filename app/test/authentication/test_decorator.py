@@ -85,7 +85,7 @@ class TestAuthDecorator(BaseTestCase):
         decorated_func = admin_required(func)
 
         parse_args_mock.return_value = {
-            "Authorization" : "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiQUNDRVNTIiwic3ViIjoiMSIsInJvbGUiOiJVU0VSIn0.hUmo1KTifwr1Ettj7TqoIdvCM6gXSUBELpW02oPlUj4"
+            "Authorization" : "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwidHlwZSI6IkFDQ0VTUyJ9.7qJycMO9pCUr9VwQZolkko_Ft0EcOVbwWFlkBOfuKVE"
         }
 
         with self.assertRaises(InsufficientScopeError):
@@ -127,8 +127,7 @@ class TestAuthDecorator(BaseTestCase):
 
         result = get_token_payload()
         self.assertTrue(result["token_type"])
-        self.assertTrue(result["user_id"])
-        self.assertTrue(result["role"])
+        self.assertTrue(result["user"])
 
     @mock.patch("flask_restplus.reqparse.RequestParser.parse_args")
     def test_get_current_token(self, parse_args_mock):

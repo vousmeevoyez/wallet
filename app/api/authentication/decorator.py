@@ -10,6 +10,8 @@ from flask_restplus import reqparse
 
 from app.api.authentication.modules.auth_services import AuthServices
 
+from app.api.models import User
+
 from app.api.exception.authentication import ParseTokenError
 from app.api.exception.authentication import TokenError
 from app.api.exception.authentication import InvalidAuthorizationError
@@ -70,9 +72,10 @@ def admin_required(fn):
     def wrapper(*args, **kwargs):
 
         response = get_token_payload()
+        user = response["user"]
 
         # check permission here
-        if response["role"] != "ADMIN":
+        if user.role.description != "ADMIN":
             raise InsufficientScopeError("Require admin permission")
 
         return fn(*args, **kwargs)

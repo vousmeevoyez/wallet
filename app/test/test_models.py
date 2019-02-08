@@ -122,7 +122,7 @@ class UserTestCaseModel(BaseTestCase):
         db.session.add(user)
         db.session.commit()
 
-        token = user.encode_token("ACCESS", user.id, user.role.description)
+        token = user.encode_token("ACCESS", user.id)
         self.assertTrue(isinstance(token, bytes))
 
     def test_decode_token(self):
@@ -147,14 +147,14 @@ class UserTestCaseModel(BaseTestCase):
         db.session.add(user)
         db.session.commit()
 
-        token = user.encode_token("ACCESS", user.id, user.role.description)
+        token = user.encode_token("ACCESS", user.id)
         self.assertTrue(isinstance(token, bytes))
 
         token = token.decode("utf-8")
 
         # make sure the decoded token contain following information
         self.assertEqual(user.decode_token(token)["type"], "ACCESS")
-        self.assertEqual(user.decode_token(token)["role"], "USER")
+        self.assertTrue(user.decode_token(token)["user"])
 
         with self.assertRaises(EmptyPayloadError):
             user.decode_token("eyJhbGciOiJIUzI1NiIsInR5cCI6Im5vbmUifQ.e30.kligm-MjaliTD584hBs6v52XSZcixYU9BlmAAwmjOB0")

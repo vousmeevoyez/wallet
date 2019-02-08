@@ -1,3 +1,10 @@
+""" 
+    WALLET EXCEPTION
+"""
+from app.config     import config
+
+WALLET_CONFIG = config.Config.WALLET_CONFIG
+
 class WalletError(Exception):
     """ Base Wallet Class Error"""
 #end class
@@ -36,7 +43,9 @@ class InsufficientBalanceError(WalletError):
     """ When balance is insufficient for transaction """
     def __init__(self, current_balance, amount):
         super(InsufficientBalanceError, self).__init__(current_balance, amount)
-        self.msg = "Insufficient Balance"
+        self.msg = "Insufficient Balance, current balance {} but required\
+        amount {}".format(current_balance, amount)
+        self.title = "INSUFFICIENT_BALANCE"
 
 class InvalidDestinationError(WalletError):
     """ When try to transfer destination and source is the same"""
@@ -58,6 +67,8 @@ class TransferError(WalletError):
 
 class DuplicateWalletError(WalletError):
     """ raised when try create wallet that already existed """
+    msg = "Wallet Already Existed"
+    title = "WALLET_ALREADY_EXISTED"
 
 class OnlyWalletError(WalletError):
     """ raised when try remove the only wallet left"""
@@ -89,7 +100,22 @@ class InvalidOtpError(WalletError):
     msg = "Invalid Otp Code"
     title = "INVALID_OTP_CODE"
 
-class TransactionDetailsNotFoundError(WalletError):
-    """ raised when try view  transaaction details but details not found"""
-    msg = "Transaction details not found"
-    title = "TRX_DETAILS_NOT_FOUND"
+class TransactionNotFoundError(WalletError):
+    """ raised when try view  transaaction but not found"""
+    msg = "Transaction not found"
+    title = "TRANSACTION_NOT_FOUND"
+
+class MinimalWithdrawError(WalletError):
+    """ raises when user try to withdraw less than minimal amount """
+    msg = "Minimal withdraw amount is {}".format(WALLET_CONFIG["MINIMAL_WITHDRAW"])
+    title = "MINIMAL_WITHDRAW"
+
+class MaxWithdrawError(WalletError):
+    """ raises when user try to withdraw more than maximal amount """
+    msg = "Maximal withdraw amount is {}".format(WALLET_CONFIG["MAX_WITHDRAW"])
+    title = "MAX_WITHDRAW"
+
+class RaisePendingWithdrawError(WalletError):
+    """ raises when user try to withdraw but already pending withraw request """
+    msg = "There's pending withdraw occured"
+    title = "PENDING_WITHDRAW_REQUEST"

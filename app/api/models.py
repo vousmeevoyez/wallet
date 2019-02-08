@@ -96,7 +96,7 @@ class User(db.Model):
         return str(self.phone_ext) + str(self.msisdn)
 
     @staticmethod
-    def encode_token(token_type, user_id, role):
+    def encode_token(token_type, user_id):
         """
             Function to create JWT Token
             args :
@@ -114,7 +114,6 @@ class User(db.Model):
             "iat" : datetime.utcnow(),
             "sub" : user_id,
             "type": token_type,
-            "role": role,
         }
         return jwt.encode(
             payload,
@@ -149,10 +148,10 @@ class Wallet(db.Model):
     """
     id               = db.Column(db.BigInteger, primary_key=True)
     created_at       = db.Column(db.DateTime, default=now) # UTC
-    label            = db.Column(db.String(100))
+    label            = db.Column(db.String(100), unique=True)
     pin_hash         = db.Column(db.String(128))
     status           = db.Column(db.Integer, default=1) # active
-    balance          = db.Column(db.Float, default=1000)
+    balance          = db.Column(db.Float, default=0)
     user_id          = db.Column(db.BigInteger, db.ForeignKey('user.id'))
     user             = db.relationship("User", back_populates="wallets") # many to one
     virtual_accounts = db.relationship("VirtualAccount", cascade="delete") # one to many

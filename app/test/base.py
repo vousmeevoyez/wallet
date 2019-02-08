@@ -58,4 +58,6 @@ class BaseTestCase(TestCase):
         user.set_password("password")
         db.session.add(user)
         db.session.commit()
+
+        self.user = user
 #end class

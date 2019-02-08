@@ -18,6 +18,7 @@ from app.api.exception.authentication import EmptyPayloadError
 from app.api.exception.authentication import InvalidCredentialsError
 
 from app.api.exception.user import UserNotFoundError
+from app.api.exception.general import RecordNotFoundError
 
 class TestAuthServices(BaseTestCase):
     """ test auth services class"""
@@ -42,7 +43,12 @@ class TestAuthServices(BaseTestCase):
         result = AuthServices._current_login_user(token)
 
         self.assertEqual(result["token_type"], "ACCESS")
-        self.assertEqual(result["user_id"], 1)
+
+    def test_current_login_user_invalid(self):
+        """ test curren login user"""
+        token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidHlwZSI6IkFDQ0VTUyJ9.9JeY4v711wDsUzczKNlR84IMTTab5KwraY4rlQ3jaAQ"
+        with self.assertRaises(RecordNotFoundError):
+            result = AuthServices._current_login_user(token)
 
     @patch.object(User, "decode_token")
     def test_current_login_user_revoked_token(self, mock_decode):
@@ -102,16 +108,9 @@ class TestAuthServices(BaseTestCase):
         """ test success refreshing token"""
 
         user = User.query.filter_by(username="MODANAADMIN").first()
-        result = AuthServices().refresh_token(user.id)
+        result = AuthServices().refresh_token(user)
 
         self.assertTrue(result["access_token"])
-
-    def test_refresh_token_failed_not_found(self):
-        """ test success refreshing token"""
-
-        with self.assertRaises(UserNotFoundError):
-            result = AuthServices().refresh_token(5)
-
 
     def test_logout_access_token(self):
         """ test blacklist access token """

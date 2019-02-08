@@ -60,13 +60,13 @@ class UserRoutes(Resource):
         try:
             user = UserSchema(strict=True).load(request_data)
         except ValidationError as error:
-            raise SerializeError(None, error.messages)
+            raise SerializeError(error.messages)
 
         try:
             response = UserServices.add(user.data, request_data["password"],
                                         request_data["pin"])
         except UserDuplicateError as error:
-            raise CommitError(error.msg, None, error.title, None)
+            raise CommitError(error.msg, error.title)
         return response
     #end def
 
@@ -113,7 +113,7 @@ class UserInfoRoutes(Resource):
         errors = UserSchema(strict=True).validate(request_data,
                                                   partial=(excluded))
         if errors:
-            raise SerializeError(None, errors)
+            raise SerializeError(errors)
 
         try:
             response = UserServices(user_id).update(request_data)
@@ -165,8 +165,7 @@ class UserBankAccountRoutes(Resource):
                 BankAccountNotFoundError) as error:
             raise RecordNotFoundError(error.msg, error.title)
         except DuplicateBankAccountError as error:
-            print(error)
-            raise CommitError(error.msg, None, error.title)
+            raise CommitError(error.msg, error.title)
         return response
     #end def
 

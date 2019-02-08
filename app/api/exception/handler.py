@@ -16,7 +16,7 @@ from app.api.exception.authentication import InsufficientScopeError
 @api.errorhandler(SerializeError)
 def handle_serialize_error(error):
     """ handle raised serialize error from routes """
-    return bad_request("INVALID_PARAMETER", error.msg, error.details)
+    return bad_request("INVALID_PARAMETER", None, error.details)
 
 @api.errorhandler(RecordNotFoundError)
 def handle_not_existed_entry(error):

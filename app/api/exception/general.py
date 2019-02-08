@@ -13,9 +13,8 @@ class ApiError(GeneralError):
 
 class SerializeError(GeneralError):
     """ Raised when serialize failed """
-    def __init__(self, msg=None, details=None):
-        super().__init__(msg, details)
-        self.msg = msg
+    def __init__(self, details=None):
+        super().__init__(details)
         self.details = details
 
 class RecordNotFoundError(GeneralError):
@@ -27,8 +26,8 @@ class RecordNotFoundError(GeneralError):
 
 class CommitError(GeneralError):
     """ Raised when try commit a record but failed """
-    def __init__(self, msg, original_exception=None, header=None, details=None):
-        super().__init__(msg, original_exception, header)
+    def __init__(self, msg, header=None, details=None, original_exception=None, ):
+        super().__init__(msg, header, details, original_exception)
         self.msg = msg
         self.header = header
         self.original_exception = original_exception

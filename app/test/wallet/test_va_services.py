@@ -21,19 +21,8 @@ class TestWalletServices(BaseTestCase):
     """ Test Class for Wallet Services"""
 
     def _create_wallet(self):
-        user = User(
-            username='lisabp',
-            name='lisa',
-            email='lisa@bp.com',
-            phone_ext='62',
-            phone_number='81219644314',
-        )
-        user.set_password("password")
-        db.session.add(user)
-        db.session.commit()
-
         wallet = Wallet()
-        result = WalletServices.add(wallet, user.id, "123456")
+        result = WalletServices.add(self.user, wallet, "123456")
         return result[0]["data"]
     #end def
 
@@ -54,4 +43,4 @@ class TestWalletServices(BaseTestCase):
         }
 
         result = VirtualAccountServices.add(virtual_account, params)
-        self.assertTrue(result["virtual_account_id"])
+        self.assertTrue(result[0]["data"]["virtual_account_id"])

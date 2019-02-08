@@ -57,7 +57,7 @@ class TokenRoutes(Resource):
         excluded = "name", "phone_ext", "phone_number", "pin", "role", "email"
         errors = UserSchema().validate(request_data, partial=(excluded))
         if errors:
-            raise SerializeError(None, errors)
+            raise SerializeError(errors)
         #end if
 
         try:
@@ -89,7 +89,7 @@ class RefreshTokenRoutes(Resource):
         except TokenError as error:
             raise InvalidAuthorizationError(error)
         #end try
-        response = AuthServices().refresh_token(payload["user_id"])
+        response = AuthServices().refresh_token(payload["user"])
         return response
     #end def
 #end class

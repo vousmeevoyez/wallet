@@ -403,7 +403,7 @@ class TestWalletSchema(BaseTestCase):
     def test_serializer_success(self):
         # CHECKING PIN 
         data = {
-            "name"   : "wendy",
+            "label"  : "wendy",
             "msisdn" : "081212341234",
             "pin"    : "123456"
         }
@@ -417,9 +417,8 @@ class TestWalletSchema(BaseTestCase):
             "pin"    : "1234"
         }
         errors = WalletSchema().validate(data)
-        expected_error = {
-            'pin': ['Invalid Pin']
-        }
+        expected_error = {'label': ['Missing data for required field.'],
+                          'pin': ['Invalid Pin']}
         self.assertEqual(errors, expected_error)
 
 class TestTransactionSchema(BaseTestCase):
