@@ -483,7 +483,7 @@ class TestTransactionSchema(BaseTestCase):
         db.session.commit()
 
         result = TransactionSchema().dump(debit_trx).data
-        self.assertEqual(result["transaction_type"], "WITHDRAW")
+        self.assertEqual(result["transaction_type"], "RECEIVE_TRANSFER")
 
 class TestCallbackSchema(BaseTestCase):
 

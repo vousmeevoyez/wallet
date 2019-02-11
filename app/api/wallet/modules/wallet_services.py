@@ -307,12 +307,11 @@ class WalletServices:
             args:
                 params --
         """
-        response = {}
         # build qr payload here
         qr_data = {"wallet_id" : self.wallet.id}
         qr_string = QR().generate(qr_data)
 
-        response["data"] = {
+        response = {
             "qr_string" : qr_string
         }
         return response

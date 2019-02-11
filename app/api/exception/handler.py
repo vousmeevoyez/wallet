@@ -13,6 +13,10 @@ from app.api.exception.authentication import MethodNotAllowedError
 from app.api.exception.authentication import InvalidAuthorizationError
 from app.api.exception.authentication import InsufficientScopeError
 
+from app.api.exception.wallet import DecodeQrError
+
+from app.api.exception.callback import InvalidCallbackError
+
 @api.errorhandler(SerializeError)
 def handle_serialize_error(error):
     """ handle raised serialize error from routes """
@@ -72,5 +76,18 @@ def handle_invalid_authorization_error(error):
     return unauthorized(None, error.msg, None)
 
 """
-    USER EXCEPTION HANDLER
+    QR Code handler
 """
+@api.errorhandler(DecodeQrError)
+def handle_qr_code_error(error):
+    """ handle raised serialize error from routes """
+    return bad_request(error.title, error.msg)
+
+
+"""
+    CALLBACK Handler
+"""
+@api.errorhandler(InvalidCallbackError)
+def handle_qr_code_error(error):
+    """ handle raised serialize error from routes """
+    return bad_request(error.title, error.msg)

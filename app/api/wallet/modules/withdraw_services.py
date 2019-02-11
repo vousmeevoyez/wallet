@@ -38,6 +38,9 @@ class WithdrawServices:
         """ handle withdraw request """
         amount = float(params["amount"])
 
+        if amount == 0:
+            amount = self.wallet.balance
+
         if amount < float(WALLET_CONFIG["MINIMAL_WITHDRAW"]):
             raise MinimalWithdrawError
         #end if
@@ -88,7 +91,8 @@ class WithdrawServices:
         db.session.commit()
 
         response = {
-            "valid_until" : str(valid_until.timestamp())
+            "valid_until" : str(valid_until.timestamp()),
+            "amount" : str(amount)
         }
         return response
     #end def

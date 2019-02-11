@@ -67,7 +67,10 @@ class BankAccountServices:
             db.session.rollback()
             raise DuplicateBankAccountError
         #end try
-        return created()
+        response = {
+            "bank_account_id" : bank_account.id
+        }
+        return created(response)
     #end def
 
     def show(self):

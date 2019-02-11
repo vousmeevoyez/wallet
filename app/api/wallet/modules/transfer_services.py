@@ -9,7 +9,6 @@
 #pylint: disable=bad-whitespace
 #pylint: disable=invalid-name
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.exc import InvalidRequestError
 
 from app.api import db
 #helper
@@ -29,7 +28,7 @@ from app.api.http_response import no_content
 # configuration
 from app.config import config
 
-WALLET_CONFIG     = config.Config.WALLET_CONFIG
+TRANSACTION_CONFIG = config.Config.TRANSACTION_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 BNI_OPG_CONFIG    = config.Config.BNI_OPG_CONFIG
 
@@ -72,25 +71,15 @@ class TransferServices:
         self.source = source_wallet
 
     @staticmethod
-    def _create_payment(params):
+    def create_payment(params):
         """
             Function to create payment
             args:
                 params --
                 session -- optional
         """
-        source_account = params["source"]
-        to             = params["destination"]
-        amount         = params["amount"]
-        payment_type   = params["payment_type"]
-
         # build payment object
-        payment = Payment(
-            source_account=source_account,
-            to=to,
-            amount=amount,
-            payment_type=payment_type,
-        )
+        payment = Payment(**params)
         try:
             db.session.add(payment)
             db.session.commit()
@@ -100,25 +89,10 @@ class TransferServices:
         return payment.id
     #end def
 
-    def qr_transfer(self, params):
-        """
-            Function to transfer between wallet using qr code
-            args:
-                params --
-        """
-        try:
-            encrypted_payload = QR().read(params["qr_string"])
-        except DecryptError:
-            # raises
-            pass
-        #end try
-        params["destination"] = encrypted_payload["wallet_id"]
-        return self.internal_transfer(params)
-    #end def
-
     def internal_transfer(self, params):
         """ method to transfer money internally"""
         amount = params["amount"]
+        transfer_notes = params["notes"]
 
         if float(amount) > float(self.source.balance):
             raise InsufficientBalanceError(self.source.balance, amount)
@@ -137,16 +111,20 @@ class TransferServices:
         #end def
 
         # create debit payment
-        params["payment_type"] = False # debit
-        params["source"] = self.source.id
-        params["destination"] = self.destination.id
+        payment = {
+            "payment_type"  : False,# debit
+            "source_account": self.source.id,# debit
+            "to"            : self.destination.id,# debit
+            "amount"        : -amount,# debit
+        }
 
-        debit_payment_id = self._create_payment(params)
+        debit_payment_id = self.create_payment(payment)
 
         # debit transaction
         try:
             debit_trx = self._debit_transaction(self.source,
-                                                debit_payment_id, amount, "IN")
+                                                debit_payment_id, amount,
+                                                "TRANSFER_IN", transfer_notes)
         except TransactionError as error:
             db.session.rollback()
             # still commit the master transaction
@@ -156,16 +134,20 @@ class TransferServices:
         # append transaction id
         master_transaction.debit_transaction_id = debit_trx.id
 
-        # create credit payment
-        params["payment_type"] = True # credit
-        params["source"] = self.source.id
-        params["destination"] = self.destination.id
+        payment = {
+            "payment_type"  : True,# credit
+            "source_account": self.source.id,# debit
+            "to"            : self.destination.id,# debit
+            "amount"        : amount,# debit
+        }
 
-        credit_payment_id = self._create_payment(params)
+        credit_payment_id = self.create_payment(payment)
         # credit transaction
         try:
-            credit_trx = self._credit_transaction(self.destination,
-                                                  credit_payment_id, amount)
+            credit_trx = self.credit_transaction(self.destination,
+                                                 credit_payment_id, amount,
+                                                 "RECEIVE_TRANSFER",
+                                                 transfer_notes)
         except TransactionError as error:
             db.session.rollback()
             raise TransferError(error)
@@ -181,6 +163,7 @@ class TransferServices:
         """ method to transfer money externally"""
         bank_account_id = params["destination"]
         amount = params["amount"]
+        transfer_notes = params["notes"]
 
         if float(amount) > float(self.source.balance):
             raise InsufficientBalanceError(self.source.balance, amount)
@@ -204,24 +187,20 @@ class TransferServices:
             raise TransferError(error)
         #end def
 
-        # get information needed for transfer
-        payment_payload = {
-            "amount"         : amount,
-            "source_account" : BNI_OPG_CONFIG["MASTER_ACCOUNT"],
-            "account_no"     : bank_account.account_no,
-            "bank_code"      : bank_account.bank.code,
+        # create debit payment
+        payment = {
+            "payment_type"   : False,
+            "source_account" : self.source.id,
+            "to"             : bank_account.account_no,
+            "amount"         : amount
         }
 
-        # create debit payment
-        params["payment_type"] = False # debit
-        params["source"] = self.source.id
-        params["destination"] = bank_account_id
-
-        debit_payment_id = self._create_payment(params)
+        debit_payment_id = self.create_payment(payment)
         # debit transaction
         try:
             debit_trx = self._debit_transaction(self.source,
-                                                debit_payment_id, amount, "IN")
+                                                debit_payment_id, amount,
+                                                "TRANSFER_OUT", transfer_notes)
         except TransactionError as error:
             db.session.rollback()
             # still commit the master transaction
@@ -233,22 +212,33 @@ class TransferServices:
 
         master_transaction.credit_transaction_id = None
 
+        # get information needed for transfer
+        payment_payload = {
+            "amount"         : amount,
+            "source_account" : BNI_OPG_CONFIG["MASTER_ACCOUNT"],
+            "account_no"     : bank_account.account_no,
+            "bank_code"      : bank_account.bank.code,
+        }
         db.session.commit()
         return accepted()
     #end def
 
     @staticmethod
-    def _debit_transaction(wallet, payment_id, amount, flag):
+    def _debit_transaction(wallet, payment_id, amount, flag,
+                           transfer_notes=None):
         amount = -float(amount)
 
-        if flag == "IN":
-            transaction_type = WALLET_CONFIG["IN_TRANSFER"]
-        else:
-            transaction_type = WALLET_CONFIG["OUT_TRANSFER"]
-        #end if
+        # fetch transaction type from config
+        transaction_type = TRANSACTION_CONFIG["TYPES"][flag]
 
         # deduct balance first
         wallet.add_balance(amount)
+
+        if transfer_notes is None:
+            notes = TRANSACTION_NOTES["SEND_TRANSFER"].format(str(-amount))
+        else:
+            notes = transfer_notes
+        #end if
 
         # debit (-) we increase balance
         debit_transaction = Transaction(
@@ -256,7 +246,7 @@ class TransferServices:
             wallet_id=wallet.id,
             amount=amount,
             transaction_type=transaction_type,
-            notes=TRANSACTION_NOTES["SEND_TRANSFER"].format(str(amount))
+            notes=notes
         )
         debit_transaction.generate_trx_id()
 
@@ -271,15 +261,24 @@ class TransferServices:
     #end def
 
     @staticmethod
-    def _credit_transaction(wallet, payment_id, amount):
-        amount = float(amount)
+    def credit_transaction(wallet, payment_id, amount, flag,
+                           transfer_notes=None):
+        """ create credit transaction and add balance """
+        transaction_type = TRANSACTION_CONFIG["TYPES"][flag]
+
+        if transfer_notes is None:
+            notes = TRANSACTION_NOTES["RECEIVE_TRANSFER"].format(str(amount))
+        else:
+            notes = transfer_notes
+        #end if
+
         # credit (+) we increase balance
         credit_transaction = Transaction(
             payment_id=payment_id,
             wallet_id=wallet.id,
             amount=amount,
-            transaction_type=WALLET_CONFIG["IN_TRANSFER"],
-            notes=TRANSACTION_NOTES["RECEIVE_TRANSFER"].format(str(amount))
+            transaction_type=transaction_type,
+            notes=notes
         )
         credit_transaction.generate_trx_id()
 

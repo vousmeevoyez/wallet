@@ -119,3 +119,8 @@ class RaisePendingWithdrawError(WalletError):
     """ raises when user try to withdraw but already pending withraw request """
     msg = "There's pending withdraw occured"
     title = "PENDING_WITHDRAW_REQUEST"
+
+class DecodeQrError(WalletError):
+    """ raises when try scan invalid qr code"""
+    msg = "Invalid QR Code"
+    title = "INVALID_QR"

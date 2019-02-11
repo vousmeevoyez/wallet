@@ -4,17 +4,15 @@
     This is module to process business logic from routes and return API
     response
 """
-import traceback
+from sqlalchemy.exc import IntegrityError
 
-from flask          import request, jsonify
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
+from app.api import db
+from app.api.models import *
 
-from app.api            import db
-from app.api.models     import Wallet, Transaction, VirtualAccount, ExternalLog, Payment, PaymentChannel
-from app.api.http_response     import bad_request, internal_error, request_not_found
-from app.config     import config
+from app.config import config
 
-ACCESS_KEY_CONFIG = config.Config.ACCESS_KEY_CONFIG
+from app.api.wallet.modules.transfer_services import TransferServices
+
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 WALLET_CONFIG = config.Config.WALLET_CONFIG
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG
@@ -22,35 +20,13 @@ LOGGING_CONFIG = config.Config.LOGGING_CONFIG
 class CallbackServices:
     """ Callback Services Class to handle all callback process here"""
 
-    def _create_payment(self, params, session=None):
-        if session is None:
-            session = db.session
-        #end if
-        session.begin(subtransactions=True)
+    def __init__(self, virtual_account, trx_id):
+        virtual_account = VirtualAccount.query.filter_by(id=virtual_account,
+                                                         trx_id=trx_id).first()
+        if virtual_account is None:
+            raise VaNotFoundError
 
-        payment_channel_key = params["payment_channel_key"]
-        source_account      = params["source_account"     ]
-        to                  = params["to"                 ]
-        ref_number          = params["reference_number"   ]
-        amount              = params["payment_amount"     ]
-        payment_type        = params["payment_type"       ]
-
-        # fetch payment channel
-        payment_channel = PaymentChannel.query.filter_by(key=payment_channel_key).first()
-
-        # build payment object
-        payment = Payment(
-            source_account=source_account,
-            to=to,
-            ref_number=ref_number,
-            amount=amount,
-            channel_id=payment_channel.id,
-            payment_type=payment_type,
-        )
-        session.add(payment)
-        session.flush()
-
-        return payment.id
+        self.virtual_account = virtual_account
     #end def
 
     def deposit(self, params):
@@ -59,276 +35,50 @@ class CallbackServices:
             args:
                 params -- parameter
         """
-        response = {
-            "status_code"    : 0,
-            "status_message" : "SUCCESS",
-            "data"           : "NONE"
-        }
-
-        virtual_account     = params["virtual_account"    ]
-        trx_id              = params["trx_id"             ]
-        payment_amount      = params["payment_amount"     ]
-        reference_number    = params["payment_ntb"        ]
+        payment_amount = params["payment_amount"]
+        reference_number = params["payment_ntb"]
         payment_channel_key = params["payment_channel_key"]
 
-        # CREATE TRANSACTION SESSION
-        try:
-            session = db.session(autocommit=True)
-        except InvalidRequestError:
-            db.session.commit()
-            session = db.session()
-        #end try
-
-        # log ingoing request
-        api_name = "DEPOSIT_NOTIFICATION"
-        log = ExternalLog(request=params,
-                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
-                          api_name=api_name,
-                          api_type=LOGGING_CONFIG["INGOING"]
-                         )
-
-        virtual_account = VirtualAccount.query.filter_by(id=virtual_account, trx_id=trx_id).first()
-        if virtual_account is None:
-            response["status_code"] = "404"
-            response["data"] = RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"]
-            return response
-        #end if
+        payment_channel = PaymentChannel.query.filter_by(key=payment_channel_key).first()
 
         # create payment
         payment_payload = {
-            "payment_channel_key" : payment_channel_key,
-            "source_account"      : virtual_account.id,
-            "to"                  : virtual_account.wallet_id,
-            "reference_number"    : reference_number,
-            "payment_amount"      : payment_amount,
-            "payment_type"        : True # Credit
+            "channel_id"    : payment_channel.id,
+            "source_account": self.virtual_account.id,
+            "to"            : self.virtual_account.wallet_id,
+            "ref_number"    : reference_number,
+            "amount"        : payment_amount,
+            "payment_type"  : True # Credit
         }
-        payment_id = self._create_payment(payment_payload, session)
+        payment_id = TransferServices.create_payment(payment_payload)
 
-        # prepare inject the balance here
-        deposit_payload = {
-            "payment_id" : payment_id,
-            "wallet_id"  : virtual_account.wallet_id,
-            "amount"     : payment_amount
-        }
+        # CREATE MASTER TRANSACTION
+        master_transaction = MasterTransaction(
+            source=self.virtual_account.id,
+            destination=self.virtual_account.wallet_id,
+            amount=payment_amount
+        )
 
-        deposit_response = self._inject(deposit_payload, session)
-        log.save_response(deposit_response) # log the response here
-        if deposit_response["status"] != "SUCCESS":
-            log.set_status(False) # False it means failed
-            session.add(log)
-            session.commit()
-            response["status_code"] = "400"
-            response["data"] = RESPONSE_MSG["FAILED"]["INJECT"]
-            return response
-        #end if
+        # record and increase balance here
+        wallet = self.virtual_account.wallet
+        amount = payment_amount
+        credit_transaction = TransferServices.credit_transaction(wallet,
+                                                                 payment_id,
+                                                                 amount,
+                                                                 "TOP_UP")
+        master_transaction.credit_transaction_id = credit_transaction.id
+        master_transaction.debit_transaction_id = None
 
-        # commit log here
-        log.set_status(True)
-        session.add(log)
-        session.commit()
-
-        return response
-    #end def
-
-    def withdraw(self, params):
-        """
-            function to handle withdraw process from callback
-            args:
-                params -- parameter
-        """
-        response = {
-            "status_code"    : 0,
-            "status_message" : "SUCCESS",
-            "data"           : "NONE"
-        }
-
-        virtual_account     = params["virtual_account"    ]
-        trx_id              = params["trx_id"             ]
-        payment_amount      = params["payment_amount"     ]
-        reference_number    = params["payment_ntb"        ]
-        payment_channel_key = params["payment_channel_key"]
-
-        # CREATE TRANSACTION SESSION
         try:
-            session = db.session(autocommit=True)
-        except InvalidRequestError:
+            db.session.add(master_transaction)
             db.session.commit()
-            session = db.session()
-        #end try
-
-        # log ingoing request
-        api_name = "WITHDRAW_NOTIFICATION"
-        log = ExternalLog(request=params,
-                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
-                          api_name=api_name,
-                          api_type=LOGGING_CONFIG["INGOING"]
-                         )
-
-        virtual_account = VirtualAccount.query.filter_by(id=virtual_account, trx_id=trx_id).first()
-        if virtual_account is None:
-            response["status_code"] = "404"
-            response["data"] = RESPONSE_MSG["FAILED"]["RECORD_NOT_FOUND"]
-            return response
-        #end if
-
-        # create payment
-        payment_payload = {
-            "payment_channel_key" : payment_channel_key,
-            "source_account"      : virtual_account.id,
-            "to"                  : virtual_account.wallet_id,
-            "reference_number"    : reference_number,
-            "payment_amount"      : payment_amount,
-            "payment_type"        : False # debit
-        }
-        payment_id = self._create_payment(payment_payload, session)
-
-        # prepare deduct the balance here
-        withdraw_payload = {
-            "payment_id" : payment_id,
-            "wallet_id"  : virtual_account.wallet_id,
-            "amount"     : payment_amount
-        }
-
-        withdraw_response = self._deduct(withdraw_payload)
-        log.save_response(withdraw_response) # log the response here
-        if withdraw_response["status"] != "SUCCESS":
-            log.set_status(False) # False it means failed
-            response["status_code"] = "400"
-            response["data"] = RESPONSE_MSG["FAILED"]["DEDUCT"]
-            return response
-        #end if
-
-        # commit log here
-        log.set_status(True)
-        db.session.add(log)
-        db.session.commit()
-
-        return response
-    #end def
-
-    def _inject(self, params, session=None):
-        """ function to inject balance """
-        response = {
-            "status" : "SUCCESS",
-            "data"   : "NONE"
-        }
-
-        if session is None:
-            session = db.session
-        #end if
-        session.begin(subtransactions=True)
-
-        # parse request data
-        payment_id  = params["payment_id"]
-        wallet_id   = params["wallet_id"]
-        amount      = float(params["amount"])
-
-        if amount < 0:
-            response["status"] = "FAILED"
-            response["data"] = "Invalid Amount"
-            return response
-        #end if
-
-        wallet = Wallet.query.filter_by(id=wallet_id).with_for_update().first()
-        if wallet is None:
-            response["status"] = "FAILED"
-            response["data"] = "Wallet not found"
-            return response
-        #end if
-
-        if wallet.is_unlocked() is not True:
-            response["status"] = "FAILED"
-            response["data"] = "Wallet is locked"
-            return response
-        #end if
-
-        # credit (+) we increase balance
-        credit_transaction = Transaction(
-            payment_id=payment_id,
-            wallet_id=wallet.id,
-            amount=amount,
-            transaction_type=WALLET_CONFIG["DEPOSIT"],
-            notes=TRANSACTION_NOTES["DEPOSIT"].format(str(amount))
-        )
-        credit_transaction.generate_trx_id()
-
-        try:
-            wallet.add_balance(amount)
-            session.add(credit_transaction)
-            session.commit()
         except IntegrityError:
-            session.rollback()
-            return internal_error()
-        #end try
+            db.session.rollback()
+        #end def
 
-        success_message = RESPONSE_MSG["SUCCESS"]["DEPOSIT"].format(str(amount), wallet_id)
-        response["data"] = success_message
-        return response
-    #end def
-
-    def _deduct(self, params, session=None):
-        """ function to deduct balance"""
         response = {
-            "status" : "SUCCESS",
-            "data"   : "NONE"
+            "status" : "000"
         }
-
-        if session is None:
-            session = db.session
-        #end if
-        session.begin(subtransactions=True)
-
-        # parse request data
-        payment_id  = params["payment_id"]
-        wallet_id   = params["wallet_id"]
-        amount      = params["amount"]
-
-        if amount > 0:
-            response["status"] = "FAILED"
-            response["data"] = "Invalid Amount"
-            return response
-        #end if
-
-        wallet = Wallet.query.filter_by(id=wallet_id).with_for_update().first()
-        if wallet is None:
-            response["status"] = "FAILED"
-            response["data"] = "Wallet not found"
-            return response
-        #end if
-
-        if wallet.is_unlocked() is not True:
-            response["status"] = "FAILED"
-            response["data"] = "Wallet is locked"
-            return response
-        #end if
-
-        if abs(amount) > wallet.balance:
-            response["status"] = "FAILED"
-            response["data"] = RESPONSE_MSG["FAILED"]["INSUFFICIENT_BALANCE"]
-            return response
-        #end if
-
-        # debit (-) we increase balance
-        debit_transaction = Transaction(
-            payment_id=payment_id,
-            wallet_id=wallet.id,
-            amount=amount,
-            transaction_type=WALLET_CONFIG["WITHDRAW"],
-            notes=TRANSACTION_NOTES["WITHDRAW_NOTIF"].format(str(amount))
-        )
-        debit_transaction.generate_trx_id()
-
-        try:
-            wallet.add_balance(amount)
-            session.add(debit_transaction)
-            session.commit()
-        except IntegrityError:
-            session.rollback()
-            return internal_error()
-
-        success_message = RESPONSE_MSG["SUCCESS"]["WITHDRAW"].format(str(amount), wallet_id)
-        response["data"] = success_message
         return response
     #end def
 #end class

@@ -13,9 +13,7 @@ from marshmallow import ValidationError
 
 from app.api.wallet import api
 #serializer
-from app.api.serializer import WalletSchema
-from app.api.serializer import TransactionSchema
-from app.api.serializer import WalletTransactionSchema
+from app.api.serializer import *
 # request schema
 from app.api.request_schema import *
 
@@ -31,15 +29,16 @@ from app.api.wallet.modules.withdraw_services import WithdrawServices
 from app.api.authentication.decorator import token_required
 from app.api.authentication.decorator import get_token_payload
 from app.api.authentication.decorator import admin_required
+
+from app.api.common.helper import QR
+
 # exceptions
 from app.api.exception.general import SerializeError
 from app.api.exception.general import RecordNotFoundError
 from app.api.exception.general import CommitError
-
 from app.api.exception.user import UserNotFoundError
-
 from app.api.exception.bank import BankAccountNotFoundError
-
+from app.api.exception.common import DecryptError
 from app.api.exception.wallet import *
 # configuration
 from app.config import config
@@ -171,14 +170,21 @@ class WalletQrTransferRoutes(Resource):
         except ValidationError as error:
             raise SerializeError(error.messages)
         #end if
-
+        # Decrypt QR Code here
+        try:
+            payload = QR().read(request_data["qr_string"])
+            destination = payload["wallet_id"]
+        except DecryptError:
+            raise DecodeQrError
+        #end try
         try:
             response = TransferServices(wallet_id,
-                                        request_data["pin"]).qr_transfer(request_data)
+                                        request_data["pin"],
+                                        destination).internal_transfer(request_data)
         except WalletNotFoundError as error:
             raise RecordNotFoundError(error.msg, error.title)
         except (WalletLockedError, IncorrectPinError, InvalidDestinationError,
-                InsufficientBalanceError, TransferError) as error:
+                InsufficientBalanceError, TransferError, DecodeQrError) as error:
             raise CommitError(error.msg, error.title)
         return response
     #end def
@@ -335,13 +341,20 @@ class WalletWithdrawRoutes(Resource):
         """
         request_data = withdraw_request_schema.parse_args(strict=True)
         try:
-            request_data = TransactionSchema(strict=True).validate(request_data)
+            result = WithdrawSchema(strict=True).validate(request_data)
         except ValidationError as error:
             raise SerializeError(error.messages)
         #end if
+
         # need to serialize here
-        response = WithdrawServices(wallet_id,
-                                    request_data["pin"]).request(request_data)
+        try:
+            response = WithdrawServices(wallet_id,
+                                        request_data["pin"]).request(request_data)
+        except (WalletNotFoundError, OtpNotFoundError) as error:
+            raise RecordNotFoundError(error.msg, error.title)
+        except (MinimalWithdrawError, MaxWithdrawError,
+                InsufficientBalanceError, RaisePendingWithdrawError, IncorrectPinError) as error:
+            raise CommitError(error.msg, error.title)
         return response
     #end def
 #end class
@@ -405,7 +418,7 @@ class WalletBankTransferRoutes(Resource):
                                         request_data["pin"]).external_transfer(request_data)
         except (WalletNotFoundError, BankAccountNotFoundError) as error:
             raise RecordNotFoundError(error.msg, error.title)
-        except (WalletLockedError, IncorrectPinError, InvalidDestinationError,
+        except (WalletLockedError, IncorrectPinError,
                 InsufficientBalanceError, TransferError) as error:
             raise CommitError(error.msg, error.title)
         return response

@@ -4,7 +4,7 @@ services:
 
         flask:
                 image: modana-wallet-api
-                entrypoint: make run-dev
+                entrypoint: ./build-dev.sh
                 environment:
                 - DB_USERNAME=modana
                 - DB_PASSWORD=password
@@ -40,7 +40,7 @@ services:
                 - postgres
                 
         postgres:
-                image: postgres:alpine
+                image: postgres:latest
                 environment:
                 - POSTGRES_USER=modana
                 - POSTGRES_PASSWORD=password

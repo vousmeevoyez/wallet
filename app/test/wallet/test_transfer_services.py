@@ -13,6 +13,8 @@ from app.api.models import MasterTransaction
 from app.api.models import Bank
 from app.api.models import BankAccount
 
+from app.api.common.helper import QR
+
 from app.api.wallet.modules.transfer_services import TransferServices
 
 # exceptions
@@ -40,15 +42,15 @@ class TestTransferServices(BaseTestCase):
 
         return source_wallet, destination_wallet
 
-    def test_create_payment_success(self):
+    def testcreate_payment_success(self):
         """ test create payment record"""
         params = {
-            "source"      : "123456",
-            "destination" : "123457",
-            "amount"      : 12,
-            "payment_type": True,
+            "source_account" : "123456",
+            "to"             : "123457",
+            "amount"         : 12,
+            "payment_type"   : True,
         }
-        result = TransferServices._create_payment(params)
+        result = TransferServices.create_payment(params)
         self.assertTrue(result > 0)
 
     def test_internal_transfer_success(self):
@@ -57,6 +59,7 @@ class TestTransferServices(BaseTestCase):
 
         params = {
             "amount" : 1,
+            "notes" : "Some transfer notes"
         }
 
         result = TransferServices(source.id, "123456",
@@ -75,8 +78,8 @@ class TestTransferServices(BaseTestCase):
         source, destination = self._create_source_destination()
 
         params = {
-            "source" : "12345",
-            "destination" : destination.id,
+            "source_account" : "12345",
+            "to" : destination.id,
             "amount" : 1,
             "pin" : "123456",
         }
@@ -95,6 +98,7 @@ class TestTransferServices(BaseTestCase):
 
         params = {
             "amount" : 1,
+            "notes" : "some transfer notes"
         }
 
         with self.assertRaises(WalletLockedError):
@@ -107,6 +111,7 @@ class TestTransferServices(BaseTestCase):
 
         params = {
             "amount" : 1,
+            "notes" : "Some transfer notes"
         }
 
         with self.assertRaises(IncorrectPinError):
@@ -122,6 +127,7 @@ class TestTransferServices(BaseTestCase):
 
         params = {
             "amount" : 10,
+            "notes" : "some transfer notes"
         }
 
         with self.assertRaises(InsufficientBalanceError):
@@ -134,6 +140,7 @@ class TestTransferServices(BaseTestCase):
 
         params = {
             "amount" : 1,
+            "notes" : "some transfer notes"
         }
 
         with self.assertRaises(WalletNotFoundError):
@@ -149,6 +156,7 @@ class TestTransferServices(BaseTestCase):
 
         params = {
             "amount" : 1,
+            "notes" : "some transfer notes"
         }
 
         with self.assertRaises(WalletLockedError):
@@ -162,6 +170,7 @@ class TestTransferServices(BaseTestCase):
 
         params = {
             "amount" : 1,
+            "notes" : "some transfer notes"
         }
 
         with self.assertRaises(InvalidDestinationError):
@@ -175,6 +184,7 @@ class TestTransferServices(BaseTestCase):
 
         params = {
             "amount" : 1,
+            "notes"  : None
         }
 
         mock_transfer_services.side_effect = TransactionError("test")
@@ -194,13 +204,15 @@ class TestTransferServices(BaseTestCase):
         wallet2 = Wallet.query.get(2)
         self.assertEqual(wallet2.balance, 0)
 
-    @patch.object(TransferServices, "_credit_transaction")
+    '''
+    @patch.object(TransferServices, "credit_transaction")
     def test_internal_transfer_failed_credit(self, mock_transfer_services):
         """ test function to create main transaction """
         source, destination = self._create_source_destination()
 
         params = {
             "amount" : 1,
+            "notes"  : None
         }
 
         mock_transfer_services.side_effect = TransactionError("test")
@@ -221,6 +233,7 @@ class TestTransferServices(BaseTestCase):
 
         wallet2 = Wallet.query.get(2)
         self.assertEqual(wallet2.balance, 0)
+    '''
 
     def test_debit_transaction_success(self):
         wallet = Wallet()
@@ -244,7 +257,7 @@ class TestTransferServices(BaseTestCase):
         db.session.add(debit_payment)
         db.session.flush()
 
-        transaction_id = TransferServices._debit_transaction(wallet, debit_payment.id, 111, "IN")
+        transaction_id = TransferServices._debit_transaction(wallet, debit_payment.id, 111, "TRANSFER_IN")
         self.assertTrue(transaction_id, str)
 
     def test_debit_transaction_failed(self):
@@ -270,7 +283,7 @@ class TestTransferServices(BaseTestCase):
         db.session.flush()
 
         with self.assertRaises(TransactionError):
-            TransferServices._debit_transaction(wallet, 1234, 111, "IN")
+            TransferServices._debit_transaction(wallet, 1234, 111, "TRANSFER_IN")
 
     def test_credit_transaction_success(self):
         wallet = Wallet()
@@ -293,7 +306,10 @@ class TestTransferServices(BaseTestCase):
         db.session.add(credit_payment)
         db.session.flush()
 
-        transaction_id = TransferServices._credit_transaction(wallet, credit_payment.id, trx_amount)
+        transaction_id = TransferServices.credit_transaction(wallet,
+                                                             credit_payment.id,
+                                                             trx_amount,
+                                                             "TRANSFER_IN")
         self.assertTrue(transaction_id, str)
 
     def test_credit_transaction_failed(self):
@@ -318,7 +334,7 @@ class TestTransferServices(BaseTestCase):
         db.session.flush()
 
         with self.assertRaises(TransactionError):
-            TransferServices._credit_transaction(wallet, 1234, trx_amount)
+            TransferServices.credit_transaction(wallet, 1234, trx_amount, "TRANSFER_IN")
 
     def test_external_transfer(self):
         """ test function to create main transaction """
@@ -340,6 +356,7 @@ class TestTransferServices(BaseTestCase):
         params = {
             "amount" : 1,
             "destination" : bank_account.id,
+            "notes" : None,
         }
 
         result = TransferServices(source_wallet.id,
@@ -372,6 +389,7 @@ class TestTransferServices(BaseTestCase):
         params = {
             "amount" : 10000,
             "destination" : bank_account.id,
+            "notes" : None,
         }
 
         with self.assertRaises(InsufficientBalanceError):
@@ -398,6 +416,7 @@ class TestTransferServices(BaseTestCase):
         params = {
             "amount" : 1,
             "destination" : "123444",
+            "notes" : None,
         }
 
         with self.assertRaises(BankAccountNotFoundError):
@@ -425,6 +444,7 @@ class TestTransferServices(BaseTestCase):
         params = {
             "amount" : 1,
             "destination" : bank_account.id,
+            "notes" : None,
         }
 
         mock_transfer_services.side_effect = TransactionError("test")

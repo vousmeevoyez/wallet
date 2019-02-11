@@ -391,7 +391,7 @@ class VirtualAccountModelCase(BaseTestCase):
 class MasterTransactionModelCase(BaseTestCase):
 
     @staticmethod
-    def _create_payment(source, destination, amount, payment_type):
+    def create_payment(source, destination, amount, payment_type):
         db.session.begin()
         try:
             payment = Payment(

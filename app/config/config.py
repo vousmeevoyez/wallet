@@ -60,10 +60,6 @@ class Config:
     WALLET_CONFIG = {
         "CREDIT_FLAG"        : True,
         "DEBIT_FLAG"         : False,
-        "DEPOSIT"            : 1,
-        "IN_TRANSFER"        : 2,
-        "OUT_TRANSFER"       : 3,
-        "WITHDRAW"           : 4,
         "MINIMAL_WITHDRAW"   : 50000,
         "MAX_WITHDRAW"       : 100000000,
         "MINIMAL_DEPOSIT"    : 50000,
@@ -78,6 +74,7 @@ class Config:
             "WITHDRAW"    : 2,
             "TRANSFER_IN" : 3, # transfer between user
             "TRANSFER_OUT": 4, # transfer to external system
+            "RECEIVE_TRANSFER": 5
         }
     }
 

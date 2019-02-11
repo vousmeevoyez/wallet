@@ -370,16 +370,64 @@ class WalletSchema(ma.Schema):
 
 #end class
 
+class WithdrawSchema(ma.Schema):
+    """ This is class that represent Withdraw Schema"""
+    amount = fields.Float()
+    pin = fields.Str(required=True, attribute="pin_hash", validate=cannot_be_blank, load_only=True)
+
+    @validates('amount')
+    def validate_amount(self, amount):
+        """
+            Function to validate transaction amount
+            args :
+                amount -- Transaction amount
+        """
+        if float(amount) < 0:
+            raise ValidationError("Invalid Amount, cannot be less than 0")
+    #end def
+
+    @validates('pin')
+    def validate_pin(self, pin):
+        """
+        function to validate pin
+            args:
+                pin -- user pin
+        """
+        if re.match(r"\d{6}", pin):
+            pass
+        else:
+            raise ValidationError("Invalid Pin")
+    #end def
+#end class
+
 class TransactionSchema(ma.Schema):
-    """ This is class that represent Transaction Schema""" 
+    """ This is class that represent Transaction Schema"""
     id               = fields.Str()
     wallet_id        = fields.Str()
     balance          = fields.Float()
     amount           = fields.Float()
     transaction_type = fields.Method("transaction_type_id_to_string")
-    notes            = fields.Str()
+    notes            = fields.Str(allow_none=True)
     payment_details  = fields.Method("payment_id_to_details")
     created_at       = fields.DateTime('%Y-%m-%d %H:%M:%S')
+
+    @validates('notes')
+    def validate_notes(self, notes):
+        """
+            function to validate transfer notes
+            args :
+                transfer notes
+        """
+        # onyl allow alphabet character and space
+        if notes is not None:
+            pattern = r"^[a-zA-Z ]+$"
+            if len(notes) < 4:
+                raise ValidationError('Invalid notes, minimum is 4 character')
+            if len(notes) > 50:
+                raise ValidationError('Invalid notes, max is 50 character')
+            if  re.match(pattern, notes) is None:
+                raise ValidationError('Invalid notes, only alphabet allowed')
+    #end def
 
     @validates('amount')
     def validate_amount(self, amount):
@@ -420,11 +468,13 @@ class TransactionSchema(ma.Schema):
         if obj.transaction_type == 1:
             result = "DEPOSIT"
         elif obj.transaction_type == 2:
-            result = "IN_TRANSFER"
+            result = "TOP_UP"
         elif obj.transaction_type == 3:
-            result = "OUT_TRANSFER"
+            result = "TRANSFER_IN"
+        elif obj.transaction_type == 4:
+            result = "TRANSFER_OUT"
         else:
-            result = "WITHDRAW"
+            result = "RECEIVE_TRANSFER"
         return result
     #end def
 
