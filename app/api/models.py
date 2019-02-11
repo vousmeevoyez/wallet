@@ -58,7 +58,7 @@ class User(db.Model):
     username        = db.Column(db.String(144), unique=True)
     name            = db.Column(db.String(144))
     phone_ext       = db.Column(db.String(3)) # phone extension
-    phone_number    = db.Column(db.String(11), unique=True)
+    phone_number    = db.Column(db.String(14), unique=True)
     email           = db.Column(db.String(144), unique=True)
     created_at      = db.Column(db.DateTime, default=now) # UTC
     password_hash   = db.Column(db.String(128)) # hashed password

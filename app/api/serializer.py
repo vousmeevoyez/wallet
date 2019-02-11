@@ -244,8 +244,8 @@ class UserSchema(ma.Schema):
             args:
                 phone_number -- phone number
         """
-        # only allow 0-9, minimal 9 and maximal is 11 digit
-        pattern = r"^[0-9]{9,11}$"
+        # only allow 0-9, minimal 9 and maximal is 14 digit
+        pattern = r"^[0-9]{9,14}$"
         if re.search(pattern, phone_number) is None:
             raise ValidationError('Invalid phone number, only number allowed')
         elif int(phone_number) < 1:
