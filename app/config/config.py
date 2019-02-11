@@ -194,6 +194,12 @@ class TestingConfig(Config):
             DATABASE["DRIVER"] + DATABASE["USERNAME"] + ":" + \
             DATABASE["PASSWORD"] + "@" + DATABASE["HOST_NAME"] + "/" + \
             DATABASE["DB_NAME"] + "_testing"
+
+    CELERY_RESULT_BACKEND = "db+" + DATABASE["DRIVER"] + DATABASE["USERNAME"]+\
+                            ":" + DATABASE["PASSWORD"] + "@" +\
+                            DATABASE["HOST_NAME"] +"/"+ DATABASE["DB_NAME"] +\
+                            "_testing"
+
     PRESERVE_CONTEXT_ON_EXCEPTION = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 #end class

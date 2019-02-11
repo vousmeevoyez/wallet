@@ -42,7 +42,7 @@ class TestTransferServices(BaseTestCase):
 
         return source_wallet, destination_wallet
 
-    def testcreate_payment_success(self):
+    def test_create_payment_success(self):
         """ test create payment record"""
         params = {
             "source_account" : "123456",
@@ -177,7 +177,7 @@ class TestTransferServices(BaseTestCase):
             result = TransferServices(source.id, "123456",
                                       source.id).internal_transfer(params)
 
-    @patch.object(TransferServices, "_debit_transaction")
+    @patch.object(TransferServices, "debit_transaction")
     def test_internal_transfer_failed_debit(self, mock_transfer_services):
         """ test function to create main transaction """
         source, destination = self._create_source_destination()
@@ -235,7 +235,7 @@ class TestTransferServices(BaseTestCase):
         self.assertEqual(wallet2.balance, 0)
     '''
 
-    def test_debit_transaction_success(self):
+    def testdebit_transaction_success(self):
         wallet = Wallet()
         db.session.add(wallet)
         db.session.flush()
@@ -257,10 +257,10 @@ class TestTransferServices(BaseTestCase):
         db.session.add(debit_payment)
         db.session.flush()
 
-        transaction_id = TransferServices._debit_transaction(wallet, debit_payment.id, 111, "TRANSFER_IN")
+        transaction_id = TransferServices.debit_transaction(wallet, debit_payment.id, 111, "TRANSFER_IN")
         self.assertTrue(transaction_id, str)
 
-    def test_debit_transaction_failed(self):
+    def testdebit_transaction_failed(self):
         wallet = Wallet()
         db.session.add(wallet)
         db.session.flush()
@@ -283,7 +283,7 @@ class TestTransferServices(BaseTestCase):
         db.session.flush()
 
         with self.assertRaises(TransactionError):
-            TransferServices._debit_transaction(wallet, 1234, 111, "TRANSFER_IN")
+            TransferServices.debit_transaction(wallet, 1234, 111, "TRANSFER_IN")
 
     def test_credit_transaction_success(self):
         wallet = Wallet()
@@ -423,7 +423,7 @@ class TestTransferServices(BaseTestCase):
             result = TransferServices(source_wallet.id,
                                       "123456").external_transfer(params)
 
-    @patch.object(TransferServices, "_debit_transaction")
+    @patch.object(TransferServices, "debit_transaction")
     def test_external_transfer_debit_failed(self, mock_transfer_services):
         """ test function to create main transaction """
         # create sourc wallet first

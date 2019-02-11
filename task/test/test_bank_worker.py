@@ -32,7 +32,7 @@ class TestBankWorker(BaseTestCase):
 
         # create virtual account credit
         va = VirtualAccount(
-            trx_amount="100",
+            trx_amount="0",
             name="Lisa",
             wallet_id=wallet.id,
             bank_id=bni.id,
@@ -40,6 +40,7 @@ class TestBankWorker(BaseTestCase):
         )
         va_id = va.generate_va_number()
         trx_id = va.generate_trx_id()
+        datetime_expired = va.get_datetime_expired("BNI", "CREDIT")
         db.session.add(va)
         db.session.commit()
 

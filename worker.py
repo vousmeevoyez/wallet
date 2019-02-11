@@ -26,6 +26,6 @@ def make_celery(app):
     return celery
 #end def
 
-app = create_app(os.getenv("ENVIRONMENT") or 'dev')
+app = create_app(os.getenv("ENVIRONMENT") or 'test')
 celery = make_celery(app)
 app.app_context().push()

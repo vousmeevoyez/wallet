@@ -81,4 +81,56 @@ class CallbackServices:
         }
         return response
     #end def
+
+    def withdraw(self, params):
+        """
+            Function to Withdraw Money from Callback
+            args:
+                params -- parameter
+        """
+        payment_amount = abs(params["payment_amount"])
+        reference_number = params["payment_ntb"]
+        payment_channel_key = params["payment_channel_key"]
+
+        payment_channel = PaymentChannel.query.filter_by(key=payment_channel_key).first()
+
+        # create payment
+        payment_payload = {
+            "channel_id"    : payment_channel.id,
+            "source_account": self.virtual_account.id,
+            "to"            : self.virtual_account.wallet_id,
+            "ref_number"    : reference_number,
+            "amount"        : payment_amount,
+            "payment_type"  : False# Credit
+        }
+        payment_id = TransferServices.create_payment(payment_payload)
+
+        # CREATE MASTER TRANSACTION
+        master_transaction = MasterTransaction(
+            source=self.virtual_account.id,
+            destination=self.virtual_account.wallet_id,
+            amount=payment_amount
+        )
+
+        # record and increase balance here
+        wallet = self.virtual_account.wallet
+        amount = payment_amount
+        debit_transaction = TransferServices.debit_transaction(wallet,
+                                                               payment_id,
+                                                               amount,
+                                                               "WITHDRAW")
+        master_transaction.debit_transaction_id = debit_transaction.id
+        master_transaction.credit_transaction_id = None
+
+        try:
+            db.session.add(master_transaction)
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+        #end def
+        response = {
+            "status" : "000"
+        }
+        return response
+    #end def
 #end class

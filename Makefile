@@ -19,3 +19,6 @@ shell:
 
 coverage:
 	coverage run --source app/api -m unittest discover -s app/test/
+
+worker:
+	celery worker -A worker.celery --loglevel=info

@@ -1,8 +1,8 @@
-"""init
+"""init db 
 
-Revision ID: 014bb2e70ef4
+Revision ID: 8ff7d10f29c6
 Revises: 
-Create Date: 2019-02-08 05:27:11.514601
+Create Date: 2019-02-11 17:13:13.964357
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '014bb2e70ef4'
+revision = '8ff7d10f29c6'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -76,7 +76,7 @@ def upgrade():
     sa.Column('username', sa.String(length=144), nullable=True),
     sa.Column('name', sa.String(length=144), nullable=True),
     sa.Column('phone_ext', sa.String(length=3), nullable=True),
-    sa.Column('phone_number', sa.String(length=11), nullable=True),
+    sa.Column('phone_number', sa.String(length=14), nullable=True),
     sa.Column('email', sa.String(length=144), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('password_hash', sa.String(length=128), nullable=True),
@@ -126,7 +126,8 @@ def upgrade():
     sa.Column('balance', sa.Float(), nullable=True),
     sa.Column('user_id', sa.BigInteger(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('label')
     )
     op.create_table('forgot_pin',
     sa.Column('id', sa.Integer(), nullable=False),

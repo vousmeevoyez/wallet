@@ -122,7 +122,7 @@ class TransferServices:
 
         # debit transaction
         try:
-            debit_trx = self._debit_transaction(self.source,
+            debit_trx = self.debit_transaction(self.source,
                                                 debit_payment_id, amount,
                                                 "TRANSFER_IN", transfer_notes)
         except TransactionError as error:
@@ -198,7 +198,7 @@ class TransferServices:
         debit_payment_id = self.create_payment(payment)
         # debit transaction
         try:
-            debit_trx = self._debit_transaction(self.source,
+            debit_trx = self.debit_transaction(self.source,
                                                 debit_payment_id, amount,
                                                 "TRANSFER_OUT", transfer_notes)
         except TransactionError as error:
@@ -224,7 +224,7 @@ class TransferServices:
     #end def
 
     @staticmethod
-    def _debit_transaction(wallet, payment_id, amount, flag,
+    def debit_transaction(wallet, payment_id, amount, flag,
                            transfer_notes=None):
         amount = -float(amount)
 

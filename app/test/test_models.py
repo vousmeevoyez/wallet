@@ -524,7 +524,7 @@ class MasterTransactionModelCase(BaseTestCase):
 
 class TransactionModelCase(BaseTestCase):
 
-    def test_debit_transaction(self):
+    def testdebit_transaction(self):
         # create 2 dummy wallet here
         wallet = Wallet(
         )

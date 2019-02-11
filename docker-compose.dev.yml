@@ -48,10 +48,10 @@ services:
                 ports:
                 - 5432:5432
                 
-        rabbitmq:
-                image: rabbitmq:alpine
-                environment:
-                - RABBITMQ_DEFAULT_USER = modana
-                - RABBITMQ_DEFAULT_PASS = password
-                ports:
-                - 5672:5672
+                  #rabbitmq:
+                  #image: rabbitmq:alpine
+                  #environment:
+                  #- RABBITMQ_DEFAULT_USER = modana
+                  #- RABBITMQ_DEFAULT_PASS = password
+                  #ports:
+                  #- 5672:5672
