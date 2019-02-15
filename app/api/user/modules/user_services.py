@@ -24,23 +24,20 @@ from app.api.http_response import created
 from app.api.http_response import no_content
 
 # exceptions
-from app.api.exception.user import UserNotFoundError
-from app.api.exception.user import UserDuplicateError
-from app.api.exception.user import OldRecordError
-
-from app.api.exception.wallet import DuplicateWalletError
-from app.api.exception.virtual_account import AlreadyExistVAError
+from app.api.error.http import *
 # configuration
 from app.config import config
 
 STATUS_CONFIG = config.Config.STATUS_CONFIG
+ERROR_CONFIG = config.Config.ERROR_CONFIG
 
 class UserServices:
     """ User Services Class"""
     def __init__(self, user_id):
         user = User.query.filter_by(id=user_id, status=STATUS_CONFIG["ACTIVE"]).first()
         if user is None:
-            raise UserNotFoundError
+            raise RequestNotFound(ERROR_CONFIG["USER_NOT_FOUND"]["TITLE"],
+                                  ERROR_CONFIG["USER_NOT_FOUND"]["MESSAGE"])
         #end if
         self.user = user
     #end def
@@ -59,15 +56,15 @@ class UserServices:
         except IntegrityError as error:
             #print(err.orig)
             db.session.rollback()
-            raise UserDuplicateError
+            raise UnprocessableEntity(ERROR_CONFIG["DUPLICATE_USER"]["TITLE"],
+                                      ERROR_CONFIG["DUPLICATE_USER"]["MESSAGE"])
         #end try
 
         # create wallet object first
         try:
             wallet = Wallet()
             result = WalletServices.add(user, wallet, pin)
-        except DuplicateWalletError as error:
-            #raise CommitError(error.msg, None, error.title, None)
+        except UnprocessableEntity as error:
             pass
 
         wallet_id = result[0]["data"]["wallet_id"]
@@ -77,15 +74,16 @@ class UserServices:
             virtual_account = VirtualAccount(name=user.name)
             va_payload = {
                 "bank_name" : "BNI",
-                "type" : "CREDIT",
-                "wallet_id" : wallet_id
+                "type"      : "CREDIT",
+                "wallet_id" : wallet_id,
+                "amount"    : 0
             }
             result = VirtualAccountServices.add(virtual_account, va_payload)
-        except AlreadyExistVAError as error:
+        except UnprocessableEntity as error:
             #raise CommitError(error.msg, None, error.title, None)
             pass
 
-        virtual_account = result[0]["data"]["virtual_account_id"]
+        virtual_account = result[0]["data"]["virtual_account"]
 
         response = {
             "user_id"   : user.id,
@@ -140,7 +138,9 @@ class UserServices:
             })
 
         if error != []:
-            raise OldRecordError(error)
+            raise UnprocessableEntity(ERROR_CONFIG["DUPLICATE_UPDATE_ENTRY"]["TITLE"],
+                                      ERROR_CONFIG["DUPLICATE_UPDATE_ENTRY"]["MESSAGE"],
+                                      error)
 
         self.user.set_password(params["password"])
         self.user.email = email
@@ -156,7 +156,6 @@ class UserServices:
             self.user.status = STATUS_CONFIG["DEACTIVE"]
             db.session.commit()
         except IntegrityError as error:
-            #print(err.orig)
             db.session.rollback()
         #end try
         return no_content()

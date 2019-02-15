@@ -12,18 +12,17 @@ from app.api.authentication.modules.auth_services import AuthServices
 
 from app.api.models import User
 
-from app.api.exception.authentication import ParseTokenError
-from app.api.exception.authentication import TokenError
-from app.api.exception.authentication import InvalidAuthorizationError
-from app.api.exception.authentication import InsufficientScopeError
-from app.api.exception.authentication import MethodNotAllowedError
+from app.api.error.http import *
 
-from app.api.http_response import bad_request
-from app.api.http_response import unauthorized
-from app.api.http_response import insufficient_scope
-from app.api.http_response import method_not_allowed
+from app.config import config
 
-from app.config  import config
+ERROR_CONFIG = config.Config.ERROR_CONFIG
+
+class ParseError(Exception):
+    """ raised when failed parsing token from header"""
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
 
 def _parse_token():
     """ parse token from header """
@@ -34,13 +33,13 @@ def _parse_token():
     # accessing token from header
     auth_header = header["Authorization"]
     if auth_header == "":
-        raise ParseTokenError("Empty Auth Header")
+        raise ParseError("Empty Auth Header")
     #end if
 
     try:
         token = auth_header.split(" ")[1]
     except IndexError:
-        raise ParseTokenError("Invalid Auth Header")
+        raise ParseError("Invalid Auth Header")
     #end def
     return token
 #end def
@@ -51,15 +50,11 @@ def get_token_payload():
 
     try:
         token = _parse_token()
-    except ParseTokenError as error:
-        raise InvalidAuthorizationError(error.msg)
+    except ParseError as error:
+        raise BadRequest(ERROR_CONFIG["BAD_AUTH_HEADER"], error.message)
     #end def
 
-    try:
-        response = AuthServices._current_login_user(token)
-    except TokenError as error:
-        raise InvalidAuthorizationError(error.msg)
-    #end try
+    response = AuthServices._current_login_user(token)
     return response
 #end def
 
@@ -76,7 +71,8 @@ def admin_required(fn):
 
         # check permission here
         if user.role.description != "ADMIN":
-            raise InsufficientScopeError("Require admin permission")
+            raise InsufficientScope(ERROR_CONFIG["ADMIN_REQUIRED"]["TITLE"],
+                                    ERROR_CONFIG["ADMIN_REQUIRED"]["MESSAGE"])
 
         return fn(*args, **kwargs)
         #end if
@@ -92,7 +88,7 @@ def refresh_token_only(fn):
         response = get_token_payload()
 
         if response["token_type"] != "REFRESH":
-            raise MethodNotAllowedError("Refresh token only")
+            raise MethodNotAllowed("Refresh token only")
         else:
             return fn(*args, **kwargs)
     return wrapper
@@ -116,8 +112,8 @@ def get_current_token():
     # define header schema
     try:
         token = _parse_token()
-    except ParseTokenError as error:
-        raise InvalidAuthorizationError(error.msg)
+    except ParseError as error:
+        raise BadRequest(ERROR_CONFIG["BAD_AUTH_HEADER"], error.message)
     #end def
     return token
 #end def

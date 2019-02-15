@@ -9,8 +9,8 @@ from app.api.common.helper import Sms
 from app.api.common.helper import QR
 
 from app.api.common.modules.sms_services import SmsServices
-from app.api.exception.general import ApiError
-from app.api.exception.common import SmsError
+from app.api.common.modules.sms_services import ApiError
+from app.api.common.modules.sms_services import SmsError
 
 class TestSms(BaseTestCase):
     """ Test class for SMS helper interface """

@@ -12,10 +12,6 @@ from app.api import db
 from app.api.common.modules.cipher import AESCipher
 # models
 from app.api.models import ExternalLog
-# exception
-from app.api.exception.general import ApiError
-from app.api.exception.common import SmsError
-
 # configuration
 from app.config import config
 
@@ -23,9 +19,17 @@ WALLET_CONFIG = config.Config.WALLET_CONFIG
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG
 SMS_SERVICES_CONFIG = config.Config.SMS_SERVICES_CONFIG
 
+class ApiError(Exception):
+    """ raised when api error happened"""
+    def __init__(self, original_exception):
+        super().__init__(original_exception)
+        self.original_exception = original_exception
+        
+class SmsError(ApiError):
+    """ raised when sms error """
+
 class SmsServices:
     """ SMS Helper Class"""
-
     def _post(self, api_name, payload):
         # build header
         headers = {

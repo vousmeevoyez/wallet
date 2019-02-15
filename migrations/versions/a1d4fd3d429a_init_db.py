@@ -1,8 +1,8 @@
-"""init db 
+"""init db
 
-Revision ID: 8ff7d10f29c6
+Revision ID: a1d4fd3d429a
 Revises: 
-Create Date: 2019-02-11 17:13:13.964357
+Create Date: 2019-02-14 13:33:10.286162
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '8ff7d10f29c6'
+revision = 'a1d4fd3d429a'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -153,7 +153,8 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('virtual_account',
-    sa.Column('id', sa.BigInteger(), nullable=False),
+    sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
+    sa.Column('account_no', sa.BigInteger(), nullable=True),
     sa.Column('trx_id', sa.BigInteger(), nullable=True),
     sa.Column('trx_amount', sa.Float(), nullable=True),
     sa.Column('name', sa.String(length=144), nullable=True),

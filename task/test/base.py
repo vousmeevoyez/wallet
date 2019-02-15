@@ -3,7 +3,7 @@ from flask_testing  import TestCase
 from unittest.mock import Mock, patch
 
 from manage  import init
-from manage  import app
+from task.worker import app
 
 from app.api import db
 # configuration
@@ -18,10 +18,10 @@ from app.api.models import Bank
 TEST_CONFIG = config.TestingConfig
 
 class BaseTestCase(TestCase):
-    """ This is Base Tests """
 
     user = None
 
+    """ This is Base Tests """
     def create_app(self):
         app.config.from_object(TEST_CONFIG)
         return app
@@ -29,7 +29,7 @@ class BaseTestCase(TestCase):
     def setUp(self):
         db.create_all()
         # wrap everything for initialization here
-        #self._init_test()
+        self._init_test()
         db.session.commit()
 
     def tearDown(self):
@@ -57,4 +57,7 @@ class BaseTestCase(TestCase):
         user.set_password("password")
         db.session.add(user)
         db.session.commit()
+
+        self.user = user
+
 #end class

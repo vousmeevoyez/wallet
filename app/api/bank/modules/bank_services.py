@@ -10,9 +10,7 @@ from flask import request, jsonify
 from app.api            import db
 from app.api.models     import Bank
 from app.api.serializer import BankSchema
-from app.api.http_response     import bad_request, internal_error, request_not_found
 from app.config     import config
-from app.api.bank.handler import BankHandler
 
 class BankServices:
     """ Bank Services Class"""
@@ -32,15 +30,6 @@ class BankServices:
         response = {}
 
         # only BNI now supported
-        params = {"account_no" : master_id}
-        result = BankHandler("BNI").dispatch("CHECK_BALANCE", params)
-        if result["status"] != "SUCCESS":
-            return bad_request(result["data"])
-        #end if
-
-        host_name = result["data"]["bank_account_info"]["customer_name"]
-        balance = result["data"]["bank_account_info"]["balance"]
-
         response["data"] = {
             "host_name" : host_name,
             "balance"   : balance

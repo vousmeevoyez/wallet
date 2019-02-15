@@ -29,11 +29,8 @@ from app.api.http_response import created
 from app.api.http_response import no_content
 
 # exception
-from app.api.exception.common import SmsError
-
-from app.api.exception.wallet import *
-
-from app.api.exception.user import UserNotFoundError
+from app.api.error.http import *
+from app.api.common.modules.sms_services import SmsError
 
 # configuration
 from app.config import config
@@ -41,6 +38,7 @@ from app.config import config
 STATUS_CONFIG = config.Config.STATUS_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 WALLET_CONFIG = config.Config.WALLET_CONFIG
+ERROR_CONFIG = config.Config.ERROR_CONFIG
 
 class WalletServices:
     """ Wallet Services Class"""
@@ -49,7 +47,8 @@ class WalletServices:
         wallet_record = Wallet.query.filter_by(id=wallet_id,
                                                status=STATUS_CONFIG["ACTIVE"]).first()
         if wallet_record is None:
-            raise WalletNotFoundError(wallet_id)
+            raise RequestNotFound(ERROR_CONFIG["WALLET_NOT_FOUND"]["TITLE"],
+                                  ERROR_CONFIG["WALLET_NOT_FOUND"]["MESSAGE"])
         #end if
         self.wallet = wallet_record
 
@@ -70,7 +69,8 @@ class WalletServices:
         except IntegrityError as error:
             #print(error.origin)
             db.session.rollback()
-            raise DuplicateWalletError
+            raise UnprocessableEntity(ERROR_CONFIG["DUPLICATE_WALLET"]["TITLE"],
+                                      ERROR_CONFIG["DUPLICATE_WALLET"]["MESSAGE"])
         #end try
         response = {
             "wallet_id" : str(wallet.id)
@@ -110,7 +110,8 @@ class WalletServices:
         user_id = self.wallet.user_id
         wallet_number = Wallet.query.filter_by(user_id=user_id).count()
         if wallet_number <= 1:
-            raise OnlyWalletError
+            raise UnprocessableEntity(ERROR_CONFIG["ONLY_WALLET"]["TITLE"],
+                                      ERROR_CONFIG["ONLY_WALLET"]["MESSAGE"])
         #end if
 
         self.wallet.status = 0 # deactive
@@ -178,7 +179,8 @@ class WalletServices:
         history_details = Transaction.query.filter_by(wallet_id=self.wallet.id,\
                                                       id=transaction_id).first()
         if history_details is None:
-            raise TransactionNotFoundError
+            raise RequestNotFound(ERROR_CONFIG["TRANSACTION_NOT_FOUND"]["TITLE"],
+                                  ERROR_CONFIG["TRANSACTION_NOT_FOUND"]["MESSAGE"])
         #end if
         response = TransactionSchema().dump(history_details).data
         return response
@@ -196,17 +198,20 @@ class WalletServices:
 
         # first make sure the old pin is correct
         if self.wallet.check_pin(old_pin) is not True:
-            raise IncorrectPinError
+            raise UnprocessableEntity(ERROR_CONFIG["INCORRECT_PIN"]["TITLE"],
+                                      ERROR_CONFIG["INCORRECT_PIN"]["MESSAGE"])
         #end if
 
         # second need to check pin and confirmation pin must same
         if pin != confirm_pin:
-            raise UnmatchPinError
+            raise UnprocessableEntity(ERROR_CONFIG["UNMATCH_PIN"]["TITLE"],
+                                      ERROR_CONFIG["UNMATCH_PIN"]["MESSAGE"])
         #end if
 
         # third make sure the new pin is not the same with the old one
         if self.wallet.check_pin(pin) is True:
-            raise DuplicatePinError
+            raise UnprocessableEntity(ERROR_CONFIG["DUPLICATE_PIN"]["TITLE"],
+                                      ERROR_CONFIG["DUPLICATE_PIN"]["MESSAGE"])
         #end if
 
         # update the new pin here
@@ -224,11 +229,12 @@ class WalletServices:
         """
         # first check if there are any pending otp record
         pending_otp = ForgotPin.query.filter(ForgotPin.wallet_id == self.wallet.id,\
-                               ForgotPin.status == False,\
-                               ForgotPin.valid_until > datetime.now() \
-                            ).count()
+                                             ForgotPin.status == False,\
+                                             ForgotPin.valid_until > datetime.now() \
+                                            ).count()
         if pending_otp > 0:
-            raise PendingOtpError
+            raise UnprocessableEntity(ERROR_CONFIG["PENDING_OTP"]["TITLE"],
+                                      ERROR_CONFIG["PENDING_OTP"]["MESSAGE"])
         #end if
 
         # second generate random verify otp number to user phone
@@ -253,7 +259,8 @@ class WalletServices:
             Sms().send(msisdn, "FORGOT_PIN", otp_code)
         except SmsError:
             db.session.rollback()
-            raise WalletOtpError
+            raise UnprocessableEntity(ERROR_CONFIG["SMS_FAILED"]["TITLE"],
+                                      ERROR_CONFIG["SMS_FAILED"]["MESSAGE"])
         #end try
         db.session.commit()
         response = {
@@ -280,15 +287,18 @@ class WalletServices:
         ).first()
 
         if forgot_otp is None:
-            raise OtpNotFoundError
+            raise UnprocessableEntity(ERROR_CONFIG["FORGOT_OTP_NOT_FOUND"]["TITLE"],
+                                      ERROR_CONFIG["FORGOT_OTP_NOT_FOUND"]["MESSAGE"])
         #end if
 
         if forgot_otp.status is not False:
-            raise OtpVerifiedError
+            raise UnprocessableEntity(ERROR_CONFIG["OTP_ALREADY_VERIFIED"]["TITLE"],
+                                      ERROR_CONFIG["OTP_ALREADY_VERIFIED"]["MESSAGE"])
         #end if
 
         if forgot_otp.check_otp_code(otp_code) is not True:
-            raise InvalidOtpError
+            raise UnprocessableEntity(ERROR_CONFIG["INVALID_OTP_CODE"]["TITLE"],
+                                      ERROR_CONFIG["INVALID_OTP_CODE"]["MESSAGE"])
         #end if
 
         # update otp record to DONE

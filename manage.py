@@ -173,5 +173,6 @@ def _create_payment_channel():
         db.session.add(payment_channel)
         db.session.commit()
 
+
 if __name__ == "__main__":
     manager.run()

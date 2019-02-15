@@ -94,23 +94,19 @@ def post(api_name, base_url, client_id, secret_key, data):
                           headers=headers)
         # save response time
         log.save_response_time(time.time() - start_time)
-    except requests.exceptions.Timeout as err:
-        raise ServicesTimeout
+    except requests.exceptions.Timeout as error:
+        raise ServicesFailed("TIMEOUT", error)
     #end try
 
     result = r.json()
-
-    status = result["status"]
-    response["status"] = status
     try:
         decrypted_data = decrypt(client_id, secret_key, result["data"])
-        response["data"] = decrypted_data
+        response = decrypted_data
     except KeyError:
         log.set_status(False)
-        response["data"] = result["message"]
-        print(result["message"])
-        raise ServicesFailed
+        response = result["message"]
+        raise ServicesFailed("RESPONSE_ERROR", response)
     finally:
-        log.save_response(response["data"])
+        log.save_response(response)
     return response
 #end def

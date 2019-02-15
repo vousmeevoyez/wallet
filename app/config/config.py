@@ -3,6 +3,8 @@
     _______________
     This is module for storing all configuration for various environments
 """
+from kombu import Connection, Exchange, Queue
+
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -16,6 +18,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     PRESERVE_CONTEXT_ON_EXCEPTION = False
 
+    # FLASK RESTPLUS
+    ERROR_INCLUDE_MESSAGE = False
 
     DATABASE = {
         "DRIVER"   : os.getenv('DB_DRIVER') or "postgresql://", # sqlite // postgresql // mysql
@@ -25,11 +29,20 @@ class Config:
         "DB_NAME"  : os.getenv('DB_NAME') or "db_wallet",
     }
 
-    SENTRY = {
-        "DSN" : "https://c864361a612b47a3827e2c5b3280a727@sentry.io/1385947"
-    }
+    SENTRY_CONFIG = {}
 
-    CELERY_BROKER_URL = os.getenv("BROKER_URL") or 'amqp://guest:guest@localhost:5672'
+    CELERY_BROKER_URL = os.getenv("BROKER_URL") or \
+    'amqp://guest:guest@localhost:5672'
+    #CELERY_QUEUES = (
+    #    Queue('bank', Exchange('bank'), routing_key='bank')
+    #)
+
+    WORKER_CONFIG = {
+        "MAX_RETRIES" : 5,
+        "HARD_LIMIT"  : 15,
+        "SOFT_LIMIT"  : 10,
+        "ACKS_LATE"   : True # prevent executing task twice
+    }
 
     # JSON WEB TOKEN CONFIG
     JWT_CONFIG = {
@@ -39,14 +52,23 @@ class Config:
         "REFRESH_EXPIRE" : 30, # day,
     }
 
-    # FLASK RESTPLUS
-    ERROR_INCLUDE_MESSAGE = False
-
     STATUS_CONFIG = {
         "PENDING"  : 0,
         "ACTIVE"   : 1,
         "DEACTIVE" : 2,
         "LOCKED"   : 3,
+    }
+
+    TRANSACTION_LOG_CONFIG = {
+        "PENDING"  : 0,
+        "DONE"     : 1,
+        "CANCELLED": 2,
+    }
+
+    PAYMENT_STATUS_CONFIG = {
+        "PENDING"  : 0,
+        "DONE"     : 1,
+        "CANCELLED": 2,
     }
 
     VIRTUAL_ACCOUNT_CONFIG = {
@@ -162,6 +184,149 @@ class Config:
         "FORGOT_PIN" : "This is your FORGOT PIN Code for your Modanaku : {}."\
         "DON'T SHARE IT WITH ANYONE (NOT EVENT MODANA)",
     }
+
+    ERROR_CONFIG = {
+        "USER_NOT_FOUND" : {
+            "TITLE"   : "USER_NOT_FOUND",
+            "MESSAGE" : "User not found"
+        },
+        "BANK_NOT_FOUND" : {
+            "TITLE"   : "BANK_NOT_FOUND",
+            "MESSAGE" : "Bank not found"
+        },
+        "BANK_ACC_NOT_FOUND" : {
+            "TITLE"   : "BANK_ACC_NOT_FOUND",
+            "MESSAGE" : "Bank account not found"
+        },
+        "WALLET_NOT_FOUND" : {
+            "TITLE"   : "WALLET_NOT_FOUND",
+            "MESSAGE" : "Wallet not found"
+        },
+        "VA_NOT_FOUND" : {
+            "TITLE"   : "VA_NOT_FOUND",
+            "MESSAGE" : "Virtual Account not found"
+        },
+        "WALLET_LOCKED" : {
+            "TITLE"   : "WALLET_LOCKED",
+            "MESSAGE" : "Wallet is locked"
+        },
+        "TRANSACTION_NOT_FOUND" : {
+            "TITLE"   : "TRANSACTION_NOT_FOUND",
+            "MESSAGE" : "Transaction not found"
+        },
+        "FORGOT_OTP_NOT_FOUND" : {
+            "TITLE"   : "FORGOT_OTP_NOT_FOUND",
+            "MESSAGE" : "Forgot OTP not found"
+        },
+        "INVALID_CREDENTIALS" : {
+            "TITLE"   : "INVALID_CREDENTIALS",
+            "MESSAGE" : "Incorrect Username / Password"
+        },
+        "INVALID_DESTINATION" : {
+            "TITLE"   : "INVALID_DESTINATION",
+            "MESSAGE" : "Can't transfer to same wallet"
+        },
+        "INCORRECT_PIN" : {
+            "TITLE"   : "INCORRECT_PIN",
+            "MESSAGE" : "Incorrect Pin"
+        },
+        "UNMATCH_PIN" : {
+            "TITLE"   : "UNMATCH_PIN",
+            "MESSAGE" : "Unmatch Pin and Confirm Pin"
+        },
+        "DUPLICATE_PIN" : {
+            "TITLE"   : "DUPLICATE_PIN",
+            "MESSAGE" : "New Pin Can't be the same with the old one"
+        },
+        "REVOKED_TOKEN" : {
+            "TITLE"   : "REVOKED_TOKEN",
+            "MESSAGE" : "Token has been revoked"
+        },
+        "SIGNATURE_EXPIRED" : {
+            "TITLE"   : "SIGNATURE_EXPIRED",
+            "MESSAGE" : "Token Signature Expired"
+        },
+        "INVALID_TOKEN" : {
+            "TITLE"   : "INVALID_TOKEN",
+            "MESSAGE" : "Invalid Token"
+        },
+        "EMPTY_PAYLOAD" : {
+            "TITLE"   : "EMPTY_PAYLOAD",
+            "MESSAGE" : "Empty Token Payload"
+        },
+        "INVALID_PARAMETER" : {
+            "TITLE"  : "INVALID_PARAMETER",
+            "MESSAGE": "Invalid Parameter",
+        },
+        "BAD_AUTH_HEADER" : {
+            "TITLE" : "INVALID_AUTHORIZATION_HEADER",
+        },
+        "ADMIN_REQUIRED" : {
+            "TITLE" : "ADMIN_REQUIRED",
+            "MESSAGE" : "Require admin permission"
+        },
+        "ONLY_WALLET" : {
+            "TITLE" : "ONLY_WALLET",
+            "MESSAGE" : "Can't remove main wallet"
+        },
+        "PENDING_OTP" : {
+            "TITLE"   : "PENDING_OTP",
+            "MESSAGE" : "there are pendng OTP request, please wait"
+        },
+        "PENDING_WITHDRAW" : {
+            "TITLE"   : "PENDING_WITHDRAW",
+            "MESSAGE" : "there are pendng Withdraw request, please wait"
+        },
+        "OTP_ALREADY_VERIFIED" : {
+            "TITLE"   : "OTP_ALREADY_VERIFIED",
+            "MESSAGE" : "OTP Already Verified"
+        },
+        "INVALID_OTP_CODE" : {
+            "TITLE"   : "INVALID_OTP_CODE",
+            "MESSAGE" : "Invalid OTP Code"
+        },
+        "INSUFFICIENT_BALANCE" : {
+            "TITLE"   : "INSUFFICIENT_BALANCE",
+            "MESSAGE" : "Insufficient Balance for this transaction"
+        },
+        "SMS_FAILED" : {
+            "TITLE"   : "SMS_FAILED",
+            "MESSAGE" : "Sending SMS OTP Failed"
+        },
+        "DUPLICATE_UPDATE_ENTRY" : {
+            "TITLE"  : "DUPLICATE_UPDATE_ENTRY",
+            "MESSAGE": "Updated fields must be unique and can't be same with\
+            the old one"
+        },
+        "DUPLICATE_USER" : {
+            "TITLE"   : "DUPLICATE_USER",
+            "MESSAGE" : "User already existed"
+        },
+        "DUPLICATE_BANK_ACCOUNT" : {
+            "TITLE"   : "DUPLICATE_BANK_ACCOUNT",
+            "MESSAGE" : "Bank account already existed"
+        },
+        "DUPLICATE_WALLET" : {
+            "TITLE"   : "DUPLICATE_WALLET",
+            "MESSAGE" : "Wallet already existed"
+        },
+        "DUPLICATE_VA" : {
+            "TITLE"   : "DUPLICATE_VA",
+            "MESSAGE" : "Virtual Account already existed"
+        },
+        "TRANSFER_FAILED" : {
+            "TITLE"   : "TRANSFER_FAILED",
+            "MESSAGE" : "Transfer failed"
+        },
+        "MIN_WITHDRAW": {
+            "TITLE"   : "MIN_WITHDRAW",
+            "MESSAGE" : "Amount can't be less than Minimal Withdraw"
+        },
+        "MAX_WITHDRAW": {
+            "TITLE"   : "MAX_WITHDRAW",
+            "MESSAGE" : "Amount can't be more than Maximal Withdraw"
+        },
+    }
 #end class
 
 
@@ -175,10 +340,7 @@ class DevelopmentConfig(Config):
             DATABASE["PASSWORD"] + "@" + DATABASE["HOST_NAME"] + "/" + \
             DATABASE["DB_NAME"] + "_dev"
 
-    CELERY_RESULT_BACKEND = "db+" + DATABASE["DRIVER"] + DATABASE["USERNAME"]+\
-                            ":" + DATABASE["PASSWORD"] + "@" +\
-                            DATABASE["HOST_NAME"] +"/"+ DATABASE["DB_NAME"] +\
-                            "_dev"
+    CELERY_RESULT_BACKEND = "db+" + SQLALCHEMY_DATABASE_URI
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 #end class
@@ -195,10 +357,9 @@ class TestingConfig(Config):
             DATABASE["PASSWORD"] + "@" + DATABASE["HOST_NAME"] + "/" + \
             DATABASE["DB_NAME"] + "_testing"
 
-    CELERY_RESULT_BACKEND = "db+" + DATABASE["DRIVER"] + DATABASE["USERNAME"]+\
-                            ":" + DATABASE["PASSWORD"] + "@" +\
-                            DATABASE["HOST_NAME"] +"/"+ DATABASE["DB_NAME"] +\
-                            "_testing"
+    CELERY_RESULT_BACKEND = "db+" + SQLALCHEMY_DATABASE_URI
+
+    CELERY_ALWAYS_EAGER = True
 
     PRESERVE_CONTEXT_ON_EXCEPTION = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -214,7 +375,13 @@ class ProductionConfig(Config):
             DATABASE["DRIVER"] + DATABASE["USERNAME"] + ":" + \
             DATABASE["PASSWORD"] + "@" + DATABASE["HOST_NAME"] + "/" + \
             DATABASE["DB_NAME"] + "_prod"
+
+    CELERY_RESULT_BACKEND = "db+" + SQLALCHEMY_DATABASE_URI
+
     PRESERVE_CONTEXT_ON_EXCEPTION = False
+
+    SENTRY_CONFIG = Config.SENTRY_CONFIG
+    SENTRY_CONFIG["dsn"] = "https://c864361a612b47a3827e2c5b3280a727:24dd1b18103842159d31e273a369ce56@sentry.io/1385947"
 #end class
 
 

@@ -9,8 +9,6 @@ from app.api.authentication.decorator import token_required, admin_required
 
 from app.api.bank.modules.bank_services   import BankServices
 
-from app.api.http_response import bad_request, internal_error, request_not_found
-
 @api.route("/")
 class BankRoutes(Resource):
     def get(self):

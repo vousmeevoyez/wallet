@@ -10,7 +10,7 @@ from app.api        import db
 from app.api.models import *
 from app.config import config
 
-from app.api.exception.authentication import *
+from app.api.error.authentication import *
 
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 

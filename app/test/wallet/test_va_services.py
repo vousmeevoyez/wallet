@@ -8,16 +8,12 @@ from app.test.base import BaseTestCase
 
 from app.api.models import *
 
-from app.api.common.helper import Sms
-
-from app.api.exception.common import SmsError
-
-from app.api.exception.wallet import *
+from task.bank.tasks import BankTask
 
 from app.api.wallet.modules.wallet_services import WalletServices
 from app.api.wallet.modules.va_services import VirtualAccountServices
 
-class TestWalletServices(BaseTestCase):
+class TestVaServices(BaseTestCase):
     """ Test Class for Wallet Services"""
 
     def _create_wallet(self):
@@ -26,7 +22,55 @@ class TestWalletServices(BaseTestCase):
         return result[0]["data"]
     #end def
 
-    def test_add_va(self):
+    @patch.object(BankTask, "create_va")
+    def test_add_va(self, mock_create_va):
+        """ test method for creating va"""
+        response = self._create_wallet()
+
+        wallet_id = response["wallet_id"]
+
+        virtual_account = VirtualAccount(
+            name="lisa",
+        )
+
+        params = {
+            "bank_name" : "BNI",
+            "type"      : "CREDIT",
+            "wallet_id" : wallet_id,
+            "amount"    : 0
+        }
+
+        mock_create_va.return_value = True
+        result = VirtualAccountServices.add(virtual_account, params)
+        self.assertTrue(result[0]["data"]["virtual_account"])
+
+    @patch.object(BankTask, "create_va")
+    def test_info_va(self, mock_create_va):
+        """ test method for returning va information """
+        response = self._create_wallet()
+
+        wallet_id = response["wallet_id"]
+
+        virtual_account = VirtualAccount(
+            name="lisa",
+        )
+
+        params = {
+            "bank_name" : "BNI",
+            "type"      : "CREDIT",
+            "wallet_id" : wallet_id,
+            "amount"    : 0
+        }
+
+        mock_create_va.return_value = True
+        result = VirtualAccountServices.add(virtual_account, params)
+        virtual_account = result[0]["data"]["virtual_account"]
+
+        result = VirtualAccountServices(virtual_account).info()
+        self.assertTrue(result["data"])
+
+    @patch.object(BankTask, "create_va")
+    def test_update_va(self, mock_create_va):
         """ test method for creating va"""
         response = self._create_wallet()
 
@@ -42,5 +86,17 @@ class TestWalletServices(BaseTestCase):
             "wallet_id" : wallet_id,
         }
 
+        mock_create_va.return_value = True
         result = VirtualAccountServices.add(virtual_account, params)
-        self.assertTrue(result[0]["data"]["virtual_account_id"])
+        self.assertTrue(result[0]["data"]["virtual_account"])
+
+        virtual_account = result[0]["data"]["virtual_account"]
+
+        params = {
+            "bank_name" : "BNI",
+            "type"      : "CREDIT",
+            "amount"    : "1111111",
+        }
+
+        result = VirtualAccountServices(virtual_account).update(params)
+        self.assertTrue(result["data"])

@@ -290,6 +290,7 @@ class TestWalletRoutes(BaseTestCase):
         access_token = response["access_token"]
 
         result = self.create_user(params, access_token)
+        print(result)
         response = result.get_json()["data"]
 
         return access_token, response["user_id"]
@@ -356,7 +357,7 @@ class TestWalletRoutes(BaseTestCase):
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
-        self.assertEqual(response["error"], "WALLET_ALREADY_EXISTED")
+        self.assertEqual(response["error"], "DUPLICATE_WALLET")
         self.assertTrue(response["message"])
 
     def test_create_wallet_serialize_error(self):
@@ -399,18 +400,6 @@ class TestWalletRoutes(BaseTestCase):
         response = result.get_json()
 
         self.assertTrue(response["wallet"])
-
-    def test_get_wallet_info_not_found(self):
-        """ GET_WALLET_INFO CASE 2 : Failed get wallet information because
-        error not found"""
-        access_token, user_id = self._create_dummy_user()
-
-        result = self.get_wallet_info("12345", access_token)
-        response = result.get_json()
-
-        self.assertEqual(result.status_code, 404) # not found
-        self.assertEqual(response["error"], "WALLET_NOT_FOUND")
-        self.assertTrue(response["message"])
 
     """ 
         REMOVE WALLET
@@ -469,17 +458,6 @@ class TestWalletRoutes(BaseTestCase):
         self.assertEqual(response["error"], "ERROR_REMOVING_WALLET")
         self.assertTrue(response["message"])
 
-    def test_remove_wallet_not_found(self):
-        """ REMOVE WALLET CASE 3 : Failed remove wallet not found"""
-        access_token, user_id = self._create_dummy_user()
-
-        result = self.remove_wallet("12345", access_token)
-        response = result.get_json()
-
-        self.assertEqual(result.status_code, 404)
-        self.assertEqual(response["error"], "WALLET_NOT_FOUND")
-        self.assertTrue(response["message"])
-
     """
         GET BALANCE
     """
@@ -502,19 +480,6 @@ class TestWalletRoutes(BaseTestCase):
         result = self.get_balance(wallet_id, access_token)
         response = result.get_json()
         self.assertTrue(response["id"])
-
-    def test_get_balance_wallet_not_found(self):
-        """ GET_BALANCE CASE 2 : check wallet balance information but with
-        invalid wallet"""
-        access_token, user_id = self._create_dummy_user()
-
-        wallet_id = "1233232"
-        result = self.get_balance(wallet_id, access_token)
-        response = result.get_json()
-
-        self.assertEqual(result.status_code, 404) # not found
-        self.assertEqual(response["error"], "WALLET_NOT_FOUND")
-        self.assertTrue(response["message"])
 
     """
         GET TRANSACTIONS
@@ -726,30 +691,6 @@ class TestWalletRoutes(BaseTestCase):
         result = self.update_pin(wallet_id, params, access_token)
         self.assertEqual(result.status_code, 422)
 
-    def test_update_wallet_not_found(self):
-        """ CASE 4 UPDATE PIN : wallet not found """
-        access_token, user_id = self._create_dummy_user()
-
-        params = {
-            "access_token" : access_token,
-            "label" : "wallet label",
-            "pin" : "123456"
-        }
-
-        result = self.create_wallet(params, access_token)
-        self.assertEqual(result.status_code, 201)
-
-        response = result.get_json()
-        wallet_id = response["data"]["wallet_id"]
-
-        params = {
-            "old_pin"    : "123456",
-            "pin"        : "123456",
-            "confirm_pin": "123456",
-        }
-        result = self.update_pin("123455", params, access_token)
-        self.assertEqual(result.status_code, 404)
-
     """
         TRANSFER 
     """
@@ -939,51 +880,6 @@ class TestWalletRoutes(BaseTestCase):
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
 
-    def test_transfer_serialize_error(self):
-        """ CASE 5 Transfer : transfer serialize error"""
-        access_token, user_id = self._create_dummy_user()
-
-        params = {
-            "access_token" : access_token,
-            "label" : "wallet label",
-            "pin" : "123456"
-        }
-
-        result = self.create_wallet(params, access_token)
-        self.assertEqual(result.status_code, 201)
-
-        response = result.get_json()
-        source = response["data"]["wallet_id"]
-
-        # inject balance
-        wallet = Wallet.query.get(source)
-        wallet.balance = 99999999
-        db.session.commit()
-
-        access_token, user_id = self._create_dummy_user2()
-
-        params = {
-            "access_token" : access_token,
-            "label" : "jisoo wallet",
-            "pin" : "123456"
-        }
-
-        result = self.create_wallet(params, access_token)
-        self.assertEqual(result.status_code, 201)
-
-        response = result.get_json()
-        destination = response["data"]["wallet_id"]
-
-        params = {
-            "amount" : "-15",
-            "notes" : "some notes",
-            "pin" : "123"
-        }
-
-        result = self.transfer(str(source), str(destination), params,
-                               access_token)
-        self.assertEqual(result.status_code, 400)
-
     """
         QR Code
     """
@@ -1007,15 +903,6 @@ class TestWalletRoutes(BaseTestCase):
         response = result.get_json()
         self.assertEqual(result.status_code, 200)
         self.assertTrue(response["qr_string"])
-
-    def test_get_qr_wallet_not_found(self):
-        """ GET_QR CASE 2 : wallet not found """
-        access_token, user_id = self._create_dummy_user()
-
-        result = self.get_qr("12312312", access_token)
-        response = result.get_json()
-        self.assertEqual(result.status_code, 404)
-
     """
         FOrgot pin
     """

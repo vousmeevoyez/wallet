@@ -9,9 +9,7 @@ from app.api.user.modules.bank_account_services import BankAccountServices
 
 from app.api.models import *
 
-from app.api.exception.user import UserDuplicateError
-from app.api.exception.user import UserNotFoundError
-from app.api.exception.user import OldRecordError
+from app.api.error.http import *
 
 from app.config import config
 
@@ -55,7 +53,7 @@ class TestUserServices(BaseTestCase):
             "role_id"     : 1,
         }
         user = User(**params)
-        with self.assertRaises(UserDuplicateError):
+        with self.assertRaises(UnprocessableEntity):
             result = UserServices.add(user, "password", "123456")
 
     def test_user_list_success(self):
@@ -84,7 +82,7 @@ class TestUserServices(BaseTestCase):
 
     def test_user_info_failed_record_not_found(self):
         """ test get single user info but user not found"""
-        with self.assertRaises(UserNotFoundError):
+        with self.assertRaises(RequestNotFound):
             result = UserServices(123).info()
 
     def test_remove_user_success(self):
@@ -106,12 +104,12 @@ class TestUserServices(BaseTestCase):
         result = UserServices(user_id).remove()
         self.assertEqual(result[1], 204) # no content
 
-        with self.assertRaises(UserNotFoundError):
+        with self.assertRaises(RequestNotFound):
             result = UserServices(user_id).info()
 
     def test_remove_user_failed_not_found(self):
         """ test removing user but not found"""
-        with self.assertRaises(UserNotFoundError):
+        with self.assertRaises(RequestNotFound):
             result = UserServices("1234").info()
 
     def test_update_user_success(self):
@@ -166,5 +164,5 @@ class TestUserServices(BaseTestCase):
             "phone_number": "81212341235",
             "email"       : "jennie@blackpink.com",
         }
-        with self.assertRaises(OldRecordError):
+        with self.assertRaises(UnprocessableEntity):
             result = UserServices(user_id).update(params)

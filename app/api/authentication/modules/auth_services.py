@@ -13,36 +13,27 @@ from app.api.models import User
 from app.api.models import BlacklistToken
 from app.api.models import Wallet
 # exceptions
-from app.api.exception.authentication import EmptyPayloadError
-from app.api.exception.authentication import RevokedTokenError
-from app.api.exception.authentication import SignatureExpiredError
-from app.api.exception.authentication import InvalidTokenError
-from app.api.exception.authentication import TokenError
-from app.api.exception.authentication import InvalidCredentialsError
+from app.api.error.authentication import RevokedTokenError
+from app.api.error.authentication import SignatureExpiredError
+from app.api.error.authentication import InvalidTokenError
+from app.api.error.authentication import EmptyPayloadError
 
-from app.api.exception.user import UserNotFoundError
-from app.api.exception.authentication import FailedRevokedTokenError
-from app.api.exception.general import RecordNotFoundError
+from app.api.error.http import *
 
 # http response
 from app.api.http_response import no_content
 # configuration
 from app.config import config
 
+ERROR_CONFIG = config.Config.ERROR_CONFIG
+
 class AuthServices:
     """ Authentication Services Class"""
 
     @staticmethod
-    def _create_access_token(user):
+    def _create_token(user, token_type):
         """ get user object and then create access token"""
-        token = User.encode_token("ACCESS", user.id)
-        return token.decode()
-    #end def
-
-    @staticmethod
-    def _create_refresh_token(user):
-        """ get user object and then create refresh token"""
-        token = User.encode_token("REFRESH", user.id)
+        token = User.encode_token(token_type, user.id)
         return token.decode()
     #end def
 
@@ -57,21 +48,26 @@ class AuthServices:
         try:
             payload = User.decode_token(token)
         except RevokedTokenError:
-            raise TokenError("Revoked Token")
+            raise Unauthorized(ERROR_CONFIG["REVOKED_TOKEN"]["TITLE"],
+                                  ERROR_CONFIG["REVOKED_TOKEN"]["MESSAGE"])
         except SignatureExpiredError as error:
             #print(error)
-            raise TokenError("Signature Expired")
+            raise Unauthorized(ERROR_CONFIG["SIGNATURE_EXPIRED"]["TITLE"],
+                                  ERROR_CONFIG["SIGNATURE_EXPIRED"]["MESSAGE"])
         except InvalidTokenError as error:
             #print(error)
-            raise TokenError("Invalid Token")
+            raise Unauthorized(ERROR_CONFIG["INVALID_TOKEN"]["TITLE"],
+                                  ERROR_CONFIG["INVALID_TOKEN"]["MESSAGE"])
         except EmptyPayloadError:
-            raise TokenError("Empty Payload")
+            raise Unauthorized(ERROR_CONFIG["EMPTY_PAYLOAD"]["TITLE"],
+                                  ERROR_CONFIG["EMPTY_PAYLOAD"]["MESSAGE"])
 
         # fetch user information
         # convert user id to user object here
         user = User.query.filter_by(id=payload["sub"]).first()
         if user is None:
-            raise RecordNotFoundError("User not Found", "USER_NOT_FOUND")
+            raise RequestNotFound(ERROR_CONFIG["USER_NOT_FOUND"]["TITLE"],
+                                  ERROR_CONFIG["USER_NOT_FOUND"]["MESSAGE"])
 
         response = {
             "token_type": payload["type"],
@@ -91,16 +87,18 @@ class AuthServices:
 
         user = User.query.filter_by(username=username).first()
         if user is None:
-            raise UserNotFoundError
+            raise RequestNotFound(ERROR_CONFIG["USER_NOT_FOUND"]["TITLE"],
+                                  ERROR_CONFIG["USER_NOT_FOUND"]["MESSAGE"])
         #end if
 
         if user.check_password(password) is not True:
-            raise InvalidCredentialsError("Incorrect Credentials")
+            raise Unauthorized(ERROR_CONFIG["INVALID_CREDENTIALS"]["TITLE"],
+                               ERROR_CONFIG["INVALID_CREDENTIALS"]["MESSAGE"])
         #end if
 
         # generate token here
-        access_token = self._create_access_token(user)
-        refresh_token = self._create_refresh_token(user)
+        access_token = self._create_token(user, "ACCESS")
+        refresh_token = self._create_token(user, "REFRESH")
 
         response = {
             "access_token" : access_token,
@@ -115,7 +113,7 @@ class AuthServices:
             args:
                 current_user -- get current user id
         """
-        access_token = self._create_access_token(current_user)
+        access_token = self._create_token(current_user, "REFRESH")
         response = {
             "access_token" : access_token,
         }
@@ -128,20 +126,13 @@ class AuthServices:
             args:
                 token -- access token
         """
-        # decode the token first
-        try:
-            payload = self._current_login_user(token)
-        except TokenError as error:
-            # catch and re rise to be captured by error handler
-            raise TokenError(error)
-        #end try
         blacklist_token = BlacklistToken(token=token)
-
         try:
             db.session.add(blacklist_token)
             db.session.commit()
         except IntegrityError as error:
-            raise FailedRevokedTokenError("Failed logging out token", error)
+            raise UnprocessableEntity("REVOKE_FAILED", "Revoke Access Token \
+                                      failed")
         #end try
         return no_content()
     #end def
@@ -152,21 +143,13 @@ class AuthServices:
             args:
                 token -- refresh token
         """
-        # decode the token first
-        try:
-            payload = self._current_login_user(token)
-        except TokenError as error:
-            # catch and re rise to be captured by error handler
-            raise TokenError(error)
-        #end try
-
         blacklist_token = BlacklistToken(token=token)
-
         try:
             db.session.add(blacklist_token)
             db.session.commit()
         except IntegrityError as error:
-            raise FailedRevokedTokenError("Failed logging out token", error)
+            raise UnprocessableEntity("REVOKE_FAILED", "Revoke Refresh Token \
+                                      failed")
         #end try
         return no_content()
     #end def

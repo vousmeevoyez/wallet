@@ -10,9 +10,9 @@ from app.api.models import *
 
 from app.api.common.helper import Sms
 
-from app.api.exception.common import SmsError
+from app.api.common.modules.sms_services import SmsError
 
-from app.api.exception.wallet import *
+from app.api.error.http import *
 
 from app.api.wallet.modules.wallet_services import WalletServices
 
@@ -46,7 +46,7 @@ class TestWalletServices(BaseTestCase):
 
     def test_wallet_info_failed_not_found(self):
         """ test method for get wallet info but not found """
-        with self.assertRaises(WalletNotFoundError):
+        with self.assertRaises(RequestNotFound):
             result = WalletServices("1234").info()
 
     def test_wallet_remove_failed_only_wallet(self):
@@ -56,7 +56,7 @@ class TestWalletServices(BaseTestCase):
         response = self._create_wallet()
         wallet_id = response["wallet_id"]
 
-        with self.assertRaises(OnlyWalletError):
+        with self.assertRaises(UnprocessableEntity):
             result = WalletServices(wallet_id).remove()
 
     def test_wallet_balance(self):
@@ -70,7 +70,7 @@ class TestWalletServices(BaseTestCase):
 
     def test_wallet_not_found(self):
         """ test method for checking wallet balance but not found"""
-        with self.assertRaises(WalletNotFoundError):
+        with self.assertRaises(RequestNotFound):
             result = WalletServices("123456").check_balance()
 
     def test_wallet_in_history(self):
@@ -115,7 +115,7 @@ class TestWalletServices(BaseTestCase):
 
     def test_send_forgot_otp_failed_wallet_not_found(self):
         """ test method for sending forgot otp sms but wallet id is not found"""
-        with self.assertRaises(WalletNotFoundError):
+        with self.assertRaises(RequestNotFound):
             result = WalletServices("1234").send_forgot_otp()
 
     @patch.object(Sms, "send")
@@ -129,7 +129,7 @@ class TestWalletServices(BaseTestCase):
         result = WalletServices(wallet_id).send_forgot_otp()
         self.assertTrue(result[0]["data"]["otp_key"])
 
-        with self.assertRaises(PendingOtpError):
+        with self.assertRaises(UnprocessableEntity):
             result = WalletServices(wallet_id).send_forgot_otp()
 
     @patch.object(Sms, "send")
@@ -139,8 +139,8 @@ class TestWalletServices(BaseTestCase):
         response = self._create_wallet()
         wallet_id = response["wallet_id"]
 
-        mock_send_sms.side_effect = SmsError
-        with self.assertRaises(WalletOtpError):
+        mock_send_sms.side_effect = SmsError(Mock())
+        with self.assertRaises(UnprocessableEntity):
             result = WalletServices(wallet_id).send_forgot_otp()
 
     def test_get_qr(self):
@@ -149,7 +149,7 @@ class TestWalletServices(BaseTestCase):
         wallet_id = response["wallet_id"]
 
         result = WalletServices(wallet_id).get_qr()
-        self.assertTrue(result["data"]["qr_string"])
+        self.assertTrue(result["qr_string"])
 
     @patch.object(Sms, "send")
     def test_verify_forgot_otp(self, mock_send_sms):
@@ -191,7 +191,7 @@ class TestWalletServices(BaseTestCase):
         })
         self.assertEqual(result[1], 204)
 
-        with self.assertRaises(OtpVerifiedError):
+        with self.assertRaises(UnprocessableEntity):
             result = WalletServices(wallet_id).verify_forgot_otp({
                 "otp_code" : otp_code,
                 "otp_key"  : otp_key,
@@ -211,7 +211,7 @@ class TestWalletServices(BaseTestCase):
         otp_code = result[0]["data"]["otp_code"]
         otp_key = result[0]["data"]["otp_key"]
 
-        with self.assertRaises(InvalidOtpError):
+        with self.assertRaises(UnprocessableEntity):
             result = WalletServices(wallet_id).verify_forgot_otp({
                 "otp_code" : "1234",
                 "otp_key"  : otp_key,
@@ -231,7 +231,7 @@ class TestWalletServices(BaseTestCase):
         otp_code = result[0]["data"]["otp_code"]
         otp_key = result[0]["data"]["otp_key"]
 
-        with self.assertRaises(OtpNotFoundError):
+        with self.assertRaises(UnprocessableEntity):
             result = WalletServices(wallet_id).verify_forgot_otp({
                 "otp_code" : "1234",
                 "otp_key"  : "46464654654654",

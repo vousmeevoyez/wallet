@@ -12,25 +12,30 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api import db
 #helper
-from app.api.bank.handler import BankHandler
 from app.api.common.helper import QR
 #models
 from app.api.models import *
 # exceptions
-from app.api.exception.wallet import *
-
-from app.api.exception.bank import BankAccountNotFoundError
-
-from app.api.exception.common import DecryptError
+from app.api.error.http import *
 #ttp errors
 from app.api.http_response import accepted
 from app.api.http_response import no_content
 # configuration
 from app.config import config
+# task
+from task.bank.tasks import TransactionTask
 
+TRANSACTION_LOG_CONFIG = config.Config.TRANSACTION_LOG_CONFIG
 TRANSACTION_CONFIG = config.Config.TRANSACTION_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 BNI_OPG_CONFIG    = config.Config.BNI_OPG_CONFIG
+ERROR_CONFIG = config.Config.ERROR_CONFIG
+
+class TransactionError(Exception):
+    """ raised when something occured on creating transaction """
+    def __init__(self, original_exception):
+        super().__init__(original_exception)
+        self.original_exception = original_exception
 
 class TransferServices:
     """ Transfer Services"""
@@ -38,30 +43,36 @@ class TransferServices:
     def __init__(self, source, pin, destination=None):
         source_wallet = Wallet.query.filter_by(id=source).with_for_update().first()
         if source_wallet is None:
-            raise WalletNotFoundError("Source")
+            raise RequestNotFound(ERROR_CONFIG["WALLET_NOT_FOUND"]["TITLE"],
+                                  ERROR_CONFIG["WALLET_NOT_FOUND"]["MESSAGE"])
         #end if
 
         if source_wallet.is_unlocked() is False:
-            raise WalletLockedError("Source")
+            raise UnprocessableEntity(ERROR_CONFIG["WALLET_LOCKED"]["TITLE"],
+                                      ERROR_CONFIG["WALLET_LOCKED"]["MESSAGE"])
         #end if
 
         if source_wallet.check_pin(pin) is not True:
-            raise IncorrectPinError
+            raise UnprocessableEntity(ERROR_CONFIG["INCORRECT_PIN"]["TITLE"],
+                                      ERROR_CONFIG["INCORRECT_PIN"]["MESSAGE"])
         #end if
 
         if destination is not None:
             destination_wallet = \
             Wallet.query.filter_by(id=destination).with_for_update().first()
             if destination_wallet is None:
-                raise WalletNotFoundError("Destination")
+                raise RequestNotFound(ERROR_CONFIG["WALLET_NOT_FOUND"]["TITLE"],
+                                      ERROR_CONFIG["WALLET_NOT_FOUND"]["MESSAGE"])
             #end if
 
             if destination_wallet.is_unlocked() is False:
-                raise WalletLockedError("Destination")
+                raise UnprocessableEntity(ERROR_CONFIG["WALLET_LOCKED"]["TITLE"],
+                                          ERROR_CONFIG["WALLET_LOCKED"]["MESSAGE"])
             #end if
 
             if destination_wallet == source_wallet:
-                raise InvalidDestinationError
+                raise UnprocessableEntity(ERROR_CONFIG["INVALID_DESTINATION"]["TITLE"],
+                                          ERROR_CONFIG["INVALID_DESTINATION"]["MESSAGE"])
             #end if
 
             # set attributes here
@@ -76,7 +87,6 @@ class TransferServices:
             Function to create payment
             args:
                 params --
-                session -- optional
         """
         # build payment object
         payment = Payment(**params)
@@ -95,20 +105,13 @@ class TransferServices:
         transfer_notes = params["notes"]
 
         if float(amount) > float(self.source.balance):
-            raise InsufficientBalanceError(self.source.balance, amount)
+            raise UnprocessableEntity(ERROR_CONFIG["INSUFFICIENT_BALANCE"]["TITLE"],
+                                      ERROR_CONFIG["INSUFFICIENT_BALANCE"]["MESSAGE"])
         #end if
 
-        # create master transaction here that track every transaction
-        master_transaction = MasterTransaction(
-            source=self.source.id,
-            destination=self.destination.id,
-            amount=amount
-        )
-        try:
-            db.session.add(master_transaction)
-        except IntegrityError:
-            db.session.rollback()
-        #end def
+        # create log to record transaction state
+        log = Log()
+        db.session.add(log)
 
         # create debit payment
         payment = {
@@ -119,20 +122,37 @@ class TransferServices:
         }
 
         debit_payment_id = self.create_payment(payment)
+        log.payment_id = debit_payment_id
+        # commit log here and rollback if something wrong
+        try:
+            db.session.commit()
+        except TransactionError as error:
+            print(error)
+            db.session.rollback()
+            # still commit the master transaction
+            raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
+                                      ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
 
         # debit transaction
         try:
             debit_trx = self.debit_transaction(self.source,
-                                                debit_payment_id, amount,
-                                                "TRANSFER_IN", transfer_notes)
+                                               debit_payment_id, amount,
+                                               "TRANSFER_IN", transfer_notes)
         except TransactionError as error:
+            print(error)
             db.session.rollback()
             # still commit the master transaction
-            raise TransferError(error)
+            raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
+                                      ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
         #end if
 
-        # append transaction id
-        master_transaction.debit_transaction_id = debit_trx.id
+        # should send queue here
+        result = TransactionTask().transfer.delay(debit_payment_id)
+        print(result)
+
+        # create log to record transaction state
+        log = Log()
+        db.session.add(log)
 
         payment = {
             "payment_type"  : True,# credit
@@ -142,6 +162,17 @@ class TransferServices:
         }
 
         credit_payment_id = self.create_payment(payment)
+        log.payment_id = credit_payment_id
+
+        try:
+            db.session.commit()
+        except IntegrityError as error:
+            print(error)
+            db.session.rollback()
+            raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
+                                      ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
+        #end try
+
         # credit transaction
         try:
             credit_trx = self.credit_transaction(self.destination,
@@ -149,13 +180,16 @@ class TransferServices:
                                                  "RECEIVE_TRANSFER",
                                                  transfer_notes)
         except TransactionError as error:
+            print(error)
             db.session.rollback()
-            raise TransferError(error)
+            raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
+                                      ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
         #end if
 
-        master_transaction.credit_transaction_id = credit_trx.id
+        # should send queue here
+        result = TransactionTask().transfer.delay(credit_payment_id)
+        print(result)
 
-        db.session.commit()
         return accepted()
     #end def
 
@@ -166,26 +200,20 @@ class TransferServices:
         transfer_notes = params["notes"]
 
         if float(amount) > float(self.source.balance):
-            raise InsufficientBalanceError(self.source.balance, amount)
+            raise UnprocessableEntity(ERROR_CONFIG["INSUFFICIENT_BALANCE"]["TITLE"],
+                                      ERROR_CONFIG["INSUFFICIENT_BALANCE"]["MESSAGE"])
         #end if
 
         # fetch bank information from bank account id here
         bank_account = BankAccount.query.filter_by(id=bank_account_id).first()
         if bank_account is None:
-            raise BankAccountNotFoundError
+            raise RequestNotFound(ERROR_CONFIG["BANK_ACC_NOT_FOUND"]["TITLE"],
+                                  ERROR_CONFIG["BANK_ACC_NOT_FOUND"]["MESSAGE"])
 
-        # create master transaction here that track every transaction
-        master_transaction = MasterTransaction(
-            source=self.source.id,
-            destination=bank_account_id,
-            amount=amount
-        )
-        try:
-            db.session.add(master_transaction)
-        except IntegrityError as error:
-            db.session.rollback()
-            raise TransferError(error)
-        #end def
+
+        # create log to record transaction state
+        log = Log()
+        db.session.add(log)
 
         # create debit payment
         payment = {
@@ -196,38 +224,36 @@ class TransferServices:
         }
 
         debit_payment_id = self.create_payment(payment)
+        log.payment_id = debit_payment_id
+        # commit log here and rollback if something wrong
+        try:
+            db.session.commit()
+        except TransactionError as error:
+            print(error)
+            db.session.rollback()
+            # still commit the master transaction
+            raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
+                                      ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
+
         # debit transaction
         try:
             debit_trx = self.debit_transaction(self.source,
                                                 debit_payment_id, amount,
                                                 "TRANSFER_OUT", transfer_notes)
         except TransactionError as error:
+            print(error)
             db.session.rollback()
             # still commit the master transaction
-            raise TransferError(error)
+            raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
+                                      ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
         #end if
-
-        # append transaction id
-        master_transaction.debit_transaction_id = debit_trx.id
-
-        master_transaction.credit_transaction_id = None
-
-        # get information needed for transfer
-        payment_payload = {
-            "amount"         : amount,
-            "source_account" : BNI_OPG_CONFIG["MASTER_ACCOUNT"],
-            "account_no"     : bank_account.account_no,
-            "bank_code"      : bank_account.bank.code,
-        }
-        db.session.commit()
+        # send queue here
         return accepted()
     #end def
 
     @staticmethod
     def debit_transaction(wallet, payment_id, amount, flag,
-                           transfer_notes=None):
-        amount = -float(amount)
-
+                          transfer_notes=None):
         # fetch transaction type from config
         transaction_type = TRANSACTION_CONFIG["TYPES"][flag]
 

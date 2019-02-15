@@ -6,19 +6,19 @@
 #pylint: disable=import-error
 import unittest
 from unittest.mock import Mock, patch
-from datetime import datetime
-from app.test.base        import BaseTestCase
-from app.api              import db
-from app.api.models       import Wallet, ExternalLog
-from app.api.bank.bni.helper import VirtualAccount as VirtualAccountHelper
-from app.api.bank.bni.helper import CoreBank as CoreBankHelper
-from app.api.bank.bni.helper import BNI
-from app.api.bank.bni.utility import remote_call
 
-from app.api.exception.exceptions import ApiError
-from app.api.exception.bank.exceptions import ServicesError
-from app.api.exception.bank.exceptions import VirtualAccountError
-from app.api.exception.bank.exceptions import InhouseTransferError
+from datetime import datetime
+
+from task.test.base import BaseTestCase
+from app.api import db
+from app.api.models import Wallet
+from app.api.models import ExternalLog
+
+from task.bank.BNI.helper import VirtualAccount as VirtualAccountHelper
+from task.bank.BNI.helper import CoreBank as CoreBankHelper
+from task.bank.BNI.utility import remote_call
+
+from task.bank.exceptions.general import *
 
 class TestMockVirtualAccountHelper(BaseTestCase):
     """ This is class to test by mocking all response for e collection helper"""
@@ -36,8 +36,8 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             "customer_name"   : "Jennie",
             "customer_phone"  : "081234123111",
             "datetime_expired": datetime.now(),
-            "virtual_account_id": "12345678",
-            "transaction_id"    : "12345678",
+            "virtual_account" : "12345678",
+            "transaction_id"  : "12345678",
         }
 
         # expected value from BNI server
@@ -50,7 +50,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         mock_post.return_value = expected_value
 
         result = VirtualAccountHelper().create_va("CREDIT", data)
-        self.assertEqual(result["status"], "SUCCESS") # data already existed
+        self.assertEqual(result["status"], "000") # data already existed
 
     @patch.object(VirtualAccountHelper, '_post')
     def test_mock_create_va_failed(self, mock_post):
@@ -64,15 +64,15 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             "customer_name"   : "Jennie",
             "customer_phone"  : "081234123111",
             "datetime_expired": datetime.now(),
-            "virtual_account_id": "12345678",
-            "transaction_id"    : "12345678",
+            "virtual_account" : "12345678",
+            "transaction_id"  : "12345678",
         }
 
 
         # replace with mock response here
-        mock_post.side_effect = ServicesError("some error", Mock())
+        mock_post.side_effect = RemoteCallError(Mock())
 
-        with self.assertRaises(VirtualAccountError):
+        with self.assertRaises(ApiError):
             result = VirtualAccountHelper().create_va("CREDIT", data)
 
     @patch.object(VirtualAccountHelper, '_post')
@@ -87,8 +87,8 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             "customer_name"   : "Jennie",
             "customer_phone"  : "081234123111",
             "datetime_expired": datetime.now(),
-            "virtual_account_id": "12345678",
-            "transaction_id"    : "12345678",
+            "virtual_account" : "12345678",
+            "transaction_id"  : "12345678",
         }
 
         # expected value from BNI
@@ -101,7 +101,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         mock_post.return_value = expected_value
 
         result = VirtualAccountHelper().create_va("CARDLESS", data)
-        self.assertEqual(result["status"], "SUCCESS") # data already existed
+        self.assertEqual(result["status"], "000") # data already existed
 
     @patch.object(VirtualAccountHelper, '_post')
     def test_mock_create_va_cardless_failed(self, mock_post):
@@ -115,14 +115,14 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             "customer_name"   : "Jennie",
             "customer_phone"  : "081234123111",
             "datetime_expired": datetime.now(),
-            "virtual_account_id": "12345678",
+            "virtual_account": "12345678",
             "transaction_id"    : "12345678",
         }
 
         # replace with mock response here
-        mock_post.side_effect = ServicesError("some error", Mock())
+        mock_post.side_effect = RemoteCallError(Mock())
 
-        with self.assertRaises(VirtualAccountError):
+        with self.assertRaises(ApiError):
             result = VirtualAccountHelper().create_va("CARDLESS", data)
 
     @patch.object(VirtualAccountHelper, '_post')
@@ -166,7 +166,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         mock_post.return_value = expected_value
 
         result = VirtualAccountHelper().get_inquiry("CREDIT", data)
-        self.assertEqual(result["status"], "SUCCESS")
+        self.assertEqual(result["status"], "000")
 
     @patch.object(VirtualAccountHelper, '_post')
     def test_mock_get_inquiry_failed(self, mock_post):
@@ -180,9 +180,9 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         }
 
         # replace with mock response here
-        mock_post.side_effect = ServicesError("some error", Mock())
+        mock_post.side_effect = RemoteCallError(Mock())
 
-        with self.assertRaises(VirtualAccountError):
+        with self.assertRaises(ApiError):
             result = VirtualAccountHelper().get_inquiry("CREDIT", data)
 
     @patch.object(VirtualAccountHelper, '_post')
@@ -213,7 +213,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         mock_post.return_value = expected_value
 
         result = VirtualAccountHelper().update_va("CREDIT", data)
-        self.assertEqual(result["status"], "SUCCESS")
+        self.assertEqual(result["status"], "000")
 
     @patch.object(VirtualAccountHelper, '_post')
     def test_mock_update_va_failed(self, mock_post):
@@ -228,9 +228,9 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             "datetime_expired" : datetime.now(),
         }
 
-        mock_post.side_effect = ServicesError("some error", Mock())
+        mock_post.side_effect = RemoteCallError(Mock())
 
-        with self.assertRaises(VirtualAccountError):
+        with self.assertRaises(ApiError):
             result = VirtualAccountHelper().update_va("CREDIT", data)
 
     @patch.object(remote_call, "post")
@@ -274,8 +274,8 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             'billing_type': 'j',
         }
 
-        mock_post.side_effect = ApiError("test", Mock())
-        with self.assertRaises(ServicesError):
+        mock_post.side_effect = ServicesFailed("some error", Mock())
+        with self.assertRaises(RemoteCallError):
             result = VirtualAccountHelper()._post(api_name, resource_type, payload)
 
     @patch.object(remote_call, "post")
@@ -318,8 +318,8 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             'description': '',
             'billing_type': 'j',
         }
-        mock_post.side_effect = ApiError("test", Mock())
-        with self.assertRaises(ServicesError):
+        mock_post.side_effect = ServicesFailed("some error", Mock())
+        with self.assertRaises(RemoteCallError):
             result = VirtualAccountHelper()._post(api_name, resource_type, payload)
 #end class
 
@@ -370,7 +370,7 @@ class TestMockCoreBankHelper(BaseTestCase):
         mock_post.return_value.status_code = 400
         mock_post.return_value.json.return_value = expected_value
 
-        with self.assertRaises(ApiError):
+        with self.assertRaises(ServicesFailed):
             response = CoreBankHelper()._post("GET_TOKEN", payload)
     #end def
 
@@ -477,7 +477,7 @@ class TestMockCoreBankHelper(BaseTestCase):
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        with self.assertRaises(ServicesError):
+        with self.assertRaises(ApiError):
             response = CoreBankHelper(access_token).get_balance({"account_no" : "12345"})
     #end def
 
@@ -551,7 +551,7 @@ class TestMockCoreBankHelper(BaseTestCase):
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        with self.assertRaises(ServicesError):
+        with self.assertRaises(ApiError):
             response = CoreBankHelper(access_token).get_inhouse_inquiry({"account_no" : "12345"})
     #end def
 
@@ -682,7 +682,7 @@ class TestMockCoreBankHelper(BaseTestCase):
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        with self.assertRaises(ServicesError):
+        with self.assertRaises(ApiError):
             response = CoreBankHelper(access_token).do_payment(data)
     #end def
 
@@ -765,7 +765,7 @@ class TestMockCoreBankHelper(BaseTestCase):
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        with self.assertRaises(ServicesError):
+        with self.assertRaises(ApiError):
             response = CoreBankHelper(access_token).get_payment_status(data)
 
     @patch("requests.post")
@@ -846,7 +846,7 @@ class TestMockCoreBankHelper(BaseTestCase):
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        with self.assertRaises(ServicesError):
+        with self.assertRaises(ApiError):
             response = CoreBankHelper(access_token).get_interbank_inquiry(data)
     #end def
 
@@ -933,7 +933,7 @@ class TestMockCoreBankHelper(BaseTestCase):
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        with self.assertRaises(ServicesError):
+        with self.assertRaises(ApiError):
             response = CoreBankHelper(access_token).get_interbank_payment(data)
     #end def
 
@@ -1015,59 +1015,9 @@ class TestMockCoreBankHelper(BaseTestCase):
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        with self.assertRaises(InhouseTransferError):
+        with self.assertRaises(ApiError):
             CoreBankHelper(access_token).transfer(data)
     #end def
 #end class
-
-class TestBNI(BaseTestCase):
-    """ Test BNI Class"""
-
-    @patch.object(VirtualAccountHelper, "_post")
-    def test_call_create_cardless_va(self, mock_post):
-        """ test function to create cardless va using BNI Dispatcher"""
-        data = {
-            "amount"            : "1500",
-            "name"              : "Jennie",
-            "msisdn"            : "081234123111",
-            "datetime_expired"  : datetime.now(),
-            "virtual_account_id": "12345678",
-            "transaction_id"    : "12345678",
-        }
-
-        # expected value from BNI server
-        expected_value = {
-            "status" : "000",
-            "data" : {'trx_id': "1234", 'virtual_account': "000211"}
-        }
-
-        # replace return value using expected value here
-        mock_post.return_value = expected_value
-        result = BNI().call("CREATE_VA_CARDLESS", data)
-        self.assertEqual(result["status"], "SUCCESS")
-
-    @patch.object(VirtualAccountHelper, "_post")
-    def test_call_create_va(self, mock_post):
-        """ test function to create va using BNI Dispatcher"""
-        data = {
-            "amount"            : "1500",
-            "name"              : "Jennie",
-            "msisdn"            : "081234123111",
-            "datetime_expired"  : datetime.now(),
-            "virtual_account_id": "12345678",
-            "transaction_id"    : "12345678",
-        }
-
-        # expected value from BNI server
-        expected_value = {
-            "status" : "000",
-            "data" : {'trx_id': "1234", 'virtual_account': "000211"}
-        }
-
-        # replace return value using expected value here
-        mock_post.return_value = expected_value
-        result = BNI().call("CREATE_VA", data)
-        self.assertEqual(result["status"], "SUCCESS")
-
 if __name__ == "__main__":
     unittest.main(verbosity=2)

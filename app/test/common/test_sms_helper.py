@@ -6,11 +6,12 @@ import requests
 
 from app.api.models import ExternalLog
 
-from app.api.exception.general import ApiError
 from app.test.base import BaseTestCase
 
 from app.api.common.modules.sms_services import SmsServices
 from app.api.common.modules.sms_services import SmsError
+from app.api.common.modules.sms_services import ApiError
+
 
 def raise_api_error(*args):
     """ function to raise api error """

@@ -17,20 +17,19 @@ from app.api.serializer import BankAccountSchema
 from app.api.http_response import created
 from app.api.http_response import no_content
 
-from app.api.exception.user import UserNotFoundError
-from app.api.exception.bank import BankNotFoundError
-from app.api.exception.bank import BankAccountNotFoundError
-from app.api.exception.bank import DuplicateBankAccountError
-
+from app.api.error.http import *
 # configuration
 from app.config import config
+
+ERROR_CONFIG = config.Config.ERROR_CONFIG
 
 class BankAccountServices:
     """ Bank Account Services Class"""
     def __init__(self, user_id, bank_code=None, bank_account_id=None):
         user_record = User.query.filter_by(id=user_id).first()
         if user_record is None:
-            raise UserNotFoundError
+            raise RequestNotFound(ERROR_CONFIG["USER_NOT_FOUND"]["TITLE"],
+                                  ERROR_CONFIG["USER_NOT_FOUND"]["MESSAGE"])
         #end if
 
         # get bank id from bank code
@@ -39,7 +38,8 @@ class BankAccountServices:
             bank_record = Bank.query.filter_by(code=bank_code).first()
 
             if bank_record is None:
-                raise BankNotFoundError
+                raise RequestNotFound(ERROR_CONFIG["BANK_NOT_FOUND"]["TITLE"],
+                                      ERROR_CONFIG["BANK_NOT_FOUND"]["MESSAGE"])
             #end if
         #end if
 
@@ -48,7 +48,8 @@ class BankAccountServices:
             bank_account_record = BankAccount.query.filter_by(user_id=user_id,
                                                               id=bank_account_id).first()
             if bank_account_record is None:
-                raise BankAccountNotFoundError
+                raise RequestNotFound(ERROR_CONFIG["BANK_ACC_NOT_FOUND"]["TITLE"],
+                                      ERROR_CONFIG["BANK_ACC_NOT_FOUND"]["MESSAGE"])
         #end if
 
         self.user = user_record
@@ -65,7 +66,8 @@ class BankAccountServices:
             db.session.commit()
         except IntegrityError as error:
             db.session.rollback()
-            raise DuplicateBankAccountError
+            raise UnprocessableEntity(ERROR_CONFIG["DUPLICATE_BANK_ACCOUNT"]["TITLE"],
+                                      ERROR_CONFIG["DUPLICATE_BANK_ACCOUNT"]["MESSAGE"])
         #end try
         response = {
             "bank_account_id" : bank_account.id

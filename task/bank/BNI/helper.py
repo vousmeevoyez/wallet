@@ -23,15 +23,9 @@ from app.api.models import ExternalLog
 # configuration
 from app.config import config
 # exceptions
-from task.general import ApiError
-from app.api.exception.bni.exceptions import ServicesError
-from app.api.exception.bni.exceptions import VirtualAccountError
-from app.api.exception.bni.exceptions import TokenError
-from app.api.exception.bni.exceptions import InvalidInterbankAccountError
-from app.api.exception.bni.exceptions import InterbankTransferError
-from app.api.exception.bni.exceptions import InhouseTransferError
+from task.bank.exceptions.general import *
 # utility
-from .utility import remote_call
+from task.bank.BNI.utility import remote_call
 
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG
 
@@ -55,12 +49,11 @@ class VirtualAccount:
 
         # assign client in in payload
         payload["client_id"] = client_id
-
         try:
             remote_response = remote_call.post(api_name, self.BASE_URL, client_id,
                                                secret_key, payload)
-        except ApiError as error:
-            raise ServicesError("REMOTE_CALL_FAILED", error)
+        except ServicesFailed as error:
+            raise RemoteCallError(error)
         return remote_response
     #end def
 
@@ -72,11 +65,6 @@ class VirtualAccount:
                 params -- payload
                 session -- database session (optional)
         """
-        response = {
-            "status" : "SUCCESS",
-            "data"   : {}
-        }
-
         if resource_type == "CREDIT":
             api_type = self.BNI_ECOLLECTION_CONFIG["BILLING"]
             billing_type = self.BNI_ECOLLECTION_CONFIG["CREDIT_BILLING_TYPE"]
@@ -92,7 +80,7 @@ class VirtualAccount:
             'type'            : api_type,
             'client_id'       : None, # set client_id in another function
             'trx_id'          : params["transaction_id"],
-            'trx_amount'      : str(params["amount"]),
+            'trx_amount'      : params["amount"],
             'billing_type'    : billing_type,
             'customer_name'   : params["customer_name"],
             'customer_email'  : '',
@@ -108,12 +96,10 @@ class VirtualAccount:
 
         try:
             result = self._post(api_name, resource_type, payload)
-        except ServicesError as error:
-            raise VirtualAccountError("CREATE_VA_FAILED", error)
+        except RemoteCallError as error:
+            raise ApiError(error.original_exception)
         #end try
-
-        response["data"] = result["data"]
-        return response
+        return result
     #end def
 
     def get_inquiry(self, resource_type, params):
@@ -125,24 +111,17 @@ class VirtualAccount:
         """
         api_name = "GET_INQUIRY"
 
-        response = {
-            "status" : "SUCCESS",
-            "data"   : {}
-        }
-
         payload = {
             'type'     : self.BNI_ECOLLECTION_CONFIG["INQUIRY"],
             'client_id': None, # set in another function
             'trx_id'   : params["trx_id"]
         }
-
         try:
             result = self._post(api_name, resource_type, payload)
-        except ServicesError as error:
-            raise VirtualAccountError("GET_INQUIRY_FAILED", error)
+        except RemoteCallError as error:
+            raise ApiError(error.original_exception)
         #end try
-        response["data"] = result["data"]
-        return response
+        return result
     #end def
 
     def update_va(self, resource_type, params):
@@ -170,12 +149,10 @@ class VirtualAccount:
 
         try:
             result = self._post(api_name, resource_type, payload)
-        except ServicesError as error:
-            raise VirtualAccountError("UPDATE_VA_FAILED", error)
+        except RemoteCallError as error:
+            raise ApiError(error.original_exception)
         #end try
-
-        response["data"] = result["data"]
-        return response
+        return result
     #end def
 #end class
 
@@ -295,7 +272,7 @@ class CoreBank:
             # when http status code failing we mark the request as fail
             if r.status_code != 200:
                 log.set_status(False) # set as failed request
-                raise ApiError("HTTP_FAILED", resp)
+                raise ServicesFailed("HTTP_FAILED", resp)
             #end if
 
             # SAVE LOG RESPONSE  RESPONE TIME
@@ -308,17 +285,14 @@ class CoreBank:
                 # fail too
                 if response_status is False:
                     log.set_status(False)
-                    raise ApiError("RESPONSE_FAILED", resp)
+                    raise ServicesFailed("RESPONSE_FAILED", resp)
                 #end if
             #end if
             db.session.commit()
 
             response["data"] = resp
         except requests.exceptions.Timeout as error:
-            raise ApiError("TIMEOUT", error)
-        except requests.exceptions.RequestException as error:
-            raise ApiError("UNKNOWN", error)
-        #end try
+            raise ServicesFailed("TIMEOUT", error)
         return response
     #end def
 
@@ -332,7 +306,7 @@ class CoreBank:
         # post here
         try:
             response = self._post(api_name, payload)
-        except ApiError:
+        except ServicesFailed:
             self.access_token = None
         else:
             access_token = response["data"]["access_token"]
@@ -359,8 +333,8 @@ class CoreBank:
         # post here
         try:
             post_resp = self._post(api_name, payload)
-        except ApiError as error:
-            raise ServicesError("GET_BALANCE_FAILED", error)
+        except ServicesFailed as error:
+            raise ApiError(error)
         #end try
 
         # access the data here
@@ -395,8 +369,8 @@ class CoreBank:
 
         try:
             post_resp = self._post(api_name, payload)
-        except ApiError as error:
-            raise ServicesError("GET_INHOUSE_INQUIRY_FAILED", error)
+        except ServicesFailed as error:
+            raise ApiError(error)
         #end try
 
         # access the data here
@@ -471,8 +445,8 @@ class CoreBank:
         # should log request and response
         try:
             post_resp = self._post(api_name, payload)
-        except ApiError as error:
-            raise ServicesError("DO_PAYMENT_FAILED", error)
+        except ServicesFailed as error:
+            raise ApiError(error)
         #end if
 
         # access the data here
@@ -513,8 +487,8 @@ class CoreBank:
         # should log request and response
         try:
             post_resp = self._post(api_name, payload)
-        except ApiError as error:
-            raise ServicesError("GET_PAYMENT_STATUS_FAILED", error)
+        except ServicesFailed as error:
+            raise ApiError(error)
         #end try
 
         # accessing the inner data
@@ -548,16 +522,16 @@ class CoreBank:
             params["charge_mode"   ] = ""
             try:
                 response = self.do_payment(params)
-            except ServicesError as error:
-                raise InhouseTransferError("BNI_TRANSFER", error)
+            except ApiError as error:
+                raise ApiError(error)
         else:
             try:
                 interbank_response = self.get_interbank_inquiry(params)
-            except ServicesError as error:
+            except ApiError as error:
                 # should raise invalid account
                 text = "Account {} on {} not found".format(params["account_no"], \
                                                            params["bank_code"])
-                raise InvalidInterbankAccountError(text, error)
+                raise ApiError(error)
             #end try
 
             params["bank_name"] = interbank_response['data']['inquiry_info']["transfer_bank_name"]
@@ -566,10 +540,9 @@ class CoreBank:
 
             try:
                 payment_response = self.get_interbank_payment(params)
-            except ServicesError as error:
-                raise InterbankTransferError(error)
+            except ApiError as error:
+                raise ApiError(error)
             #end try
-
             response["data"] = payment_response["data"]
         return response
     #end def
@@ -602,8 +575,8 @@ class CoreBank:
         # should log request and response
         try:
             post_resp = self._post(api_name, payload)
-        except ApiError as error:
-            raise ServicesError("INTERBANK_INQUIRY_FAILED", error)
+        except ServicesFailed as error:
+            raise ApiError(error)
         #end try
 
         # access the data here
@@ -659,8 +632,8 @@ class CoreBank:
         # should log request and response
         try:
             post_resp = self._post(api_name, payload)
-        except ApiError as error:
-            raise ServicesError("INTERBANK_PAYMENT_FAILED", error)
+        except ServicesFailed as error:
+            raise ApiError(error)
         #end try
 
         # access the data here

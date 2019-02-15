@@ -7,7 +7,8 @@ import hashlib
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 
-from app.api.exception.common import DecryptError
+class DecryptError(Exception):
+    """ Raised when failed decode qr code"""
 
 class AESCipher:
     """ Encryption using AES """

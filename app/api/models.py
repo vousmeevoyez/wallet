@@ -23,10 +23,10 @@ from app.api import db
 from app.config import config
 
 # exceptions
-from app.api.exception.authentication import RevokedTokenError
-from app.api.exception.authentication import SignatureExpiredError
-from app.api.exception.authentication import InvalidTokenError
-from app.api.exception.authentication import EmptyPayloadError
+from app.api.error.authentication import RevokedTokenError
+from app.api.error.authentication import SignatureExpiredError
+from app.api.error.authentication import InvalidTokenError
+from app.api.error.authentication import EmptyPayloadError
 
 now = datetime.utcnow()
 
@@ -289,7 +289,7 @@ class BankAccount(db.Model):
     id         = db.Column(db.Integer, primary_key=True, autoincrement=True)
     label      = db.Column(db.String(24), unique=True) # account label
     name       = db.Column(db.String(24), unique=True) # bank account name
-    account_no = db.Column(db.String(24), unique=True) # bank account no
+    account_no = db.Column(db.String(30), unique=True) # bank account no
     created_at = db.Column(db.DateTime, default=now) # UTC
     status     = db.Column(db.Boolean, default=True) # active / inactive
     bank_id    = db.Column(db.Integer, db.ForeignKey("bank.id"))
@@ -336,9 +336,11 @@ class Payment(db.Model):
     channel_id     = db.Column(db.Integer, db.ForeignKey("payment_channel.id"))
     payment_channel= db.relationship("PaymentChannel", back_populates="payments", uselist=False) # one to one
     transaction    = db.relationship("Transaction", back_populates="payment", uselist=False) # one to one
+    logs           = db.relationship("Log", back_populates="payment",
+                                     uselist=False) # one to many
 
     def __repr__(self):
-        return '<Payment {} {} {} {} {}>'.format(self.id, self.source_account,
+        return '<Payment {} {} {} {} {} {}>'.format(self.id, self.source_account, self.payment_type,
                                                  self.ref_number, self.amount, self.status)
     #end def
 #end class
@@ -347,9 +349,11 @@ class VirtualAccount(db.Model):
     """
         This is class that represent Virtual Account Database Object
     """
-    id              = db.Column(db.BigInteger, primary_key=True)
+    id              = db.Column(db.BigInteger, primary_key=True,
+                                autoincrement=True)
+    account_no      = db.Column(db.BigInteger)
     trx_id          = db.Column(db.BigInteger, unique=True)
-    trx_amount      = db.Column(db.Float, default=0)
+    amount          = db.Column(db.Float, default=0)
     name            = db.Column(db.String(144))
     datetime_expired= db.Column(db.DateTime)
     status          = db.Column(db.Integer, default=0)
@@ -364,7 +368,7 @@ class VirtualAccount(db.Model):
     TIMEZONE = pytz.timezone("Asia/Jakarta")
 
     def __repr__(self):
-        return '<VirtualAccount {} {} {} {} {} {}>'.format(self.id, self.trx_id, self.name, self.status, self.va_type, self.bank_id)
+        return '<VirtualAccount {} {} {} {} {} {}>'.format(self.account_no, self.trx_id, self.name, self.status, self.va_type, self.bank_id)
     #end def
 
     def is_unlocked(self):
@@ -418,14 +422,14 @@ class VirtualAccount(db.Model):
                 10000000,
                 99999999
             )
-            va_id = str(fixed) + str(client_id) + str(suffix)
-            result = VirtualAccount.query.filter_by(id=int(va_id)).first()
+            account_no = str(fixed) + str(client_id) + str(suffix)
+            result = VirtualAccount.query.filter_by(account_no=int(account_no)).first()
             if result is None:
                 break
             #end if
         #end while
-        self.id = int(va_id)
-        return va_id
+        self.account_no = int(account_no)
+        return account_no
     #end def
 
     def generate_trx_id(self):
@@ -448,36 +452,17 @@ class VirtualAccount(db.Model):
     #end def
 #end class
 
-class MasterTransaction(db.Model):
-    """
-        used as transaction block to ensure each transaction is safe
-    """
-    id                    = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    source                = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (money comes from)
-    destination           = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (money comes from)
-    last_modified         = db.Column(db.DateTime, default=now) # UTC
-    amount                = db.Column(db.Float)
-    # 0 = INIT , 1 = PENDING , 2 = DONE , 3 = CANCEL
-    state                 = db.Column(db.Integer, default=0)
-    debit_transaction_id  = db.Column(db.String, db.ForeignKey("transaction.id"))
-    credit_transaction_id = db.Column(db.String, db.ForeignKey("transaction.id"))
-    debit_transaction     = db.relationship("Transaction", \
-                                            uselist=False,
-                                            foreign_keys=[debit_transaction_id]) # one to one
-    credit_transaction    = db.relationship("Transaction", \
-                                            uselist=False,
-                                            foreign_keys=[credit_transaction_id]) # one to one
+class Log(db.Model):
+    """ Used to maintain payment state """
+    id         = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    state      = db.Column(db.Integer, default=0) # init, done, cancelled
+    created_at = db.Column(db.DateTime, default=now) # UTC
+    payment_id = db.Column(db.Integer, db.ForeignKey("payment.id"))
+    payment    = db.relationship("Payment", back_populates="logs")
 
     def __repr__(self):
-        return '<MasterTransaction {} {} {} {} {} {} {} >'.format(self.id,\
-                                                           self.source,\
-                                                           self.destination,\
-                                                           self.amount,\
-                                                           self.state,\
-                                                           self.debit_transaction_id,\
-                                                           self.credit_transaction_id\
-                                                          )
-    #end def
+        return '<Log {} {} {}'.format(self.id, self.state,
+                                             self.payment_id)
 
 class Transaction(db.Model):
     """

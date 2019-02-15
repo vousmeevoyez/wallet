@@ -7,17 +7,21 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.exc import IntegrityError
 
-from app.api            import db
-from app.api.models     import Wallet, Withdraw
-# http response
-from app.api.exception.wallet import *
+from app.api import db
 
-from app.config     import config
+from app.api.wallet.modules.va_services import VirtualAccountServices
+# models
+from app.api.models import *
+# http response
+from app.api.error.http import *
+
+from app.config import config
 
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 WALLET_CONFIG = config.Config.WALLET_CONFIG
 VIRTUAL_ACCOUNT_CONFIG = config.Config.VIRTUAL_ACCOUNT_CONFIG
 STATUS_CONFIG = config.Config.STATUS_CONFIG
+ERROR_CONFIG = config.Config.ERROR_CONFIG
 
 class WithdrawServices:
     """ class that handle request to withdraw """
@@ -25,74 +29,94 @@ class WithdrawServices:
         wallet_record = Wallet.query.filter_by(id=wallet_id,
                                                status=STATUS_CONFIG["ACTIVE"]).first()
         if wallet_record is None:
-            raise WalletNotFoundError(wallet_id)
+            raise RequestNotFound(ERROR_CONFIG["WALLET_NOT_FOUND"]["TITLE"],
+                                  ERROR_CONFIG["WALLET_NOT_FOUND"]["MESSAGE"])
         #end if
 
         if wallet_record.check_pin(pin) is not True:
-            raise IncorrectPinError
+            raise UnprocessableEntity(ERROR_CONFIG["INCORRECT_PIN"]["TITLE"],
+                                      ERROR_CONFIG["INCORRECT_PIN"]["MESSAGE"])
         #end if
 
+        self.va_type = VaType.query.filter_by(key="DEBIT").first()
         self.wallet = wallet_record
 
     def request(self, params):
         """ handle withdraw request """
         amount = float(params["amount"])
+        bank_name = params["bank_name"]
 
         if amount == 0:
             amount = self.wallet.balance
 
         if amount < float(WALLET_CONFIG["MINIMAL_WITHDRAW"]):
-            raise MinimalWithdrawError
+            raise UnprocessableEntity(ERROR_CONFIG["MIN_WITHDRAW"]["TITLE"],
+                                      ERROR_CONFIG["MIN_WITHDRAW"]["MESSAGE"])
         #end if
 
         if amount > float(WALLET_CONFIG["MAX_WITHDRAW"]):
-            raise MaxWithdrawError
+            raise UnprocessableEntity(ERROR_CONFIG["MAX_WITHDRAW"]["TITLE"],
+                                      ERROR_CONFIG["MAX_WITHDRAW"]["MESSAGE"])
         #end if
 
         if amount > float(self.wallet.balance):
-            raise InsufficientBalanceError(self.wallet.balance, amount)
+            raise UnprocessableEntity(ERROR_CONFIG["INSUFFICIENT_BALANCE"]["TITLE"],
+                                      ERROR_CONFIG["INSUFFICIENT_BALANCE"]["MESSAGE"])
         #end if
 
         # before creating a cardless va, we need to make sure there's no ongoing withdraw request
         pending_withdraw = Withdraw.query.filter(Withdraw.wallet_id == self.wallet.id,
                                                  Withdraw.valid_until > datetime.now()).count()
         if pending_withdraw > 0:
-            raise RaisePendingWithdrawError(self.wallet.id, amount)
+            raise UnprocessableEntity(ERROR_CONFIG["PENDING_WITHDRAW"]["TITLE"],
+                                      ERROR_CONFIG["PENDING_WITHDRAW"]["MESSAGE"])
         #end if
 
         # creating withdraw record and set it to valid for certain period of time
         valid_until = datetime.now() + \
         timedelta(hours=VIRTUAL_ACCOUNT_CONFIG["BNI"]["DEBIT_VA_TIMEOUT"])
+
         withdraw = Withdraw(
             wallet_id=self.wallet.id,
             valid_until=valid_until,
         )
         db.session.add(withdraw)
-
-        user_info = self.wallet.user
-        # generate msisdn
-        msisdn = user_info.phone_ext + user_info.phone_number
-
-        va_payload = {
-            "wallet_id"        : self.wallet.id,
-            "amount"           : int(amount),
-            "customer_name"    : user_info.name,
-            "customer_phone"   : msisdn,
-        }
-
-        """
-        va_response = bank_helper.EcollectionHelper().create_va("CARDLESS", va_payload, session)
-        if va_response["status"] != "SUCCESS":
-            session.rollback()
-            return bad_request(va_response["data"])
-        #end if
-        """
-
         db.session.commit()
 
+        # define payload here
+        va_payload = {
+            "bank_name" : "BNI",
+            "type"      : "DEBIT",
+            "wallet_id" : self.wallet.id,
+            "amount"    : amount
+        }
+
+        # GET BANK INFORMATION HERE
+        keyword = "%{}%".format(bank_name)
+        bank = Bank.query.filter(Bank.name.like(keyword)).first()
+
+        # check va record first make sure no va on the same bank with the same
+        # type existed
+        va_record = \
+        VirtualAccount.query.filter_by(wallet_id=self.wallet.id,
+                                       bank_id=bank.id,
+                                       va_type_id=self.va_type.id).first()
+        # if va not existed create va debit
+        if va_record is None:
+            # create va object here
+            virtual_account = VirtualAccount(
+                name=self.wallet.user.name,
+            )
+            va_response = VirtualAccountServices.add(virtual_account, va_payload)
+            va_response = va_response[0]["data"]
+        else:
+        # update va here
+            va_response = VirtualAccountServices(va_record.account_no).update(va_payload)
+        #end if
+
         response = {
-            "valid_until" : str(valid_until.timestamp()),
-            "amount" : str(amount)
+            "valid_until" : str(va_response["valid_until"].timestamp()),
+            "amount" : str(va_response["amount"])
         }
         return response
     #end def

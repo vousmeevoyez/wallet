@@ -18,16 +18,13 @@ from app.api.authentication.decorator import token_required
 from app.api.authentication.decorator import get_token_payload
 from app.api.authentication.decorator import get_current_token
 from app.api.authentication.decorator import _parse_token
+from app.api.authentication.decorator import ParseError
 
-from app.api.exception.authentication import TokenError
-from app.api.exception.authentication import RevokedTokenError
-from app.api.exception.authentication import SignatureExpiredError
-from app.api.exception.authentication import InvalidTokenError
-from app.api.exception.authentication import ParseTokenError
-from app.api.exception.authentication import InvalidAuthorizationError
-from app.api.exception.authentication import InsufficientScopeError
-from app.api.exception.authentication import MethodNotAllowedError
+from app.api.error.authentication import RevokedTokenError
+from app.api.error.authentication import SignatureExpiredError
+from app.api.error.authentication import InvalidTokenError
 
+from app.api.error.http import *
 # import all routes
 
 class TestAuthDecorator(BaseTestCase):
@@ -50,7 +47,7 @@ class TestAuthDecorator(BaseTestCase):
             "Authorization" : ""
         }
 
-        with self.assertRaises(ParseTokenError):
+        with self.assertRaises(ParseError):
             result = _parse_token()
 
     @mock.patch("flask_restplus.reqparse.RequestParser.parse_args")
@@ -60,7 +57,7 @@ class TestAuthDecorator(BaseTestCase):
             "Authorization" : "jlkajsdljalsjldjas"
         }
 
-        with self.assertRaises(ParseTokenError):
+        with self.assertRaises(ParseError):
             result = _parse_token()
 
     @mock.patch("flask_restplus.reqparse.RequestParser.parse_args")
@@ -74,7 +71,7 @@ class TestAuthDecorator(BaseTestCase):
             "Authorization" : "jlkajsdljalsjldjas"
         }
 
-        with self.assertRaises(InvalidAuthorizationError):
+        with self.assertRaises(BadRequest):
             result = decorated_func()
 
     @mock.patch("flask_restplus.reqparse.RequestParser.parse_args")
@@ -88,7 +85,7 @@ class TestAuthDecorator(BaseTestCase):
             "Authorization" : "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwidHlwZSI6IkFDQ0VTUyJ9.7qJycMO9pCUr9VwQZolkko_Ft0EcOVbwWFlkBOfuKVE"
         }
 
-        with self.assertRaises(InsufficientScopeError):
+        with self.assertRaises(InsufficientScope):
             result = decorated_func()
 
     @mock.patch("flask_restplus.reqparse.RequestParser.parse_args")
@@ -102,7 +99,7 @@ class TestAuthDecorator(BaseTestCase):
             "Authorization" : "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiQUNDRVNTIiwic3ViIjoiMSIsInJvbGUiOiJVU0VSIn0.hUmo1KTifwr1Ettj7TqoIdvCM6gXSUBELpW02oPlUj4"
         }
 
-        with self.assertRaises(MethodNotAllowedError):
+        with self.assertRaises(MethodNotAllowed):
             result = decorated_func()
 
     @mock.patch("flask_restplus.reqparse.RequestParser.parse_args")

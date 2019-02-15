@@ -21,4 +21,7 @@ coverage:
 	coverage run --source app/api -m unittest discover -s app/test/
 
 worker:
-	celery worker -A worker.celery --loglevel=info
+	celery worker -A task.worker.celery --loglevel=info
+
+flower:
+	flower -A task.worker.celery --port=5555

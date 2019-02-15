@@ -10,14 +10,6 @@ from flask import request
 from app.api.callback  import api
 from app.api.serializer import CallbackSchema
 from app.api.callback.modules.callback_services import CallbackServices
-from app.api.bank.bni.utility   import remote_call as bni_utility
-
-from app.api.exception.general import SerializeError
-from app.api.exception.general import RecordNotFoundError
-from app.api.exception.general import CommitError
-from app.api.exception.callback import InvalidCallbackError
-
-from app.api.exception.bni.exceptions import DecryptError
 
 from app.config import config
 

@@ -17,9 +17,6 @@ from app.api.serializer import *
 # request schema
 from app.api.request_schema import *
 
-#http errors
-from app.api.http_response import bad_request
-
 # wallet modules
 from app.api.wallet.modules.wallet_services import WalletServices
 from app.api.wallet.modules.transfer_services import TransferServices
@@ -33,15 +30,11 @@ from app.api.authentication.decorator import admin_required
 from app.api.common.helper import QR
 
 # exceptions
-from app.api.exception.general import SerializeError
-from app.api.exception.general import RecordNotFoundError
-from app.api.exception.general import CommitError
-from app.api.exception.user import UserNotFoundError
-from app.api.exception.bank import BankAccountNotFoundError
-from app.api.exception.common import DecryptError
-from app.api.exception.wallet import *
+from app.api.error.http import *
 # configuration
 from app.config import config
+
+ERROR_CONFIG = config.Config.ERROR_CONFIG
 
 # REQUEST SCHEMA HERE
 wallet_request_schema = WalletRequestSchema.parser
@@ -71,12 +64,11 @@ class WalletAddRoutes(Resource):
         try:
             wallet = WalletSchema(strict=True).load(request_data)
         except ValidationError as error:
-            raise SerializeError(error.messages)
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
 
-        try:
-            response = WalletServices.add(user, wallet.data, request_data["pin"])
-        except DuplicateWalletError as error:
-            raise CommitError(error.msg, error.title)
+        response = WalletServices.add(user, wallet.data, request_data["pin"])
         return response
     #end def
 
@@ -107,10 +99,7 @@ class WalletRoutes(Resource):
             api/v1/wallet/
             return wallet information
         """
-        try:
-            response = WalletServices(wallet_id).info()
-        except WalletNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
+        response = WalletServices(wallet_id).info()
         return response
     #end def
 
@@ -119,12 +108,7 @@ class WalletRoutes(Resource):
             handle DELETE method from
             api/v1/wallet/
         """
-        try:
-            response = WalletServices(wallet_id).remove()
-        except WalletNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
-        except OnlyWalletError as error:
-            raise CommitError(error.msg, error.title)
+        response = WalletServices(wallet_id).remove()
         return response
     #end def
 #end class
@@ -142,10 +126,7 @@ class WalletQrRoutes(Resource):
             api/v1/<wallet_id>/qr
             return wallet qr
         """
-        try:
-            response = WalletServices(wallet_id).get_qr()
-        except WalletNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
+        response = WalletServices(wallet_id).get_qr()
         return response
     #end def
 #end class
@@ -168,7 +149,9 @@ class WalletQrTransferRoutes(Resource):
         try:
             transfer = TransactionSchema(strict=True).validate(request_data)
         except ValidationError as error:
-            raise SerializeError(error.messages)
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
         #end if
         # Decrypt QR Code here
         try:
@@ -177,15 +160,9 @@ class WalletQrTransferRoutes(Resource):
         except DecryptError:
             raise DecodeQrError
         #end try
-        try:
-            response = TransferServices(wallet_id,
-                                        request_data["pin"],
-                                        destination).internal_transfer(request_data)
-        except WalletNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
-        except (WalletLockedError, IncorrectPinError, InvalidDestinationError,
-                InsufficientBalanceError, TransferError, DecodeQrError) as error:
-            raise CommitError(error.msg, error.title)
+        response = TransferServices(wallet_id,
+                                    request_data["pin"],
+                                    destination).internal_transfer(request_data)
         return response
     #end def
 #end class
@@ -203,10 +180,7 @@ class WalletBalanceRoutes(Resource):
             api/v1/<wallet_id>/balance
             return wallet balance
         """
-        try:
-            response = WalletServices(wallet_id).check_balance()
-        except WalletNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
+        response = WalletServices(wallet_id).check_balance()
         return response
     #end def
 #end class
@@ -228,12 +202,11 @@ class WalletTransactionRoutes(Resource):
         try:
             wallet = WalletTransactionSchema(strict=True).validate(request_data)
         except ValidationError as error:
-            raise SerializeError(error.messages)
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
 
-        try:
-            response = WalletServices(wallet_id).history(request_data)
-        except WalletNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
+        response = WalletServices(wallet_id).history(request_data)
         return response
     #end def
 #end class
@@ -251,10 +224,7 @@ class WalletTransactionDetailsRoutes(Resource):
             api/v1/<wallet_id>/transactions/<transaction_id>
             return wallet transaction details
         """
-        try:
-            response = WalletServices(wallet_id).history_details(transaction_id)
-        except (WalletNotFoundError, TransactionNotFoundError) as error:
-            raise RecordNotFoundError(error.msg, error.title)
+        response = WalletServices(wallet_id).history_details(transaction_id)
         return response
     #end def
 #end class
@@ -274,13 +244,7 @@ class WalletPinRoutes(Resource):
         """
         request_data = update_pin_request_schema.parse_args(strict=True)
         # need to serialize here
-        try:
-            response = WalletServices(wallet_id).update_pin(request_data)
-        except WalletNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
-        except (IncorrectPinError, UnmatchPinError, DuplicatePinError) as \
-        error:
-            raise CommitError(error.msg, error.title)
+        response = WalletServices(wallet_id).update_pin(request_data)
         return response
     #end def
 #end class
@@ -298,12 +262,7 @@ class WalletForgotPinRoutes(Resource):
             api/v1/<wallet_id>/forgot/
             send forgot pin otp via sms
         """
-        try:
-            response = WalletServices(wallet_id).send_forgot_otp()
-        except WalletNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
-        except (PendingOtpError, WalletOtpError) as error:
-            raise CommitError(error.msg, error.title)
+        response = WalletServices(wallet_id).send_forgot_otp()
         return response
     #end def
 
@@ -316,12 +275,7 @@ class WalletForgotPinRoutes(Resource):
         """
         request_data = forgot_pin_request_schema.parse_args(strict=True)
         # need to serialize here
-        try:
-            response = WalletServices(wallet_id).verify_forgot_otp(request_data)
-        except (WalletNotFoundError, OtpNotFoundError) as error:
-            raise RecordNotFoundError(error.msg, error.title)
-        except (OtpVerifiedError, InvalidOtpError) as error:
-            raise CommitError(error.msg, error.title)
+        response = WalletServices(wallet_id).verify_forgot_otp(request_data)
         return response
     #end def
 #end class
@@ -343,18 +297,14 @@ class WalletWithdrawRoutes(Resource):
         try:
             result = WithdrawSchema(strict=True).validate(request_data)
         except ValidationError as error:
-            raise SerializeError(error.messages)
-        #end if
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
+        #end try
 
         # need to serialize here
-        try:
-            response = WithdrawServices(wallet_id,
-                                        request_data["pin"]).request(request_data)
-        except (WalletNotFoundError, OtpNotFoundError) as error:
-            raise RecordNotFoundError(error.msg, error.title)
-        except (MinimalWithdrawError, MaxWithdrawError,
-                InsufficientBalanceError, RaisePendingWithdrawError, IncorrectPinError) as error:
-            raise CommitError(error.msg, error.title)
+        response = WithdrawServices(wallet_id,
+                                    request_data["pin"]).request(request_data)
         return response
     #end def
 #end class
@@ -377,16 +327,13 @@ class WalletTransferRoutes(Resource):
         try:
             transfer = TransactionSchema(strict=True).validate(request_data)
         except ValidationError as error:
-            raise SerializeError(error.messages)
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
         #end if
-        try:
-            response = TransferServices(source_wallet_id, request_data["pin"],
-                                        destination_wallet_id).internal_transfer(request_data)
-        except WalletNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
-        except (WalletLockedError, IncorrectPinError, InvalidDestinationError,
-                InsufficientBalanceError, TransferError) as error:
-            raise CommitError(error.msg, error.title)
+        response = TransferServices(source_wallet_id,
+                                    request_data["pin"],
+                                    destination_wallet_id).internal_transfer(request_data)
         return response
     #end def
 #end class
@@ -409,18 +356,14 @@ class WalletBankTransferRoutes(Resource):
         try:
             transfer = TransactionSchema(strict=True).validate(request_data)
         except ValidationError as error:
-            raise SerializeError(error.messages)
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
         #end if
 
         request_data["destination"] = bank_account_id
-        try:
-            response = TransferServices(source_wallet_id,
-                                        request_data["pin"]).external_transfer(request_data)
-        except (WalletNotFoundError, BankAccountNotFoundError) as error:
-            raise RecordNotFoundError(error.msg, error.title)
-        except (WalletLockedError, IncorrectPinError,
-                InsufficientBalanceError, TransferError) as error:
-            raise CommitError(error.msg, error.title)
+        response = TransferServices(source_wallet_id,
+                                    request_data["pin"]).external_transfer(request_data)
         return response
     #end def
 #end class

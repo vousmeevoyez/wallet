@@ -97,7 +97,7 @@ class BankAccountSchema(ma.Schema):
                 account_no -- bank account no
         """
         # only allow 0-9, minimal 10 and maximal is 16 digit
-        pattern = r"^[0-9]{10,16}$"
+        pattern = r"^[0-9]{10,30}$"
         if re.search(pattern, account_no) is None:
             raise ValidationError('Invalid account number, only number allowed')
         elif int(account_no) < 1:
@@ -514,7 +514,7 @@ class TransactionSchema(ma.Schema):
 
 class VirtualAccountSchema(ma.Schema):
     """ This is class for Virtual Account Schema"""
-    id         = fields.Str()
+    account_no = fields.Str()
     trx_id     = fields.Int(load_only=True)
     va_type    = fields.Method("va_type_to_string")
     name       = fields.Str(required=True, validate=cannot_be_blank)

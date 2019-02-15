@@ -9,18 +9,19 @@ from app.test.base  import BaseTestCase
 from app.api.models import Payment
 from app.api.models import Wallet
 from app.api.models import Transaction
-from app.api.models import MasterTransaction
 from app.api.models import Bank
 from app.api.models import BankAccount
+from app.api.models import Log
 
 from app.api.common.helper import QR
 
 from app.api.wallet.modules.transfer_services import TransferServices
+from app.api.wallet.modules.transfer_services import TransactionError
 
 # exceptions
-from app.api.exception.wallet import *
+from app.api.error.http import *
 
-from app.api.exception.bank import BankAccountNotFoundError
+from task.bank.tasks import BankTask
 
 class TestTransferServices(BaseTestCase):
     """ Test Class for Transfer Services"""
@@ -65,8 +66,8 @@ class TestTransferServices(BaseTestCase):
         result = TransferServices(source.id, "123456",
                                   destination.id).internal_transfer(params)
 
-        master_trx = MasterTransaction.query.all()
-        self.assertTrue(len(master_trx) > 0)
+        log = Log.query.all()
+        print(log)
         transaction = Transaction.query.all()
         self.assertTrue(len(transaction) > 0)
         payment = Payment.query.all()
@@ -84,7 +85,7 @@ class TestTransferServices(BaseTestCase):
             "pin" : "123456",
         }
 
-        with self.assertRaises(WalletNotFoundError):
+        with self.assertRaises(RequestNotFound):
             result = TransferServices("90", "123456",
                                       destination.id).internal_transfer(params)
 
@@ -101,7 +102,7 @@ class TestTransferServices(BaseTestCase):
             "notes" : "some transfer notes"
         }
 
-        with self.assertRaises(WalletLockedError):
+        with self.assertRaises(UnprocessableEntity):
             result = TransferServices(source.id, "123456",
                                       destination.id).internal_transfer(params)
 
@@ -114,7 +115,7 @@ class TestTransferServices(BaseTestCase):
             "notes" : "Some transfer notes"
         }
 
-        with self.assertRaises(IncorrectPinError):
+        with self.assertRaises(UnprocessableEntity):
             result = TransferServices(source.id, "111111",
                                       destination.id).internal_transfer(params)
 
@@ -130,7 +131,7 @@ class TestTransferServices(BaseTestCase):
             "notes" : "some transfer notes"
         }
 
-        with self.assertRaises(InsufficientBalanceError):
+        with self.assertRaises(UnprocessableEntity):
             result = TransferServices(source.id, "123456",
                                       destination.id).internal_transfer(params)
 
@@ -143,7 +144,7 @@ class TestTransferServices(BaseTestCase):
             "notes" : "some transfer notes"
         }
 
-        with self.assertRaises(WalletNotFoundError):
+        with self.assertRaises(RequestNotFound):
             result = TransferServices(source.id, "123456", "9090").internal_transfer(params)
 
     def test_internal_transfer_failed_destination_locked(self):
@@ -159,7 +160,7 @@ class TestTransferServices(BaseTestCase):
             "notes" : "some transfer notes"
         }
 
-        with self.assertRaises(WalletLockedError):
+        with self.assertRaises(UnprocessableEntity):
             result = TransferServices(source.id, "123456",
                                       destination.id).internal_transfer(params)
 
@@ -173,7 +174,7 @@ class TestTransferServices(BaseTestCase):
             "notes" : "some transfer notes"
         }
 
-        with self.assertRaises(InvalidDestinationError):
+        with self.assertRaises(UnprocessableEntity):
             result = TransferServices(source.id, "123456",
                                       source.id).internal_transfer(params)
 
@@ -188,12 +189,12 @@ class TestTransferServices(BaseTestCase):
         }
 
         mock_transfer_services.side_effect = TransactionError("test")
-        with self.assertRaises(TransferError):
+        with self.assertRaises(UnprocessableEntity):
             TransferServices(source.id, "123456", destination.id).internal_transfer(params)
 
         # make sure maste transaction record everything
-        master_trx = MasterTransaction.query.all()
-        self.assertTrue(len(master_trx) > 0)
+        log = Log.query.all()
+        print(log)
         # make sure transaction is not recorded on user transaction
         trx = Transaction.query.all()
         self.assertTrue(len(trx) == 0)
@@ -235,7 +236,7 @@ class TestTransferServices(BaseTestCase):
         self.assertEqual(wallet2.balance, 0)
     '''
 
-    def testdebit_transaction_success(self):
+    def test_debit_transaction_success(self):
         wallet = Wallet()
         db.session.add(wallet)
         db.session.flush()
@@ -260,7 +261,7 @@ class TestTransferServices(BaseTestCase):
         transaction_id = TransferServices.debit_transaction(wallet, debit_payment.id, 111, "TRANSFER_IN")
         self.assertTrue(transaction_id, str)
 
-    def testdebit_transaction_failed(self):
+    def test_debit_transaction_failed(self):
         wallet = Wallet()
         db.session.add(wallet)
         db.session.flush()
@@ -336,7 +337,8 @@ class TestTransferServices(BaseTestCase):
         with self.assertRaises(TransactionError):
             TransferServices.credit_transaction(wallet, 1234, trx_amount, "TRANSFER_IN")
 
-    def test_external_transfer(self):
+    @patch.object(BankTask, "bank_transfer")
+    def test_external_transfer(self, mock_bank_transfer):
         """ test function to create main transaction """
         # create sourc wallet first
         source_wallet = Wallet()
@@ -359,11 +361,13 @@ class TestTransferServices(BaseTestCase):
             "notes" : None,
         }
 
+        mock_bank_transfer.return_value = True
+
         result = TransferServices(source_wallet.id,
                                   "123456").external_transfer(params)
 
-        master_trx = MasterTransaction.query.all()
-        self.assertTrue(len(master_trx) > 0)
+        log = Log.query.all()
+        self.assertTrue(len(log) > 0)
         transaction = Transaction.query.all()
         self.assertTrue(len(transaction) > 0)
         payment = Payment.query.all()
@@ -392,7 +396,7 @@ class TestTransferServices(BaseTestCase):
             "notes" : None,
         }
 
-        with self.assertRaises(InsufficientBalanceError):
+        with self.assertRaises(UnprocessableEntity):
             result = TransferServices(source_wallet.id,
                                       "123456").external_transfer(params)
 
@@ -419,7 +423,7 @@ class TestTransferServices(BaseTestCase):
             "notes" : None,
         }
 
-        with self.assertRaises(BankAccountNotFoundError):
+        with self.assertRaises(RequestNotFound):
             result = TransferServices(source_wallet.id,
                                       "123456").external_transfer(params)
 
@@ -448,13 +452,13 @@ class TestTransferServices(BaseTestCase):
         }
 
         mock_transfer_services.side_effect = TransactionError("test")
-        with self.assertRaises(TransferError):
+        with self.assertRaises(UnprocessableEntity):
             TransferServices(source_wallet.id,
                              "123456").external_transfer(params)
 
         # make sure maste transaction record everything
-        master_trx = MasterTransaction.query.all()
-        self.assertTrue(len(master_trx) > 0)
+        log = Log.query.all()
+        self.assertTrue(len(log) > 0)
         # make sure transaction is not recorded on user transaction
         trx = Transaction.query.all()
         self.assertTrue(len(trx) == 0)

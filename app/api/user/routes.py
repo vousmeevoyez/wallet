@@ -25,17 +25,11 @@ from app.api.user.modules.bank_account_services import BankAccountServices
 from app.api.user.modules.user_services import UserServices
 
 #http exception
-from app.api.exception.general import SerializeError
-from app.api.exception.general import RecordNotFoundError
-from app.api.exception.general import CommitError
+from app.api.error.http import *
 
-from app.api.exception.user import UserDuplicateError
-from app.api.exception.user import UserNotFoundError
-from app.api.exception.user import OldRecordError
+from app.config import config
 
-from app.api.exception.bank import BankNotFoundError
-from app.api.exception.bank import BankAccountNotFoundError
-from app.api.exception.bank import DuplicateBankAccountError
+ERROR_CONFIG = config.Config.ERROR_CONFIG
 
 USER_REQUEST_SCHEMA = UserRequestSchema.parser
 USER_UPDATE_REQUEST_SCHEMA = UserUpdateRequestSchema.parser
@@ -60,13 +54,12 @@ class UserRoutes(Resource):
         try:
             user = UserSchema(strict=True).load(request_data)
         except ValidationError as error:
-            raise SerializeError(error.messages)
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
 
-        try:
-            response = UserServices.add(user.data, request_data["password"],
-                                        request_data["pin"])
-        except UserDuplicateError as error:
-            raise CommitError(error.msg, error.title)
+        response = UserServices.add(user.data, request_data["password"],
+                                    request_data["pin"])
         return response
     #end def
 
@@ -94,10 +87,7 @@ class UserInfoRoutes(Resource):
             api/v1/user/<user_id>
             return single user information
         """
-        try:
-            response = UserServices(user_id).info()
-        except UserNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
+        response = UserServices(user_id).info()
         return response
 
     @token_required
@@ -113,14 +103,10 @@ class UserInfoRoutes(Resource):
         errors = UserSchema(strict=True).validate(request_data,
                                                   partial=(excluded))
         if errors:
-            raise SerializeError(errors)
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"], errors)
 
-        try:
-            response = UserServices(user_id).update(request_data)
-        except UserNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
-        except OldRecordError as error:
-            raise CommitError(error.msg, error.title, error.details)
+        response = UserServices(user_id).update(request_data)
         return response
 
     @token_required
@@ -130,10 +116,7 @@ class UserInfoRoutes(Resource):
             api/v1/user/<user_id>
             return updated user information
         """
-        try:
-            response = UserServices(user_id).remove()
-        except UserNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
+        response = UserServices(user_id).remove()
         return response
 #end class
 
@@ -156,16 +139,11 @@ class UserBankAccountRoutes(Resource):
         try:
             bank_account = BankAccountSchema(strict=True).load(request_data)
         except ValidationError as error:
-            raise SerializeError(error.messages)
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
         #end try
-        try:
-            response = BankAccountServices(user_id, request_data["bank_code"]).add(bank_account.data)
-        except (UserNotFoundError,
-                BankNotFoundError,
-                BankAccountNotFoundError) as error:
-            raise RecordNotFoundError(error.msg, error.title)
-        except DuplicateBankAccountError as error:
-            raise CommitError(error.msg, error.title)
+        response = BankAccountServices(user_id, request_data["bank_code"]).add(bank_account.data)
         return response
     #end def
 
@@ -208,9 +186,12 @@ class UserBankAccountDetailsRoutes(Resource):
 
         errors = BankAccountSchema().validate(request_data)
         if errors:
-            raise SerializeError(errors)
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             errors)
         #end if
-        response = BankAccountServices(user_id, request_data["bank_code"], user_bank_account_id).update(request_data)
+        response = BankAccountServices(user_id, request_data["bank_code"],
+                                       user_bank_account_id).update(request_data)
         return response
     #end def
 #end class

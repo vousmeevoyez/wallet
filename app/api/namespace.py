@@ -28,8 +28,3 @@ class LogNamespace:
     """ logging prupose """
     api = Namespace("log")
 #end class
-
-class ExceptionNamespace:
-    """ for register exception errorhandler"""
-    api = Namespace("exception")
-#end class

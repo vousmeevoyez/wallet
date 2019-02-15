@@ -3,7 +3,8 @@ from task.test.base import BaseTestCase
 from app.api import db
 from app.api.models import *
 
-from task.bank.tasks import create_va
+from task.bank.tasks import BankTask
+from task.bank.tasks import TransactionTask
 
 class TestBankWorker(BaseTestCase):
     """ Test Class for Bank Worker """
@@ -32,7 +33,7 @@ class TestBankWorker(BaseTestCase):
 
         # create virtual account credit
         va = VirtualAccount(
-            trx_amount="0",
+            amount="0",
             name="Lisa",
             wallet_id=wallet.id,
             bank_id=bni.id,
@@ -44,5 +45,92 @@ class TestBankWorker(BaseTestCase):
         db.session.add(va)
         db.session.commit()
 
-        result = create_va.delay(va_id)
-        result.wait()
+        result = BankTask().create_va.delay(va_id)
+
+    '''
+    def test_bank_transfer(self):
+        """ test function that transfer money using OPG in the background """
+        bank = Bank.query.filter_by(code="009").first()
+
+        bank_account = BankAccount(
+            name="Lisa",
+            bank_id=bank.id,
+            account_no="11111111"
+        )
+        db.session.add(bank_account)
+        db.session.commit()
+
+        wallet = Wallet(
+        )
+        db.session.add(wallet)
+        db.session.flush()
+
+        # add some balance here for test case
+        user = Wallet.query.get(1)
+        user.add_balance(1000)
+        db.session.flush()
+
+        self.assertEqual(user.check_balance(), 1000)
+
+        amount = -100
+
+        payment_payload = {
+            "payment_type"   : False,
+            "source_account" : wallet.id,
+            "to"             : bank_account.account_no,
+            "amount"         : amount
+        }
+
+        payment = Payment(**payment_payload)
+        db.session.add(payment)
+        db.session.flush()
+
+        debit_transaction = Transaction(
+            payment_id=payment.id,
+            wallet_id=wallet.id,
+            amount=amount
+        )
+        debit_transaction.generate_trx_id()
+
+        db.session.add(debit_transaction)
+
+        wallet.add_balance(amount)
+
+        result = BankTask().bank_transfer.delay(payment.id)
+        print(result)
+    '''
+
+class TestTransactionTask(BaseTestCase):
+    """ Test Class for Transaction Worker """
+    def test_transfer(self):
+        wallet = Wallet(
+                 )
+        db.session.add(wallet)
+        db.session.flush()
+
+        wallet2 = Wallet(
+                 )
+        db.session.add(wallet2)
+        db.session.flush()
+
+        # add some balance here for test case
+        user = Wallet.query.get(1)
+        user.add_balance(1000)
+        db.session.flush()
+
+        self.assertEqual(user.check_balance(), 1000)
+
+        amount = -100
+
+        payment_payload = {
+            "payment_type"   : True,
+            "source_account" : wallet.id,
+            "to"             : wallet2.id,
+            "amount"         : amount
+        }
+
+        payment = Payment(**payment_payload)
+        db.session.add(payment)
+        db.session.commit()
+
+        result = TransactionTask().transfer.delay(payment.id)

@@ -17,24 +17,16 @@ from app.api.serializer import UserSchema
 # request schema
 from app.api.request_schema import AuthRequestSchema
 # http errors
-from app.api.http_response import bad_request
-from app.api.http_response import unauthorized
+from app.api.error.http import *
 # custom decorator
 from app.api.authentication.decorator import refresh_token_only
 from app.api.authentication.decorator import token_required
 from app.api.authentication.decorator import get_current_token
 from app.api.authentication.decorator import get_token_payload
-# exceptions
-from app.api.exception.general import SerializeError
-from app.api.exception.general import RecordNotFoundError
-from app.api.exception.general import CommitError
 
-from app.api.exception.authentication import TokenError
-from app.api.exception.authentication import InvalidCredentialsError
-from app.api.exception.authentication import InvalidAuthorizationError
-from app.api.exception.authentication import FailedRevokedTokenError
+from app.config import config
 
-from app.api.exception.user import UserNotFoundError
+ERROR_CONFIG = config.Config.ERROR_CONFIG
 
 REQUEST_SCHEMA = AuthRequestSchema.parser
 
@@ -57,15 +49,11 @@ class TokenRoutes(Resource):
         excluded = "name", "phone_ext", "phone_number", "pin", "role", "email"
         errors = UserSchema().validate(request_data, partial=(excluded))
         if errors:
-            raise SerializeError(errors)
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"], errors)
         #end if
 
-        try:
-            response = AuthServices().create_token(request_data)
-        except UserNotFoundError as error:
-            raise RecordNotFoundError(error.msg, error.title)
-        except InvalidCredentialsError as error:
-            raise InvalidCredentialsError(error.msg, error.title)
+        response = AuthServices().create_token(request_data)
         return response
 #end def
 
@@ -84,11 +72,7 @@ class RefreshTokenRoutes(Resource):
             return refresh token
         """
         # fetch payload
-        try:
-            payload = get_token_payload()
-        except TokenError as error:
-            raise InvalidAuthorizationError(error)
-        #end try
+        payload = get_token_payload()
         response = AuthServices().refresh_token(payload["user"])
         return response
     #end def
@@ -109,17 +93,8 @@ class TokenRevokeRoutes(Resource):
             blacklist the token
         """
         # fetch token from header
-        try:
-            token = get_current_token()
-        except TokenError as error:
-            raise InvalidAuthorizationError(error)
-        #end try
-
-        try:
-            response = AuthServices().logout_access_token(token)
-        except FailedRevokedTokenError as error:
-            raise CommitError(error.msg)
-        #end try
+        token = get_current_token()
+        response = AuthServices().logout_access_token(token)
         return response
     #end def
 #end class
@@ -139,16 +114,8 @@ class RefreshTokenRevokeRoutes(Resource):
             blacklist the token
         """
         # fetch token from header
-        try:
-            token = get_current_token()
-        except TokenError as error:
-            raise InvalidAuthorizationError(error)
-        #end try
-        try:
-            response = AuthServices().logout_refresh_token(token)
-        except FailedRevokedTokenError as error:
-            raise CommitError(error.msg)
-        #end try
+        token = get_current_token()
+        response = AuthServices().logout_refresh_token(token)
         return response
     #end def
 #end class
