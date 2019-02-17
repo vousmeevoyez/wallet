@@ -245,14 +245,14 @@ class TransferServices:
     @staticmethod
     def debit_transaction(wallet, payment_id, amount, flag,
                           transfer_notes=None):
+
+        amount = -amount
+
         # fetch transaction type from config
         transaction_type = TRANSACTION_CONFIG["TYPES"][flag]
 
-        # deduct balance first
-        wallet.add_balance(amount)
-
         if transfer_notes is None:
-            notes = TRANSACTION_NOTES["SEND_TRANSFER"].format(str(-amount))
+            notes = TRANSACTION_NOTES["SEND_TRANSFER"].format(str(amount))
         else:
             notes = transfer_notes
         #end if

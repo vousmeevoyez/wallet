@@ -6,4 +6,4 @@
 make clean
 make upgrade
 make init
-uwsgi --http :5000 --wsgi-file manage.py --callable app --master --processes 2 --threads 1
+uwsgi --http :5000 --wsgi-file manage.py --callable app --master --processes 4 --threads 2

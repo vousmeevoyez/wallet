@@ -66,6 +66,7 @@ services:
                 image: modana-wallet-services
                 entrypoint: make worker
                 environment:
+                - ENVIRONMENT=dev
                 - BROKER_URL=amqp://modanabroker:password@rabbitmq:5672/worker
                 #- BROKER_URL=redis://redis:6379/0
                 - DB_USERNAME=modana

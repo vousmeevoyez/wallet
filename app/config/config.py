@@ -31,8 +31,6 @@ class Config:
 
     SENTRY_CONFIG = {}
 
-    BROKER_HEARTBEAT = 0
-
     CELERY_BROKER_URL = os.getenv("BROKER_URL") or \
     'amqp://guest:guest@localhost:5672'
     #CELERY_QUEUES = (
