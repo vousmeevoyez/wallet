@@ -30,6 +30,7 @@ services:
                   # SMS SERVICE CONFIG
                 - SMS_SERVICES_BASE_URL=https://api.wavecell.com/sms/v1/Modana_OTP/single
                 - API_KEY=7hH72ACD8DA6EED4DD985D4489A034
+                - BROKER_URL=amqp://modanabroker:password@rabbitmq:5672/worker
                 ports:
                 - 5000:5000
                 depends_on:
@@ -37,13 +38,14 @@ services:
                 - rabbitmq
                 
         postgres:
-                image: postgres:latest
+                build:
+                        context: dockerfiles/postgres/
                 environment:
                 - POSTGRES_USER=modana
                 - POSTGRES_PASSWORD=password
-                - POSTGRES_DB=db_wallet_dev
                 ports:
                 - 5432:5432
+
                 
         redis:
                 image : redis:alpine
@@ -52,9 +54,10 @@ services:
                 build:
                         context: dockerfiles/rabbitmq/
                 #hostname: "rabbit"
-                #environment:
-                #- RABBITMQ_DEFAULT_USER=modanabroker
-                #- RABBITMQ_DEFAULT_PASS=password
+                environment:
+                - RABBITMQ_DEFAULT_USER=modanabroker
+                - RABBITMQ_DEFAULT_PASS=password
+                - RABBITMQ_DEFAULT_VHOST=worker
                 ports:
                 - 5672:5672
                 - 15000:15672
@@ -63,7 +66,7 @@ services:
                 image: modana-wallet-services
                 entrypoint: make worker
                 environment:
-                - BROKER_URL=amqp://guest:guest@rabbitmq:5672
+                - BROKER_URL=amqp://modanabroker:password@rabbitmq:5672/worker
                 #- BROKER_URL=redis://redis:6379/0
                 - DB_USERNAME=modana
                 - DB_PASSWORD=password
@@ -76,7 +79,7 @@ services:
         flower:
                 image: mher/flower
                 environment:
-                - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672
+                - CELERY_BROKER_URL=amqp://modanabroker:password@rabbitmq:5672/worker
                 - FLOWER_PORT=5555
                 ports:
                 - 5555:5555
