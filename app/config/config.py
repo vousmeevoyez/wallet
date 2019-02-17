@@ -31,6 +31,8 @@ class Config:
 
     SENTRY_CONFIG = {}
 
+    BROKER_HEARTBEAT = 0
+
     CELERY_BROKER_URL = os.getenv("BROKER_URL") or \
     'amqp://guest:guest@localhost:5672'
     #CELERY_QUEUES = (
@@ -262,7 +264,7 @@ class Config:
             "TITLE" : "INVALID_AUTHORIZATION_HEADER",
         },
         "ADMIN_REQUIRED" : {
-            "TITLE" : "ADMIN_REQUIRED",
+            "TITLE"   : "ADMIN_REQUIRED",
             "MESSAGE" : "Require admin permission"
         },
         "ONLY_WALLET" : {
@@ -326,6 +328,22 @@ class Config:
             "TITLE"   : "MAX_WITHDRAW",
             "MESSAGE" : "Amount can't be more than Maximal Withdraw"
         },
+        "DEPOSIT_CALLBACK_FAILED": {
+            "TITLE"   : "DEPOSIT_CALLBACK_FAILED",
+            "MESSAGE" : "Deposit Callback failed, please contact our support"
+        },
+        "WITHDRAW_CALLBACK_FAILED": {
+            "TITLE"   : "WITHDRAW_CALLBACK_FAILED",
+            "MESSAGE" : "Withdraw Callback failed, please contact our support"
+        },
+        "INVALID_CALLBACK": {
+            "TITLE"   : "INVALID_CALLBACK",
+            "MESSAGE" : "Invalid Callback"
+        },
+        "INVALID_QR": {
+            "TITLE"   : "INVALID_QR",
+            "MESSAGE" : "Invalid QR Code"
+        },
     }
 #end class
 
@@ -359,7 +377,7 @@ class TestingConfig(Config):
 
     CELERY_RESULT_BACKEND = "db+" + SQLALCHEMY_DATABASE_URI
 
-    CELERY_ALWAYS_EAGER = True
+    CELERY_TASK_ALWAYS_EAGER = True
 
     PRESERVE_CONTEXT_ON_EXCEPTION = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False

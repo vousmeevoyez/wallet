@@ -115,8 +115,8 @@ class WithdrawServices:
         #end if
 
         response = {
-            "valid_until" : str(va_response["valid_until"].timestamp()),
-            "amount" : str(va_response["amount"])
+            "valid_until" : va_response["valid_until"],
+            "amount" : va_response["amount"]
         }
         return response
     #end def

@@ -68,7 +68,7 @@ def make_shell_context():
         'Wallet'         : Wallet,
         'VirtualAccount' : VirtualAccount,
         'Transaction'    : Transaction,
-        'MasterTransaction' : MasterTransaction,
+        'Log'            : Log,
         'ExternalLog'    : ExternalLog,
         'ForgotPin'      : ForgotPin,
         'User'           : User

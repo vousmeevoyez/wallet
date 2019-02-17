@@ -14,7 +14,7 @@ from app.api.models import User
 from app.api.models import Wallet
 from app.api import db
 
-from app.api.bank.bni.utility   import remote_call
+from task.bank.BNI.utility import remote_call
 
 from app.config import config
 
@@ -32,6 +32,13 @@ class TestCallbackRoutes(BaseTestCase):
     def deposit_callback(self, params):
         return self.client.post(
             BASE_URL + "/callback/bni_va/deposit",
+            data=json.dumps(params),
+            content_type="application/json"
+        )
+
+    def withdraw_callback(self, params):
+        return self.client.post(
+            BASE_URL + "/callback/bni_va/withdraw",
             data=json.dumps(params),
             content_type="application/json"
         )
@@ -136,7 +143,8 @@ class TestCallbackRoutes(BaseTestCase):
         user = User.query.filter_by(id=user_id).first()
 
         data = {
-            "virtual_account"           : user.wallets[0].virtual_accounts[0].id,
+            "virtual_account"           :
+            user.wallets[0].virtual_accounts[0].account_no,
             "customer_name"             : "jennie",
             "trx_id"                    : user.wallets[0].virtual_accounts[0].trx_id,
             "trx_amount"                : "0",
@@ -152,4 +160,47 @@ class TestCallbackRoutes(BaseTestCase):
             "data"      : encrypted_data.decode("UTF-8")
         }
         result = self.deposit_callback(expected_value)
-        print(result.get_json())
+        response = result.get_json()
+        self.assertEqual(response["status"], "000")
+
+    """
+        WITHDRAW CALLBACK
+    """
+    def test_withdraw_callback(self):
+        """ WITHDRAW CALLBACK CASE 1 : Successfully withdraw callback """
+        access_token, user_id = self._create_dummy_user()
+
+        params = {
+            "user_id" : user_id,
+            "access_token" : access_token,
+            "label" : "wallet label",
+            "pin" : "123456"
+        }
+
+        result = self.create_wallet(params, access_token)
+        response = result.get_json()
+        self.assertEqual(result.status_code, 201)
+
+        user = User.query.filter_by(id=user_id).first()
+
+        data = {
+            "virtual_account"           :
+            user.wallets[0].virtual_accounts[0].account_no,
+            "customer_name"             : "jennie",
+            "trx_id"                    : user.wallets[0].virtual_accounts[0].trx_id,
+            "trx_amount"                : "0",
+            "payment_amount"            : "-50000",
+            "cumulative_payment_amount" : "-50000",
+            "payment_ntb"               : "12345",
+            "datetime_payment"          : "2018-12-20 11:16:00",
+        }
+        encrypted_data = \
+        remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
+                            BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"], data)
+
+        expected_value = {
+            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
+            "data"      : encrypted_data.decode("UTF-8")
+        }
+        result = self.withdraw_callback(expected_value)
+        self.assertEqual(response["status"], "000")

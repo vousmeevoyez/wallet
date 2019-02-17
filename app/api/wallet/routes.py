@@ -28,6 +28,7 @@ from app.api.authentication.decorator import get_token_payload
 from app.api.authentication.decorator import admin_required
 
 from app.api.common.helper import QR
+from app.api.common.modules.cipher import DecryptError
 
 # exceptions
 from app.api.error.http import *
@@ -158,7 +159,8 @@ class WalletQrTransferRoutes(Resource):
             payload = QR().read(request_data["qr_string"])
             destination = payload["wallet_id"]
         except DecryptError:
-            raise DecodeQrError
+            raise BadRequest(ERROR_CONFIG["INVALID_QR"]["TITLE"],
+                             ERROR_CONFIG["INVALID_QR"]["MESSAGE"])
         #end try
         response = TransferServices(wallet_id,
                                     request_data["pin"],
@@ -303,6 +305,7 @@ class WalletWithdrawRoutes(Resource):
         #end try
 
         # need to serialize here
+        request_data["bank_name"] = "BNI"
         response = WithdrawServices(wallet_id,
                                     request_data["pin"]).request(request_data)
         return response

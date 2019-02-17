@@ -287,8 +287,8 @@ class WalletServices:
         ).first()
 
         if forgot_otp is None:
-            raise UnprocessableEntity(ERROR_CONFIG["FORGOT_OTP_NOT_FOUND"]["TITLE"],
-                                      ERROR_CONFIG["FORGOT_OTP_NOT_FOUND"]["MESSAGE"])
+            raise RequestNotFound(ERROR_CONFIG["FORGOT_OTP_NOT_FOUND"]["TITLE"],
+                                  ERROR_CONFIG["FORGOT_OTP_NOT_FOUND"]["MESSAGE"])
         #end if
 
         if forgot_otp.status is not False:

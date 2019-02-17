@@ -328,7 +328,7 @@ class Payment(db.Model):
     id             = db.Column(db.Integer, primary_key=True, autoincrement=True)
     source_account = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (money comes from)
     to             = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount ( money goes)
-    ref_number     = db.Column(db.String(100)) # journal number from the bank
+    ref_number     = db.Column(db.String(100), unique=True) # journal number from the bank
     amount         = db.Column(db.Float)
     created_at     = db.Column(db.DateTime, default=now) # UTC
     payment_type   = db.Column(db.Boolean, default=True) # True = Credit / False = Debit
@@ -399,7 +399,7 @@ class VirtualAccount(db.Model):
                                + timedelta(minutes=timeout["DEBIT_VA_TIMEOUT"])
 
         self.datetime_expired = datetime_expired
-        return datetime_expired
+        return str(int(datetime_expired.timestamp()))
       #end def
 
     def generate_va_number(self):

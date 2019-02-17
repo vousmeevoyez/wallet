@@ -135,7 +135,7 @@ class UserSchema(ma.Schema):
     phone_ext   = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
     phone_number= fields.Str(required=True, validate=cannot_be_blank, load_only=True)
     msisdn      = fields.Method("phone_to_msisdn", dump_only=True)
-    email       = fields.Str(required=True, validate=cannot_be_blank)
+    email       = fields.Str(allow_none=True)
     role        = fields.Method("role_id_to_role", validate=cannot_be_blank)
     password    = fields.Str(required=True, attribute="password_hash", validate=cannot_be_blank, load_only=True)
     pin         = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
@@ -260,10 +260,9 @@ class UserSchema(ma.Schema):
             args:
                 email -- email
         """
-        if re.search(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email) != None:
-            pass
-        else:
-            raise ValidationError('Invalid email')
+        if email is not None:
+            if re.search(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email) is None:
+                raise ValidationError('Invalid email')
     #end def
 
     @validates('password')
@@ -273,9 +272,7 @@ class UserSchema(ma.Schema):
             args:
                 password -- password
         """
-        if re.match(r'[A-Za-z0-9@#$%^&+=]{6,}', password):
-            pass
-        else:
+        if re.match(r'[A-Za-z0-9@#$%^&+=]{6,}', password) is None:
             raise ValidationError("Invalid Password, Minimum 6 Character")
     #end def
 
@@ -302,10 +299,8 @@ class UserSchema(ma.Schema):
             args:
                 pin -- pin
         """
-        if re.match(r"\d{6}", pin):
-            pass
-        else:
-            raise ValidationError("Invalid Pin, Minimum 6 digit")
+        if re.match(r"^\d{6}$", pin) is None:
+            raise ValidationError("Invalid Pin, Only allowed 6 digit")
     #end def
 #end class
 

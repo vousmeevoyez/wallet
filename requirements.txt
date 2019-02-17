@@ -54,6 +54,7 @@ python-editor==1.0.3
 pytz==2018.7
 PyYAML==3.13
 raven==6.10.0
+redis==3.1.0
 requests==2.20.0
 rsa==4.0
 sentry-sdk==0.7.2

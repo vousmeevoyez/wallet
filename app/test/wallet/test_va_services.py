@@ -84,6 +84,7 @@ class TestVaServices(BaseTestCase):
             "bank_name" : "BNI",
             "type"      : "CREDIT",
             "wallet_id" : wallet_id,
+            "amount"    : 0
         }
 
         mock_create_va.return_value = True
@@ -99,4 +100,6 @@ class TestVaServices(BaseTestCase):
         }
 
         result = VirtualAccountServices(virtual_account).update(params)
-        self.assertTrue(result["data"])
+        self.assertTrue(result["virtual_account"])
+        self.assertTrue(result["valid_until"])
+

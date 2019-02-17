@@ -45,14 +45,14 @@ class TestCallbackServices(BaseTestCase):
     def test_deposit(self):
         """ test deposit """
         virtual_account, trx_id = self._create_credit_va()
+
         params = {
             "payment_amount" : 10000,
             "payment_ntb" : "123456",
             "payment_channel_key" : "BNI_VA"
         }
         result = CallbackServices(virtual_account, trx_id).deposit(params)
-
-        va = VirtualAccount.query.filter_by(id=virtual_account).first()
+        va = VirtualAccount.query.filter_by(account_no=virtual_account).first()
         self.assertEqual(va.wallet.balance, 10000)
     #end def
 
@@ -65,7 +65,7 @@ class TestCallbackServices(BaseTestCase):
             "payment_channel_key" : "BNI_VA"
         }
         result = CallbackServices(virtual_account, trx_id).withdraw(params)
-        va = VirtualAccount.query.filter_by(id=virtual_account).first()
+        va = VirtualAccount.query.filter_by(account_no=virtual_account).first()
         self.assertEqual(va.wallet.balance, -10000)
     #end def
 #end class

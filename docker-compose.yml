@@ -2,7 +2,8 @@
 version : '3'
 services:
 
-        flask:
+        services:
                 build:
                         context: .
                         dockerfile: dockerfiles/flask/Dockerfile
+                image: modana-wallet-services

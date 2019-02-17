@@ -146,10 +146,6 @@ class TransferServices:
                                       ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
         #end if
 
-        # should send queue here
-        result = TransactionTask().transfer.delay(debit_payment_id)
-        print(result)
-
         # create log to record transaction state
         log = Log()
         db.session.add(log)
@@ -185,11 +181,6 @@ class TransferServices:
             raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
                                       ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
         #end if
-
-        # should send queue here
-        result = TransactionTask().transfer.delay(credit_payment_id)
-        print(result)
-
         return accepted()
     #end def
 
@@ -275,7 +266,6 @@ class TransferServices:
             notes=notes
         )
         debit_transaction.generate_trx_id()
-
         try:
             db.session.add(debit_transaction)
             db.session.commit()
@@ -283,6 +273,8 @@ class TransferServices:
             db.session.rollback()
             raise TransactionError(error)
         #end try
+        # should send queue here
+        result = TransactionTask().transfer.delay(payment_id)
         return debit_transaction
     #end def
 
@@ -307,8 +299,6 @@ class TransferServices:
             notes=notes
         )
         credit_transaction.generate_trx_id()
-
-        wallet.add_balance(amount)
         try:
             db.session.add(credit_transaction)
             db.session.commit()
@@ -316,6 +306,8 @@ class TransferServices:
             db.session.rollback()
             raise TransactionError(error)
         #end try
+        # send queue here
+        result = TransactionTask().transfer.delay(payment_id)
         return credit_transaction
     #end def
 #end class

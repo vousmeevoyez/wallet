@@ -11,20 +11,25 @@ from app.api.models import *
 
 from app.config import config
 
-from app.api.wallet.modules.transfer_services import TransferServices
+from task.bank.tasks import TransactionTask
 
-TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
-WALLET_CONFIG = config.Config.WALLET_CONFIG
+from app.api.wallet.modules.transfer_services import TransferServices
+from app.api.wallet.modules.transfer_services import TransactionError
+
+from app.api.error.http import *
+
+ERROR_CONFIG = config.Config.ERROR_CONFIG
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG
 
 class CallbackServices:
     """ Callback Services Class to handle all callback process here"""
 
     def __init__(self, virtual_account, trx_id):
-        virtual_account = VirtualAccount.query.filter_by(id=virtual_account,
+        virtual_account = VirtualAccount.query.filter_by(account_no=virtual_account,
                                                          trx_id=trx_id).first()
         if virtual_account is None:
-            raise VaNotFoundError
+            raise RequestNotFound(ERROR_CONFIG["VA_NOT_FOUND"]["TITLE"],
+                                  ERROR_CONFIG["VA_NOT_FOUND"]["MESSAGE"])
 
         self.virtual_account = virtual_account
     #end def
@@ -41,41 +46,41 @@ class CallbackServices:
 
         payment_channel = PaymentChannel.query.filter_by(key=payment_channel_key).first()
 
+        # create log here
+        log = Log()
+        db.session.add(log)
+
         # create payment
         payment_payload = {
             "channel_id"    : payment_channel.id,
-            "source_account": self.virtual_account.id,
+            "source_account": self.virtual_account.account_no,
             "to"            : self.virtual_account.wallet_id,
             "ref_number"    : reference_number,
             "amount"        : payment_amount,
             "payment_type"  : True # Credit
         }
         payment_id = TransferServices.create_payment(payment_payload)
-
-        # CREATE MASTER TRANSACTION
-        master_transaction = MasterTransaction(
-            source=self.virtual_account.id,
-            destination=self.virtual_account.wallet_id,
-            amount=payment_amount
-        )
-
-        # record and increase balance here
-        wallet = self.virtual_account.wallet
-        amount = payment_amount
-        credit_transaction = TransferServices.credit_transaction(wallet,
-                                                                 payment_id,
-                                                                 amount,
-                                                                 "TOP_UP")
-        master_transaction.credit_transaction_id = credit_transaction.id
-        master_transaction.debit_transaction_id = None
+        log.payment_id = payment_id
 
         try:
-            db.session.add(master_transaction)
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
         #end def
 
+        wallet = self.virtual_account.wallet
+        amount = payment_amount
+
+        try:
+            credit_transaction = TransferServices.credit_transaction(wallet,
+                                                                     payment_id,
+                                                                     amount,
+                                                                     "TOP_UP")
+        except TransactionError as error:
+            db.session.rollback()
+            raise UnprocessableEntity(ERROR_CONFIG["DEPOSIT_CALLBACK_FAILED"]["TITLE"],
+                                      ERROR_CONFIG["DEPOSIT_CALLBACK_FAILED"]["MESSAGE"])
+        #end def
         response = {
             "status" : "000"
         }
@@ -88,46 +93,47 @@ class CallbackServices:
             args:
                 params -- parameter
         """
-        payment_amount = abs(params["payment_amount"])
+        payment_amount = params["payment_amount"]
         reference_number = params["payment_ntb"]
         payment_channel_key = params["payment_channel_key"]
 
         payment_channel = PaymentChannel.query.filter_by(key=payment_channel_key).first()
 
+        # create log here
+        log = Log()
+        db.session.add(log)
+
         # create payment
         payment_payload = {
             "channel_id"    : payment_channel.id,
-            "source_account": self.virtual_account.id,
+            "source_account": self.virtual_account.account_no,
             "to"            : self.virtual_account.wallet_id,
             "ref_number"    : reference_number,
             "amount"        : payment_amount,
-            "payment_type"  : False# Credit
+            "payment_type"  : False #DEBIT
         }
         payment_id = TransferServices.create_payment(payment_payload)
-
-        # CREATE MASTER TRANSACTION
-        master_transaction = MasterTransaction(
-            source=self.virtual_account.id,
-            destination=self.virtual_account.wallet_id,
-            amount=payment_amount
-        )
-
-        # record and increase balance here
-        wallet = self.virtual_account.wallet
-        amount = payment_amount
-        debit_transaction = TransferServices.debit_transaction(wallet,
-                                                               payment_id,
-                                                               amount,
-                                                               "WITHDRAW")
-        master_transaction.debit_transaction_id = debit_transaction.id
-        master_transaction.credit_transaction_id = None
+        log.payment_id = payment_id
 
         try:
-            db.session.add(master_transaction)
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
         #end def
+
+        wallet = self.virtual_account.wallet
+
+        try:
+            debit_transaction = TransferServices.debit_transaction(wallet,
+                                                                   payment_id,
+                                                                   payment_amount,
+                                                                   "WITHDRAW")
+        except TransactionError as error:
+            db.session.rollback()
+            raise UnprocessableEntity(ERROR_CONFIG["WITHDRAW_CALLBACK_FAILED"]["TITLE"],
+                                      ERROR_CONFIG["WITHDRAW_CALLBACK_FAILED"]["MESSAGE"])
+        #end def
+
         response = {
             "status" : "000"
         }

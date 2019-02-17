@@ -3,7 +3,7 @@ version : '3'
 services:
 
         flask:
-                image: modana-wallet-api
+                image: modana-wallet-services
                 entrypoint: ./build-dev.sh
                 environment:
                 - DB_USERNAME=modana
@@ -34,8 +34,7 @@ services:
                 - 5000:5000
                 depends_on:
                 - postgres
-                links:
-                - postgres
+                - rabbitmq
                 
         postgres:
                 image: postgres:latest
@@ -46,24 +45,33 @@ services:
                 ports:
                 - 5432:5432
                 
+        redis:
+                image : redis:alpine
+        
         rabbitmq:
-                image: rabbitmq:alpine
+                build:
+                        context: dockerfiles/rabbitmq/
+                #hostname: "rabbit"
+                #environment:
+                #- RABBITMQ_DEFAULT_USER=modanabroker
+                #- RABBITMQ_DEFAULT_PASS=password
+                ports:
+                - 5672:5672
+                - 15000:15672
 
         celery:
-                image: modana-wallet-api
+                image: modana-wallet-services
                 entrypoint: make worker
                 environment:
                 - BROKER_URL=amqp://guest:guest@rabbitmq:5672
+                #- BROKER_URL=redis://redis:6379/0
                 - DB_USERNAME=modana
                 - DB_PASSWORD=password
                 - DB_HOSTNAME=postgres
                 - DB_NAME=db_wallet
                 depends_on:
                 - rabbitmq
-                - flask
-                links:
-                - rabbitmq
-                - flask
+                - postgres
 
         flower:
                 image: mher/flower

@@ -14,9 +14,6 @@ ENV APP /app
 RUN mkdir $APP
 WORKDIR $APP
 
-# expose the port uWSGI will listen
-EXPOSE 5000
-
 # copy requirements file 
 COPY requirements.txt .
 RUN pip install -r requirements.txt

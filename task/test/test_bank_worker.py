@@ -9,6 +9,7 @@ from task.bank.tasks import TransactionTask
 class TestBankWorker(BaseTestCase):
     """ Test Class for Bank Worker """
 
+    '''
     def test_create_va(self):
         """ test function that create va in the background """
         # first create a dummy va first
@@ -46,7 +47,7 @@ class TestBankWorker(BaseTestCase):
         db.session.commit()
 
         result = BankTask().create_va.delay(va_id)
-
+    '''
     '''
     def test_bank_transfer(self):
         """ test function that transfer money using OPG in the background """
@@ -123,7 +124,7 @@ class TestTransactionTask(BaseTestCase):
         amount = -100
 
         payment_payload = {
-            "payment_type"   : True,
+            "payment_type"   : False,
             "source_account" : wallet.id,
             "to"             : wallet2.id,
             "amount"         : amount
@@ -134,3 +135,9 @@ class TestTransactionTask(BaseTestCase):
         db.session.commit()
 
         result = TransactionTask().transfer.delay(payment.id)
+
+        wallet = Wallet.query.filter_by(id=wallet.id).first()
+        print(wallet.balance)
+
+        log = Log.query.all()
+        print(log)

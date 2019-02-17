@@ -61,7 +61,7 @@ class BankTask(celery.Task):
         va_payload = {
             "virtual_account" : virtual_account.account_no,
             "transaction_id"  : virtual_account.trx_id,
-            "amount"          : int(virtual_account.trx_amount),
+            "amount"          : int(virtual_account.amount),
             "customer_name"   : virtual_account.name,
             "customer_phone"  : "",
             "datetime_expired": virtual_account.datetime_expired,
@@ -141,7 +141,7 @@ class TransactionTask(celery.Task):
         if payment.payment_type is True: # CREDIT
             wallet_id = payment.to
         else: # DEBIT
-            wallet_id = payment.source
+            wallet_id = payment.source_account
 
         wallet = Wallet.query.filter_by(id=wallet_id).first()
 
@@ -157,3 +157,4 @@ class TransactionTask(celery.Task):
             # retry the task again
             self.retry(exc=error)
         #end try
+    #end def

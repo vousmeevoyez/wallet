@@ -455,7 +455,7 @@ class TestWalletRoutes(BaseTestCase):
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
-        self.assertEqual(response["error"], "ERROR_REMOVING_WALLET")
+        self.assertEqual(response["error"], "ONLY_WALLET")
         self.assertTrue(response["message"])
 
     """
@@ -1029,6 +1029,7 @@ class TestWalletRoutes(BaseTestCase):
         }
 
         result = self.verify_forgot_pin(wallet_id, params, access_token)
+        print(result.get_json())
         self.assertEqual(result.status_code, 404)
 
     """
