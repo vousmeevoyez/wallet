@@ -106,8 +106,8 @@ class CallbackServices:
         # create payment
         payment_payload = {
             "channel_id"    : payment_channel.id,
-            "source_account": self.virtual_account.account_no,
-            "to"            : self.virtual_account.wallet_id,
+            "source_account": self.virtual_account.wallet_id,
+            "to"            : self.virtual_account.account_no,
             "ref_number"    : reference_number,
             "amount"        : payment_amount,
             "payment_type"  : False #DEBIT

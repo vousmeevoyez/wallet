@@ -71,6 +71,7 @@ def make_shell_context():
         'Log'            : Log,
         'ExternalLog'    : ExternalLog,
         'ForgotPin'      : ForgotPin,
+        'Payment'        : Payment,
         'User'           : User
     }
 
