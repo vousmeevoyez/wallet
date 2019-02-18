@@ -6,4 +6,4 @@
 make clean
 make upgrade
 make init
-uwsgi --socket flask:5000 --wsgi-file manage.py --callable app --master --processes 4 --threads 2
+uwsgi --socket flask:5000 --wsgi-file manage.py --callable app --master --processes 4 --threads 2  --disable-logging --enable-threads --vacuum
