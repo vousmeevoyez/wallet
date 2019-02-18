@@ -5,6 +5,8 @@
 
 from app.api import sentry
 from app.api import db
+
+from sqlalchemy.exc import OperationalError, IntegrityError
 from app.api import celery
 
 from app.api.models import *
@@ -156,10 +158,10 @@ class TransactionTask(celery.Task):
         # commit everything here
         try:
             db.session.commit()
-        except Exception as error:
+        except (IntegrityError, OperationalError) as error:
             db.session.rollback()
             sentry.captureException(error)
             # retry the task again
-            self.retry(exc=error)
+            self.retry(countdown=backoff(self.request.retries), exc=error)
         #end try
     #end def
