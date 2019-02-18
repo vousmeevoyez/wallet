@@ -154,7 +154,6 @@ class UserTestCaseModel(BaseTestCase):
 
         # make sure the decoded token contain following information
         self.assertEqual(user.decode_token(token)["type"], "ACCESS")
-        self.assertTrue(user.decode_token(token)["user"])
 
         with self.assertRaises(EmptyPayloadError):
             user.decode_token("eyJhbGciOiJIUzI1NiIsInR5cCI6Im5vbmUifQ.e30.kligm-MjaliTD584hBs6v52XSZcixYU9BlmAAwmjOB0")
@@ -224,7 +223,7 @@ class WalletModelCase(BaseTestCase):
 
         # check lock here
         lock_status = wallet.is_unlocked()
-        self.assertEqual( lock_status, 3)
+        self.assertEqual(lock_status, False)
 
     def test_unlock(self):
         # create dummy wallet
@@ -293,7 +292,7 @@ class WalletModelCase(BaseTestCase):
 
         # create virtual account credit
         va = VirtualAccount(
-            trx_amount="100",
+            amount="100",
             name="Lisa",
             wallet_id=wallet.id,
             bank_id=bni.id,
@@ -306,7 +305,7 @@ class WalletModelCase(BaseTestCase):
 
         # create virtual account debit
         va = VirtualAccount(
-            trx_amount="101",
+            amount="101",
             name="Lisa",
             wallet_id=wallet.id,
             bank_id=bni.id,
@@ -375,152 +374,19 @@ class VirtualAccountModelCase(BaseTestCase):
 
         # create virtual account credit
         va = VirtualAccount(
-            trx_amount="100",
+            amount="100",
             name="Lisa",
             va_type_id=va_credit.id
         )
         va_id  = va.generate_va_number()
         trx_id = va.generate_trx_id()
         datetime_expired = va.get_datetime_expired("BNI", "CREDIT")
+        print(va.datetime_expired)
         db.session.add(va)
         db.session.commit()
 
         va_number = va.generate_va_number()
         self.assertEqual(len(va_number), 16)
-
-class MasterTransactionModelCase(BaseTestCase):
-
-    @staticmethod
-    def create_payment(source, destination, amount, payment_type):
-        db.session.begin()
-        try:
-            payment = Payment(
-                source_account=source,
-                to=destination,
-                amount=amount,
-                payment_type=payment_type,
-            )
-            db.session.add(payment)
-            db.session.commit()
-        except IntegrityError:
-            db.session.rollback()
-        #end try
-    #end def
-
-    @staticmethod
-    def _create_transaction(wallet_id, amount):
-        db.session.begin()
-        try:
-            transaction = Transaction(
-                wallet_id=wallet_id,
-                amount=amount,
-            )
-            transaction.generate_trx_id()
-        except IntegrityError:
-            db.session.rollback()
-        #end try
-    #end def
-    def test_master_transaction(self):
-        # create 2 dummy wallet here
-        wallet = Wallet(
-        )
-        wallet2 = Wallet(
-        )
-
-        db.session.add(wallet)
-        db.session.add(wallet2)
-        db.session.flush()
-
-        # add some balance here for test case
-        user = Wallet.query.get(1)
-        user.add_balance(1000)
-        db.session.flush()
-
-        self.assertEqual(user.check_balance(), 1000)
-
-        user2 = Wallet.query.get(2)
-        user2.add_balance(1000)
-        db.session.flush()
-
-        self.assertEqual(user2.check_balance(), 1000)
-
-        # INITIALIZE TRANSACTION
-        trx_amount = -10
-        # master transaction
-        master_debit_trx = MasterTransaction(
-            source=wallet.id,
-            destination=wallet2.id,
-            amount=trx_amount,
-        )
-        db.session.add(master_debit_trx)
-
-        user.add_balance(trx_amount)
-
-        # SET TO PENDING AFTER DEDUCT BALANCE
-        master_debit_trx.state = 1 # pending
-        db.session.flush()
-
-        # log debit transaction journal here
-
-        #create debit transaction
-        debit_trx = Transaction(
-            wallet_id=wallet.id,
-            amount=trx_amount,
-        )
-        debit_trx.generate_trx_id()
-        db.session.add(debit_trx)
-        # deduct balance
-        db.session.flush()
-
-        master_debit_trx.state = 2 # pending
-        master_debit_trx.transaction_id = debit_trx.id
-        db.session.commit()
-
-        trx_amount = 10
-        master_credit_trx = MasterTransaction(
-            source=wallet2.id,
-            destination=wallet.id,
-            amount=trx_amount,
-        )
-
-        # CREDIT BALANCE HERE
-        user2.add_balance(trx_amount)
-        # SET TRANSACTION TO COMPLETE
-        master_credit_trx.state = 1
-        db.session.flush()
-
-        #start another transaction here
-        # second create credit payment
-        credit_payment = Payment(
-            source_account=wallet.id,
-            to=wallet2.id,
-            amount=trx_amount,
-        )
-        db.session.add(credit_payment)
-
-        #create debit transaction
-        credit_trx = Transaction(
-            wallet_id=wallet2.id,
-            amount=trx_amount,
-        )
-        credit_trx.generate_trx_id()
-        db.session.add(credit_trx)
-        # deduct user balance here
-        master_credit_trx.state = 2 # pending
-        master_credit_trx.transaction_id = credit_trx.id
-
-        db.session.commit()
-        # make sure each account have correct balance after each transaction
-        user = Wallet.query.get(1)
-        self.assertEqual(user.check_balance(), 990)
-        self.assertEqual(len(user.transactions), 1)
-
-        user2 = Wallet.query.get(2)
-        self.assertEqual(user2.check_balance(), 1010)
-        self.assertEqual(len(user2.transactions), 1)
-
-        master_trx = MasterTransaction.query.all()
-        self.assertTrue(len(master_trx) > 0)
 
 class TransactionModelCase(BaseTestCase):
 
@@ -549,12 +415,12 @@ class TransactionModelCase(BaseTestCase):
         self.assertEqual(user2.check_balance(), 1000)
 
         #start transaction here
-        trx_amount = -10
+        amount = -10
         # first create debit payment
         debit_payment = Payment(
             source_account=wallet.id,
             to=wallet2.id,
-            amount=trx_amount,
+            amount=amount,
             payment_type=False,
         )
         db.session.add(debit_payment)
@@ -562,34 +428,34 @@ class TransactionModelCase(BaseTestCase):
         #create debit transaction
         debit_trx = Transaction(
             wallet_id=wallet.id,
-            amount=trx_amount,
+            amount=amount,
         )
         debit_trx.generate_trx_id()
         db.session.add(debit_trx)
         # deduct balance
-        user.add_balance(trx_amount)
+        user.add_balance(amount)
 
         db.session.flush()
 
         #start another transaction here
-        trx_amount = 10
+        amount = 10
         # second create credit payment
         credit_payment = Payment(
             source_account=wallet.id,
             to=wallet2.id,
-            amount=trx_amount,
+            amount=amount,
         )
         db.session.add(credit_payment)
 
         #create debit transaction
         credit_trx = Transaction(
             wallet_id=wallet2.id,
-            amount=trx_amount,
+            amount=amount,
         )
         credit_trx.generate_trx_id()
         db.session.add(credit_trx)
         # deduct user balance here
-        user2.add_balance(trx_amount)
+        user2.add_balance(amount)
 
         db.session.flush()
 

@@ -86,7 +86,7 @@ class VirtualAccount:
             'customer_email'  : '',
             'customer_phone'  : params["customer_phone"],
             'virtual_account' : params["virtual_account"],
-            'datetime_expired': params["datetime_expired"].strftime("%Y-%m-%d %H:%M:%S"),
+            'datetime_expired': params["datetime_expired"].astimezone(self.TIMEZONE).strftime("%Y-%m-%d %H:%M:%S"),
         }
 
         # to match payload we need to add description on CREDIT VA

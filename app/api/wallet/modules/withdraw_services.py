@@ -74,7 +74,7 @@ class WithdrawServices:
 
         # creating withdraw record and set it to valid for certain period of time
         valid_until = datetime.now() + \
-        timedelta(hours=VIRTUAL_ACCOUNT_CONFIG["BNI"]["DEBIT_VA_TIMEOUT"])
+        timedelta(minutes=VIRTUAL_ACCOUNT_CONFIG["BNI"]["DEBIT_VA_TIMEOUT"])
 
         withdraw = Withdraw(
             wallet_id=self.wallet.id,
