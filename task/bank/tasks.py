@@ -156,7 +156,7 @@ class TransactionTask(celery.Task):
         # commit everything here
         try:
             db.session.commit()
-        except IntegrityError as error:
+        except Exception as error:
             db.session.rollback()
             sentry.captureException(error)
             # retry the task again
