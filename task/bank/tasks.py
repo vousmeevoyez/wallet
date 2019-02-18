@@ -148,7 +148,7 @@ class TransactionTask(celery.Task):
         else: # DEBIT
             wallet_id = payment.source_account
 
-        wallet = db.session.query(Wallet.id).with_for_update().filter_by(id=wallet_id).first()
+        wallet = Wallet.query.filter_by(id=wallet_id).with_for_update().first()
 
         # add wallet balance
         wallet.add_balance(payment.amount)
