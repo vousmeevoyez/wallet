@@ -52,7 +52,7 @@ services:
                 build:
                         context: dockerfiles/nginx/
                 ports:
-                - 5000:8080
+                - 5000:8888
                 depends_on:
                 - flask
                 restart: always
