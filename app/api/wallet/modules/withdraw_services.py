@@ -113,10 +113,10 @@ class WithdrawServices:
         # update va here
             va_response = VirtualAccountServices(va_record.account_no).update(va_payload)
         #end if
-
         response = {
-            "valid_until" : va_response["valid_until"],
-            "amount" : va_response["amount"]
+            "virtual_account" : va_response["virtual_account"],
+            "valid_until"     : va_response["valid_until"],
+            "amount"          : va_response["amount"]
         }
         return response
     #end def

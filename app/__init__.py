@@ -7,6 +7,8 @@ from flask_restplus import Api
 
 from flask import Blueprint
 
+from app.api import sentry
+
 from app.api.user           import api as user_ns
 from app.api.authentication import api as auth_ns
 from app.api.wallet         import api as wallet_ns
@@ -23,16 +25,29 @@ class CustomApi(Api):
         """ Overrides the handle_error() method of the Api and adds custom error handling
         :param e: error object
         """
+
         code = getattr(e, 'code', 500)  # Gets code or defaults to 500
-        message = getattr(e, 'message', 'Internal Server Error')
+        message = getattr(e, 'message', 'INTERNAL_SERVER_ERROR')
         to_dict = getattr(e, 'to_dict', None)
 
         if code == 500:
-            print("something happen here")
+            # capture error and send to sentry
+            sentry.captureException(e)
+            data = {'error': message}
+
+        # handle request schema error from reqparse
+        if code == 400:
+            response = getattr(e, 'response', True)
+            if response is None:
+                # build error response
+                data = {
+                    "error" : "MISSING_PARAMETER",
+                    "message" : e.data['message'],
+                    "details" : e.data['errors']
+                }
+
         if to_dict:
-            data = to_dict()
-        else:
-            data = {'code' : code, 'message': message}
+            data = to_dict()    
 
         return self.make_response(data, code)
 

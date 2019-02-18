@@ -17,6 +17,10 @@ BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 WALLET_CONFIG = config.Config.WALLET_CONFIG
 TRANSACTION_CONFIG = config.Config.TRANSACTION_CONFIG
 
+"""
+    GLOBAL VALIDATION FUNCTION
+"""
+
 def cannot_be_blank(string):
     """
         function to make user not enter empty string
@@ -26,6 +30,55 @@ def cannot_be_blank(string):
     if not string:
         raise ValidationError(" Data cannot be blank")
 #end def
+
+def validate_pin(pin):
+    """
+        function to validate pin
+    """
+    if re.match(r"^\d{6}$", pin) is None:
+        raise ValidationError("Invalid Pin, Only allowed 6 digit and must be integer")
+
+def validate_amount(amount):
+    """
+        Function to validate transaction amount
+        args :
+            amount -- Transaction amount
+    """
+    if float(amount) < 0:
+        raise ValidationError("Invalid Amount, cannot be less than 0")
+#end def
+
+def validate_name(name):
+    """
+        function to validate name
+        args:
+            name -- name
+    """
+    # onyl allow alphabet character
+    pattern = r"^[a-zA-Z ]+$"
+    if len(name) < 2:
+        raise ValidationError('Invalid name, minimum is 2 character')
+    if len(name) > 70:
+        raise ValidationError('Invalid name, max is 70 character')
+    if  re.match(pattern, name) is None:
+        raise ValidationError('Invalid name, only alphabet allowed')
+#end def
+
+def validate_label(label):
+    """
+        function to validate label field
+        args :
+            label -- bank account label
+    """
+    # onyl allow alphabet character and space
+    pattern = r"^[a-zA-Z ]+$"
+    if len(label) < 2:
+        raise ValidationError('Invalid label, minimum is 2 character')
+    if len(label) > 30:
+        raise ValidationError('Invalid label, max is 30 character')
+    if  re.match(pattern, label) is None:
+        raise ValidationError('Invalid label, only alphabet allowed')
+    #end def
 
 class BankSchema(ma.Schema):
     """
@@ -40,53 +93,21 @@ class BankAccountSchema(ma.Schema):
         This is Class Schema for Bank Account Object
     """
     id         = fields.Int()
-    name       = fields.Str(required=True, validate=cannot_be_blank)
+    name       = fields.Str(required=True, validate=(cannot_be_blank,
+                                                     validate_name))
     account_no = fields.Str(required=True, validate=cannot_be_blank)
-    label      = fields.Str(required=True, validate=cannot_be_blank)
+    label      = fields.Str(required=True, validate=(cannot_be_blank,
+                                                     validate_label))
     bank_code  = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
     bank_name  = fields.Method("bank_id_to_name")
 
     def bank_id_to_name(self, obj):
-        """ 
+        """
             function to convert bank id to bank name
-            args : 
+            args :
                 obj -- bank account object
         """
         return obj.bank.name
-    #end def
-
-    @validates('name')
-    def validate_name(self, name):
-        """
-            function to validate name field
-            args :
-                name -- bank account name
-        """
-        # onyl allow alphabet space character
-        pattern = r"^[a-zA-Z ]+$"
-        if len(name) < 2:
-            raise ValidationError('Invalid name, minimum is 2 character')
-        if len(name) > 35:
-            raise ValidationError('Invalid name, max is 35 character')
-        if  re.match(pattern, name) is None:
-            raise ValidationError('Invalid name, only alphabet allowed')
-    #end def
-
-    @validates('label')
-    def validate_label(self, label):
-        """
-            function to validate label field
-            args :
-                label -- bank account label
-        """
-        # onyl allow alphabet character and space
-        pattern = r"^[a-zA-Z ]+$"
-        if len(label) < 2:
-            raise ValidationError('Invalid label, minimum is 2 character')
-        if len(label) > 30:
-            raise ValidationError('Invalid label, max is 30 character')
-        if  re.match(pattern, label) is None:
-            raise ValidationError('Invalid label, only alphabet allowed')
     #end def
 
     @validates('account_no')
@@ -131,14 +152,16 @@ class UserSchema(ma.Schema):
     """ this is class schema for user object"""
     id          = fields.Str()
     username    = fields.Str(required=True, validate=cannot_be_blank)
-    name        = fields.Str(required=True, validate=cannot_be_blank)
+    name        = fields.Str(required=True, validate=(cannot_be_blank,
+                                                      validate_name))
     phone_ext   = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
     phone_number= fields.Str(required=True, validate=cannot_be_blank, load_only=True)
     msisdn      = fields.Method("phone_to_msisdn", dump_only=True)
     email       = fields.Str(allow_none=True)
     role        = fields.Method("role_id_to_role", validate=cannot_be_blank)
     password    = fields.Str(required=True, attribute="password_hash", validate=cannot_be_blank, load_only=True)
-    pin         = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
+    pin         = fields.Str(required=True, validate=(cannot_be_blank,
+                                                      validate_pin), load_only=True)
     created_at  = fields.DateTime('%Y-%m-%d %H:%M:%S')
     status      = fields.Method("bool_to_status")
 
@@ -202,23 +225,6 @@ class UserSchema(ma.Schema):
             raise ValidationError('Invalid username, max is 32 character')
         if  re.match(pattern, username) is None:
             raise ValidationError('Invalid username, only alphanumeric, . _ - allowed')
-    #end def
-
-    @validates('name')
-    def validate_name(self, name):
-        """
-            function to validate name
-            args:
-                name -- name
-        """
-        # onyl allow alphabet character
-        pattern = r"^[a-zA-Z ]+$"
-        if len(name) < 2:
-            raise ValidationError('Invalid name, minimum is 2 character')
-        if len(name) > 70:
-            raise ValidationError('Invalid name, max is 70 character')
-        if  re.match(pattern, name) is None:
-            raise ValidationError('Invalid name, only alphabet allowed')
     #end def
 
     @validates('phone_ext')
@@ -291,25 +297,16 @@ class UserSchema(ma.Schema):
         if role not in ["ADMIN", "USER"]:
             raise ValidationError("Invalid Role")
     #end def
-
-    @validates('pin')
-    def validate_pin(self, pin):
-        """
-            function to validate pin
-            args:
-                pin -- pin
-        """
-        if re.match(r"^\d{6}$", pin) is None:
-            raise ValidationError("Invalid Pin, Only allowed 6 digit")
-    #end def
 #end class
 
 class WalletSchema(ma.Schema):
     """ This is class that represent wallet schema"""
     id         = fields.Str()
-    label      = fields.Str(required=True, load_only=True, validate=cannot_be_blank)
+    label      = fields.Str(required=True, load_only=True,
+                            validate=(cannot_be_blank, validate_label))
     user_id    = fields.Int(load_only=True)
-    pin        = fields.Str(required=True, attribute="pin_hash", validate=cannot_be_blank, load_only=True)
+    pin        = fields.Str(required=True, attribute="pin_hash",
+                            validate=(cannot_be_blank,validate_pin), load_only=True)
     created_at = fields.DateTime('%Y-%m-%d %H:%M:%S', load_only=True)
     status     = fields.Method("bool_to_status")
     balance    = fields.Float()
@@ -332,75 +329,25 @@ class WalletSchema(ma.Schema):
     def make_wallet(self, data):
         return Wallet(**data)
     #end def
-
-    @validates('label')
-    def validate_label(self, name):
-        """
-            function to validate wallet label
-            args:
-                name -- name
-        """
-        # onyl allow alphabet character
-        pattern = r"^[a-zA-Z ]+$"
-        if len(name) < 2:
-            raise ValidationError('Invalid label, minimum is 2 character')
-        if len(name) > 70:
-            raise ValidationError('Invalid label, max is 100 character')
-        if  re.match(pattern, name) is None:
-            raise ValidationError('Invalid label, only alphabet allowed')
-    #end def
-
-    @validates('pin')
-    def validate_pin(self, pin):
-        """
-        function to validate pin
-            args:
-                pin -- user pin
-        """
-        if re.match(r"\d{6}", pin):
-            pass
-        else:
-            raise ValidationError("Invalid Pin")
-    #end def
-
 #end class
 
-class WithdrawSchema(ma.Schema):
-    """ This is class that represent Withdraw Schema"""
-    amount = fields.Float()
-    pin = fields.Str(required=True, attribute="pin_hash", validate=cannot_be_blank, load_only=True)
-
-    @validates('amount')
-    def validate_amount(self, amount):
-        """
-            Function to validate transaction amount
-            args :
-                amount -- Transaction amount
-        """
-        if float(amount) < 0:
-            raise ValidationError("Invalid Amount, cannot be less than 0")
-    #end def
-
-    @validates('pin')
-    def validate_pin(self, pin):
-        """
-        function to validate pin
-            args:
-                pin -- user pin
-        """
-        if re.match(r"\d{6}", pin):
-            pass
-        else:
-            raise ValidationError("Invalid Pin")
-    #end def
+class UpdatePinSchema(ma.Schema):
+    """ This is class that represent Update pin Schema"""
+    pin         = fields.Str(required=True, validate=(cannot_be_blank,
+                                                      validate_pin), load_only=True)
+    confirm_pin = fields.Str(required=True, validate=(cannot_be_blank,
+                                                      validate_pin), load_only=True)
+    old_pin     = fields.Str(required=True, validate=(cannot_be_blank,
+                                                      validate_pin), load_only=True)
 #end class
 
 class TransactionSchema(ma.Schema):
     """ This is class that represent Transaction Schema"""
     id               = fields.Str()
+    pin              = fields.Str(load_only=True, validate=validate_pin)
     wallet_id        = fields.Str()
     balance          = fields.Float()
-    amount           = fields.Float()
+    amount           = fields.Float(validate=validate_amount)
     transaction_type = fields.Method("transaction_type_id_to_string")
     notes            = fields.Str(allow_none=True)
     payment_details  = fields.Method("payment_id_to_details")
@@ -422,17 +369,6 @@ class TransactionSchema(ma.Schema):
                 raise ValidationError('Invalid notes, max is 50 character')
             if  re.match(pattern, notes) is None:
                 raise ValidationError('Invalid notes, only alphabet allowed')
-    #end def
-
-    @validates('amount')
-    def validate_amount(self, amount):
-        """
-            Function to validate transaction amount
-            args :
-                amount -- Transaction amount
-        """
-        if float(amount) <= 0:
-            raise ValidationError("Invalid Amount, cannot be less than 0")
     #end def
 
     def payment_id_to_details(self, obj):

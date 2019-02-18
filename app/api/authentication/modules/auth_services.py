@@ -26,6 +26,7 @@ from app.api.http_response import no_content
 from app.config import config
 
 ERROR_CONFIG = config.Config.ERROR_CONFIG
+STATUS_CONFIG = config.Config.STATUS_CONFIG
 
 class AuthServices:
     """ Authentication Services Class"""
@@ -64,7 +65,8 @@ class AuthServices:
 
         # fetch user information
         # convert user id to user object here
-        user = User.query.filter_by(id=payload["sub"]).first()
+        user = User.query.filter_by(id=payload["sub"], 
+                                    status=STATUS_CONFIG["ACTIVE"]).first()
         if user is None:
             raise RequestNotFound(ERROR_CONFIG["USER_NOT_FOUND"]["TITLE"],
                                   ERROR_CONFIG["USER_NOT_FOUND"]["MESSAGE"])

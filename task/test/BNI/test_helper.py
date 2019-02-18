@@ -100,7 +100,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         # replace normal return_value with expected_value
         mock_post.return_value = expected_value
 
-        result = VirtualAccountHelper().create_va("CARDLESS", data)
+        result = VirtualAccountHelper().create_va("DEBIT", data)
         self.assertEqual(result["status"], "000") # data already existed
 
     @patch.object(VirtualAccountHelper, '_post')
@@ -123,7 +123,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         mock_post.side_effect = RemoteCallError(Mock())
 
         with self.assertRaises(ApiError):
-            result = VirtualAccountHelper().create_va("CARDLESS", data)
+            result = VirtualAccountHelper().create_va("DEBIT", data)
 
     @patch.object(VirtualAccountHelper, '_post')
     def test_mock_get_inquiry_success(self, mock_post):
@@ -282,7 +282,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
     def test_post_cardless_success(self, mock_post):
         """ test success post function to BNI Credit E-Collection"""
         api_name = "API_NAME"
-        resource_type = "CARDLESS"
+        resource_type = "DEBIT"
         payload = {
             'client_id': '99099',
             'trx_id': '121',
@@ -304,7 +304,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
     def test_post_cardless_failed(self, mock_post):
         """ test failed post function to BNI Credit E-Collection"""
         api_name = "API_NAME"
-        resource_type = "CARDLESS"
+        resource_type = "DEBIT"
         payload = {
             'client_id': '99099',
             'trx_id': '121',
@@ -1019,5 +1019,6 @@ class TestMockCoreBankHelper(BaseTestCase):
             CoreBankHelper(access_token).transfer(data)
     #end def
 #end class
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

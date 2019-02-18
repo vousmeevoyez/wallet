@@ -45,6 +45,7 @@ transfer_request_schema = TransferRequestSchema.parser
 wallet_transaction_request_schema = WalletTransactionRequestSchema.parser
 qr_transfer_request_schema = QRTransferRequestSchema.parser
 withdraw_request_schema = WithdrawRequestSchema.parser
+pin_only_request_schema = PinOnlyRequestSchema.parser
 
 @api.route('/')
 class WalletAddRoutes(Resource):
@@ -148,7 +149,10 @@ class WalletQrTransferRoutes(Resource):
         # request data validator
         request_data = qr_transfer_request_schema.parse_args(strict=True)
         try:
-            transfer = TransactionSchema(strict=True).validate(request_data)
+            excluded = ("id", "wallet_id", "balance", "transaction_type",
+                        "notes", "payment_details", "created_at")
+            transfer = TransactionSchema(strict=True).validate(request_data,
+                                                               partial=excluded)
         except ValidationError as error:
             raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
                              ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
@@ -245,8 +249,35 @@ class WalletPinRoutes(Resource):
             update wallet pin
         """
         request_data = update_pin_request_schema.parse_args(strict=True)
-        # need to serialize here
+        try:
+            wallet = UpdatePinSchema(strict=True).validate(request_data)
+        except ValidationError as error:
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
         response = WalletServices(wallet_id).update_pin(request_data)
+        return response
+    #end def
+
+    @token_required
+    def post(self, wallet_id):
+        """
+            handle POST method from
+            api/v1/<wallet_id>/pin/
+            update wallet pin
+        """
+        request_data = pin_only_request_schema.parse_args(strict=True)
+        try:
+            excluded = ("id", "wallet_id", "balance", "transaction_type",
+                        "notes", "payment_details", "created_at", "amount")
+            transfer = TransactionSchema(strict=True).validate(request_data,
+                                                               partial=excluded)
+        except ValidationError as error:
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
+        # need to serialize here
+        response = WalletServices(wallet_id).check(request_data["pin"])
         return response
     #end def
 #end class
@@ -297,14 +328,14 @@ class WalletWithdrawRoutes(Resource):
         """
         request_data = withdraw_request_schema.parse_args(strict=True)
         try:
-            result = WithdrawSchema(strict=True).validate(request_data)
+            excluded = ("id", "wallet_id", "balance", "transaction_type",
+                        "notes", "payment_details", "created_at")
+            transfer = TransactionSchema(strict=True).validate(request_data)
         except ValidationError as error:
             raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
                              ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
                              error.messages)
         #end try
-
-        # need to serialize here
         request_data["bank_name"] = "BNI"
         response = WithdrawServices(wallet_id,
                                     request_data["pin"]).request(request_data)
@@ -328,7 +359,10 @@ class WalletTransferRoutes(Resource):
         # parse request data
         request_data = transfer_request_schema.parse_args(strict=True)
         try:
-            transfer = TransactionSchema(strict=True).validate(request_data)
+            excluded = ("id", "wallet_id", "balance", "transaction_type",
+                        "notes", "payment_details", "created_at")
+            transfer = TransactionSchema(strict=True).validate(request_data,
+                                                               partial=excluded)
         except ValidationError as error:
             raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
                              ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
@@ -357,7 +391,10 @@ class WalletBankTransferRoutes(Resource):
         # parse request data
         request_data = transfer_request_schema.parse_args(strict=True)
         try:
-            transfer = TransactionSchema(strict=True).validate(request_data)
+            excluded = ("id", "wallet_id", "balance", "transaction_type",
+                        "payment_details", "created_at")
+            transfer = TransactionSchema(strict=True).validate(request_data,
+                                                               partial=excluded)
         except ValidationError as error:
             raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
                              ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],

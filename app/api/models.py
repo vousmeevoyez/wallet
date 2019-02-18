@@ -287,7 +287,7 @@ class BankAccount(db.Model):
         This is class that represent Bank Account Database Object
     """
     id         = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    label      = db.Column(db.String(24), unique=True) # account label
+    label      = db.Column(db.String(30), unique=True) # account label
     name       = db.Column(db.String(24), unique=True) # bank account name
     account_no = db.Column(db.String(30), unique=True) # bank account no
     created_at = db.Column(db.DateTime, default=now) # UTC

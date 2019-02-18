@@ -6,7 +6,6 @@
 # pylint: disable=bad-continuation
 # pylint: disable=too-few-public-methods
 # pylint: disable=no-self-use
-
 from flask_restplus import Resource #pylint: disable=import-error
 
 from app.api.authentication import api
@@ -43,9 +42,8 @@ class TokenRoutes(Resource):
             api/v1/token/
             return access token
         """
-        request_data = REQUEST_SCHEMA.parse_args(strict=True)
+        request_data = REQUEST_SCHEMA.parse_args()
 
-        # request data validator
         excluded = "name", "phone_ext", "phone_number", "pin", "role", "email"
         errors = UserSchema().validate(request_data, partial=(excluded))
         if errors:

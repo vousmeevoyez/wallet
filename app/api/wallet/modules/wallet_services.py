@@ -326,4 +326,19 @@ class WalletServices:
         }
         return response
     #end def
+    
+    def check(self, pin):
+        """
+            function to check and verify pin
+        """
+        # first make sure the old pin is correct
+        if self.wallet.check_pin(pin) is not True:
+            raise UnprocessableEntity(ERROR_CONFIG["INCORRECT_PIN"]["TITLE"],
+                                      ERROR_CONFIG["INCORRECT_PIN"]["MESSAGE"])
+        #end if
+        response = {
+            "message" : "PIN VERIFIED"
+        }
+        return response
+    #end def
 #end class

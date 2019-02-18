@@ -119,7 +119,7 @@ class VirtualAccountServices:
         transaction_id = self.virtual_account.generate_trx_id()
         datetime_expired = \
         self.virtual_account.get_datetime_expired(params["bank_name"], params["type"])
-        self.virtual_account.trx_amount = params["amount"]
+        self.virtual_account.amount = params["amount"]
         
         response = {
             "virtual_account" : virtual_account_number,

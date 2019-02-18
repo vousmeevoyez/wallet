@@ -69,6 +69,12 @@ class ForgotPinRequestSchema:
     parser.add_argument("otp_key", type=str, required=True)
 #end class
 
+class PinOnlyRequestSchema:
+    """Define all mandatory argument for verify pin"""
+    parser = reqparse.RequestParser()
+    parser.add_argument("pin", type=str, required=True)
+#end class
+
 class TransferRequestSchema:
     """Define all mandatory argument for wallet transfer"""
     parser = reqparse.RequestParser()

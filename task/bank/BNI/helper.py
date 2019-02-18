@@ -42,7 +42,7 @@ class VirtualAccount:
         if resource_type == "CREDIT":
             client_id = self.BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
             secret_key = self.BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"]
-        elif resource_type == "CARDLESS":
+        elif resource_type == "DEBIT":
             client_id = self.BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
             secret_key = self.BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"]
         #end if
@@ -69,7 +69,7 @@ class VirtualAccount:
             api_type = self.BNI_ECOLLECTION_CONFIG["BILLING"]
             billing_type = self.BNI_ECOLLECTION_CONFIG["CREDIT_BILLING_TYPE"]
             api_name = "CREATE_CREDIT_VA"
-        elif resource_type == "CARDLESS":
+        elif resource_type == "DEBIT":
             api_type = self.BNI_ECOLLECTION_CONFIG["CARDLESS"]
             billing_type = self.BNI_ECOLLECTION_CONFIG["CARDLESS_BILLING_TYPE"]
             api_name = "CREATE_CARDLESS_DEBIT_VA"

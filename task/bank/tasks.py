@@ -58,12 +58,17 @@ class BankTask(celery.Task):
         # fetch va object
         virtual_account = VirtualAccount.query.filter_by(id=virtual_account_id).first()
 
+        # build phone number 
+        phone_ext =  virtual_account.wallet.user.phone_ext
+        phone_number = virtual_account.wallet.user.phone_number
+        msisdn = str(phone_ext) + str(phone_number)
+
         va_payload = {
             "virtual_account" : virtual_account.account_no,
             "transaction_id"  : virtual_account.trx_id,
             "amount"          : int(virtual_account.amount),
             "customer_name"   : virtual_account.name,
-            "customer_phone"  : "",
+            "customer_phone"  : msisdn,
             "datetime_expired": virtual_account.datetime_expired,
         }
         resources = virtual_account.va_type.key

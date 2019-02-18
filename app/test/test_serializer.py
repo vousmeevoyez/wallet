@@ -335,7 +335,7 @@ class TestUserSchema(BaseTestCase):
         }
         errors = UserSchema().validate(data)
         expected_error = {
-            'pin': ['Invalid Pin, Minimum 6 digit']
+            'pin': ['Invalid Pin, Only allowed 6 digit and must be integer']
         }
         self.assertEqual(errors, expected_error)
 
@@ -417,8 +417,9 @@ class TestWalletSchema(BaseTestCase):
             "pin"    : "1234"
         }
         errors = WalletSchema().validate(data)
-        expected_error = {'label': ['Missing data for required field.'],
-                          'pin': ['Invalid Pin']}
+        expected_error = {
+            'label': ['Missing data for required field.'],
+            'pin': ['Invalid Pin, Only allowed 6 digit and must be integer']}
         self.assertEqual(errors, expected_error)
 
 class TestTransactionSchema(BaseTestCase):

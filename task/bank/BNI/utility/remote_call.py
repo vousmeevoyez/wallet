@@ -77,7 +77,6 @@ def post(api_name, base_url, client_id, secret_key, data):
 
     payload["client_id"] = client_id
     payload["data"] = encrypt(client_id, secret_key, data)
-
     try:
         # log everything before creating request
         log = ExternalLog(request=data, \
@@ -96,6 +95,8 @@ def post(api_name, base_url, client_id, secret_key, data):
         log.save_response_time(time.time() - start_time)
     except requests.exceptions.Timeout as error:
         raise ServicesFailed("TIMEOUT", error)
+    except requests.exceptions.SSLError as error:
+        raise ServicesFailed("SSL_ERROR", error)
     #end try
 
     result = r.json()
