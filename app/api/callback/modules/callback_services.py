@@ -109,7 +109,7 @@ class CallbackServices:
             "source_account": self.virtual_account.wallet_id,
             "to"            : self.virtual_account.account_no,
             "ref_number"    : reference_number,
-            "amount"        : payment_amount,
+            "amount"        : -payment_amount,
             "payment_type"  : False #DEBIT
         }
         payment_id = TransferServices.create_payment(payment_payload)
