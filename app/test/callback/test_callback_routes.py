@@ -163,6 +163,9 @@ class TestCallbackRoutes(BaseTestCase):
         response = result.get_json()
         self.assertEqual(response["status"], "000")
 
+        wallet = Wallet.query.all()
+        print(wallet)
+
     """
         WITHDRAW CALLBACK
     """
@@ -203,4 +206,8 @@ class TestCallbackRoutes(BaseTestCase):
             "data"      : encrypted_data.decode("UTF-8")
         }
         result = self.withdraw_callback(expected_value)
+        response = result.get_json()
         self.assertEqual(response["status"], "000")
+
+        wallet = Wallet.query.all()
+        print(wallet)

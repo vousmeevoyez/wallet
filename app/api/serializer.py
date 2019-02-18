@@ -397,9 +397,9 @@ class TransactionSchema(ma.Schema):
         """
         result = ""
         if obj.transaction_type == 1:
-            result = "DEPOSIT"
-        elif obj.transaction_type == 2:
             result = "TOP_UP"
+        elif obj.transaction_type == 2:
+            result = "WITHDRAW"
         elif obj.transaction_type == 3:
             result = "TRANSFER_IN"
         elif obj.transaction_type == 4:

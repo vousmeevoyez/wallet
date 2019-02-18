@@ -381,7 +381,6 @@ class VirtualAccountModelCase(BaseTestCase):
         va_id  = va.generate_va_number()
         trx_id = va.generate_trx_id()
         datetime_expired = va.get_datetime_expired("BNI", "CREDIT")
-        print(va.datetime_expired)
         db.session.add(va)
         db.session.commit()
 
