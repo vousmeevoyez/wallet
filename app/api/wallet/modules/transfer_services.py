@@ -109,10 +109,6 @@ class TransferServices:
                                       ERROR_CONFIG["INSUFFICIENT_BALANCE"]["MESSAGE"])
         #end if
 
-        # create log to record transaction state
-        log = Log()
-        db.session.add(log)
-
         # create debit payment
         payment = {
             "payment_type"  : False,# debit
@@ -122,8 +118,6 @@ class TransferServices:
         }
 
         debit_payment_id = self.create_payment(payment)
-        log.payment_id = debit_payment_id
-        # commit log here and rollback if something wrong
         try:
             db.session.commit()
         except TransactionError as error:
@@ -146,10 +140,6 @@ class TransferServices:
                                       ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
         #end if
 
-        # create log to record transaction state
-        log = Log()
-        db.session.add(log)
-
         payment = {
             "payment_type"  : True,# credit
             "source_account": self.source.id,# debit
@@ -158,8 +148,6 @@ class TransferServices:
         }
 
         credit_payment_id = self.create_payment(payment)
-        log.payment_id = credit_payment_id
-
         try:
             db.session.commit()
         except IntegrityError as error:
@@ -201,11 +189,6 @@ class TransferServices:
             raise RequestNotFound(ERROR_CONFIG["BANK_ACC_NOT_FOUND"]["TITLE"],
                                   ERROR_CONFIG["BANK_ACC_NOT_FOUND"]["MESSAGE"])
 
-
-        # create log to record transaction state
-        log = Log()
-        db.session.add(log)
-
         # create debit payment
         payment = {
             "payment_type"   : False,
@@ -215,8 +198,6 @@ class TransferServices:
         }
 
         debit_payment_id = self.create_payment(payment)
-        log.payment_id = debit_payment_id
-        # commit log here and rollback if something wrong
         try:
             db.session.commit()
         except TransactionError as error:
@@ -268,7 +249,6 @@ class TransferServices:
         debit_transaction.generate_trx_id()
         try:
             db.session.add(debit_transaction)
-            db.session.commit()
         except IntegrityError as error:
             db.session.rollback()
             raise TransactionError(error)

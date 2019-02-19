@@ -137,26 +137,50 @@ class TransactionTask(celery.Task):
                 )
     def transfer(self, payment_id):
         """ create task in background to move money between wallet """
-        # fetch payment object
+        # fetch payment record that going to be processed
         payment = Payment.query.filter_by(id=payment_id).first()
+        if payment is None:
+            # should abort the transfer
+            pass
 
-        # create transaction log for this payment
-        log = Log(payment_id=payment.id, state=1)
-        db.session.add(log)
-
-        # fetch targe wallet here
-        if payment.payment_type is True: # CREDIT
-            wallet_id = payment.to
-        else: # DEBIT
-            wallet_id = payment.source_account
-
-        wallet = Wallet.query.filter_by(id=wallet_id).with_for_update().first()
-
-        # add wallet balance
-        wallet.add_balance(payment.amount)
-
-        # commit everything here
         try:
+            # start creating transaction log here
+            log = Log(payment_id=payment.id)
+            db.session.add(log)
+            db.session.commit()
+        except IntegrityError as error:
+            db.session.rollback()
+            # abort here
+
+        # fetch latest log object
+        log = Log.query.filter_by(payment_id=payment_id).first()
+        if log is None:
+            # should abort transaction there
+            pass
+        
+        if log.state != 0:
+            # should abort transaction there if state is not INIT
+            pass
+
+        db.session.begin()
+        try:
+            # fetch target wallet here
+            if payment.payment_type is True: # CREDIT
+                wallet_id = payment.to
+            else: # DEBIT
+                wallet_id = payment.source_account
+
+            wallet = Wallet.query.filter_by(id=wallet_id).with_for_update().first()
+
+            # update log state here
+            log.state = 1 # PENDING
+            db.session.flush()
+
+            # add wallet balance
+            wallet.add_balance(payment.amount)
+
+            log.state = 2 # COMPLETED
+            # commit everything here
             db.session.commit()
         except (IntegrityError, OperationalError) as error:
             db.session.rollback()
