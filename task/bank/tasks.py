@@ -152,17 +152,12 @@ class TransactionTask(celery.Task):
             # abort here
 
         # fetch latest log object
-        log = Log.query.filter_by(payment_id=payment_id).first()
+        log = Log.query.filter_by(payment_id=payment_id, state=0).first()
         if log is None:
             # should abort transaction there
             print("log not found")
-        
-        if log.state != 0:
-            # should abort transaction there if state is not INIT
-            print("log not INIT")
 
-        db.session.remove() # remove all session first
-        db.session.begin()
+        db.session.begin(nested=True)
         try:
             # fetch target wallet here
             if payment.payment_type is True: # CREDIT
