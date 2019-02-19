@@ -118,6 +118,8 @@ class BankTask(celery.Task):
 class TransactionTask(celery.Task):
     """Abstract base class for all tasks in my app."""
 
+    abstract = True
+
     def on_retry(self, exc, task_id, args, kwargs, einfo):
         """Log the exceptions to sentry at retry."""
         sentry.captureException(exc)
@@ -179,7 +181,6 @@ class TransactionTask(celery.Task):
             db.session.commit()
         except (IntegrityError, OperationalError) as error:
             db.session.rollback()
-            sentry.captureException(error)
             # retry the task again
             self.retry(countdown=backoff(self.request.retries), exc=error)
         #end try
