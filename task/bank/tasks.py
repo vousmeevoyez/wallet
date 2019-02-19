@@ -183,4 +183,5 @@ class TransactionTask(celery.Task):
             # retry the task again
             self.retry(countdown=backoff(self.request.retries), exc=error)
         #end try
+        db.session.commit()
     #end def
