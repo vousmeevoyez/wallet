@@ -162,7 +162,7 @@ class TransactionTask(celery.Task):
             print("log not INIT")
 
         db.session.remove() # remove all session first
-        db.session.begin(autocommit=True)
+        db.session.begin()
         try:
             # fetch target wallet here
             if payment.payment_type is True: # CREDIT
