@@ -2,7 +2,6 @@
     This is Celery Task to help interacting with Bank API
     in the background
 """
-
 from app.api import sentry
 from app.api import db
 
@@ -141,7 +140,7 @@ class TransactionTask(celery.Task):
         payment = Payment.query.filter_by(id=payment_id).first()
         if payment is None:
             # should abort the transfer
-            pass
+            print("payment not found")
 
         try:
             # start creating transaction log here
@@ -156,13 +155,14 @@ class TransactionTask(celery.Task):
         log = Log.query.filter_by(payment_id=payment_id).first()
         if log is None:
             # should abort transaction there
-            pass
+            print("log not found")
         
         if log.state != 0:
             # should abort transaction there if state is not INIT
-            pass
+            print("log not INIT")
 
-        db.session.begin()
+        db.session.remove() # remove all session first
+        db.session.begin(autocommit=True)
         try:
             # fetch target wallet here
             if payment.payment_type is True: # CREDIT
