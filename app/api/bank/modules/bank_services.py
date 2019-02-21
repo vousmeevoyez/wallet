@@ -24,16 +24,4 @@ class BankServices:
         response["data"] = BankSchema(many=True).dump(banks).data
         return response
     #end def
-
-    def check_balance(self, master_id):
-        """ check master account balance on certain bank """
-        response = {}
-
-        # only BNI now supported
-        response["data"] = {
-            "host_name" : host_name,
-            "balance"   : balance
-        }
-        return response
-    #end def
 #end class

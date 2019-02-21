@@ -1,8 +1,8 @@
-"""init table structure
+"""init new structure
 
-Revision ID: ce6e2728ec15
+Revision ID: e2b98a7d6269
 Revises: 
-Create Date: 2019-02-15 17:17:16.741498
+Create Date: 2019-02-19 15:08:00.014591
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'ce6e2728ec15'
+revision = 'e2b98a7d6269'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -90,7 +90,7 @@ def upgrade():
     )
     op.create_table('bank_account',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('label', sa.String(length=24), nullable=True),
+    sa.Column('label', sa.String(length=30), nullable=True),
     sa.Column('name', sa.String(length=24), nullable=True),
     sa.Column('account_no', sa.String(length=30), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
@@ -145,8 +145,10 @@ def upgrade():
     sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
     sa.Column('state', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.Column('payment_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['payment_id'], ['payment.id'], ),
+    sa.Column('debit_payment_id', sa.Integer(), nullable=True),
+    sa.Column('credit_payment_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['credit_payment_id'], ['payment.id'], ),
+    sa.ForeignKeyConstraint(['debit_payment_id'], ['payment.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('transaction',

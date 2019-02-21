@@ -432,12 +432,12 @@ class TransactionSchema(ma.Schema):
                 status -- payment status
         """
         result = ""
-        if status == 1:
+        if status == 0:
+            result = "PENDING"
+        elif status == 1:
             result = "COMPLETED"
         elif status == 2:
-            result = "PENDING"
-        elif status == 3:
-            result = "FAILED"
+            result = "CANCELLED"
         #end if
         return result
     #end def

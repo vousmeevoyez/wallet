@@ -9,11 +9,7 @@ from app.api import db
 # configuration
 from app.config import config
 # models
-from app.api.models import User
-from app.api.models import Role
-from app.api.models import VaType
-from app.api.models import PaymentChannel
-from app.api.models import Bank
+from app.api.models import *
 
 TEST_CONFIG = config.TestingConfig
 
@@ -59,5 +55,25 @@ class BaseTestCase(TestCase):
         db.session.commit()
 
         self.user = user
+        
+        wallet = Wallet(user_id=user.id)
+        db.session.add(wallet)
+        db.session.flush()
 
+        wallet2 = Wallet()
+        db.session.add(wallet2)
+        db.session.flush()
+
+        # add some balance here for test case
+        source = Wallet.query.get(1)
+        source.add_balance(100)
+        db.session.commit()
+
+        # add some balance here for test case
+        destination = Wallet.query.get(2)
+        destination.add_balance(100)
+        db.session.commit()
+
+        self.source = source
+        self.destination = destination
 #end class

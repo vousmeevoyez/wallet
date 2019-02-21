@@ -11,8 +11,6 @@ from app.api.models import *
 
 from app.config import config
 
-from task.bank.tasks import TransactionTask
-
 from app.api.wallet.modules.transfer_services import TransferServices
 from app.api.wallet.modules.transfer_services import TransactionError
 

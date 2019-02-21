@@ -16,12 +16,3 @@ class BankRoutes(Resource):
         return response
     #end def
 #end class
-
-@api.route("/balance/<int:master_id>")
-class BankHostRoutes(Resource):
-    @admin_required
-    def get(self, master_id):
-        response = BankServices().check_balance(master_id)
-        return response
-    #end def
-#end class

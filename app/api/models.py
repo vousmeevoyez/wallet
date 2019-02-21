@@ -332,12 +332,11 @@ class Payment(db.Model):
     amount         = db.Column(db.Float)
     created_at     = db.Column(db.DateTime, default=now) # UTC
     payment_type   = db.Column(db.Boolean, default=True) # True = Credit / False = Debit
-    status         = db.Column(db.Integer, default=1) # COMPLETED / PENDING / FAILED
+    status         = db.Column(db.Integer, default=0) # PENDING / COMPLETED / FAILED
     channel_id     = db.Column(db.Integer, db.ForeignKey("payment_channel.id"))
     payment_channel= db.relationship("PaymentChannel", back_populates="payments", uselist=False) # one to one
     transaction    = db.relationship("Transaction", back_populates="payment", uselist=False) # one to one
-    logs           = db.relationship("Log", back_populates="payment",
-                                     uselist=False) # one to many
+    log            = db.relationship("Log", back_populates="payment", uselist=False) # one to one
 
     def __repr__(self):
         return '<Payment {} {} {} {} {} {}>'.format(self.id, self.source_account, self.payment_type,
@@ -454,15 +453,15 @@ class VirtualAccount(db.Model):
 
 class Log(db.Model):
     """ Used to maintain payment state """
-    id         = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
-    state      = db.Column(db.Integer, default=0) # init, done, cancelled
-    created_at = db.Column(db.DateTime, default=now) # UTC
-    payment_id = db.Column(db.Integer, db.ForeignKey("payment.id"))
-    payment    = db.relationship("Payment", back_populates="logs")
+    id          = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    state       = db.Column(db.Integer, default=0) # init, done, cancelled
+    created_at  = db.Column(db.DateTime, default=now) # UTC
+    payment_id  = db.Column(db.Integer, db.ForeignKey("payment.id"))
+    payment     = db.relationship("Payment", back_populates="log")
 
     def __repr__(self):
         return '<Log {} {} {}'.format(self.id, self.state,
-                                             self.payment_id)
+                                      self.payment_id)
 
 class Transaction(db.Model):
     """

@@ -23,9 +23,8 @@ from app.api.http_response import no_content
 # configuration
 from app.config import config
 # task
-from task.bank.tasks import TransactionTask
+from task.transaction.tasks import TransactionTask
 
-TRANSACTION_LOG_CONFIG = config.Config.TRANSACTION_LOG_CONFIG
 TRANSACTION_CONFIG = config.Config.TRANSACTION_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 BNI_OPG_CONFIG    = config.Config.BNI_OPG_CONFIG
@@ -41,7 +40,7 @@ class TransferServices:
     """ Transfer Services"""
 
     def __init__(self, source, pin, destination=None):
-        source_wallet = Wallet.query.filter_by(id=source).with_for_update().first()
+        source_wallet = Wallet.query.filter_by(id=source).first()
         if source_wallet is None:
             raise RequestNotFound(ERROR_CONFIG["WALLET_NOT_FOUND"]["TITLE"],
                                   ERROR_CONFIG["WALLET_NOT_FOUND"]["MESSAGE"])
@@ -59,7 +58,7 @@ class TransferServices:
 
         if destination is not None:
             destination_wallet = \
-            Wallet.query.filter_by(id=destination).with_for_update().first()
+            Wallet.query.filter_by(id=destination).first()
             if destination_wallet is None:
                 raise RequestNotFound(ERROR_CONFIG["WALLET_NOT_FOUND"]["TITLE"],
                                       ERROR_CONFIG["WALLET_NOT_FOUND"]["MESSAGE"])
@@ -220,6 +219,7 @@ class TransferServices:
                                       ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
         #end if
         # send queue here
+        result = TransactionTask().transfer.delay(debit_payment_id)
         return accepted()
     #end def
 

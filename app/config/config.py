@@ -53,20 +53,17 @@ class Config:
     }
 
     STATUS_CONFIG = {
-        "PENDING"  : 0,
         "ACTIVE"   : 1,
         "DEACTIVE" : 2,
         "LOCKED"   : 3,
     }
 
     TRANSACTION_LOG_CONFIG = {
-        "PENDING"  : 0,
         "DONE"     : 1,
         "CANCELLED": 2,
     }
 
     PAYMENT_STATUS_CONFIG = {
-        "PENDING"  : 0,
         "DONE"     : 1,
         "CANCELLED": 2,
     }
@@ -181,8 +178,7 @@ class Config:
     }
 
     SMS_SERVICES_TEMPLATES = {
-        "FORGOT_PIN" : "This is your FORGOT PIN Code for your Modanaku : {}."\
-        "DON'T SHARE IT WITH ANYONE (NOT EVENT MODANA)",
+        "FORGOT_PIN" : "Kode verifikasi keamanan. PENTING : demi keamanan akun Anda, mohon tidak memberitahukan kepada pihak manapun.Kode Rahasia : {}"
     }
 
     ERROR_CONFIG = {
@@ -374,8 +370,6 @@ class TestingConfig(Config):
             DATABASE["DB_NAME"] + "_testing"
 
     CELERY_RESULT_BACKEND = "db+" + SQLALCHEMY_DATABASE_URI
-
-    CELERY_TASK_ALWAYS_EAGER = True
 
     PRESERVE_CONTEXT_ON_EXCEPTION = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False

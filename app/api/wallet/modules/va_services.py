@@ -59,7 +59,6 @@ class VirtualAccountServices:
         bank = Bank.query.filter(Bank.name.like(keyword)).first()
 
         # put va creation in the queue
-        virtual_account.status = STATUS_CONFIG["PENDING"]
         virtual_account.wallet_id = wallet_id
         virtual_account.va_type_id = va_type.id
         virtual_account.bank_id = bank.id
