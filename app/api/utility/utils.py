@@ -1,14 +1,18 @@
-"""
-    Common Helper
-    ________________
-    This is module that contain for helper like send sms and qr generation
+""" 
+    UTILITY FUNCTION
 """
 import json
+
+from uuid import UUID
+
 from app.config import config
 
-from app.api.common.modules.cipher import AESCipher
-from app.api.common.modules.sms_services import SmsServices
+from app.api.utility.modules.cipher import AESCipher
+from app.api.utility.modules.sms_services import SmsServices
 
+from app.api.error.http import *
+
+ERROR_CONFIG = config.Config.ERROR_CONFIG
 WALLET_CONFIG = config.Config.WALLET_CONFIG
 SMS_SERVICES_CONFIG = config.Config.SMS_SERVICES_CONFIG
 SMS_SERVICES_TEMPLATES = config.Config.SMS_SERVICES_TEMPLATES
@@ -47,3 +51,13 @@ class QR:
         return json.loads(qr_decrypted)
     #end def
 #end class
+
+def validate_uuid(string):
+    """ validate uuid"""
+    try:
+        uuid_object = UUID(string)
+    except ValueError:
+        raise BadRequest(ERROR_CONFIG["INVALID_ID"]["TITLE"],
+                         ERROR_CONFIG["INVALID_ID"]["MESSAGE"])
+    return uuid_object
+#end def

@@ -1,7 +1,7 @@
 from flask_restplus import Namespace
 
-class CommonNamespace:
-    api = Namespace("common")
+class UtilityNamespace:
+    api = Namespace("utility")
 #end class
 
 class AuthNamespace:

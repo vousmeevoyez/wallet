@@ -8,10 +8,7 @@ from sqlalchemy.exc import InvalidRequestError
 
 from app.api  import db
 
-from app.api.models import Role
-from app.api.models import User
-from app.api.models import Wallet
-from app.api.models import VirtualAccount
+from app.api.models import *
 
 from app.api.serializer import UserSchema
 from app.api.serializer import WalletSchema
@@ -22,6 +19,8 @@ from app.api.wallet.modules.va_services import VirtualAccountServices
 # http response
 from app.api.http_response import created
 from app.api.http_response import no_content
+
+from app.api.utility.utils import validate_uuid
 
 # exceptions
 from app.api.error.http import *
@@ -34,7 +33,7 @@ ERROR_CONFIG = config.Config.ERROR_CONFIG
 class UserServices:
     """ User Services Class"""
     def __init__(self, user_id):
-        user = User.query.filter_by(id=user_id, status=STATUS_CONFIG["ACTIVE"]).first()
+        user = User.query.filter_by(id=validate_uuid(user_id), status=STATUS_CONFIG["ACTIVE"]).first()
         if user is None:
             raise RequestNotFound(ERROR_CONFIG["USER_NOT_FOUND"]["TITLE"],
                                   ERROR_CONFIG["USER_NOT_FOUND"]["MESSAGE"])
@@ -86,7 +85,7 @@ class UserServices:
         virtual_account = result[0]["data"]["virtual_account"]
 
         response = {
-            "user_id"   : user.id,
+            "user_id"   : str(user.id),
             "wallet_id" : wallet_id
         }
         return created(response)
@@ -153,7 +152,8 @@ class UserServices:
     def remove(self):
         """ remove user, just deactivate their account """
         try:
-            self.user.status = STATUS_CONFIG["DEACTIVE"]
+            #self.user.status = STATUS_CONFIG["DEACTIVE"]
+            db.session.delete(self.user)
             db.session.commit()
         except IntegrityError as error:
             db.session.rollback()

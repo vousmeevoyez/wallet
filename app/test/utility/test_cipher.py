@@ -3,9 +3,9 @@
 """
 
 from app.test.base import BaseTestCase
-from app.api.common.modules.cipher import AESCipher
+from app.api.utility.modules.cipher import AESCipher
 
-from app.api.common.modules.cipher import DecryptError
+from app.api.utility.modules.cipher import DecryptError
 
 class TestAESCipher(BaseTestCase):
     """ AES Cipher Test Class"""

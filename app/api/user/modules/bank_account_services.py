@@ -21,12 +21,14 @@ from app.api.error.http import *
 # configuration
 from app.config import config
 
+from app.api.utility.utils import validate_uuid
+
 ERROR_CONFIG = config.Config.ERROR_CONFIG
 
 class BankAccountServices:
     """ Bank Account Services Class"""
     def __init__(self, user_id, bank_code=None, bank_account_id=None):
-        user_record = User.query.filter_by(id=user_id).first()
+        user_record = User.query.filter_by(id=validate_uuid(user_id)).first()
         if user_record is None:
             raise RequestNotFound(ERROR_CONFIG["USER_NOT_FOUND"]["TITLE"],
                                   ERROR_CONFIG["USER_NOT_FOUND"]["MESSAGE"])
@@ -45,8 +47,8 @@ class BankAccountServices:
 
         bank_account_record = None
         if bank_account_id is not None:
-            bank_account_record = BankAccount.query.filter_by(user_id=user_id,
-                                                              id=bank_account_id).first()
+            bank_account_record = BankAccount.query.filter_by(user_id=validate_uuid(user_id),
+                                                              id=validate_uuid(bank_account_id)).first()
             if bank_account_record is None:
                 raise RequestNotFound(ERROR_CONFIG["BANK_ACC_NOT_FOUND"]["TITLE"],
                                       ERROR_CONFIG["BANK_ACC_NOT_FOUND"]["MESSAGE"])
@@ -70,7 +72,7 @@ class BankAccountServices:
                                       ERROR_CONFIG["DUPLICATE_BANK_ACCOUNT"]["MESSAGE"])
         #end try
         response = {
-            "bank_account_id" : bank_account.id
+            "bank_account_id" : str(bank_account.id)
         }
         return created(response)
     #end def

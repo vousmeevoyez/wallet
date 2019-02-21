@@ -82,8 +82,8 @@ class TestUserServices(BaseTestCase):
 
     def test_user_info_failed_record_not_found(self):
         """ test get single user info but user not found"""
-        with self.assertRaises(RequestNotFound):
-            result = UserServices(123).info()
+        with self.assertRaises(BadRequest):
+            result = UserServices("12345").info()
 
     def test_remove_user_success(self):
         """ test removing user """
@@ -109,7 +109,7 @@ class TestUserServices(BaseTestCase):
 
     def test_remove_user_failed_not_found(self):
         """ test removing user but not found"""
-        with self.assertRaises(RequestNotFound):
+        with self.assertRaises(BadRequest):
             result = UserServices("1234").info()
 
     def test_update_user_success(self):

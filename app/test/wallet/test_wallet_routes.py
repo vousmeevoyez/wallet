@@ -1,6 +1,7 @@
 """
     Integration Testing between wallet & routes
 """
+import uuid
 from unittest.mock import Mock, patch
 
 from app.test.base import BaseTestCase
@@ -605,7 +606,7 @@ class TestWalletRoutes(BaseTestCase):
         wallet_id = response["data"]["wallet_id"]
 
         params = {
-            "transaction_id" : "132456464",
+            "transaction_id" : str(uuid.uuid4()),
         }
         result = self.get_transaction_details(wallet_id, params, access_token)
         response = result.get_json()
@@ -1187,7 +1188,7 @@ class TestWalletRoutes(BaseTestCase):
             "pin" : "123456"
         }
 
-        result = self.bank_transfer(str(source), "12345", params,
+        result = self.bank_transfer(str(source), str(uuid.uuid4()), params,
                                     access_token)
         self.assertEqual(result.status_code, 404)
 

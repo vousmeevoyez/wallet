@@ -8,9 +8,9 @@ from app.test.base import BaseTestCase
 
 from app.api.models import *
 
-from app.api.common.helper import Sms
+from app.api.utility.utils import Sms
 
-from app.api.common.modules.sms_services import SmsError
+from app.api.utility.modules.sms_services import SmsError
 
 from app.api.error.http import *
 
@@ -44,9 +44,9 @@ class TestWalletServices(BaseTestCase):
         result = WalletServices(wallet_id).info()
         self.assertTrue(result["wallet"])
 
-    def test_wallet_info_failed_not_found(self):
+    def test_wallet_info_failed_invalid_id(self):
         """ test method for get wallet info but not found """
-        with self.assertRaises(RequestNotFound):
+        with self.assertRaises(BadRequest):
             result = WalletServices("1234").info()
 
     def test_wallet_remove_failed_only_wallet(self):
@@ -70,7 +70,7 @@ class TestWalletServices(BaseTestCase):
 
     def test_wallet_not_found(self):
         """ test method for checking wallet balance but not found"""
-        with self.assertRaises(RequestNotFound):
+        with self.assertRaises(BadRequest):
             result = WalletServices("123456").check_balance()
 
     def test_wallet_in_history(self):
@@ -115,7 +115,7 @@ class TestWalletServices(BaseTestCase):
 
     def test_send_forgot_otp_failed_wallet_not_found(self):
         """ test method for sending forgot otp sms but wallet id is not found"""
-        with self.assertRaises(RequestNotFound):
+        with self.assertRaises(BadRequest):
             result = WalletServices("1234").send_forgot_otp()
 
     @patch.object(Sms, "send")
@@ -231,7 +231,7 @@ class TestWalletServices(BaseTestCase):
         otp_code = result[0]["data"]["otp_code"]
         otp_key = result[0]["data"]["otp_key"]
 
-        with self.assertRaises(UnprocessableEntity):
+        with self.assertRaises(RequestNotFound):
             result = WalletServices(wallet_id).verify_forgot_otp({
                 "otp_code" : "1234",
                 "otp_key"  : "46464654654654",

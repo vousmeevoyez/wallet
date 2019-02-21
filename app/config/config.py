@@ -291,8 +291,7 @@ class Config:
         },
         "DUPLICATE_UPDATE_ENTRY" : {
             "TITLE"  : "DUPLICATE_UPDATE_ENTRY",
-            "MESSAGE": "Updated fields must be unique and can't be same with\
-            the old one"
+            "MESSAGE": "Updated fields must be unique and can't be same with the old one"
         },
         "DUPLICATE_USER" : {
             "TITLE"   : "DUPLICATE_USER",
@@ -329,6 +328,10 @@ class Config:
         "WITHDRAW_CALLBACK_FAILED": {
             "TITLE"   : "WITHDRAW_CALLBACK_FAILED",
             "MESSAGE" : "Withdraw Callback failed, please contact our support"
+        },
+        "INVALID_ID": {
+            "TITLE"   : "INVALID_ID",
+            "MESSAGE" : "Invalid Identifier"
         },
         "INVALID_CALLBACK": {
             "TITLE"   : "INVALID_CALLBACK",

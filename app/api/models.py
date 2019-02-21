@@ -16,6 +16,8 @@ import random
 import uuid
 import jwt
 
+from sqlalchemy.dialects.postgresql import UUID
+
 from werkzeug.security import generate_password_hash 
 from werkzeug.security import check_password_hash
 
@@ -36,6 +38,8 @@ TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 JWT_CONFIG = config.Config.JWT_CONFIG
 VIRTUAL_ACCOUNT_CONFIG = config.Config.VIRTUAL_ACCOUNT_CONFIG
 
+def uid():
+    return uuid.uuid4()
 
 class Role(db.Model):
     """
@@ -54,7 +58,8 @@ class User(db.Model):
     """
         This is class that represent User Database Object
     """
-    id              = db.Column(db.BigInteger, primary_key=True)
+    id              = db.Column(UUID(as_uuid=True), unique=True,
+                                primary_key=True, default=uid)
     username        = db.Column(db.String(144), unique=True)
     name            = db.Column(db.String(144))
     phone_ext       = db.Column(db.String(3)) # phone extension
@@ -112,13 +117,13 @@ class User(db.Model):
         payload = {
             "exp" : exp,
             "iat" : datetime.utcnow(),
-            "sub" : user_id,
+            "sub" : str(user_id),
             "type": token_type,
         }
         return jwt.encode(
             payload,
             JWT_CONFIG["SECRET"],
-            algorithm=JWT_CONFIG["ALGORITHM"]
+            JWT_CONFIG["ALGORITHM"]
         )
 
     @staticmethod
@@ -130,7 +135,7 @@ class User(db.Model):
         """
         try:
             payload = jwt.decode(token, JWT_CONFIG["SECRET"],
-                                 JWT_CONFIG["ALGORITHM"])
+                                 algorithms=JWT_CONFIG["ALGORITHM"])
             blacklist_status = BlacklistToken.is_blacklisted(token)
             if blacklist_status:
                 raise RevokedTokenError
@@ -146,13 +151,14 @@ class Wallet(db.Model):
     """
         This is class that represent Wallet Database Object
     """
-    id               = db.Column(db.BigInteger, primary_key=True)
+    id              = db.Column(UUID(as_uuid=True), unique=True,
+                                primary_key=True, default=uid)
     created_at       = db.Column(db.DateTime, default=now) # UTC
     label            = db.Column(db.String(100), unique=True)
     pin_hash         = db.Column(db.String(128))
     status           = db.Column(db.Integer, default=1) # active
     balance          = db.Column(db.Float, default=0)
-    user_id          = db.Column(db.BigInteger, db.ForeignKey('user.id'))
+    user_id          = db.Column(UUID(as_uuid=True), db.ForeignKey('user.id'))
     user             = db.relationship("User", back_populates="wallets") # many to one
     virtual_accounts = db.relationship("VirtualAccount", cascade="delete") # one to many
     forgot_pin       = db.relationship("ForgotPin") # one to many
@@ -201,27 +207,6 @@ class Wallet(db.Model):
         self.status = 1
     #end def
 
-    def generate_wallet_id(self):
-        """
-            Function to generate wallet id
-        """
-        wallet_id = None
-        while True:
-            wallet_id_prefix = 11
-            wallet_id_suffix = random.randint(
-                10000000,
-                99999999
-            )
-            wallet_id = str(wallet_id_prefix) + str(wallet_id_suffix)
-            result = Wallet.query.filter_by(id=wallet_id).first()
-            if result is None:
-                break
-            #end if
-        #end while
-        self.id = int(wallet_id)
-        return wallet_id
-    #end def
-
     def set_pin(self, pin):
         """
             Function to set wallet pin
@@ -265,7 +250,8 @@ class Bank(db.Model):
     """
         This is class that represent Bank Database Object
     """
-    id              = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id              = db.Column(UUID(as_uuid=True), unique=True,
+                                primary_key=True, default=uid)
     key             = db.Column(db.String(24)) # bank_key
     name            = db.Column(db.String(100)) # bank_name
     code            = db.Column(db.String(100)) # bank_code
@@ -286,15 +272,16 @@ class BankAccount(db.Model):
     """
         This is class that represent Bank Account Database Object
     """
-    id         = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id         = db.Column(UUID(as_uuid=True), unique=True,
+                                primary_key=True, default=uid)
     label      = db.Column(db.String(30), unique=True) # account label
     name       = db.Column(db.String(24), unique=True) # bank account name
     account_no = db.Column(db.String(30), unique=True) # bank account no
     created_at = db.Column(db.DateTime, default=now) # UTC
     status     = db.Column(db.Boolean, default=True) # active / inactive
-    bank_id    = db.Column(db.Integer, db.ForeignKey("bank.id"))
+    bank_id    = db.Column(UUID(as_uuid=True), db.ForeignKey("bank.id"))
     bank       = db.relationship("Bank", back_populates="bank_accounts") # one to one
-    user_id    = db.Column(db.BigInteger, db.ForeignKey('user.id'))
+    user_id    = db.Column(UUID(as_uuid=True), db.ForeignKey('user.id'))
     user       = db.relationship("User", back_populates="bank_accounts") # one to one
 
     def __repr__(self):
@@ -306,13 +293,14 @@ class PaymentChannel(db.Model):
     """
         This is class that represent Payment Channel Database Object
     """
-    id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id              = db.Column(UUID(as_uuid=True), unique=True,
+                                primary_key=True, default=uid)
     name         = db.Column(db.String(100)) # payment channel name
     key          = db.Column(db.String(100)) # payment channel key
     channel_type = db.Column(db.String(100)) # VIRTUAL ACCOUNT / NORMAL TRANSFER
     created_at   = db.Column(db.DateTime, default=now) # UTC
     status       = db.Column(db.Boolean, default=True) # ACTIVE / INACTIVE
-    bank_id      = db.Column(db.Integer, db.ForeignKey("bank.id"))
+    bank_id      = db.Column(UUID(as_uuid=True), db.ForeignKey("bank.id"))
     bank         = db.relationship("Bank", back_populates="payment_channels") # many to one
     payments     = db.relationship("Payment", back_populates="payment_channel") # one to many
 
@@ -325,7 +313,8 @@ class Payment(db.Model):
     """
         This is class that represent Payment Database Object
     """
-    id             = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id              = db.Column(UUID(as_uuid=True), unique=True,
+                                primary_key=True, default=uid)
     source_account = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (money comes from)
     to             = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount ( money goes)
     ref_number     = db.Column(db.String(100), unique=True) # journal number from the bank
@@ -333,7 +322,7 @@ class Payment(db.Model):
     created_at     = db.Column(db.DateTime, default=now) # UTC
     payment_type   = db.Column(db.Boolean, default=True) # True = Credit / False = Debit
     status         = db.Column(db.Integer, default=0) # PENDING / COMPLETED / FAILED
-    channel_id     = db.Column(db.Integer, db.ForeignKey("payment_channel.id"))
+    channel_id     = db.Column(UUID(as_uuid=True), db.ForeignKey("payment_channel.id"))
     payment_channel= db.relationship("PaymentChannel", back_populates="payments", uselist=False) # one to one
     transaction    = db.relationship("Transaction", back_populates="payment", uselist=False) # one to one
     log            = db.relationship("Log", back_populates="payment", uselist=False) # one to one
@@ -348,8 +337,8 @@ class VirtualAccount(db.Model):
     """
         This is class that represent Virtual Account Database Object
     """
-    id              = db.Column(db.BigInteger, primary_key=True,
-                                autoincrement=True)
+    id              = db.Column(UUID(as_uuid=True), unique=True,
+                                primary_key=True, default=uid)
     account_no      = db.Column(db.BigInteger)
     trx_id          = db.Column(db.BigInteger, unique=True)
     amount          = db.Column(db.Float, default=0)
@@ -357,11 +346,11 @@ class VirtualAccount(db.Model):
     datetime_expired= db.Column(db.DateTime)
     status          = db.Column(db.Integer, default=0)
     created_at      = db.Column(db.DateTime, default=now)
-    wallet_id       = db.Column(db.BigInteger, db.ForeignKey('wallet.id'))
+    wallet_id       = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
     wallet          = db.relationship("Wallet", back_populates="virtual_accounts", cascade="delete")
     va_type_id      = db.Column(db.Integer, db.ForeignKey("va_type.id"))
     va_type         = db.relationship("VaType", back_populates="virtual_account")
-    bank_id         = db.Column(db.Integer, db.ForeignKey("bank.id"))
+    bank_id         = db.Column(UUID(as_uuid=True), db.ForeignKey("bank.id"))
     bank            = db.relationship("Bank", back_populates="virtual_account")
 
     TIMEZONE = pytz.timezone("Asia/Jakarta")
@@ -456,7 +445,7 @@ class Log(db.Model):
     id          = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
     state       = db.Column(db.Integer, default=0) # init, done, cancelled
     created_at  = db.Column(db.DateTime, default=now) # UTC
-    payment_id  = db.Column(db.Integer, db.ForeignKey("payment.id"))
+    payment_id  = db.Column(UUID(as_uuid=True), db.ForeignKey("payment.id"))
     payment     = db.relationship("Payment", back_populates="log")
 
     def __repr__(self):
@@ -467,13 +456,14 @@ class Transaction(db.Model):
     """
         This is class that represent Transaction Database Object
     """
-    id                 = db.Column(db.String(255), primary_key=True)
-    wallet_id          = db.Column(db.Integer, db.ForeignKey('wallet.id'))
+    id                 = db.Column(UUID(as_uuid=True), unique=True,
+                                   primary_key=True, default=uid)
+    wallet_id          = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
     amount             = db.Column(db.Float, default=0)
     transaction_type   = db.Column(db.Integer) # withdraw / deposit / transfer_bank / transfer_va
     notes              = db.Column(db.String(255)) # transaction notes if there are
     created_at         = db.Column(db.DateTime, default=now) # UTC
-    payment_id         = db.Column(db.Integer, db.ForeignKey("payment.id"))
+    payment_id         = db.Column(UUID(as_uuid=True), db.ForeignKey("payment.id"))
     payment            = db.relationship("Payment", back_populates="transaction", uselist=False) # one to one
     wallet             = db.relationship("Wallet", back_populates="transactions", uselist=False) # one to one
 
@@ -564,7 +554,7 @@ class BlacklistToken(db.Model):
 #end class
 
 class ForgotPin(db.Model):
-    """ 
+    """
         Class model for Forgot Pin
     """
     id          = db.Column(db.Integer, primary_key=True)
@@ -572,7 +562,7 @@ class ForgotPin(db.Model):
     otp_key     = db.Column(db.String(120))
     created_at  = db.Column(db.DateTime, default=now)
     valid_until = db.Column(db.DateTime)
-    wallet_id   = db.Column(db.BigInteger, db.ForeignKey('wallet.id'))
+    wallet_id   = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
     status      = db.Column(db.Boolean, default=False) # done | pending
 
     def __repr__(self):
@@ -615,7 +605,7 @@ class Withdraw(db.Model):
     amount      = db.Column(db.Float)
     created_at  = db.Column(db.DateTime, default=now)
     valid_until = db.Column(db.DateTime)
-    wallet_id   = db.Column(db.BigInteger, db.ForeignKey('wallet.id'))
+    wallet_id   = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
 
     def __repr__(self):
         return '<Withdraw {} {} {} {}>'.format(self.id, self.amount, self.wallet_id, self.status)

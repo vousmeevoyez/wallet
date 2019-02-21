@@ -448,17 +448,15 @@ class TestTransactionSchema(BaseTestCase):
         db.session.flush()
 
         # add some balance here for test case
-        user = Wallet.query.get(1)
-        user.add_balance(1000)
+        wallet.add_balance(1000)
         db.session.flush()
 
-        self.assertEqual(user.check_balance(), 1000)
+        self.assertEqual(wallet.balance, 1000)
 
-        user2 = Wallet.query.get(2)
-        user2.add_balance(1000)
+        wallet2.add_balance(1000)
         db.session.flush()
 
-        self.assertEqual(user2.check_balance(), 1000)
+        self.assertEqual(wallet2.balance, 1000)
 
         #start transaction here
         trx_amount = 10
@@ -661,19 +659,6 @@ class TestBankAccountSchema(BaseTestCase):
         errors = BankAccountSchema().validate(data)
         expected_error = {
             'name': ['Invalid name, minimum is 2 character']
-        }
-        self.assertEqual(errors, expected_error)
-
-    def test_validate_bank_account_name_failed_max_string(self):
-        data = {
-            "account_no": "1111111110",
-            "name"      : "akdaslkdlajkdlasjdkljasjdkjakjdlsajldjlkajdjaljljdlajskljdlajskljdsa",
-            "label"     : "Irene Bank Account",
-            "bank_code" : "009"
-        }
-        errors = BankAccountSchema().validate(data)
-        expected_error = {
-            'name': ['Invalid name, max is 35 character']
         }
         self.assertEqual(errors, expected_error)
 

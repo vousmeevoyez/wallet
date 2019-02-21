@@ -22,7 +22,6 @@ BASE_URL = "/api/v1"
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 
-
 class TestCallbackRoutes(BaseTestCase):
     """ Test Class for Wallet Routes"""
 
@@ -169,6 +168,7 @@ class TestCallbackRoutes(BaseTestCase):
     """
         WITHDRAW CALLBACK
     """
+    '''
     def test_withdraw_callback(self):
         """ WITHDRAW CALLBACK CASE 1 : Successfully withdraw callback """
         access_token, user_id = self._create_dummy_user()
@@ -211,3 +211,4 @@ class TestCallbackRoutes(BaseTestCase):
 
         wallet = Wallet.query.all()
         print(wallet)
+    '''

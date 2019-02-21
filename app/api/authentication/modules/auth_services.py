@@ -20,6 +20,7 @@ from app.api.error.authentication import EmptyPayloadError
 
 from app.api.error.http import *
 
+from app.api.utility.utils import validate_uuid
 # http response
 from app.api.http_response import no_content
 # configuration
@@ -64,8 +65,7 @@ class AuthServices:
                                   ERROR_CONFIG["EMPTY_PAYLOAD"]["MESSAGE"])
 
         # fetch user information
-        # convert user id to user object here
-        user = User.query.filter_by(id=payload["sub"], 
+        user = User.query.filter_by(id=validate_uuid(payload["sub"]), 
                                     status=STATUS_CONFIG["ACTIVE"]).first()
         if user is None:
             raise RequestNotFound(ERROR_CONFIG["USER_NOT_FOUND"]["TITLE"],

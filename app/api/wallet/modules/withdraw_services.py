@@ -17,6 +17,8 @@ from app.api.error.http import *
 
 from app.config import config
 
+from app.api.utility.utils import validate_uuid
+
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 WALLET_CONFIG = config.Config.WALLET_CONFIG
 VIRTUAL_ACCOUNT_CONFIG = config.Config.VIRTUAL_ACCOUNT_CONFIG
@@ -26,7 +28,7 @@ ERROR_CONFIG = config.Config.ERROR_CONFIG
 class WithdrawServices:
     """ class that handle request to withdraw """
     def __init__(self, wallet_id, pin):
-        wallet_record = Wallet.query.filter_by(id=wallet_id,
+        wallet_record = Wallet.query.filter_by(id=validate_uuid(wallet_id),
                                                status=STATUS_CONFIG["ACTIVE"]).first()
         if wallet_record is None:
             raise RequestNotFound(ERROR_CONFIG["WALLET_NOT_FOUND"]["TITLE"],

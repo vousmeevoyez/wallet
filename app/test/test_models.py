@@ -75,7 +75,6 @@ class UserTestCaseModel(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        user = User.query.get(3)
         # check how many wallet user have
         self.assertEqual( len(user.wallets), 1)
 
@@ -94,8 +93,6 @@ class UserTestCaseModel(BaseTestCase):
         db.session.add(user)
         db.session.commit()
 
-        # fetch user
-        user = User.query.get(1)
         # check password here
         self.assertTrue(user.check_password("password"))
         self.assertFalse(user.check_password("test"))
@@ -167,12 +164,8 @@ class WalletModelCase(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        # fetch user object
-        user = Wallet.query.get(1)
-
         # check balance 
-        balance = user.check_balance()
-        self.assertEqual( balance, 0)
+        self.assertEqual(wallet.balance, 0)
 
     def test_add_balance(self):
         # create dummy wallet
@@ -182,18 +175,14 @@ class WalletModelCase(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        # fetch wallet
-        user = Wallet.query.get(1)
         # add balance here
-        user.add_balance(1000)
-        user.add_balance(1000)
-        user.add_balance(1000)
-        user.add_balance(1000)
-        user.add_balance(1000)
+        wallet.add_balance(1000)
+        wallet.add_balance(1000)
+        wallet.add_balance(1000)
+        wallet.add_balance(1000)
+        wallet.add_balance(1000)
 
-        # check balance here
-        balance = user.check_balance()
-        self.assertEqual( balance, 5000)
+        self.assertEqual(wallet.balance, 5000)
 
     def test_check_lock(self):
         # create dummy wallet
@@ -202,12 +191,10 @@ class WalletModelCase(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        # fetch user wallet
-        wallet = Wallet.query.get(1)
         lock_status = wallet.is_unlocked()
 
         # check wallet status
-        self.assertEqual( lock_status, True)
+        self.assertEqual(lock_status, True)
 
     def test_lock(self):
         # create dummy wallet
@@ -216,8 +203,6 @@ class WalletModelCase(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        # fetch user wallet
-        wallet= Wallet.query.get(1)
         wallet.lock()
         db.session.commit()
 
@@ -232,8 +217,6 @@ class WalletModelCase(BaseTestCase):
         db.session.add(wallet)
         db.session.commit()
 
-        # fetch user wallet
-        wallet = Wallet.query.get(1)
         wallet.lock()
         db.session.commit()
 
@@ -243,7 +226,7 @@ class WalletModelCase(BaseTestCase):
         lock_status = wallet.is_unlocked()
 
         # make sure the wallet is unlocked
-        self.assertEqual( lock_status, True)
+        self.assertEqual(lock_status, True)
 
     def test_pin(self):
         # create dummy wallet here
@@ -252,12 +235,8 @@ class WalletModelCase(BaseTestCase):
         # set pin
         wallet.set_pin("123456")
         # check pin
-        self.assertTrue( wallet.check_pin("123456") )
-        self.assertFalse( wallet.check_pin("123654") )
-
-    def test_generate_wallet_id(self):
-        wallet_id = Wallet().generate_wallet_id()
-        self.assertEqual( len(wallet_id), 10)
+        self.assertTrue(wallet.check_pin("123456") )
+        self.assertFalse(wallet.check_pin("123654") )
 
     def test_va_relationship(self):
         # create dummy wallet here
@@ -265,9 +244,6 @@ class WalletModelCase(BaseTestCase):
         )
         db.session.add(wallet)
         db.session.commit()
-
-        # fetch wallet here
-        wallet = Wallet.query.get(1)
 
         # create bank here
         bni = Bank(
@@ -344,16 +320,11 @@ class WalletModelCase(BaseTestCase):
         wallet = Wallet(
             user_id = user.id,
         )
-        wallet_id = wallet.generate_wallet_id()
         db.session.add(wallet)
         db.session.commit()
 
-        result = Wallet.is_owned(3, wallet_id)
+        result = Wallet.is_owned(user.id, wallet.id)
         self.assertTrue(result)
-
-        result = Wallet.is_owned(1, 456464)
-        self.assertFalse(result)
-
 
 class VirtualAccountModelCase(BaseTestCase):
 
@@ -389,29 +360,24 @@ class VirtualAccountModelCase(BaseTestCase):
 
 class TransactionModelCase(BaseTestCase):
 
-    def testdebit_transaction(self):
+    def test_debit_transaction(self):
         # create 2 dummy wallet here
-        wallet = Wallet(
-        )
-        wallet2 = Wallet(
-        )
+        wallet = Wallet()
+        wallet2 = Wallet()
 
         db.session.add(wallet)
         db.session.add(wallet2)
         db.session.flush()
 
-        # add some balance here for test case
-        user = Wallet.query.get(1)
-        user.add_balance(1000)
+        wallet.add_balance(1000)
         db.session.flush()
 
-        self.assertEqual(user.check_balance(), 1000)
+        self.assertEqual(wallet.balance, 1000)
 
-        user2 = Wallet.query.get(2)
-        user2.add_balance(1000)
+        wallet2.add_balance(1000)
         db.session.flush()
 
-        self.assertEqual(user2.check_balance(), 1000)
+        self.assertEqual(wallet2.balance, 1000)
 
         #start transaction here
         amount = -10
@@ -432,7 +398,7 @@ class TransactionModelCase(BaseTestCase):
         debit_trx.generate_trx_id()
         db.session.add(debit_trx)
         # deduct balance
-        user.add_balance(amount)
+        wallet.add_balance(amount)
 
         db.session.flush()
 
@@ -454,18 +420,16 @@ class TransactionModelCase(BaseTestCase):
         credit_trx.generate_trx_id()
         db.session.add(credit_trx)
         # deduct user balance here
-        user2.add_balance(amount)
+        wallet2.add_balance(amount)
 
         db.session.flush()
 
         # make sure each account have correct balance after each transaction
-        user = Wallet.query.get(1)
-        self.assertEqual(user.check_balance(), 990)
-        self.assertEqual(len(user.transactions), 1)
+        self.assertEqual(wallet.balance, 990)
+        self.assertEqual(len(wallet.transactions), 1)
 
-        user2 = Wallet.query.get(2)
-        self.assertEqual(user2.check_balance(), 1010)
-        self.assertEqual(len(user2.transactions), 1)
+        self.assertEqual(wallet2.balance, 1010)
+        self.assertEqual(len(wallet2.transactions), 1)
 
 class ExternalModelCase(BaseTestCase):
 
@@ -498,16 +462,12 @@ class ExternalModelCase(BaseTestCase):
         self.assertTrue(result.status)
         self.assertFalse(result2.status)
 
-
 class ForgotPinModelCase(BaseTestCase):
     def test_set_otp_code(self):
         # create wallet
-        wallet = Wallet(
-        )
+        wallet = Wallet()
         db.session.add(wallet)
         db.session.commit()
-
-        wallet = Wallet.query.get(1)
 
         # create forgot pin record
         forgot_pin = ForgotPin(
@@ -519,12 +479,9 @@ class ForgotPinModelCase(BaseTestCase):
 
     def test_check_otp_code(self):
         # create wallet
-        wallet = Wallet(
-        )
+        wallet = Wallet()
         db.session.add(wallet)
         db.session.commit()
-
-        wallet = Wallet.query.get(1)
 
         # create forgot pin record
         forgot_pin = ForgotPin(
@@ -534,19 +491,14 @@ class ForgotPinModelCase(BaseTestCase):
         db.session.add(forgot_pin)
         db.session.commit()
 
-        forgot_pin = ForgotPin.query.get(1)
         result = forgot_pin.check_otp_code("123456")
-
         self.assertTrue(result)
 
     def test_check_valid_otp_log(self):
         # create wallet
-        wallet = Wallet(
-        )
+        wallet = Wallet()
         db.session.add(wallet)
         db.session.commit()
-
-        wallet = Wallet.query.get(1)
 
         # create forgot pin record
         valid_until = datetime.now() + timedelta(minutes=5)
@@ -565,12 +517,9 @@ class ForgotPinModelCase(BaseTestCase):
 
     def test_check_invalid_otp_log(self):
         # create wallet
-        wallet = Wallet(
-        )
+        wallet = Wallet()
         db.session.add(wallet)
         db.session.commit()
-
-        wallet = Wallet.query.get(1)
 
         # create forgot pin record
         valid_until = datetime.now() - timedelta(minutes=5)
@@ -595,8 +544,6 @@ class WithdrawModelCase(BaseTestCase):
         )
         db.session.add(wallet)
         db.session.commit()
-
-        wallet = Wallet.query.get(1)
 
         # create forgot pin record
         valid_until = datetime.now() - timedelta(minutes=5)
@@ -671,7 +618,6 @@ class BankAccountModelCase(BaseTestCase):
         db.session.commit()
 
         # make sure user is associated to bank account
-        print(user.bank_accounts)
         self.assertEqual( len(user.bank_accounts), 2)
 
 class PaymentChannelModelCase(BaseTestCase):
@@ -764,6 +710,5 @@ class PaymentModelCase(BaseTestCase):
         self.assertEqual(len(payments), 2)
     #end def
 #end class
-
 if __name__ == "__main__":
     unittest.main(verbosity=2)

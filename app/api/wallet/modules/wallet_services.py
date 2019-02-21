@@ -13,8 +13,9 @@ from sqlalchemy.exc import IntegrityError
 from app.api import db
 
 # helper
-from app.api.common.helper import Sms
-from app.api.common.helper import QR
+from app.api.utility.utils import validate_uuid
+from app.api.utility.utils import Sms
+from app.api.utility.utils import QR
 
 # models
 from app.api.models import *
@@ -30,7 +31,7 @@ from app.api.http_response import no_content
 
 # exception
 from app.api.error.http import *
-from app.api.common.modules.sms_services import SmsError
+from app.api.utility.modules.sms_services import SmsError
 
 # configuration
 from app.config import config
@@ -44,7 +45,7 @@ class WalletServices:
     """ Wallet Services Class"""
 
     def __init__(self, wallet_id):
-        wallet_record = Wallet.query.filter_by(id=wallet_id,
+        wallet_record = Wallet.query.filter_by(id=validate_uuid(wallet_id),
                                                status=STATUS_CONFIG["ACTIVE"]).first()
         if wallet_record is None:
             raise RequestNotFound(ERROR_CONFIG["WALLET_NOT_FOUND"]["TITLE"],
@@ -62,7 +63,6 @@ class WalletServices:
         """
         wallet.user_id = user.id
         wallet.set_pin(pin)
-        wallet.generate_wallet_id()
         try:
             db.session.add(wallet)
             db.session.commit()
@@ -126,7 +126,7 @@ class WalletServices:
                 params -- id, pin
         """
         response = {
-            "id"      : self.wallet.id,
+            "id"      : str(self.wallet.id),
             "balance" : self.wallet.balance
         }
         return response
@@ -177,7 +177,7 @@ class WalletServices:
                 transaction_id --
         """
         history_details = Transaction.query.filter_by(wallet_id=self.wallet.id,\
-                                                      id=transaction_id).first()
+                                                      id=validate_uuid(transaction_id)).first()
         if history_details is None:
             raise RequestNotFound(ERROR_CONFIG["TRANSACTION_NOT_FOUND"]["TITLE"],
                                   ERROR_CONFIG["TRANSACTION_NOT_FOUND"]["MESSAGE"])
@@ -318,7 +318,7 @@ class WalletServices:
                 params --
         """
         # build qr payload here
-        qr_data = {"wallet_id" : self.wallet.id}
+        qr_data = {"wallet_id" : str(self.wallet.id)}
         qr_string = QR().generate(qr_data)
 
         response = {

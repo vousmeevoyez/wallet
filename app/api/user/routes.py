@@ -74,7 +74,7 @@ class UserRoutes(Resource):
         return response
 #end class
 
-@api.route("/<int:user_id>")
+@api.route("/<string:user_id>")
 class UserInfoRoutes(Resource):
     """
         User Info Routes
@@ -98,13 +98,14 @@ class UserInfoRoutes(Resource):
             return updated user information
         """
         request_data = USER_UPDATE_REQUEST_SCHEMA.parse_args(strict=True)
-        
-        excluded = "username", "pin", "role"
-        errors = UserSchema(strict=True).validate(request_data,
-                                                  partial=(excluded))
-        if errors:
+        try:
+            excluded = "username", "pin", "role"
+            data = UserSchema(strict=True).validate(request_data,
+                                                    partial=(excluded))
+        except ValidationError as error:
             raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
-                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"], errors)
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
 
         response = UserServices(user_id).update(request_data)
         return response
@@ -121,7 +122,7 @@ class UserInfoRoutes(Resource):
 #end class
 
 
-@api.route("/<int:user_id>/bank_account/")
+@api.route("/<string:user_id>/bank_account/")
 class UserBankAccountRoutes(Resource):
     """
         User Bank Account Routes
@@ -159,7 +160,7 @@ class UserBankAccountRoutes(Resource):
     #end def
 #end class
 
-@api.route("/<int:user_id>/bank_account/<int:user_bank_account_id>")
+@api.route("/<string:user_id>/bank_account/<string:user_bank_account_id>")
 class UserBankAccountDetailsRoutes(Resource):
     """
         User Account Details Routes

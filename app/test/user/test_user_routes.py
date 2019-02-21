@@ -5,6 +5,7 @@ import json
 
 from unittest.mock import Mock, patch
 
+from app.api.models import *
 from app.test.base import BaseTestCase
 
 # mock all response incoming from user services
@@ -151,7 +152,6 @@ class TestUserRoutes(BaseTestCase):
     """
         TEST BEGIN HERE 
     """
-
     def test_create_user_routes_success(self):
         """ test routes function to create user"""
         params = {
@@ -205,7 +205,6 @@ class TestUserRoutes(BaseTestCase):
         response = result.get_json()
         self.assertEqual(status_code, 200) # ok
 
-
     def test_update_user(self):
         """ test routes function to update user"""
         params = {
@@ -227,8 +226,15 @@ class TestUserRoutes(BaseTestCase):
 
         user_id = response["user_id"]
 
+        params = {
+            "name"         : "jennai",
+            "phone_ext"    : "62",
+            "phone_number" : "81219644444",
+            "email"        : "jennie@blckpink.com",
+            "password"     : "password",
+        }
         result = self.update_user(params, user_id, access_token)
-        print(result)
+        self.assertEqual(result.status_code, 204)
 
     def test_get_user(self):
         """ test method that get user info"""
@@ -236,13 +242,8 @@ class TestUserRoutes(BaseTestCase):
         response = result.get_json()
         access_token = response["access_token"]
 
-        result = self.get_user("1", access_token)
-        status_code = result.status_code
-
-        self.assertEqual(status_code, 200) # ok
-
-        result = self.get_user("123", access_token)
-        print(result.get_json())
+        result = self.get_user(str(self.user.id), access_token)
+        self.assertEqual(result.status_code, 200) # ok
 
     def test_create_user_bank_account_success(self):
         """ test method that get user info"""
@@ -258,10 +259,8 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account("1", params, access_token)
-        status_code = result.status_code
-
-        self.assertEqual(status_code, 201) # created
+        result = self.create_user_bank_account(str(self.user.id), params, access_token)
+        self.assertEqual(result.status_code, 201) # created
 
     def test_create_user_bank_account_validate_failed(self):
         """ test method that get user info but failed because some invalid
@@ -278,10 +277,8 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account("1", params, access_token)
-        status_code = result.status_code
-
-        self.assertEqual(status_code, 400) # ok
+        result = self.create_user_bank_account(str(self.user.id), params, access_token)
+        self.assertEqual(result.status_code, 400) # ok
 
     def test_get_user_bank_account(self):
         """ test routes that return bank account information"""
@@ -297,13 +294,11 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account("1", params, access_token)
+        result = self.create_user_bank_account(str(self.user.id), params, access_token)
         status_code = result.status_code
 
-        result = self.get_bank_account("1", access_token)
-        status_code = result.status_code
-
-        self.assertEqual(status_code, 200) # ok
+        result = self.get_bank_account(str(self.user.id), access_token)
+        self.assertEqual(result.status_code, 200) # ok
 
     def test_remove_bank_account(self):
         """ test routes that remove bank account"""
@@ -319,10 +314,12 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account("1", params, access_token)
+        result = self.create_user_bank_account(str(self.user.id), params, access_token)
         self.assertEqual(result.status_code, 201) # ok
 
-        result = self.remove_bank_account("1", "1", access_token)
+        bank_account_id = result.get_json()["data"]["bank_account_id"]
+
+        result = self.remove_bank_account(str(self.user.id), bank_account_id, access_token)
         self.assertEqual(result.status_code, 204) # no content
 
     def test_update_user_bank_account_success(self):
@@ -338,8 +335,10 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account("1", params, access_token)
+        result = self.create_user_bank_account(str(self.user.id), params, access_token)
         self.assertEqual(result.status_code, 201) # ok
+
+        bank_account_id = result.get_json()["data"]["bank_account_id"]
 
         # get access token first
         params = {
@@ -348,7 +347,7 @@ class TestUserRoutes(BaseTestCase):
             "label"     : "Kelvin Bank Accounts",
             "bank_code" : "014"
         }
-        result = self.update_bank_account("1", "1", params, access_token)
+        result = self.update_bank_account(str(self.user.id), bank_account_id, params, access_token)
         status_code = result.status_code
 
         self.assertEqual(status_code, 204) # ok

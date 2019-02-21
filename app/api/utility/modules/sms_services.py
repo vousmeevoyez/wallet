@@ -9,7 +9,7 @@ import requests
 
 from app.api import db
 # helper
-from app.api.common.modules.cipher import AESCipher
+from app.api.utility.modules.cipher import AESCipher
 # models
 from app.api.models import ExternalLog
 # configuration
@@ -62,10 +62,8 @@ class SmsServices:
             log.save_response_time(time.time() - start_time)
 
             db.session.commit()
-        except requests.exceptions.Timeout as e:
-            raise ApiError("Request Timeout", e)
-        except requests.exceptions.RequestException as e:
-            raise ApiError("Unknown Exception", e)
+        except (requests.exceptions.Timeout, requests.exceptions.RequestException) as e:
+            raise ApiError(e)
         #end try
         return result
     #end def

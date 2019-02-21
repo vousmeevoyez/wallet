@@ -11,8 +11,6 @@
 from sqlalchemy.exc import IntegrityError
 
 from app.api import db
-#helper
-from app.api.common.helper import QR
 #models
 from app.api.models import *
 # exceptions
@@ -22,8 +20,12 @@ from app.api.http_response import accepted
 from app.api.http_response import no_content
 # configuration
 from app.config import config
+
+from app.api.utility.utils import validate_uuid
 # task
 from task.transaction.tasks import TransactionTask
+from task.bank.tasks import BankTask
+
 
 TRANSACTION_CONFIG = config.Config.TRANSACTION_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
@@ -40,7 +42,7 @@ class TransferServices:
     """ Transfer Services"""
 
     def __init__(self, source, pin, destination=None):
-        source_wallet = Wallet.query.filter_by(id=source).first()
+        source_wallet = Wallet.query.filter_by(id=validate_uuid(source)).first()
         if source_wallet is None:
             raise RequestNotFound(ERROR_CONFIG["WALLET_NOT_FOUND"]["TITLE"],
                                   ERROR_CONFIG["WALLET_NOT_FOUND"]["MESSAGE"])
@@ -58,7 +60,7 @@ class TransferServices:
 
         if destination is not None:
             destination_wallet = \
-            Wallet.query.filter_by(id=destination).first()
+            Wallet.query.filter_by(id=validate_uuid(destination)).first()
             if destination_wallet is None:
                 raise RequestNotFound(ERROR_CONFIG["WALLET_NOT_FOUND"]["TITLE"],
                                       ERROR_CONFIG["WALLET_NOT_FOUND"]["MESSAGE"])
@@ -183,7 +185,7 @@ class TransferServices:
         #end if
 
         # fetch bank information from bank account id here
-        bank_account = BankAccount.query.filter_by(id=bank_account_id).first()
+        bank_account = BankAccount.query.filter_by(id=validate_uuid(bank_account_id)).first()
         if bank_account is None:
             raise RequestNotFound(ERROR_CONFIG["BANK_ACC_NOT_FOUND"]["TITLE"],
                                   ERROR_CONFIG["BANK_ACC_NOT_FOUND"]["MESSAGE"])
@@ -193,7 +195,7 @@ class TransferServices:
             "payment_type"   : False,
             "source_account" : self.source.id,
             "to"             : bank_account.account_no,
-            "amount"         : amount
+            "amount"         : -amount
         }
 
         debit_payment_id = self.create_payment(payment)
@@ -219,7 +221,7 @@ class TransferServices:
                                       ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
         #end if
         # send queue here
-        result = TransactionTask().transfer.delay(debit_payment_id)
+        result = BankTask().bank_transfer.delay(debit_payment_id)
         return accepted()
     #end def
 

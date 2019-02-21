@@ -92,7 +92,7 @@ class BankAccountSchema(ma.Schema):
     """
         This is Class Schema for Bank Account Object
     """
-    id         = fields.Int()
+    id         = fields.Str()
     name       = fields.Str(required=True, validate=(cannot_be_blank,
                                                      validate_name))
     account_no = fields.Str(required=True, validate=cannot_be_blank)

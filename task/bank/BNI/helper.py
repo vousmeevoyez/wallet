@@ -306,11 +306,11 @@ class CoreBank:
         # post here
         try:
             response = self._post(api_name, payload)
-        except ServicesFailed:
-            self.access_token = None
-        else:
-            access_token = response["data"]["access_token"]
-            return access_token
+        except ServicesFailed as error:
+            raise ApiError(error)
+            
+        access_token = response["data"]["access_token"]
+        return access_token
     #end def
 
     def get_balance(self, params):

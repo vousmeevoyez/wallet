@@ -8,9 +8,9 @@ from app.api.models import ExternalLog
 
 from app.test.base import BaseTestCase
 
-from app.api.common.modules.sms_services import SmsServices
-from app.api.common.modules.sms_services import SmsError
-from app.api.common.modules.sms_services import ApiError
+from app.api.utility.modules.sms_services import SmsServices
+from app.api.utility.modules.sms_services import SmsError
+from app.api.utility.modules.sms_services import ApiError
 
 
 def raise_api_error(*args):
@@ -151,7 +151,7 @@ class TestSMSHelper(BaseTestCase):
             "text" : "some message here",
         }
 
-        mock_post.side_effect = ApiError("Some Error", Mock())
+        mock_post.side_effect = ApiError(Mock())
         # make sure the error is raised
         with self.assertRaises(SmsError):
             SmsServices().send_sms("081212341234", message)

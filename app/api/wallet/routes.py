@@ -27,8 +27,8 @@ from app.api.authentication.decorator import token_required
 from app.api.authentication.decorator import get_token_payload
 from app.api.authentication.decorator import admin_required
 
-from app.api.common.helper import QR
-from app.api.common.modules.cipher import DecryptError
+from app.api.utility.utils import QR
+from app.api.utility.modules.cipher import DecryptError
 
 # exceptions
 from app.api.error.http import *
@@ -88,7 +88,7 @@ class WalletAddRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:wallet_id>')
+@api.route('/<string:wallet_id>')
 class WalletRoutes(Resource):
     """
         Wallet Routes
@@ -115,7 +115,7 @@ class WalletRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:wallet_id>/qr/')
+@api.route('/<string:wallet_id>/qr/')
 class WalletQrRoutes(Resource):
     """
         Wallet QR Routes
@@ -133,7 +133,7 @@ class WalletQrRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:wallet_id>/qr/transfer')
+@api.route('/<string:wallet_id>/qr/transfer')
 class WalletQrTransferRoutes(Resource):
     """
         Wallet QR Routes
@@ -173,7 +173,7 @@ class WalletQrTransferRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:wallet_id>/balance/')
+@api.route('/<string:wallet_id>/balance/')
 class WalletBalanceRoutes(Resource):
     """
         Wallet Balance Routes
@@ -191,7 +191,7 @@ class WalletBalanceRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:wallet_id>/transactions')
+@api.route('/<string:wallet_id>/transactions')
 class WalletTransactionRoutes(Resource):
     """
         Wallet Transaction Routes
@@ -217,7 +217,7 @@ class WalletTransactionRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:wallet_id>/transactions/<transaction_id>')
+@api.route('/<string:wallet_id>/transactions/<transaction_id>')
 class WalletTransactionDetailsRoutes(Resource):
     """
         Wallet Transaction Details Routes
@@ -235,7 +235,7 @@ class WalletTransactionDetailsRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:wallet_id>/pin/')
+@api.route('/<string:wallet_id>/pin/')
 class WalletPinRoutes(Resource):
     """
         Wallet pin routes
@@ -282,7 +282,7 @@ class WalletPinRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:wallet_id>/forgot/')
+@api.route('/<string:wallet_id>/forgot/')
 class WalletForgotPinRoutes(Resource):
     """
         Wallet Forgot Pin ROutes
@@ -313,7 +313,7 @@ class WalletForgotPinRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:wallet_id>/withdraw/')
+@api.route('/<string:wallet_id>/withdraw/')
 class WalletWithdrawRoutes(Resource):
     """
         Wallet Withdraw Routes
@@ -343,7 +343,7 @@ class WalletWithdrawRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:source_wallet_id>/transfer/<int:destination_wallet_id>')
+@api.route('/<string:source_wallet_id>/transfer/<string:destination_wallet_id>')
 class WalletTransferRoutes(Resource):
     """
         Wallet Transfer Routes
@@ -375,7 +375,7 @@ class WalletTransferRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<int:source_wallet_id>/transfer/bank/<int:bank_account_id>')
+@api.route('/<string:source_wallet_id>/transfer/bank/<string:bank_account_id>')
 class WalletBankTransferRoutes(Resource):
     """
         Wallet Bank Transfer Routes

@@ -41,7 +41,7 @@ class TestAuthServices(BaseTestCase):
     def test_current_login_user_invalid(self):
         """ test curren login user"""
         token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidHlwZSI6IkFDQ0VTUyJ9.9JeY4v711wDsUzczKNlR84IMTTab5KwraY4rlQ3jaAQ"
-        with self.assertRaises(RequestNotFound):
+        with self.assertRaises(BadRequest):
             result = AuthServices._current_login_user(token)
 
     @patch.object(User, "decode_token")

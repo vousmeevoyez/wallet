@@ -16,6 +16,8 @@ from app.api.wallet.modules.wallet_services import WalletServices
 # exceptions
 from app.api.error.http import *
 
+from app.api.utility.utils import validate_uuid
+
 class TestWithdrawServices(BaseTestCase):
     """ Test Class for Withdraw Services"""
 
@@ -41,7 +43,7 @@ class TestWithdrawServices(BaseTestCase):
         result = VirtualAccountServices.add(virtual_account, params)
         self.assertTrue(result[0]["data"]["virtual_account"])
         
-        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        wallet = Wallet.query.filter_by(id=validate_uuid(wallet_id)).first()
         return wallet
 
     @patch.object(BankTask, "create_va")
@@ -55,7 +57,7 @@ class TestWithdrawServices(BaseTestCase):
             name="lisa",
         )
 
-        wallet = Wallet.query.filter_by(id=wallet_id).first()
+        wallet = Wallet.query.filter_by(id=validate_uuid(wallet_id)).first()
         return wallet
 
     def test_request_withdraw_success(self):
@@ -68,7 +70,7 @@ class TestWithdrawServices(BaseTestCase):
             "bank_name" : "BNI",
         }
 
-        result = WithdrawServices(source.id, "123456").request(params)
+        result = WithdrawServices(str(source.id), "123456").request(params)
         print(result)
 
     def test_request_withdraw_pending(self):
@@ -81,10 +83,10 @@ class TestWithdrawServices(BaseTestCase):
             "bank_name" : "BNI",
         }
 
-        result = WithdrawServices(source.id, "123456").request(params)
+        result = WithdrawServices(str(source.id), "123456").request(params)
 
         with self.assertRaises(UnprocessableEntity):
-            result = WithdrawServices(source.id, "123456").request(params)
+            result = WithdrawServices(str(source.id), "123456").request(params)
 
     def test_request_withdraw_va_already_exist(self):
         """ test function to request withdraw """
@@ -96,7 +98,7 @@ class TestWithdrawServices(BaseTestCase):
             "bank_name" : "BNI",
         }
 
-        result = WithdrawServices(source.id, "123456").request(params)
+        result = WithdrawServices(str(source.id), "123456").request(params)
         print(result)
 
     def test_request_withdraw_minimal(self):
@@ -109,7 +111,7 @@ class TestWithdrawServices(BaseTestCase):
         }
 
         with self.assertRaises(UnprocessableEntity):
-            result = WithdrawServices(source.id, "123456").request(params)
+            result = WithdrawServices(str(source.id), "123456").request(params)
 
     def test_request_withdraw_max(self):
         """ test function to request withdraw """
@@ -121,7 +123,7 @@ class TestWithdrawServices(BaseTestCase):
         }
 
         with self.assertRaises(UnprocessableEntity):
-            result = WithdrawServices(source.id, "123456").request(params)
+            result = WithdrawServices(str(source.id), "123456").request(params)
 
     def test_request_withdraw_insufficient(self):
         """ test function to request withdraw """
@@ -133,7 +135,7 @@ class TestWithdrawServices(BaseTestCase):
         }
 
         with self.assertRaises(UnprocessableEntity):
-            result = WithdrawServices(source.id, "123456").request(params)
+            result = WithdrawServices(str(source.id), "123456").request(params)
 
     def test_request_withdraw_incorrect_pin(self):
         """ test function to request withdraw """
@@ -146,4 +148,4 @@ class TestWithdrawServices(BaseTestCase):
         }
 
         with self.assertRaises(UnprocessableEntity):
-            result = WithdrawServices(source.id, "111111").request(params)
+            result = WithdrawServices(str(source.id), "111111").request(params)
