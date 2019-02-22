@@ -122,16 +122,17 @@ class CallbackServices:
         wallet = self.virtual_account.wallet
 
         try:
+            transfer_notes = "Cardless Withdraw {}".format(str(-payment_amount))
             debit_transaction = TransferServices.debit_transaction(wallet,
                                                                    payment_id,
                                                                    payment_amount,
-                                                                   "WITHDRAW")
+                                                                   "WITHDRAW",
+                                                                   transfer_notes)
         except TransactionError as error:
             db.session.rollback()
             raise UnprocessableEntity(ERROR_CONFIG["WITHDRAW_CALLBACK_FAILED"]["TITLE"],
                                       ERROR_CONFIG["WITHDRAW_CALLBACK_FAILED"]["MESSAGE"])
         #end def
-
         response = {
             "status" : "000"
         }

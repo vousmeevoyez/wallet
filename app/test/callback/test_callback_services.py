@@ -1,3 +1,4 @@
+import time
 import json
 
 from app.test.base  import BaseTestCase
@@ -53,6 +54,7 @@ class TestCallbackServices(BaseTestCase):
         }
         result = CallbackServices(virtual_account, trx_id).deposit(params)
         va = VirtualAccount.query.filter_by(account_no=virtual_account).first()
+        time.sleep(3)
         self.assertEqual(va.wallet.balance, 10000)
     #end def
 
@@ -66,6 +68,7 @@ class TestCallbackServices(BaseTestCase):
         }
         result = CallbackServices(virtual_account, trx_id).withdraw(params)
         va = VirtualAccount.query.filter_by(account_no=virtual_account).first()
-        self.assertEqual(va.wallet.balance, -10000)
+        time.sleep(3)
+        self.assertEqual(va.wallet.balance, 0)
     #end def
 #end class

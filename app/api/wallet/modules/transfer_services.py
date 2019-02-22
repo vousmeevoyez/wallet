@@ -251,6 +251,7 @@ class TransferServices:
         debit_transaction.generate_trx_id()
         try:
             db.session.add(debit_transaction)
+            db.session.commit()
         except IntegrityError as error:
             db.session.rollback()
             raise TransactionError(error)

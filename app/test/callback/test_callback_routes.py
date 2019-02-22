@@ -10,8 +10,7 @@ from app.test.base import BaseTestCase
 from app.api.user.modules.user_services import UserServices
 from app.api.user.modules.bank_account_services import BankAccountServices
 
-from app.api.models import User
-from app.api.models import Wallet
+from app.api.models import *
 from app.api import db
 
 from task.bank.BNI.utility import remote_call
@@ -162,13 +161,12 @@ class TestCallbackRoutes(BaseTestCase):
         response = result.get_json()
         self.assertEqual(response["status"], "000")
 
-        wallet = Wallet.query.all()
-        print(wallet)
+        transaction = Transaction.query.all()
+        print(transaction)
 
     """
         WITHDRAW CALLBACK
     """
-    '''
     def test_withdraw_callback(self):
         """ WITHDRAW CALLBACK CASE 1 : Successfully withdraw callback """
         access_token, user_id = self._create_dummy_user()
@@ -209,6 +207,5 @@ class TestCallbackRoutes(BaseTestCase):
         response = result.get_json()
         self.assertEqual(response["status"], "000")
 
-        wallet = Wallet.query.all()
-        print(wallet)
-    '''
+        transaction = Transaction.query.all()
+        print(transaction)
