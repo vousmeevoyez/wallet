@@ -113,7 +113,8 @@ class BankTask(celery.Task):
         transfer_info = result["data"]["transfer_info"]
         # update referenc number here
         request_reference = transfer_info["ref_number"]
-        response_reference = transfer_info["bank_ref"]
+        # try fetch bank reference if available
+        response_reference = transfer_info.get("bank_ref", "NA")
         payment.ref_number = request_reference + "-" + response_reference
         db.session.commit()
 
