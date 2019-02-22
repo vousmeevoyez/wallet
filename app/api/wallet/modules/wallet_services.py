@@ -164,7 +164,7 @@ class WalletServices:
                                                  Payment.id,
                                                  ).filter(*conditions)
         response = TransactionSchema(many=True,
-                                     exclude=["payment_details",]).\
+                                     exclude=["payment_details","wallet_id"]).\
                                      dump(wallet_response).data
         return response
     #end def
