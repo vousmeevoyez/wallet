@@ -108,6 +108,13 @@ class BankTask(celery.Task):
         except ApiError as error:
             self.retry(countdown=backoff(self.request.retries), exc=error)
         #end try
+
         # get reference number from transfer response
         transfer_info = result["data"]["transfer_info"]
+        # update referenc number here
+        request_reference = transfer_info["ref_number"]
+        response_reference = transfer_info["bank_ref"]
+        payment.ref_number = request_reference + "-" + response_reference
+        db.session.commit()
+
         return transfer_info
