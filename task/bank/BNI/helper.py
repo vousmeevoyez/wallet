@@ -272,6 +272,7 @@ class CoreBank:
             # when http status code failing we mark the request as fail
             if r.status_code != 200:
                 log.set_status(False) # set as failed request
+                db.session.commit()
                 raise ServicesFailed("HTTP_FAILED", resp)
             #end if
 
@@ -285,11 +286,12 @@ class CoreBank:
                 # fail too
                 if response_status is False:
                     log.set_status(False)
+                    db.session.commit()
                     raise ServicesFailed("RESPONSE_FAILED", resp)
                 #end if
             #end if
             db.session.commit()
-
+            
             response["data"] = resp
         except requests.exceptions.Timeout as error:
             raise ServicesFailed("TIMEOUT", error)
