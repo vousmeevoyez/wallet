@@ -97,7 +97,7 @@ class BankTask(celery.Task):
         bank_account = BankAccount.query.filter_by(account_no=bank_account_no).first()
 
         transfer_payload = {
-            "amount"         : payment.amount, # BANK CODE
+            "amount"         : abs(payment.amount), # BANK CODE
             "bank_code"      : bank_account.bank.code, # BANK CODE
             "source_account" : BNI_OPG_CONFIG["MASTER_ACCOUNT"], # MASTER ACCOUNT ID
             "account_no"     : bank_account_no# destination account bank transfer
