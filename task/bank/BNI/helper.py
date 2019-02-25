@@ -17,6 +17,8 @@ import pytz
 import requests
 import jwt
 
+from werkzeug.contrib.cache import SimpleCache
+
 from app.api import db
 # models
 from app.api.models import ExternalLog
@@ -163,10 +165,20 @@ class CoreBank:
     ROUTES = BNI_OPG_CONFIG["ROUTES"]
     URL = BNI_OPG_CONFIG["BASE_URL_DEV"] + ":" + BNI_OPG_CONFIG["PORT"]
 
+    cache = SimpleCache()
+
     def __init__(self, access_token=None):
         """ set access token here"""
         if access_token is None:
-            self.access_token = self._get_token()
+            # if token still cached use that one if not fetch the new one
+            cached_token = self.cache.get('BNI_OPG_ACCESS_TOKEN')
+            if cached_token is None:
+                access_token = self._get_token()
+                # set token in cache
+                self.cache.set('BNI_OPG_ACCESS_TOKEN', access_token, timeout= 60 * 60)
+                self.access_token = access_token
+            #end if
+            self.access_token = cached_token
         else:
             self.access_token = access_token
         #end if
