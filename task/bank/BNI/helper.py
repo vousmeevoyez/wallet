@@ -176,7 +176,7 @@ class CoreBank:
                 access_token = self._get_token()
                 # set token in cache
                 self.cache.set('BNI_OPG_ACCESS_TOKEN', access_token, timeout= 60 * 60)
-                self.access_token = access_token
+                cached_token = access_token
             #end if
             self.access_token = cached_token
         else:
@@ -322,7 +322,7 @@ class CoreBank:
             response = self._post(api_name, payload)
         except ServicesFailed as error:
             raise ApiError(error)
-            
+        #end try
         access_token = response["data"]["access_token"]
         return access_token
     #end def

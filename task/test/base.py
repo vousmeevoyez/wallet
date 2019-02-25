@@ -43,11 +43,11 @@ class BaseTestCase(TestCase):
 
         # add dummy user
         user = User(
-            username='jenniebp',
+            username='testtest',
             name='jennie',
-            email='jennie@bp.com',
+            email='testtest@bp.com',
             phone_ext='62',
-            phone_number='82219644314',
+            phone_number='8212341234123',
             role_id=role.id,
         )
         user.set_password("password")
@@ -58,19 +58,19 @@ class BaseTestCase(TestCase):
         
         wallet = Wallet(user_id=user.id)
         db.session.add(wallet)
-        db.session.flush()
+        db.session.commit()
 
         wallet2 = Wallet()
         db.session.add(wallet2)
-        db.session.flush()
+        db.session.commit()
 
         # add some balance here for test case
-        source = Wallet.query.get(1)
+        source = wallet
         source.add_balance(100)
         db.session.commit()
 
         # add some balance here for test case
-        destination = Wallet.query.get(2)
+        destination = wallet2
         destination.add_balance(100)
         db.session.commit()
 
