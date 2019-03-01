@@ -109,19 +109,23 @@ class VirtualAccountServices:
         return no_content()
     #end def
 
-    def update(self, params):
+    def reactivate(self, params):
         """
-            update Virtual Account information stored on the system
+            Re create VA that already exist with same information
         """
         # update existing va with new generated value
-        virtual_account_number = self.virtual_account.generate_va_number()
         transaction_id = self.virtual_account.generate_trx_id()
         datetime_expired = \
         self.virtual_account.get_datetime_expired(params["bank_name"], params["type"])
         self.virtual_account.amount = params["amount"]
-        
+
+        # commit everything
+        db.session.commit()
+
+        task_result = BankTask().create_va.delay(self.virtual_account.id)
+
         response = {
-            "virtual_account" : virtual_account_number,
+            "virtual_account" : self.virtual_account.account_no,
             "valid_until"     : datetime_expired,
             "amount"          : params["amount"]
         }

@@ -14,7 +14,7 @@ from app.api.serializer import UserSchema
 from app.api.serializer import WalletSchema
 
 from app.api.wallet.modules.wallet_services import WalletServices
-from app.api.wallet.modules.va_services import VirtualAccountServices
+from app.api.virtual_account.modules.va_services import VirtualAccountServices
 
 # http response
 from app.api.http_response import created

@@ -293,8 +293,8 @@ class PaymentChannel(db.Model):
     """
         This is class that represent Payment Channel Database Object
     """
-    id              = db.Column(UUID(as_uuid=True), unique=True,
-                                primary_key=True, default=uid)
+    id           = db.Column(UUID(as_uuid=True), unique=True,
+                             primary_key=True, default=uid)
     name         = db.Column(db.String(100)) # payment channel name
     key          = db.Column(db.String(100)) # payment channel key
     channel_type = db.Column(db.String(100)) # VIRTUAL ACCOUNT / NORMAL TRANSFER
@@ -313,8 +313,8 @@ class Payment(db.Model):
     """
         This is class that represent Payment Database Object
     """
-    id              = db.Column(UUID(as_uuid=True), unique=True,
-                                primary_key=True, default=uid)
+    id             = db.Column(UUID(as_uuid=True), unique=True,
+                               primary_key=True, default=uid)
     source_account = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (money comes from)
     to             = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount ( money goes)
     ref_number     = db.Column(db.String(100), unique=True) # journal number from the bank

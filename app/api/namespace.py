@@ -20,11 +20,14 @@ class BankNamespace:
     api = Namespace("bank")
 #end class
 
+class VirtualAccountNamespace:
+    api = Namespace("virtual_account")
+#end class
+
 class CallbackNamespace:
     api = Namespace("callback")
 #end class
 
 class LogNamespace:
-    """ logging prupose """
     api = Namespace("log")
 #end class

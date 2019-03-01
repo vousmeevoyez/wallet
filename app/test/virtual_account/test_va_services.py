@@ -11,7 +11,7 @@ from app.api.models import *
 from task.bank.tasks import BankTask
 
 from app.api.wallet.modules.wallet_services import WalletServices
-from app.api.wallet.modules.va_services import VirtualAccountServices
+from app.api.virtual_account.modules.va_services import VirtualAccountServices
 
 class TestVaServices(BaseTestCase):
     """ Test Class for Wallet Services"""

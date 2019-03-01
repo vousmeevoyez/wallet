@@ -9,13 +9,14 @@ from flask import Blueprint
 
 from app.api import sentry
 
-from app.api.user           import api as user_ns
-from app.api.authentication import api as auth_ns
-from app.api.wallet         import api as wallet_ns
-from app.api.bank           import api as bank_ns
-from app.api.callback       import api as callback_ns
-from app.api.log            import api as log_ns
-from app.api.utility        import api as utility
+from app.api.user            import api as user_ns
+from app.api.authentication  import api as auth_ns
+from app.api.wallet          import api as wallet_ns
+from app.api.virtual_account import api as va_ns
+from app.api.bank            import api as bank_ns
+from app.api.callback        import api as callback_ns
+from app.api.log             import api as log_ns
+from app.api.utility         import api as utility
 
 
 blueprint = Blueprint("api", __name__)
@@ -61,6 +62,7 @@ api = CustomApi(blueprint,
 api.add_namespace(user_ns, path="/users")
 api.add_namespace(auth_ns, path="/auth")
 api.add_namespace(wallet_ns, path="/wallets")
+api.add_namespace(va_ns, path="/virtual-accounts")
 api.add_namespace(callback_ns, path="/callback")
 api.add_namespace(bank_ns, path="/banks")
 api.add_namespace(log_ns, path="/logs")

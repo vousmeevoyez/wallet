@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api import db
 
-from app.api.wallet.modules.va_services import VirtualAccountServices
+from app.api.virtual_account.modules.va_services import VirtualAccountServices
 # models
 from app.api.models import *
 # http response
@@ -113,7 +113,8 @@ class WithdrawServices:
             va_response = va_response[0]["data"]
         else:
         # update va here
-            va_response = VirtualAccountServices(va_record.account_no).update(va_payload)
+            va_response =\
+            VirtualAccountServices(va_record.account_no).reactivate(va_payload)
         #end if
         response = {
             "virtual_account" : va_response["virtual_account"],
