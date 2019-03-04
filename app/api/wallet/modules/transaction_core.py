@@ -19,7 +19,7 @@ from app.api.http_response import accepted
 from app.api.http_response import no_content
 # configuration
 from app.config import config
-
+# utility
 from app.api.utility.utils import validate_uuid
 # task
 from task.transaction.tasks import TransactionTask
