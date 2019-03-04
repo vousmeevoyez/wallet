@@ -134,10 +134,12 @@ class BankTask(celery.Task):
 
             # DEDUCT TRANSFER FEE
             fee_payment = Payment.query.filter_by(id=fee_payment_id).first()
+            fee_notes = "Biaya Transaksi"
             fee_trx = TransactionCore.debit_transaction(wallet,
                                                         str(fee_payment.id),
                                                         fee_payment.amount,
-                                                        "TRANSFER_FEE")
+                                                        "TRANSFER_FEE",
+                                                        fee_notes)
         except TransactionError as error:
             print(error)
             db.session.rollback()
