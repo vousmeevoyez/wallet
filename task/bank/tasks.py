@@ -14,6 +14,7 @@ from task.bank.BNI.helper import VirtualAccount as VaServices
 from task.bank.BNI.helper import CoreBank as CoreServices
 
 from app.api.wallet.modules.transaction_core import TransactionCore
+from app.api.wallet.modules.transaction_core import TransactionError
 
 # exceptions
 from task.bank.exceptions.general import *
@@ -122,8 +123,11 @@ class BankTask(celery.Task):
         db.session.commit()
 
         try:
+            wallet = \
+            Wallet.query.filter_by(id=payment.source_account).with_for_update().first()
+
             # DEDUCT BALANCE
-            debit_trx = TransactionCore.debit_transaction(self.source,
+            debit_trx = TransactionCore.debit_transaction(wallet,
                                                           str(payment.id),
                                                           payment.amount,
                                                           "TRANSFER_OUT", transfer_notes)
