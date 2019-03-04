@@ -232,22 +232,24 @@ class TransferServices:
             raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
                                       ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
 
-        # create fee payment
-        payment = {
-            "payment_type"   : False,
-            "source_account" : self.source.id,
-            "to"             : "N/A",
-            "amount"         : -transfer_fee
-        }
-        fee_payment_id = self.create_payment(payment)
-        try:
-            db.session.commit()
-        except TransactionError as error:
-            print(error)
-            db.session.rollback()
-            # still commit the master transaction
-            raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
-                                      ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
+        # create fee payment if transfer fee > 0
+        fee_payment_id = None
+        if transfer_fee > 0:
+            payment = {
+                "payment_type"   : False,
+                "source_account" : self.source.id,
+                "to"             : "N/A",
+                "amount"         : -transfer_fee
+            }
+            fee_payment_id = self.create_payment(payment)
+            try:
+                db.session.commit()
+            except TransactionError as error:
+                print(error)
+                db.session.rollback()
+                # still commit the master transaction
+                raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
+                                          ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
 
         # send queue here
         result = BankTask().bank_transfer.delay(debit_payment_id,
