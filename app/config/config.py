@@ -78,10 +78,10 @@ class Config:
     WALLET_CONFIG = {
         "CREDIT_FLAG"        : True,
         "DEBIT_FLAG"         : False,
-        "MINIMAL_WITHDRAW"   : os.getenv('MINIMAL_WITHDRAW') or 50000,
-        "MAX_WITHDRAW"       : os.getenv('MAX_WITHDRAW') or 100000000,
-        "MINIMAL_DEPOSIT"    : os.getenv('MINIMAL_DEPOSIT') or 50000,
-        "MAX_DEPOSIT"        : os.getenv('MAX_DEPOSIT') or 100000000,
+        "MINIMAL_WITHDRAW"   : int(os.getenv('MINIMAL_WITHDRAW')) or 50000,
+        "MAX_WITHDRAW"       : int(os.getenv('MAX_WITHDRAW')) or 100000000,
+        "MINIMAL_DEPOSIT"    : int(os.getenv('MINIMAL_DEPOSIT')) or 50000,
+        "MAX_DEPOSIT"        : int(os.getenv('MAX_DEPOSIT')) or 100000000,
         "TRANSFER_FEE"       : {
             "USER"     : 0,
             "CLEARING" : 5000,
