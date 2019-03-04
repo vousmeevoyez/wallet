@@ -27,16 +27,9 @@ class TestCallbackRoutes(BaseTestCase):
     """
         HELPER function to request to specific URL
     """
-    def deposit_callback(self, params):
+    def callback(self, params):
         return self.client.post(
-            BASE_URL + "/callback/bni_va/deposit",
-            data=json.dumps(params),
-            content_type="application/json"
-        )
-
-    def withdraw_callback(self, params):
-        return self.client.post(
-            BASE_URL + "/callback/bni_va/withdraw",
+            BASE_URL + "/callback/bni/virtual-account",
             data=json.dumps(params),
             content_type="application/json"
         )
@@ -151,13 +144,13 @@ class TestCallbackRoutes(BaseTestCase):
             "payment_ntb"               : "12345",
             "datetime_payment"          : "2018-12-20 11:16:00",
         }
-        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"], data)
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CLIENT_ID"], BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
-        result = self.deposit_callback(expected_value)
+        result = self.callback(expected_value)
         response = result.get_json()
         self.assertEqual(response["status"], "000")
 
@@ -196,14 +189,14 @@ class TestCallbackRoutes(BaseTestCase):
             "datetime_payment"          : "2018-12-20 11:16:00",
         }
         encrypted_data = \
-        remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
-                            BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"], data)
+        remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
+                            BNI_ECOLLECTION_CONFIG["SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION_CONFIG["CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
-        result = self.withdraw_callback(expected_value)
+        result = self.callback(expected_value)
         response = result.get_json()
         self.assertEqual(response["status"], "000")
 
