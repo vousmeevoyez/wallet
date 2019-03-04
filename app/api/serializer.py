@@ -350,6 +350,8 @@ class TransactionSchema(ma.Schema):
     amount           = fields.Float(validate=validate_amount)
     transaction_type = fields.Method("transaction_type_id_to_string")
     notes            = fields.Str(allow_none=True)
+    instructions     = fields.List(fields.Nested("TransactionSchema"),
+                                   allow_none=True)
     payment_details  = fields.Method("payment_id_to_details")
     created_at       = fields.DateTime('%Y-%m-%d %H:%M:%S')
 
@@ -404,8 +406,10 @@ class TransactionSchema(ma.Schema):
             result = "TRANSFER_IN"
         elif obj.transaction_type == 4:
             result = "TRANSFER_OUT"
-        else:
+        elif obj.transaction_type == 5:
             result = "RECEIVE_TRANSFER"
+        else:
+            result = "TRANSACTION_FEE"
         return result
     #end def
 

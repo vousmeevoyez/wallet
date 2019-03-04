@@ -436,6 +436,22 @@ class TestTransactionSchema(BaseTestCase):
         expected_error = {'amount': ['Invalid Amount, cannot be less than 0']}
         self.assertEqual(errors, expected_error)
 
+    def test_validate_instruction(self):
+        data = {
+            "wallet_id"        : "123456",
+            "balance"          : 11,
+            "amount"           : 1000,
+            "transaction_type" : 1,
+            "notes"            : "test",
+            "instructions"     : [{
+                "to"     : "12345678910",
+                "amount" : 1000,
+                "notes"  : "some notes"
+            }],
+        }
+        errors = TransactionSchema().validate(data)
+        print(errors)
+
     def test_deserialize(self):
          # create 2 dummy wallet here
         wallet = Wallet(
@@ -475,14 +491,13 @@ class TestTransactionSchema(BaseTestCase):
             amount=trx_amount,
             payment_id=debit_payment.id
         )
-        debit_trx.generate_trx_id()
         db.session.add(debit_trx)
         # deduct balance
 
         db.session.commit()
 
         result = TransactionSchema().dump(debit_trx).data
-        self.assertEqual(result["transaction_type"], "RECEIVE_TRANSFER")
+        self.assertEqual(result["transaction_type"], "TRANSACTION_FEE")
 
 class TestCallbackSchema(BaseTestCase):
 

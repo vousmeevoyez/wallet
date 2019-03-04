@@ -11,7 +11,6 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     """ This is base class for configuration """
-    SECRET_KEY = os.getenv('SECRET_KEY', 'my_secret_k3y')
     DEBUG = False
     BUNDLE_ERRORS = True #configuration key for flask-restplus to enable bundle erors
 
@@ -82,6 +81,12 @@ class Config:
         "MINIMAL_WITHDRAW"   : 50000,
         "MAX_WITHDRAW"       : 100000000,
         "MINIMAL_DEPOSIT"    : 50000,
+        "TRANSFER_FEE"       : {
+            "USER"     : 0,
+            "CLEARING" : 5000,
+            "RTGS"     : 30000,
+            "ONLINE"   : 6500
+        },
         "MAX_DEPOSIT"        : 100000000,
         "OTP_TIMEOUT"        : 2, # set otp timeout in minutes
         "QR_SECRET_KEY"      : "1#$@!%2jajdasnknvxivodisufu039021ofjldsjfa@@!"
@@ -93,7 +98,8 @@ class Config:
             "WITHDRAW"    : 2,
             "TRANSFER_IN" : 3, # transfer between user
             "TRANSFER_OUT": 4, # transfer to external system
-            "RECEIVE_TRANSFER": 5
+            "RECEIVE_TRANSFER": 5,
+            "TRANSFER_FEE"    : 6 # internal deduction
         }
     }
 
@@ -103,7 +109,8 @@ class Config:
         "INJECT"          : "Injected balance {}",
         "SEND_TRANSFER"   : "Transfer balance {}",
         "RECEIVE_TRANSFER": "Received balance {}",
-        "WITHDRAW_NOTIF"  : "Withdraw balance {} from Virtual Account"
+        "WITHDRAW_NOTIF"  : "Withdraw balance {} from Virtual Account",
+        "TRANSFER_FEE"    : "Transfer Fee {}"
     }
 
     # BNI E-COLLECTION CONFIG
@@ -128,7 +135,7 @@ class Config:
     # BNI OPG CONFIG
     BNI_OPG_CONFIG = {
         "MASTER_ACCOUNT": os.getenv('BNI_MASTER_ACCOUNT') or "0115476117",
-        "BASE_URL_DEV"  : os.getenv('BNI_OPG_URL') or "https://apidev.bni.co.id",
+        "BASE_URL"      : os.getenv('BNI_OPG_URL') or "https://apidev.bni.co.id",
         "PORT"          : os.getenv('BNI_OPG_PORT') or "8066",
         "CLIENT_NAME"   : os.getenv('BNI_OPG_CLIENT_NAME') or "IDBNITU9EQU5B",
         "USERNAME"      : os.getenv('BNI_OPG_USERNAME') or \
@@ -152,16 +159,9 @@ class Config:
         }
     }
 
-    # ACCESS_KEY CONFIG
-    ACCESS_KEY_CONFIG = {
-        "TOKEN_LENGTH" : 20,
-        #"EXPIRE_IN"    : 525600 # 1 year in minutes
-        "EXPIRE_IN"    : 8760 # 1 year in hour
-    }
-
     # logging config
     LOGGING_CONFIG = {
-        "TIMEOUT" : 10,
+        "TIMEOUT"         : 10,
         "BNI_ECOLLECTION" : "BNI-ECOLLECTION",
         "BNI_OPG"         : "BNI-OPG",
         "WAVECELL"        : "WAVECELL",
@@ -403,5 +403,3 @@ CONFIG_BY_NAME = dict(
     test=TestingConfig,
     prod=ProductionConfig
 )
-
-KEY = Config.SECRET_KEY

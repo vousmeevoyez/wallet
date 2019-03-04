@@ -395,7 +395,6 @@ class TransactionModelCase(BaseTestCase):
             wallet_id=wallet.id,
             amount=amount,
         )
-        debit_trx.generate_trx_id()
         db.session.add(debit_trx)
         # deduct balance
         wallet.add_balance(amount)
@@ -417,7 +416,6 @@ class TransactionModelCase(BaseTestCase):
             wallet_id=wallet2.id,
             amount=amount,
         )
-        credit_trx.generate_trx_id()
         db.session.add(credit_trx)
         # deduct user balance here
         wallet2.add_balance(amount)

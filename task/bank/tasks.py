@@ -13,6 +13,8 @@ from app.api.models import *
 from task.bank.BNI.helper import VirtualAccount as VaServices
 from task.bank.BNI.helper import CoreBank as CoreServices
 
+from app.api.wallet.modules.transaction_core import TransactionCore
+
 # exceptions
 from task.bank.exceptions.general import *
 
@@ -89,7 +91,7 @@ class BankTask(celery.Task):
                  task_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
                  acks_late=WORKER_CONFIG["ACKS_LATE"],
                 )
-    def bank_transfer(self, payment_id):
+    def bank_transfer(self, payment_id, fee_payment_id, transfer_notes=None):
         payment = Payment.query.filter_by(id=payment_id).first()
 
         bank_account_no = payment.to
@@ -116,6 +118,24 @@ class BankTask(celery.Task):
         # try fetch bank reference if available
         response_reference = transfer_info.get("bank_ref", "NA")
         payment.ref_number = request_reference + "-" + response_reference
+
         db.session.commit()
 
+        try:
+            # DEDUCT BALANCE
+            debit_trx = TransactionCore.debit_transaction(self.source,
+                                                          str(payment.id),
+                                                          payment.amount,
+                                                          "TRANSFER_OUT", transfer_notes)
+
+            # DEDUCT TRANSFER FEE
+            fee_payment = Payment.query.filter_by(id=fee_payment_id).first()
+            fee_trx = TransactionCore.debit_transaction(self.source,
+                                                        str(fee_payment.id),
+                                                        fee_payment.amount,
+                                                        "TRANSFER_FEE")
+        except TransactionError as error:
+            print(error)
+            db.session.rollback()
+        #end if
         return transfer_info

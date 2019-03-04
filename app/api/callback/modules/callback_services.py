@@ -12,7 +12,8 @@ from app.api.models import *
 from app.config import config
 
 from app.api.wallet.modules.transfer_services import TransferServices
-from app.api.wallet.modules.transfer_services import TransactionError
+from app.api.wallet.modules.transaction_core import TransactionCore
+from app.api.wallet.modules.transaction_core import TransactionError
 
 from app.api.error.http import *
 
@@ -70,10 +71,10 @@ class CallbackServices:
         amount = payment_amount
 
         try:
-            credit_transaction = TransferServices.credit_transaction(wallet,
-                                                                     payment_id,
-                                                                     amount,
-                                                                     "TOP_UP")
+            credit_transaction = TransactionCore.credit_transaction(wallet,
+                                                                    payment_id,
+                                                                    amount,
+                                                                    "TOP_UP")
         except TransactionError as error:
             db.session.rollback()
             raise UnprocessableEntity(ERROR_CONFIG["DEPOSIT_CALLBACK_FAILED"]["TITLE"],
@@ -123,11 +124,11 @@ class CallbackServices:
 
         try:
             transfer_notes = "Cardless Withdraw {}".format(str(-payment_amount))
-            debit_transaction = TransferServices.debit_transaction(wallet,
-                                                                   payment_id,
-                                                                   payment_amount,
-                                                                   "WITHDRAW",
-                                                                   transfer_notes)
+            debit_transaction = TransactionCore.debit_transaction(wallet,
+                                                                  payment_id,
+                                                                  payment_amount,
+                                                                  "WITHDRAW",
+                                                                  transfer_notes)
         except TransactionError as error:
             db.session.rollback()
             raise UnprocessableEntity(ERROR_CONFIG["WITHDRAW_CALLBACK_FAILED"]["TITLE"],

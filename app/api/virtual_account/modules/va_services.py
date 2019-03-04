@@ -125,7 +125,7 @@ class VirtualAccountServices:
         task_result = BankTask().create_va.delay(self.virtual_account.id)
 
         response = {
-            "virtual_account" : self.virtual_account.account_no,
+            "virtual_account" : str(self.virtual_account.account_no),
             "valid_until"     : datetime_expired,
             "amount"          : params["amount"]
         }

@@ -471,15 +471,6 @@ class Transaction(db.Model):
         return '<Transaction {} {} {} {} {}>'.format(self.id, self.wallet_id, self.amount,
                                                      self.transaction_type, self.notes)
     #end def
-
-    def generate_trx_id(self):
-        """
-            function to generate trx_id
-        """
-        trx_id = str(uuid.uuid4())
-        self.id = trx_id
-        return trx_id
-    #end def
 #end class
 
 class ExternalLog(db.Model):

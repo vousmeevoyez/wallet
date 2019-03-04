@@ -13,6 +13,9 @@ from sqlalchemy.exc import IntegrityError
 from app.api import db
 #models
 from app.api.models import *
+
+from app.api.wallet.modules.transaction_core import TransactionCore
+from app.api.wallet.modules.transaction_core import TransactionError
 # exceptions
 from app.api.error.http import *
 #ttp errors
@@ -26,17 +29,11 @@ from app.api.utility.utils import validate_uuid
 from task.transaction.tasks import TransactionTask
 from task.bank.tasks import BankTask
 
-
+WALLET_CONFIG = config.Config.WALLET_CONFIG
 TRANSACTION_CONFIG = config.Config.TRANSACTION_CONFIG
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 BNI_OPG_CONFIG    = config.Config.BNI_OPG_CONFIG
 ERROR_CONFIG = config.Config.ERROR_CONFIG
-
-class TransactionError(Exception):
-    """ raised when something occured on creating transaction """
-    def __init__(self, original_exception):
-        super().__init__(original_exception)
-        self.original_exception = original_exception
 
 class TransferServices:
     """ Transfer Services"""
@@ -100,6 +97,28 @@ class TransferServices:
         return payment.id
     #end def
 
+    def process_instruction(self, params):
+        """ process transfer instruction here """
+        # if normal transfer
+        if params["instructions"] is None:
+            self.internal_transfer(params)
+        else:
+            # loop all instruction
+            for instruction in params["instructions"]:
+                pass
+
+    @staticmethod
+    def calculate_transfer_fee(destination, method=None):
+        """ calculate transfer fee based on method and destination"""
+        transfer_fee = 0
+
+        bank_account = BankAccount.query.filter_by(id=validate_uuid(destination)).first()
+        if bank_account:
+            if bank_account.bank.code != "009":
+                transfer_fee = WALLET_CONFIG["TRANSFER_FEE"][method]
+
+        return transfer_fee
+
     def internal_transfer(self, params):
         """ method to transfer money internally"""
         amount = params["amount"]
@@ -130,9 +149,9 @@ class TransferServices:
 
         # debit transaction
         try:
-            debit_trx = self.debit_transaction(self.source,
-                                               debit_payment_id, amount,
-                                               "TRANSFER_IN", transfer_notes)
+            debit_trx = TransactionCore.debit_transaction(self.source,
+                                                          debit_payment_id, amount,
+                                                          "TRANSFER_IN", transfer_notes)
         except TransactionError as error:
             print(error)
             db.session.rollback()
@@ -160,10 +179,10 @@ class TransferServices:
 
         # credit transaction
         try:
-            credit_trx = self.credit_transaction(self.destination,
-                                                 credit_payment_id, amount,
-                                                 "RECEIVE_TRANSFER",
-                                                 transfer_notes)
+            credit_trx = TransactionCore.credit_transaction(self.destination,
+                                                            credit_payment_id, amount,
+                                                            "RECEIVE_TRANSFER",
+                                                            transfer_notes)
         except TransactionError as error:
             print(error)
             db.session.rollback()
@@ -179,7 +198,11 @@ class TransferServices:
         amount = params["amount"]
         transfer_notes = params["notes"]
 
-        if float(amount) > float(self.source.balance):
+        # calculate transfer fee here
+        # for now only online
+        transfer_fee = self.calculate_transfer_fee(bank_account_id, "ONLINE")
+
+        if float(amount) + float(transfer_fee) > float(self.source.balance):
             raise UnprocessableEntity(ERROR_CONFIG["INSUFFICIENT_BALANCE"]["TITLE"],
                                       ERROR_CONFIG["INSUFFICIENT_BALANCE"]["MESSAGE"])
         #end if
@@ -189,6 +212,7 @@ class TransferServices:
         if bank_account is None:
             raise RequestNotFound(ERROR_CONFIG["BANK_ACC_NOT_FOUND"]["TITLE"],
                                   ERROR_CONFIG["BANK_ACC_NOT_FOUND"]["MESSAGE"])
+        #end if
 
         # create debit payment
         payment = {
@@ -208,89 +232,27 @@ class TransferServices:
             raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
                                       ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
 
-        # debit transaction
+        # create fee payment
+        payment = {
+            "payment_type"   : False,
+            "source_account" : self.source.id,
+            "to"             : "N/A",
+            "amount"         : -transfer_fee
+        }
+        fee_payment_id = self.create_payment(payment)
         try:
-            debit_trx = self.debit_transaction(self.source,
-                                                debit_payment_id, amount,
-                                                "TRANSFER_OUT", transfer_notes)
+            db.session.commit()
         except TransactionError as error:
             print(error)
             db.session.rollback()
             # still commit the master transaction
             raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
                                       ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
-        #end if
+
         # send queue here
-        result = BankTask().bank_transfer.delay(debit_payment_id)
+        result = BankTask().bank_transfer.delay(debit_payment_id,
+                                                fee_payment_id,
+                                                transfer_notes)
         return accepted()
-    #end def
-
-    @staticmethod
-    def debit_transaction(wallet, payment_id, amount, flag,
-                          transfer_notes=None):
-
-        amount = -amount
-
-        # fetch transaction type from config
-        transaction_type = TRANSACTION_CONFIG["TYPES"][flag]
-
-        if transfer_notes is None:
-            notes = TRANSACTION_NOTES["SEND_TRANSFER"].format(str(amount))
-        else:
-            notes = transfer_notes
-        #end if
-
-        # debit (-) we increase balance
-        debit_transaction = Transaction(
-            payment_id=payment_id,
-            wallet_id=wallet.id,
-            amount=amount,
-            transaction_type=transaction_type,
-            notes=notes
-        )
-        debit_transaction.generate_trx_id()
-        try:
-            db.session.add(debit_transaction)
-            db.session.commit()
-        except IntegrityError as error:
-            db.session.rollback()
-            raise TransactionError(error)
-        #end try
-        # should send queue here
-        result = TransactionTask().transfer.delay(payment_id)
-        return debit_transaction
-    #end def
-
-    @staticmethod
-    def credit_transaction(wallet, payment_id, amount, flag,
-                           transfer_notes=None):
-        """ create credit transaction and add balance """
-        transaction_type = TRANSACTION_CONFIG["TYPES"][flag]
-
-        if transfer_notes is None:
-            notes = TRANSACTION_NOTES["RECEIVE_TRANSFER"].format(str(amount))
-        else:
-            notes = transfer_notes
-        #end if
-
-        # credit (+) we increase balance
-        credit_transaction = Transaction(
-            payment_id=payment_id,
-            wallet_id=wallet.id,
-            amount=amount,
-            transaction_type=transaction_type,
-            notes=notes
-        )
-        credit_transaction.generate_trx_id()
-        try:
-            db.session.add(credit_transaction)
-            db.session.commit()
-        except IntegrityError as error:
-            db.session.rollback()
-            raise TransactionError(error)
-        #end try
-        # send queue here
-        result = TransactionTask().transfer.delay(payment_id)
-        return credit_transaction
     #end def
 #end class

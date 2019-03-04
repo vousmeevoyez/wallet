@@ -163,7 +163,7 @@ class CoreBank:
 
     BNI_OPG_CONFIG = config.Config.BNI_OPG_CONFIG
     ROUTES = BNI_OPG_CONFIG["ROUTES"]
-    URL = BNI_OPG_CONFIG["BASE_URL_DEV"] + ":" + BNI_OPG_CONFIG["PORT"]
+    URL = BNI_OPG_CONFIG["BASE_URL"] + ":" + BNI_OPG_CONFIG["PORT"]
 
     cache = SimpleCache()
 
