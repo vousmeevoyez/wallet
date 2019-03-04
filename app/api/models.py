@@ -317,7 +317,7 @@ class Payment(db.Model):
                                primary_key=True, default=uid)
     source_account = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (money comes from)
     to             = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount ( money goes)
-    ref_number     = db.Column(db.String(100), unique=True) # journal number from the bank
+    ref_number     = db.Column(db.String(100)) # journal number from the bank
     amount         = db.Column(db.Float)
     created_at     = db.Column(db.DateTime, default=now) # UTC
     payment_type   = db.Column(db.Boolean, default=True) # True = Credit / False = Debit
