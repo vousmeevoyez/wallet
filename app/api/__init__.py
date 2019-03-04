@@ -40,7 +40,6 @@ def create_app(config_name):
 
     if not app.testing and not app.debug:
         sentry_sdk.init(
-            dsn="https://c864361a612b47a3827e2c5b3280a727@sentry.io/1385947",
             integrations=[FlaskIntegration()]
         )
     

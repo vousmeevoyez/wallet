@@ -78,16 +78,16 @@ class Config:
     WALLET_CONFIG = {
         "CREDIT_FLAG"        : True,
         "DEBIT_FLAG"         : False,
-        "MINIMAL_WITHDRAW"   : 50000,
-        "MAX_WITHDRAW"       : 100000000,
-        "MINIMAL_DEPOSIT"    : 50000,
+        "MINIMAL_WITHDRAW"   : os.getenv('MINIMAL_WITHDRAW') or 50000,
+        "MAX_WITHDRAW"       : os.getenv('MAX_WITHDRAW') or 100000000,
+        "MINIMAL_DEPOSIT"    : os.getenv('MINIMAL_DEPOSIT') or 50000,
+        "MAX_DEPOSIT"        : os.getenv('MAX_DEPOSIT') or 100000000,
         "TRANSFER_FEE"       : {
             "USER"     : 0,
             "CLEARING" : 5000,
             "RTGS"     : 30000,
             "ONLINE"   : 6500
         },
-        "MAX_DEPOSIT"        : 100000000,
         "OTP_TIMEOUT"        : 2, # set otp timeout in minutes
         "QR_SECRET_KEY"      : "1#$@!%2jajdasnknvxivodisufu039021ofjldsjfa@@!"
     }
