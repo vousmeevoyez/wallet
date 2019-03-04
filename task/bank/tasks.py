@@ -34,6 +34,7 @@ def backoff(attempts):
 
 class BankTask(celery.Task):
     """Abstract base class for all tasks in my app."""
+    abstract = True
 
     def on_retry(self, exc, task_id, args, kwargs, einfo):
         """Log the exceptions to sentry at retry."""

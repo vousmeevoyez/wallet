@@ -70,7 +70,7 @@ class Config:
     VIRTUAL_ACCOUNT_CONFIG = {
         "BNI" : {
             "CREDIT_VA_TIMEOUT"  : 4350, # 1 year
-            "DEBIT_VA_TIMEOUT": 10, # 10 minutes cardless
+            "DEBIT_VA_TIMEOUT": 5, # 10 minutes cardless
         }
     }
 
@@ -172,7 +172,7 @@ class Config:
     SMS_SERVICES_CONFIG = {
         "BASE_URL"   : os.getenv('SMS_SERVICES_BASE_URL') or \
         "https://api.wavecell.com/sms/v1/Modana_OTP/single",
-        "API_KEY"    : os.getenv('API_KEY') or \
+        "API_KEY"    : os.getenv('SMS_SERVICES_API_KEY') or \
         "7hH72ACD8DA6EED4DD985D4489A034",
         "FROM"       : "MODANA",
     }

@@ -5,90 +5,40 @@ services:
         flask:
                 image: modana-wallet-services
                 entrypoint: ./build-prod.sh
-                environment:
-                - DB_USERNAME=modana
-                - DB_PASSWORD=password
-                - DB_HOSTNAME=postgres
-                - DB_NAME=db_wallet
-                - ENVIRONMENT=prod
-                - HOST=0.0.0.0
-                  # BNI VA CONFIG
-                - BNI_VA_URL=https://apibeta.bni-ecollection.com/
-                - BNI_VA_DEBIT_SECRET_KEY=8eafc8687722fdd0ef78942309fcd983
-                - BNI_VA_CREDIT_SECRET_KEY=707e501f79c05001a376636c10f7b8cf
-                - BNI_VA_DEBIT_CLIENT_ID=99099
-                - BNI_VA_CREDIT_CLIENT_ID=99098
-                  # BNI COREBANK CONFIG
-                - BNI_MASTER_ACCOUNT=0115476117
-                - BNI_OPG_URL=https://apidev.bni.co.id
-                - BNI_OPG_PORT=8066
-                - BNI_OPG_CLIENT_NAME=IDBNITU9EQU5B
-                - BNI_OPG_USERNAME=041c7414-00fe-4338-98aa-b905ab5c2972
-                - BNI_OPG_PASSWORD=894fe209-4c78-4c22-9925-a23ba36483f0
-                - BNI_OPG_API_KEY=09ea583b-6d13-47ed-b675-9648f27826f2
-                - BNI_OPG_SECRET_API_KEY=b854407e-33c9-4987-811d-72f7128b69f9
-                  # SMS SERVICE CONFIG
-                - SMS_SERVICES_BASE_URL=https://api.wavecell.com/sms/v1/Modana_OTP/single
-                - API_KEY=7hH72ACD8DA6EED4DD985D4489A034
-                - BROKER_URL=amqp://modanabroker:password@rabbitmq:5672/worker
+                env_file: env/prod.env
                 depends_on:
                 - postgres
                 - rabbitmq
                 restart: always
+                ports:
+                - 5000:5000
 
         postgres:
                 build:
                         context: dockerfiles/postgres/
-                environment:
-                - POSTGRES_USER=modana
-                - POSTGRES_PASSWORD=password
+                env_file: env/prod.env
                 volumes:
                 - "db_volume:/var/lib/postgresql/data"
-                ports:
-                - 5432:5432
-                restart: always
-
-        nginx:
-                build:
-                        context: dockerfiles/nginx/
-                ports:
-                - 5000:8888
-                depends_on:
-                - flask
                 restart: always
 
         rabbitmq:
                 build:
                         context: dockerfiles/rabbitmq/
-                #hostname: "rabbit"
-                environment:
-                - RABBITMQ_DEFAULT_USER=modanabroker
-                - RABBITMQ_DEFAULT_PASS=password
-                - RABBITMQ_DEFAULT_VHOST=worker
+                env_file: env/prod.env
                 ports:
-                - 5672:5672
                 - 15000:15672
 
         celery:
+                env_file: env/prod.env
                 image: modana-wallet-services
                 entrypoint: make worker
-                environment:
-                - BROKER_URL=amqp://modanabroker:password@rabbitmq:5672/worker
-                - ENVIRONMENT=prod
-                #- BROKER_URL=redis://redis:6379/0
-                - DB_USERNAME=modana
-                - DB_PASSWORD=password
-                - DB_HOSTNAME=postgres
-                - DB_NAME=db_wallet
                 depends_on:
                 - rabbitmq
                 - postgres
 
         flower:
+                env_file: env/prod.env
                 image: mher/flower
-                environment:
-                - CELERY_BROKER_URL=amqp://modanabroker:password@rabbitmq:5672/worker
-                - FLOWER_PORT=5555
                 ports:
                 - 5555:5555
                 depends_on:

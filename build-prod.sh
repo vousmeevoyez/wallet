@@ -7,4 +7,4 @@ make clean
 make upgrade
 make init
 #uwsgi --http-socket flask:5000 --wsgi-file manage.py --callable app --master --processes 4 --threads 2  --disable-logging --enable-threads --vacuum
-gunicorn -b flask:5000 -w 2 manage:app
+gunicorn -b flask:5000 -w 4 manage:app
