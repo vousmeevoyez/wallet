@@ -40,9 +40,13 @@ class VirtualAccount:
 
     TIMEZONE = pytz.timezone("Asia/Jakarta")
 
-    def _post(self, api_name, payload):
-        client_id = self.BNI_ECOLLECTION_CONFIG["CLIENT_ID"]
-        secret_key = self.BNI_ECOLLECTION_CONFIG["SECRET_KEY"]
+    def _post(self, api_name, resource_type, payload):
+        if resource_type == "CREDIT":
+            client_id = self.BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
+            secret_key = self.BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"]
+        elif resource_type == "DEBIT":
+            client_id = self.BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
+            secret_key = self.BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"]
 
         # assign client in in payload
         payload["client_id"] = client_id
@@ -93,14 +97,14 @@ class VirtualAccount:
         #end if
 
         try:
-            result = self._post(api_name, payload)
+            result = self._post(api_name, resource_type, payload)
         except RemoteCallError as error:
             raise ApiError(error.original_exception)
         #end try
         return result
     #end def
 
-    def get_inquiry(self, params):
+    def get_inquiry(self, resource_type, params):
         """
             Function to get Virtual Account Inquiry on BNI
             args:
@@ -115,14 +119,14 @@ class VirtualAccount:
             'trx_id'   : params["trx_id"]
         }
         try:
-            result = self._post(api_name, payload)
+            result = self._post(api_name, resource_type, payload)
         except RemoteCallError as error:
             raise ApiError(error.original_exception)
         #end try
         return result
     #end def
 
-    def update_va(self, params):
+    def update_va(self, resource_type, params):
         """
             Function to update BNI Virtual Account
             args:
@@ -146,7 +150,7 @@ class VirtualAccount:
         }
 
         try:
-            result = self._post(api_name, payload)
+            result = self._post(api_name, resource_type, payload)
         except RemoteCallError as error:
             raise ApiError(error.original_exception)
         #end try

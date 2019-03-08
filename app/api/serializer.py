@@ -522,7 +522,9 @@ class CallbackSchema(ma.Schema):
             # second make sure 3 first va_number is valid
             if va_number[:3] != "988":
                 # third make sure 3 first va_number is valid
-                if va_number[3:8] != BNI_ECOLLECTION_CONFIG["CLIENT_ID"]:
+                if va_number[3:8] != \
+                BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]\
+                or BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]:
                     valid = False
                 #end if
                 valid = False

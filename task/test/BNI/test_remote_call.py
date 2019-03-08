@@ -108,7 +108,7 @@ class TestUtilityRemoteCall(BaseTestCase):
         }
 
         mock_post.side_effect = requests.exceptions.Timeout
-        with self.assertRaises(ServicesTimeout):
+        with self.assertRaises(ServicesFailed):
             result = remote_call.post("test", base_url, client_id, secret_key, payload)
 
     def test_encrypt(self):
