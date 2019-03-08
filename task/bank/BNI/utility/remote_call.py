@@ -109,5 +109,6 @@ def post(api_name, base_url, client_id, secret_key, data):
         raise ServicesFailed("RESPONSE_ERROR", response)
     finally:
         log.save_response(response)
+        db.session.commit()
     return response
 #end def
