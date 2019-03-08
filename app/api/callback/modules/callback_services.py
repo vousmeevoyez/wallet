@@ -33,6 +33,16 @@ class CallbackServices:
         self.virtual_account = virtual_account
     #end def
 
+    def process_callback(self, params):
+        """" based on incoming callback decide which method to call """
+        payment_amount = int(params["payment_amount"])
+        if payment_amount > 0:
+            response = self.deposit(params)
+        else:
+            response = self.withdraw(params)
+        return response
+    #end def
+
     def deposit(self, params):
         """
             Function to Deposit Money from Callback
