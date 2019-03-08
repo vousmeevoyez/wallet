@@ -398,13 +398,7 @@ class VirtualAccount(db.Model):
 
         while True:
             fixed = 988
-
-            va_type = VaType.query.filter_by(id=self.va_type_id).first()
-
-            if va_type.key == "CREDIT":
-                client_id = BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
-            else:
-                client_id = BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
+            client_id = BNI_ECOLLECTION_CONFIG["CLIENT_ID"]
             #end if
             suffix = random.randint(
                 10000000,

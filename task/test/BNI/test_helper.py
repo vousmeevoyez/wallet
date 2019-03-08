@@ -165,7 +165,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
 
         mock_post.return_value = expected_value
 
-        result = VirtualAccountHelper().get_inquiry("CREDIT", data)
+        result = VirtualAccountHelper().get_inquiry(data)
         self.assertEqual(result["status"], "000")
 
     @patch.object(VirtualAccountHelper, '_post')
@@ -183,7 +183,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         mock_post.side_effect = RemoteCallError(Mock())
 
         with self.assertRaises(ApiError):
-            result = VirtualAccountHelper().get_inquiry("CREDIT", data)
+            result = VirtualAccountHelper().get_inquiry(data)
 
     @patch.object(VirtualAccountHelper, '_post')
     def test_mock_update_va_success(self, mock_post):
@@ -212,7 +212,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
 
         mock_post.return_value = expected_value
 
-        result = VirtualAccountHelper().update_va("CREDIT", data)
+        result = VirtualAccountHelper().update_va(data)
         self.assertEqual(result["status"], "000")
 
     @patch.object(VirtualAccountHelper, '_post')
@@ -231,13 +231,12 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         mock_post.side_effect = RemoteCallError(Mock())
 
         with self.assertRaises(ApiError):
-            result = VirtualAccountHelper().update_va("CREDIT", data)
+            result = VirtualAccountHelper().update_va(data)
 
     @patch.object(remote_call, "post")
     def test_post_credit_success(self, mock_post):
         """ test success post function to BNI Credit E-Collection"""
         api_name = "API_NAME"
-        resource_type = "CREDIT"
         payload = {
             'client_id': '99099',
             'trx_id': '121',
@@ -252,14 +251,13 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             'billing_type': 'j',
         }
         mock_post.return_value = { "status" : "000", "data" : "test" }
-        result = VirtualAccountHelper()._post(api_name, resource_type, payload)
+        result = VirtualAccountHelper()._post(api_name, payload)
         self.assertEqual(result["status"], "000")
 
     @patch.object(remote_call, "post")
     def test_post_credit_failed(self, mock_post):
         """ test failed post function to BNI Credit E-Collection"""
         api_name = "API_NAME"
-        resource_type = "CREDIT"
         payload = {
             'client_id': '99099',
             'trx_id': '121',
@@ -276,13 +274,12 @@ class TestMockVirtualAccountHelper(BaseTestCase):
 
         mock_post.side_effect = ServicesFailed("some error", Mock())
         with self.assertRaises(RemoteCallError):
-            result = VirtualAccountHelper()._post(api_name, resource_type, payload)
+            result = VirtualAccountHelper()._post(api_name, payload)
 
     @patch.object(remote_call, "post")
     def test_post_cardless_success(self, mock_post):
         """ test success post function to BNI Credit E-Collection"""
         api_name = "API_NAME"
-        resource_type = "DEBIT"
         payload = {
             'client_id': '99099',
             'trx_id': '121',
@@ -297,14 +294,13 @@ class TestMockVirtualAccountHelper(BaseTestCase):
             'billing_type': 'j',
         }
         mock_post.return_value = { "status" : "000", "data" : "test" }
-        result = VirtualAccountHelper()._post(api_name, resource_type, payload)
+        result = VirtualAccountHelper()._post(api_name, payload)
         self.assertEqual(result["status"], "000")
 
     @patch.object(remote_call, "post")
     def test_post_cardless_failed(self, mock_post):
         """ test failed post function to BNI Credit E-Collection"""
         api_name = "API_NAME"
-        resource_type = "DEBIT"
         payload = {
             'client_id': '99099',
             'trx_id': '121',
@@ -320,7 +316,7 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         }
         mock_post.side_effect = ServicesFailed("some error", Mock())
         with self.assertRaises(RemoteCallError):
-            result = VirtualAccountHelper()._post(api_name, resource_type, payload)
+            result = VirtualAccountHelper()._post(api_name, payload)
 #end class
 
 class TestMockCoreBankHelper(BaseTestCase):

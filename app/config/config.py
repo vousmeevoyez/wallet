@@ -117,19 +117,17 @@ class Config:
     BNI_ECOLLECTION_CONFIG = {
         "BASE_URL"         : os.getenv('BNI_VA_URL') or \
         "https://apibeta.bni-ecollection.com/",
-        "DEBIT_SECRET_KEY" : os.getenv('BNI_VA_DEBIT_SECRET_KEY') or \
+        "SECRET_KEY"       : os.getenv('BNI_VA_SECRET_KEY') or \
         "8eafc8687722fdd0ef78942309fcd983",
-        "CREDIT_SECRET_KEY": os.getenv('BNI_VA_CREDIT_SECRET_KEY') or \
-        "707e501f79c05001a376636c10f7b8cf",
-        "DEBIT_CLIENT_ID"  : os.getenv('BNI_VA_DEBIT_CLIENT_ID') or "99099",
-        "CREDIT_CLIENT_ID" : os.getenv('BNI_VA_CREDIT_CLIENT_ID') or "99098",
+        "CLIENT_ID"  : os.getenv('BNI_VA_CLIENT_ID') or "99099",
         "BILLING"          : "createbilling",
         "CARDLESS"         : "createdebitcardless",
         "UPDATE"           : "updatebilling",
         "INQUIRY"          : "inquirybilling",
-        #"CREDIT_BILLING_TYPE"   : "z",
-        "CREDIT_BILLING_TYPE"   : "o", #open payment
-        "CARDLESS_BILLING_TYPE" : "j",
+        "BILLING_TYPE"     : {
+            "DEPOSIT"  : "z",
+            "WITHDRAW" : "d"
+        },
     }
 
     # BNI OPG CONFIG
