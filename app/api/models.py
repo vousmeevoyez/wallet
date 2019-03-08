@@ -398,9 +398,9 @@ class VirtualAccount(db.Model):
 
         while True:
             fixed = 988
-            if self.va_type == "CREDIT":
+            if self.va_type.key == "CREDIT":
                 client_id = BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
-            else:
+            elif self.va_type.key == "DEBIT":
                 client_id = BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
 
             #end if
