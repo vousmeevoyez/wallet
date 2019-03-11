@@ -342,6 +342,10 @@ class Config:
             "TITLE"   : "INVALID_QR",
             "MESSAGE" : "Invalid QR Code"
         },
+        "BANK_PROCESS_FAILED" : {
+            "TITLE"   : "BANK_PROCESS_FAILED",
+            "MESSAGE" : "Bank failed to process the request"
+        },
     }
 #end class
 
