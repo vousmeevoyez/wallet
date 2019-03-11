@@ -247,7 +247,8 @@ class WalletModelCase(BaseTestCase):
 
         # create bank here
         bni = Bank(
-            key="BNI"
+            key="BNI",
+            code="009"
         )
         db.session.add(bni)
         db.session.commit()
@@ -343,11 +344,21 @@ class VirtualAccountModelCase(BaseTestCase):
         db.session.add(va_credit)
         db.session.commit()
 
+        # create bank here
+        bank = Bank(
+            key="BNI",
+            name="Bank BNI",
+            code="009",
+        )
+        db.session.add(bank)
+        db.session.commit()
+
         # create virtual account credit
         va = VirtualAccount(
             amount="100",
             name="Lisa",
-            va_type_id=va_credit.id
+            va_type_id=va_credit.id,
+            bank_id=bank.id
         )
         va_id  = va.generate_va_number()
         trx_id = va.generate_trx_id()

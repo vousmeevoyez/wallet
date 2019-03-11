@@ -123,6 +123,8 @@ class Config:
         "CREDIT_SECRET_KEY": os.getenv('BNI_VA_CREDIT_SECRET_KEY') or \
         "707e501f79c05001a376636c10f7b8cf",
         "CREDIT_CLIENT_ID" : os.getenv('BNI_VA_CREDIT_CLIENT_ID') or "99098",
+        "VA_PREFIX"        : os.getenv('BNI_VA_PREFIX') or '988',
+        "VA_LENGTH"        : 16,
         "BILLING"          : "createbilling",
         "CARDLESS"         : "createdebitcardless",
         "UPDATE"           : "updatebilling",

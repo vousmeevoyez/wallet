@@ -18,9 +18,16 @@ class TestCallbackServices(BaseTestCase):
     def _create_credit_va(self):
         wallet = self._create_wallet()
 
+        bank = Bank(
+              key="BNI",
+              code="009"
+        )
+        db.session.add(bank)
+        db.session.commit()
+
         va_type = VaType.query.filter_by(key="CREDIT").first()
 
-        va = VirtualAccount(wallet_id=wallet.id, va_type_id=va_type.id)
+        va = VirtualAccount(wallet_id=wallet.id, va_type_id=va_type.id, bank_id=bank.id)
 
         va_id = va.generate_va_number()
         trx_id = va.generate_trx_id()
@@ -32,9 +39,16 @@ class TestCallbackServices(BaseTestCase):
     def _create_debit_va(self):
         wallet = self._create_wallet()
 
+        bank = Bank(
+              key="BNI",
+              code="009"
+        )
+        db.session.add(bank)
+        db.session.commit()
+
         va_type = VaType.query.filter_by(key="DEBIT").first()
 
-        va = VirtualAccount(wallet_id=wallet.id, va_type_id=va_type.id)
+        va = VirtualAccount(wallet_id=wallet.id, va_type_id=va_type.id, bank_id=bank.id)
 
         va_id = va.generate_va_number()
         trx_id = va.generate_trx_id()

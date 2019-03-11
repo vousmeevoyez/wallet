@@ -1087,11 +1087,8 @@ class TestMockCoreBankHelper(BaseTestCase):
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = expected_value
 
-        try:
+        with self.assertRaises(ApiError):
             response = CoreBankHelper(access_token).hold_amount(data)
-        except ApiError as error:
-            print(error.original_exception["holdAmountResponse"])
-    #end def
 #end class
 
 if __name__ == "__main__":

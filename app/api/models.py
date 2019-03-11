@@ -394,29 +394,44 @@ class VirtualAccount(db.Model):
         """
             function to generate va number
         """
-        va_id = None
+        account_no = None
+        """
+            BNI VA Number
+        """
+        bank = Bank.query.filter_by(id=self.bank_id).first()
+        if bank.code == "009":
+            while True:
+                fixed = BNI_ECOLLECTION_CONFIG["VA_PREFIX"]
+                length = BNI_ECOLLECTION_CONFIG["VA_LENGTH"]
 
-        while True:
-            fixed = 988
+                va_type = VaType.query.filter_by(id=self.va_type_id).first()
+                if va_type.key == "CREDIT":
+                    client_id = BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
+                else:
+                    client_id = BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
+                #end if
 
-            va_type = VaType.query.filter_by(id=self.va_type_id).first()
-            if va_type.key == "CREDIT":
-                client_id = BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
-            else:
-                client_id = BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
-            #end if
+                # calculate fixed length first
+                prefix = len(fixed) + len(client_id)
+                # calulcate free number
+                random_length = length - prefix
+                # generate 00000000 + 1
+                zeroes = '0' * (int(random_length)-1)
+                start_point = int('1' + zeroes)
+                # generate 999999999999
+                end_point = int('9' * random_length)
+                # generate random number between
+                suffix = random.randint(
+                    start_point,
+                    end_point
+                )
+                account_no = str(fixed) + str(client_id) + str(suffix)
 
-            #end if
-            suffix = random.randint(
-                10000000,
-                99999999
-            )
-            account_no = str(fixed) + str(client_id) + str(suffix)
-            result = VirtualAccount.query.filter_by(account_no=int(account_no)).first()
-            if result is None:
-                break
-            #end if
-        #end while
+                result = VirtualAccount.query.filter_by(account_no=int(account_no)).first()
+                if result is None:
+                    break
+                #end if
+            #end while
         self.account_no = int(account_no)
         return account_no
     #end def
