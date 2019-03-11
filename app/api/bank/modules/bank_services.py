@@ -45,7 +45,7 @@ class BankServices:
             error_msg =\
             error.original_exception["getBalanceResponse"]["parameters"]["errorMessage"]
             raise UnprocessableEntity(ERROR_CONFIG["BANK_PROCESS_FAILED"]["TITLE"],
-                                      ERROR_CONFIG["BANK_PROCESS_FAILED"]["MESSAGE"])
+                                      error_msg)
         return response
     #end def
 
