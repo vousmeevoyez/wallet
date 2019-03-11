@@ -105,3 +105,10 @@ class QRTransferRequestSchema:
     parser.add_argument("pin",    type=str, required=True)
     parser.add_argument("notes",  type=str)
 #end class
+
+class BNIUtilityRequestSchema:
+    """Define all mandatory argument for BNI utility """
+    parser = reqparse.RequestParser()
+    parser.add_argument("account_no", type=str, required=True)
+    parser.add_argument("amount", type=int, required=True)
+#end class

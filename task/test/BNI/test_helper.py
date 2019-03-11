@@ -1014,6 +1014,47 @@ class TestMockCoreBankHelper(BaseTestCase):
         with self.assertRaises(ApiError):
             CoreBankHelper(access_token).transfer(data)
     #end def
+
+    @patch("requests.post")
+    def test_hold_amount_success(self, mock_post):
+        """ test successfull hold amount on BNI transaction """
+        # use mock token here
+        access_token = "x3LyfeWKbeaARhd2PfU4F4OeNi43CrDFdi6XnzScKIuk5VmvFiq0B2"
+
+        # define required data to execute transfer here
+        data = {
+            "request_ref": "113183203",
+            "account_no" : "115471119",
+            "amount"     : "11111",
+        }
+
+        # mock the response here
+        expected_value = {
+            "holdAmountResponse": {
+                "clientId": "BNISERVICE",
+                "parameters": {
+                    "responseCode": "0001",
+                    "responseMessage": "Request has been processed successfully",
+                    "responseTimestamp": "2017-09-25T14:45:47.746Z",
+                    "accountOwner": "Nama : ROBERT NARO",
+                    "bankReference": 513621,
+                    "customerReference": 20170504153218296
+                }
+            }
+        }
+
+        mock_post.return_value = Mock()
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = expected_value
+
+        response = CoreBankHelper(access_token).hold_amount(data)
+        self.assertEqual(response["data"]["payment_info"]["customer_name"],
+                         expected_value["holdAmountResponse"]["parameters"]["accountOwner"])
+        self.assertEqual(response["data"]["payment_info"]["bank_ref"],
+                         expected_value["holdAmountResponse"]["parameters"]["bankReference"])
+        self.assertEqual(response["data"]["payment_info"]["ref_number"],
+                         expected_value["holdAmountResponse"]["parameters"]["customerReference"])
+    #end def
 #end class
 
 if __name__ == "__main__":

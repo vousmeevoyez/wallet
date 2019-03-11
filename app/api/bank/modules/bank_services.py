@@ -74,11 +74,13 @@ class BankServices:
         return response
     #end def
 
-    def void_payment(self, reference_number):
-        """ check payment status """
+    def void_payment(self, reference_number, account_no, amount):
+        """ void payment """
         try:
-            response = CoreBank().get_payment_status({
-                "request_ref" : reference_number
+            response = CoreBank().hold_amount({
+                "request_ref" : reference_number,
+                "account_no"  : account_no,
+                "amount"      : amount
             })
         except ApiError as error:
             print(error)

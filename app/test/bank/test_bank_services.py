@@ -45,3 +45,33 @@ class TestMockBankServices(BaseTestCase):
         mock_bank_services.return_value = expected_value
         result = BankServices().get_account_information("123456")
         self.assertEqual(result, expected_value)
+
+    @patch.object(BankServices, "get_payment_status")
+    def test_get_payment_status(self, mock_bank_services):
+        """ test function that get BNI payment status"""
+        expected_value = {
+            "payment_info": {
+                "status": "Y",
+                "source_account": "0115476117",
+                "destination_account": "0115476151",
+                "amount": "100000"
+            }
+        }
+        mock_bank_services.return_value = expected_value
+        result = BankServices().get_payment_status("123456")
+        self.assertEqual(result, expected_value)
+
+    @patch.object(BankServices, "void_payment")
+    def test_void_payment(self, mock_bank_services):
+        """ test function that void BNI payment"""
+        expected_value = {
+            "payment_info": {
+                "status": "Y",
+                "source_account": "0115476117",
+                "destination_account": "0115476151",
+                "amount": "100000"
+            }
+        }
+        mock_bank_services.return_value = expected_value
+        result = BankServices().void_payment("12345", "some_account_no", 10000)
+        self.assertEqual(result, expected_value)

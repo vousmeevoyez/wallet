@@ -518,6 +518,49 @@ class CoreBank:
         return response
     #end def
 
+    def hold_amount(self, params):
+        """
+            function to cancel payment from HOLD_AMOUNT
+            args:
+                params -- parameter
+        """
+        api_name = "HOLD_AMOUNT"
+
+        # define response here
+        response = {}
+
+        request_ref = params["request_ref"]
+        account_no  = params["account_no"]
+        amount      = str(params["amount"])
+
+        # build payload here
+        payload = {
+            "customerReferenceNumber" : request_ref,
+            "accountNo"               : account_no,
+            "amount"                  : amount,
+            "detail"                  : "",
+        }
+
+        # post here
+        # should log request and response
+        try:
+            post_resp = self._post(api_name, payload)
+        except ServicesFailed as error:
+            raise ApiError(error)
+        #end try
+
+        # accessing the inner data
+        response_data = post_resp["data"]["holdAmountResponse"]["parameters"]
+        response["data"] = {
+            "payment_info" : {
+                "customer_name" : response_data["accountOwner"],
+                "bank_ref"      : response_data["bankReference"],
+                "ref_number"    : response_data["customerReference"],
+            }
+        }
+        return response
+    #end def
+
     def transfer(self, params):
         """
             function that wrap interbank inquiry do_payment and interbank payment
