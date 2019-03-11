@@ -42,7 +42,8 @@ class BankServices:
                 "account_no" : account_no
             })
         except ApiError as error:
-            print(error)
+            error_msg =\
+            error.original_exception["getBalanceResponse"]["parameters"]["errorMessage"]
             raise UnprocessableEntity(ERROR_CONFIG["BANK_PROCESS_FAILED"]["TITLE"],
                                       ERROR_CONFIG["BANK_PROCESS_FAILED"]["MESSAGE"])
         return response
@@ -55,9 +56,10 @@ class BankServices:
                 "account_no" : account_no
             })
         except ApiError as error:
-            print(error)
+            error_msg =\
+            error.original_exception["getInHouseInquiryResponse"]["parameters"]["errorMessage"]
             raise UnprocessableEntity(ERROR_CONFIG["BANK_PROCESS_FAILED"]["TITLE"],
-                                      ERROR_CONFIG["BANK_PROCESS_FAILED"]["MESSAGE"])
+                                      error_msg)
         return response
     #end def
 
@@ -68,9 +70,10 @@ class BankServices:
                 "request_ref" : reference_number
             })
         except ApiError as error:
-            print(error)
+            error_msg =\
+            error.original_exception["getPaymentStatusResponse"]["parameters"]["errorMessage"]
             raise UnprocessableEntity(ERROR_CONFIG["BANK_PROCESS_FAILED"]["TITLE"],
-                                      ERROR_CONFIG["BANK_PROCESS_FAILED"]["MESSAGE"])
+                                      error_msg)
         return response
     #end def
 
@@ -83,9 +86,10 @@ class BankServices:
                 "amount"      : amount
             })
         except ApiError as error:
-            print(error)
+            error_msg =\
+            error.original_exception["holdAmountResponse"]["parameters"]["errorMessage"]
             raise UnprocessableEntity(ERROR_CONFIG["BANK_PROCESS_FAILED"]["TITLE"],
-                                      ERROR_CONFIG["BANK_PROCESS_FAILED"]["MESSAGE"])
+                                      error_msg)
         return response
     #end def
 #end class

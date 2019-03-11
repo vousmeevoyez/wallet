@@ -1055,6 +1055,43 @@ class TestMockCoreBankHelper(BaseTestCase):
         self.assertEqual(response["data"]["payment_info"]["ref_number"],
                          expected_value["holdAmountResponse"]["parameters"]["customerReference"])
     #end def
+
+    @patch("requests.post")
+    def test_hold_amount_failed(self, mock_post):
+        """ test failed hold amount on BNI transaction """
+        # use mock token here
+        access_token = "x3LyfeWKbeaARhd2PfU4F4OeNi43CrDFdi6XnzScKIuk5VmvFiq0B2"
+
+        # define required data to execute transfer here
+        data = {
+            "request_ref": "113183203",
+            "account_no" : "115471119",
+            "amount"     : "11111",
+        }
+
+        # mock the response here
+        expected_value = {
+            'holdAmountResponse': {
+                'clientId': 'MODANA',
+                'parameters': {
+                    'responseCode': '0011',
+                    'responseMessage': 'Previous identical request has been processed successfully',
+                    'errorMessage': 'Record is paid',
+                    'responseTimestamp': '2019-03-11T12:54:35.729Z',
+                    'customerReference': '2019031104484653628'
+                }
+            }
+        }
+
+        mock_post.return_value = Mock()
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = expected_value
+
+        try:
+            response = CoreBankHelper(access_token).hold_amount(data)
+        except ApiError as error:
+            print(error.original_exception["holdAmountResponse"])
+    #end def
 #end class
 
 if __name__ == "__main__":

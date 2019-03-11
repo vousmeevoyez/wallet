@@ -348,7 +348,7 @@ class CoreBank:
         try:
             post_resp = self._post(api_name, payload)
         except ServicesFailed as error:
-            raise ApiError(error)
+            raise ApiError(error.original_exception)
         #end try
 
         # access the data here
@@ -384,7 +384,7 @@ class CoreBank:
         try:
             post_resp = self._post(api_name, payload)
         except ServicesFailed as error:
-            raise ApiError(error)
+            raise ApiError(error.original_exception)
         #end try
 
         # access the data here
@@ -502,7 +502,7 @@ class CoreBank:
         try:
             post_resp = self._post(api_name, payload)
         except ServicesFailed as error:
-            raise ApiError(error)
+            raise ApiError(error.original_exception)
         #end try
 
         # accessing the inner data
@@ -546,7 +546,7 @@ class CoreBank:
         try:
             post_resp = self._post(api_name, payload)
         except ServicesFailed as error:
-            raise ApiError(error)
+            raise ApiError(error.original_exception)
         #end try
 
         # accessing the inner data

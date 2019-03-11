@@ -13,7 +13,7 @@ class ServicesFailed(BaseError):
     def __init__(self, message, original_exception):
         super().__init__(message, original_exception)
         self.message = message
-        self. original_exception = original_exception
+        self.original_exception = original_exception
 
 class RemoteCallError(BaseError):
     """ raised when remote call error """
