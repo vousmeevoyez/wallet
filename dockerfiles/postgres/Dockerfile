@@ -1,5 +1,5 @@
 # docker file for rabbit mq
-FROM postgres:latest
+FROM postgres:alpine
 
 # expose
 EXPOSE 5432

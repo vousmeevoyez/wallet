@@ -276,7 +276,7 @@ class BankAccount(db.Model):
                                 primary_key=True, default=uid)
     label      = db.Column(db.String(30), unique=True) # account label
     name       = db.Column(db.String(24), unique=True) # bank account name
-    account_no = db.Column(db.String(30), unique=True) # bank account no
+    account_no = db.Column(db.String(30)) # bank account no
     created_at = db.Column(db.DateTime, default=now) # UTC
     status     = db.Column(db.Boolean, default=True) # active / inactive
     bank_id    = db.Column(UUID(as_uuid=True), db.ForeignKey("bank.id"))
