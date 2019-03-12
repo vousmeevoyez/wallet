@@ -4,7 +4,7 @@ services:
 
         flask:
                 image: modana-wallet-services
-                entrypoint: ./build-dev.sh
+                entrypoint: ./scripts/build-dev.sh
                 env_file: env/dev.env
                 ports:
                 - 5000:5000

@@ -4,7 +4,7 @@ services:
 
         flask:
                 image: modana-wallet-services
-                entrypoint: ./build-prod.sh
+                entrypoint: ./scripts/build-prod.sh
                 env_file: env/prod.env
                 depends_on:
                 - postgres
