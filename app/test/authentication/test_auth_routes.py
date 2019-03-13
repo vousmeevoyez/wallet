@@ -41,51 +41,9 @@ class TestMockAuthRoutes(BaseTestCase):
     #end def
 
 class TestAuthRoutes(BaseTestCase):
-    """ Test Auth ROutes Class"""
-
-    def get_access_token(self, username, password):
-        """ function to get access token by hitting the access token url API"""
-        return self.client.post(
-            BASE_URL + RESOURCE + "token",
-            data=dict(
-                username=username,
-                password=password
-            )
-        )
-    #end def
-
-    def get_refresh_token(self, refresh_token):
-        """ function to get refresh token by hitting the refresh token url API"""
-        headers = {
-            'Authorization': 'Bearer {}'.format(refresh_token)
-        }
-        return self.client.post(
-            BASE_URL + RESOURCE + "refresh",
-            headers=headers
-        )
-    #end def
-
-    def revoke_access_token(self, access_token):
-        """ function to get revoke access token by hitting the revoke access token url API"""
-        headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
-        }
-        return self.client.post(
-            BASE_URL + RESOURCE + "token/revoke",
-            headers=headers
-        )
-    #end def
-
-    def revoke_refresh_token(self, refresh_token):
-        """ function to get revoke refresh token by hitting the revoke refresh token url API"""
-        headers = {
-            'Authorization': 'Bearer {}'.format(refresh_token)
-        }
-        return self.client.post(
-            BASE_URL + RESOURCE + "refresh/revoke",
-            headers=headers
-        )
-    #end def
+    """ Test Auth Routes Class"""
+    def setUp(self):
+        super().setUp()
 
     def test_get_access_token_success(self):
         """ test success get access token"""

@@ -23,80 +23,8 @@ BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 
 class TestCallbackRoutes(BaseTestCase):
     """ Test Class for Wallet Routes"""
-
-    """
-        HELPER function to request to specific URL
-    """
-    def withdraw_callback(self, params):
-        return self.client.post(
-            BASE_URL + "/callback/bni/va/withdraw",
-            data=json.dumps(params),
-            content_type="application/json"
-        )
-
-    def deposit_callback(self, params):
-        return self.client.post(
-            BASE_URL + "/callback/bni/va/deposit",
-            data=json.dumps(params),
-            content_type="application/json"
-        )
-
-    def get_access_token(self, username, password):
-        """ Api Call for get Access Token """
-        return self.client.post(
-            BASE_URL + "/auth/" + "token",
-            data=dict(
-                username=username,
-                password=password
-            )
-        )
-    #end def
-
-    def create_user(self, params, access_token):
-        """ Api Call for Creating User """
-        headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
-        }
-        return self.client.post(
-            BASE_URL + "/users/",
-            data=dict(
-                username=params["username"],
-                name=params["name"],
-                phone_ext=params["phone_ext"],
-                phone_number=params["phone_number"],
-                email=params["email"],
-                password=params["password"],
-                pin=params["pin"],
-                role=params["role"]
-            ),
-            headers=headers
-        )
-    #end def
-
-    def create_wallet(self, params, access_token):
-        """ Api Call for Creating Wallet """
-        headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
-        }
-        return self.client.post(
-            BASE_URL + "/wallets/",
-            data=dict(
-                label=params["label"],
-                pin=params["pin"]
-            ),
-            headers=headers
-        )
-    #end def
-
-    def get_wallet_info(self, wallet_id, access_token):
-        """ Api Call for getting wallet info"""
-        headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
-        }
-        return self.client.get(
-            BASE_URL + "/wallets/" + wallet_id,
-            headers=headers
-        )
+    def setUp(self):
+        super().setUp()
     #end def
 
     def _create_dummy_user(self):
