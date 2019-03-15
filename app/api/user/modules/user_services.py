@@ -101,13 +101,10 @@ class UserServices:
 
     def info(self):
         """ return single user information"""
-
         user_information = UserSchema().dump(self.user).data
-        wallet_information = WalletSchema(many=True).dump(self.user.wallets).data
 
         response = {
-            "user_information"   : user_information,
-            "wallet_information" : wallet_information
+            "user_info" : user_information
         }
         return response
     #end def

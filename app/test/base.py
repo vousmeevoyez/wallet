@@ -54,7 +54,7 @@ class BaseTestCase(TestCase):
             name='jennie',
             email='jennie@bp.com',
             phone_ext='62',
-            phone_number='82219644314',
+            phone_number='81219644314',
             role_id=role.id,
         )
         user.set_password("password")

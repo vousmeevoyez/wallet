@@ -148,6 +148,38 @@ class BankAccountSchema(ma.Schema):
 
 #end def
 
+class WalletSchema(ma.Schema):
+    """ This is class that represent wallet schema"""
+    id         = fields.Str()
+    label      = fields.Str(required=True, load_only=True,
+                            validate=(cannot_be_blank, validate_label))
+    user_id    = fields.Int(load_only=True)
+    pin        = fields.Str(required=True, attribute="pin_hash",
+                            validate=(cannot_be_blank,validate_pin), load_only=True)
+    created_at = fields.DateTime('%Y-%m-%d %H:%M:%S', load_only=True)
+    status     = fields.Method("bool_to_status")
+    balance    = fields.Float()
+
+    def bool_to_status(self, obj):
+        """
+            funtion to convert boolean to human friendly string
+            args:
+                obj -- wallet object
+        """
+        status = "ACTIVE"
+        if obj.status == 0:
+            status = "INACTIVE"
+        elif obj.status == 2:
+            status = "LOCKED"
+        return status
+    #end def
+
+    @post_load
+    def make_wallet(self, data):
+        return Wallet(**data)
+    #end def
+#end class
+
 class UserSchema(ma.Schema):
     """ this is class schema for user object"""
     id          = fields.Str()
@@ -164,6 +196,7 @@ class UserSchema(ma.Schema):
                                                       validate_pin), load_only=True)
     created_at  = fields.DateTime('%Y-%m-%d %H:%M:%S')
     status      = fields.Method("bool_to_status")
+    wallets     = fields.Nested(WalletSchema, many=True)
 
     def phone_to_msisdn(self, obj):
         """
@@ -296,38 +329,6 @@ class UserSchema(ma.Schema):
 
         if role not in ["ADMIN", "USER"]:
             raise ValidationError("Invalid Role")
-    #end def
-#end class
-
-class WalletSchema(ma.Schema):
-    """ This is class that represent wallet schema"""
-    id         = fields.Str()
-    label      = fields.Str(required=True, load_only=True,
-                            validate=(cannot_be_blank, validate_label))
-    user_id    = fields.Int(load_only=True)
-    pin        = fields.Str(required=True, attribute="pin_hash",
-                            validate=(cannot_be_blank,validate_pin), load_only=True)
-    created_at = fields.DateTime('%Y-%m-%d %H:%M:%S', load_only=True)
-    status     = fields.Method("bool_to_status")
-    balance    = fields.Float()
-
-    def bool_to_status(self, obj):
-        """
-            funtion to convert boolean to human friendly string
-            args:
-                obj -- wallet object
-        """
-        status = "ACTIVE"
-        if obj.status == 0:
-            status = "INACTIVE"
-        elif obj.status == 2:
-            status = "LOCKED"
-        return status
-    #end def
-
-    @post_load
-    def make_wallet(self, data):
-        return Wallet(**data)
     #end def
 #end class
 

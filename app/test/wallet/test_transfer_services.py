@@ -33,7 +33,7 @@ class TestTransferServices(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-        source_wallet = Wallet()
+        source_wallet = Wallet(user_id=self.user.id)
         source_wallet.set_pin("123456")
         db.session.add(source_wallet)
         db.session.commit()
@@ -306,3 +306,8 @@ class TestTransferServices(BaseTestCase):
                                                 "CLEARING")
         # should be 5000
         self.assertEqual(result, 5000)
+
+    def test_checkout(self):
+        """ test checkout function """
+        result = TransferServices.checkout("62", "81219644314")
+        self.assertTrue(result["user_info"])

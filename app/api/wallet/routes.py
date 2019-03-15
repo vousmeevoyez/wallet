@@ -16,20 +16,17 @@ from app.api.wallet import api
 from app.api.serializer import *
 # request schema
 from app.api.request_schema import *
-
 # wallet modules
 from app.api.wallet.modules.wallet_services import WalletServices
 from app.api.wallet.modules.transfer_services import TransferServices
 from app.api.wallet.modules.withdraw_services import WithdrawServices
-
 # authentication
 from app.api.authentication.decorator import token_required
 from app.api.authentication.decorator import get_token_payload
 from app.api.authentication.decorator import admin_required
-
+# utility
 from app.api.utility.utils import QR
 from app.api.utility.modules.cipher import DecryptError
-
 # exceptions
 from app.api.error.http import *
 # configuration
@@ -46,6 +43,7 @@ wallet_transaction_request_schema = WalletTransactionRequestSchema.parser
 qr_transfer_request_schema = QRTransferRequestSchema.parser
 withdraw_request_schema = WithdrawRequestSchema.parser
 pin_only_request_schema = PinOnlyRequestSchema.parser
+transfer_checkout_request_schema = TransferCheckoutRequestSchema.parser
 
 @api.route('/')
 class WalletAddRoutes(Resource):
@@ -339,6 +337,36 @@ class WalletWithdrawRoutes(Resource):
         request_data["bank_name"] = "BNI"
         response = WithdrawServices(wallet_id,
                                     request_data["pin"]).request(request_data)
+        return response
+    #end def
+#end class
+
+@api.route('/<string:source_wallet_id>/transfer/checkout')
+class WalletCheckoutRoutes(Resource):
+    """
+        Wallet Checkout Routes
+        api/v1/<source>/transfer/checkout
+    """
+    @token_required
+    def post(self, source_wallet_id):
+        """
+            handle POST method from
+            api/v1/<source>/transfer/checkout
+            checkout user wallets using phone number
+        """
+        # parse request data
+        request_data = transfer_checkout_request_schema.parse_args(strict=True)
+        try:
+            excluded = "username", "name", "pin", "password", "role", "email"
+            transfer = UserSchema(strict=True).validate(request_data,
+                                                        partial=(excluded))
+        except ValidationError as error:
+            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
+                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
+        #end if
+        response = TransferServices.checkout(request_data["phone_ext"],
+                                             request_data["phone_number"])
         return response
     #end def
 #end class

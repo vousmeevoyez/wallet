@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from app.api import db
 #models
 from app.api.models import *
-
+# core
 from app.api.wallet.modules.transaction_core import TransactionCore
 from app.api.wallet.modules.transaction_core import TransactionError
 # exceptions
@@ -23,7 +23,9 @@ from app.api.http_response import accepted
 from app.api.http_response import no_content
 # configuration
 from app.config import config
-
+# serializer
+from app.api.serializer import UserSchema
+# utility
 from app.api.utility.utils import validate_uuid
 # task
 from task.transaction.tasks import TransactionTask
@@ -256,5 +258,25 @@ class TransferServices:
                                                 fee_payment_id,
                                                 transfer_notes)
         return accepted()
+    #end def
+
+    @staticmethod
+    def checkout(phone_ext, phone_number):
+        """
+            Checkout Transfer
+            exchange phone number and return wallet available for that users
+        """
+        user = User.query.filter_by(phone_ext=phone_ext,
+                                    phone_number=phone_number).first()
+        if user is None:
+            raise RequestNotFound(ERROR_CONFIG["USER_NOT_FOUND"]["TITLE"],
+                                  ERROR_CONFIG["USER_NOT_FOUND"]["MESSAGE"])
+        #end if
+
+        # serialize
+        user_info = UserSchema(only=('name', 'msisdn','wallets.id',
+                                     'wallets.status')).dump(user).data
+        response = {"user_info" : user_info}
+        return response
     #end def
 #end class

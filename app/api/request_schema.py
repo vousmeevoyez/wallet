@@ -83,6 +83,13 @@ class TransferRequestSchema:
     parser.add_argument("notes",  type=str)
 #end class
 
+class TransferCheckoutRequestSchema:
+    """Define all mandatory argument for transfer checkout"""
+    parser = reqparse.RequestParser()
+    parser.add_argument("phone_ext",   type=str, required=True)
+    parser.add_argument("phone_number",type=str, required=True)
+#end class
+
 class WithdrawRequestSchema:
     """Define all mandatory argument for withdraw"""
     parser = reqparse.RequestParser()
