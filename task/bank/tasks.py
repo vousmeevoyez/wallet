@@ -2,6 +2,7 @@
     This is Celery Task to help interacting with Bank API
     in the background
 """
+import random
 from app.api import sentry
 from app.api import db
 
@@ -30,7 +31,7 @@ STATUS_CONFIG = config.Config.STATUS_CONFIG
 
 def backoff(attempts):
     """ prevent hammering service with thousand retry"""
-    return 2 ** attempts
+    return random.uniform(2,4) ** attempts
 
 class BankTask(celery.Task):
     """Abstract base class for all tasks in my app."""

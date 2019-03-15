@@ -2,6 +2,7 @@
     This is Celery Task to help interacting with Bank API
     in the background
 """
+import random
 from datetime import datetime
 from celery.signals import task_postrun
 
@@ -30,7 +31,7 @@ def close_session(*args, **kwargs):
 
 def backoff(attempts):
     """ prevent hammering service with thousand retry"""
-    return 2 ** attempts
+    return random.uniform(2,4) ** attempts
 
 class TransferFailed(Exception):
     """ raised when something occured on transfer process """
