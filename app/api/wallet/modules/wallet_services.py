@@ -11,28 +11,23 @@ from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 
 from app.api import db
-
 # helper
 from app.api.utility.utils import validate_uuid
 from app.api.utility.utils import Sms
 from app.api.utility.utils import QR
-
 # models
 from app.api.models import *
-
 # serializer
+from app.api.serializer import UserSchema
 from app.api.serializer import WalletSchema
 from app.api.serializer import TransactionSchema
 from app.api.serializer import VirtualAccountSchema
-
 # http error
 from app.api.http_response import created
 from app.api.http_response import no_content
-
 # exception
 from app.api.error.http import *
 from app.api.utility.modules.sms_services import SmsError
-
 # configuration
 from app.config import config
 
@@ -95,11 +90,9 @@ class WalletServices:
                 params --
         """
         wallet_information = WalletSchema().dump(self.wallet).data
-        va_information = VirtualAccountSchema(many=True).dump(self.wallet.virtual_accounts).data
 
         response = {
-            "wallet" : wallet_information,
-            "virtual_account" : va_information
+            "wallet" : wallet_information
         }
         return response
     #end def
@@ -326,7 +319,17 @@ class WalletServices:
         }
         return response
     #end def
-    
+
+    def owner_info(self):
+        """
+            function to return wallet owner information
+        """
+        user_info = UserSchema(only=('name',
+                                     'msisdn')).dump(self.wallet.user).data
+        response = {"user_info" : user_info}
+        return response
+    #end def
+
     def check(self, pin):
         """
             function to check and verify pin

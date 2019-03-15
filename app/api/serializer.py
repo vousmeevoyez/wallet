@@ -148,6 +148,56 @@ class BankAccountSchema(ma.Schema):
 
 #end def
 
+class VirtualAccountSchema(ma.Schema):
+    """ This is class for Virtual Account Schema"""
+    account_no = fields.Str()
+    trx_id     = fields.Int(load_only=True)
+    va_type    = fields.Method("va_type_to_string")
+    name       = fields.Str(required=True, validate=cannot_be_blank)
+    bank_name  = fields.Method("bank_id_to_name")
+    status     = fields.Method("bool_to_status")
+
+    @post_load
+    def make_va(self, data):
+        """
+            To make va object from data
+            args:
+                data -- data
+        """
+        return VirtualAccount(**data)
+    #end def
+
+    def bool_to_status(self, obj):
+        """
+            function to convert bool to human friendly status
+            args:
+                object -- va object
+        """
+        status = "ACTIVE"
+        if obj.status == 0:
+            status = "PENDING"
+        elif obj.status == 2:
+            status = "DEACTIVE"
+        elif obj.status == 3:
+            status = "LOCKED"
+        return status
+    #end def
+
+    def bank_id_to_name(self, obj):
+        """ 
+            function to convert bank id to bank name
+            args : 
+                obj -- bank account object
+        """
+        return obj.bank.name
+    #end def
+
+    def va_type_to_string(self, obj):
+        """ function to convert va type to string"""
+        return obj.va_type.key
+    #end def
+#end class
+
 class WalletSchema(ma.Schema):
     """ This is class that represent wallet schema"""
     id         = fields.Str()
@@ -155,10 +205,11 @@ class WalletSchema(ma.Schema):
                             validate=(cannot_be_blank, validate_label))
     user_id    = fields.Int(load_only=True)
     pin        = fields.Str(required=True, attribute="pin_hash",
-                            validate=(cannot_be_blank,validate_pin), load_only=True)
+                            validate=(cannot_be_blank, validate_pin), load_only=True)
     created_at = fields.DateTime('%Y-%m-%d %H:%M:%S', load_only=True)
     status     = fields.Method("bool_to_status")
     balance    = fields.Float()
+    virtual_accounts = fields.Nested(VirtualAccountSchema, many=True)
 
     def bool_to_status(self, obj):
         """
@@ -445,56 +496,6 @@ class TransactionSchema(ma.Schema):
             result = "CANCELLED"
         #end if
         return result
-    #end def
-#end class
-
-class VirtualAccountSchema(ma.Schema):
-    """ This is class for Virtual Account Schema"""
-    account_no = fields.Str()
-    trx_id     = fields.Int(load_only=True)
-    va_type    = fields.Method("va_type_to_string")
-    name       = fields.Str(required=True, validate=cannot_be_blank)
-    bank_name  = fields.Method("bank_id_to_name")
-    status     = fields.Method("bool_to_status")
-
-    @post_load
-    def make_va(self, data):
-        """
-            To make va object from data
-            args:
-                data -- data
-        """
-        return VirtualAccount(**data)
-    #end def
-
-    def bool_to_status(self, obj):
-        """
-            function to convert bool to human friendly status
-            args:
-                object -- va object
-        """
-        status = "ACTIVE"
-        if obj.status == 0:
-            status = "PENDING"
-        elif obj.status == 2:
-            status = "DEACTIVE"
-        elif obj.status == 3:
-            status = "LOCKED"
-        return status
-    #end def
-
-    def bank_id_to_name(self, obj):
-        """ 
-            function to convert bank id to bank name
-            args : 
-                obj -- bank account object
-        """
-        return obj.bank.name
-    #end def
-
-    def va_type_to_string(self, obj):
-        """ function to convert va type to string"""
-        return obj.va_type.key
     #end def
 #end class
 

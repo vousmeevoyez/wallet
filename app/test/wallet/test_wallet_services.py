@@ -30,6 +30,10 @@ class TestWalletServices(BaseTestCase):
         self.wallet_id = result[0]["data"]["wallet_id"]
     #end def
 
+    def test_wallet_owner_info(self):
+        result = WalletServices(self.wallet_id).owner_info()
+        self.assertTrue(result["user_info"])
+
     def test_add_wallet(self):
         """ test method for creating wallet"""
         self.assertTrue(self.wallet_id)

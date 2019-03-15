@@ -108,9 +108,6 @@ class QRTransferRequestSchema:
     """Define all mandatory argument for qr transfer """
     parser = reqparse.RequestParser()
     parser.add_argument("qr_string", type=str, required=True)
-    parser.add_argument("amount", type=int, required=True)
-    parser.add_argument("pin",    type=str, required=True)
-    parser.add_argument("notes",  type=str)
 #end class
 
 class BNIUtilityRequestSchema:

@@ -54,7 +54,7 @@ class BaseTestCase(TestCase):
             name='jennie',
             email='jennie@bp.com',
             phone_ext='62',
-            phone_number='81219644314',
+            phone_number='81209644314',
             role_id=role.id,
         )
         user.set_password("password")
@@ -424,22 +424,6 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def qr_transfer(self, source, params, access_token):
-        """ Api Call for QR transfer between wallet """
-        headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
-        }
-        return self.client.post(
-            BASE_URL + "/wallets/" + "{}/qr/transfer".format(source),
-            data=dict(
-                qr_string=params["qr_string"],
-                pin=params["pin"],
-                amount=params["amount"]
-            ),
-            headers=headers
-        )
-    #end def
-
     def get_qr(self, wallet_id, access_token):
         """ Api Call for getting qr string """
         headers = {
@@ -447,6 +431,20 @@ class BaseTestCase(TestCase):
         }
         return self.client.get(
             BASE_URL + "/wallets/" + wallet_id + "/qr/",
+            headers=headers
+        )
+    #end def
+
+    def qr_checkout(self, wallet_id, params, access_token):
+        """ Api Call for getting qr string checkout """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.post(
+            BASE_URL + "/wallets/" + wallet_id + "/qr/checkout",
+            data=dict(
+                qr_string=params["qr_string"],
+            ),
             headers=headers
         )
     #end def

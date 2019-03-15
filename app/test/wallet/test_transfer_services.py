@@ -309,5 +309,5 @@ class TestTransferServices(BaseTestCase):
 
     def test_checkout(self):
         """ test checkout function """
-        result = TransferServices.checkout("62", "81219644314")
+        result = TransferServices.checkout("62", "81209644314")
         self.assertTrue(result["user_info"])

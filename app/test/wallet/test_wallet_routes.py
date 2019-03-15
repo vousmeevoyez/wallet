@@ -653,6 +653,36 @@ class TestWalletRoutes(BaseTestCase):
         response = result.get_json()
         self.assertEqual(result.status_code, 200)
         self.assertTrue(response["qr_string"])
+
+    def test_qr_checkout(self):
+        """ QR_CHECKOUT CASE 1 : return user info"""
+        access_token, user_id = self._create_dummy_user()
+
+        params = {
+            "access_token" : access_token,
+            "label" : "wallet label",
+            "pin" : "123456"
+        }
+
+        result = self.create_wallet(params, access_token)
+        self.assertEqual(result.status_code, 201)
+
+        response = result.get_json()
+        wallet_id = response["data"]["wallet_id"]
+
+        result = self.get_qr(wallet_id, access_token)
+        response = result.get_json()
+        self.assertEqual(result.status_code, 200)
+        self.assertTrue(response["qr_string"])
+
+        payload = {
+            "qr_string" : response["qr_string"]
+        }
+
+        result = self.qr_checkout(wallet_id, payload, access_token)
+        response = result.get_json()
+        self.assertTrue(result.status_code, 200)
+        self.assertTrue(response["user_info"])
     """
         FOrgot pin
     """
@@ -940,107 +970,3 @@ class TestWalletRoutes(BaseTestCase):
         result = self.bank_transfer(str(source), str(uuid.uuid4()), params,
                                     access_token)
         self.assertEqual(result.status_code, 404)
-
-    """
-        QR TRANSFER
-    """
-    def test_qr_transfer(self):
-        """ CASE 1 QR Transfer : successfully transfer """
-        access_token, user_id = self._create_dummy_user()
-
-        params = {
-            "access_token" : access_token,
-            "label" : "wallet label",
-            "pin" : "123456"
-        }
-
-        result = self.create_wallet(params, access_token)
-        self.assertEqual(result.status_code, 201)
-
-        response = result.get_json()
-        source = response["data"]["wallet_id"]
-
-        # inject balance
-        wallet = Wallet.query.get(source)
-        wallet.balance = 99999999
-        db.session.commit()
-
-        access_token, user_id = self._create_dummy_user2()
-
-        params = {
-            "access_token" : access_token,
-            "label" : "jisoo wallet",
-            "pin" : "123456"
-        }
-
-        result = self.create_wallet(params, access_token)
-        self.assertEqual(result.status_code, 201)
-
-        response = result.get_json()
-        destination = response["data"]["wallet_id"]
-
-        result = self.get_qr(destination, access_token)
-        response = result.get_json()
-        self.assertEqual(result.status_code, 200)
-        self.assertTrue(response["qr_string"])
-
-        params = {
-            "qr_string" : response["qr_string"],
-            "amount" : "15",
-            "pin" : "123456"
-        }
-
-        result = self.qr_transfer(str(source), params, access_token)
-        self.assertEqual(result.status_code, 202)
-
-    def test_qr_transfer_invalid_qr(self):
-        """ CASE 2 QR Transfer : try transfer using invalid QR """
-        access_token, user_id = self._create_dummy_user()
-
-        params = {
-            "access_token" : access_token,
-            "label" : "wallet label",
-            "pin" : "123456"
-        }
-
-        result = self.create_wallet(params, access_token)
-        self.assertEqual(result.status_code, 201)
-
-        response = result.get_json()
-        source = response["data"]["wallet_id"]
-
-        # inject balance
-        wallet = Wallet.query.get(source)
-        wallet.balance = 99999999
-        db.session.commit()
-
-        access_token, user_id = self._create_dummy_user2()
-
-        params = {
-            "access_token" : access_token,
-            "label" : "jisoo wallet",
-            "pin" : "123456"
-        }
-
-        result = self.create_wallet(params, access_token)
-        self.assertEqual(result.status_code, 201)
-
-        response = result.get_json()
-        destination = response["data"]["wallet_id"]
-
-        result = self.get_qr(destination, access_token)
-        response = result.get_json()
-        self.assertEqual(result.status_code, 200)
-        self.assertTrue(response["qr_string"])
-
-        params = {
-            "qr_string" : "aksjdlajsldjkasjldjaklsjdlajsjdajsdjasl",
-            "amount" : "15",
-            "pin" : "123456"
-        }
-
-        result = self.qr_transfer(str(source), params, access_token)
-        response = result.get_json()
-        self.assertEqual(result.status_code, 400)
-        self.assertTrue(response["error"])
-        self.assertTrue(response["message"])

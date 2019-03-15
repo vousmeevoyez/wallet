@@ -131,7 +131,7 @@ class WalletQrRoutes(Resource):
     #end def
 #end class
 
-@api.route('/<string:wallet_id>/qr/transfer')
+@api.route('/<string:wallet_id>/qr/checkout')
 class WalletQrTransferRoutes(Resource):
     """
         Wallet QR Routes
@@ -146,27 +146,14 @@ class WalletQrTransferRoutes(Resource):
         """
         # request data validator
         request_data = qr_transfer_request_schema.parse_args(strict=True)
-        try:
-            excluded = ("id", "wallet_id", "balance", "transaction_type",
-                        "notes", "payment_details", "created_at")
-            transfer = TransactionSchema(strict=True).validate(request_data,
-                                                               partial=excluded)
-        except ValidationError as error:
-            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
-                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        #end if
         # Decrypt QR Code here
         try:
             payload = QR().read(request_data["qr_string"])
-            destination = payload["wallet_id"]
         except DecryptError:
             raise BadRequest(ERROR_CONFIG["INVALID_QR"]["TITLE"],
                              ERROR_CONFIG["INVALID_QR"]["MESSAGE"])
         #end try
-        response = TransferServices(wallet_id,
-                                    request_data["pin"],
-                                    destination).internal_transfer(request_data)
+        response = WalletServices(payload["wallet_id"]).owner_info()
         return response
     #end def
 #end class
