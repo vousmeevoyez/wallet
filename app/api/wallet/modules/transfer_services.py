@@ -256,7 +256,7 @@ class TransferServices:
         result = BankTask().bank_transfer.delay(debit_payment_id,
                                                 fee_payment_id,
                                                 transfer_notes)
-        return accepted({"id": debit_payment_id})
+        return accepted({"id": str(debit_payment_id)})
     #end def
 
     @staticmethod
