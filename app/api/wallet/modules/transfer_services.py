@@ -253,10 +253,10 @@ class TransferServices:
                                           ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
 
         # send queue here
-        debit_trx_id = BankTask().bank_transfer.delay(debit_payment_id,
-                                                      fee_payment_id,
-                                                      transfer_notes)
-        return accepted({"id": debit_trx_id})
+        result = BankTask().bank_transfer.delay(debit_payment_id,
+                                                fee_payment_id,
+                                                transfer_notes)
+        return accepted({"id": result.get()})
     #end def
 
     @staticmethod
