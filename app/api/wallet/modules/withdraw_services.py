@@ -8,16 +8,18 @@ from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 
 from app.api import db
-
+# services
 from app.api.virtual_account.modules.va_services import VirtualAccountServices
 # models
 from app.api.models import *
 # http response
 from app.api.error.http import *
-
+# configuration
 from app.config import config
-
+# utility
 from app.api.utility.utils import validate_uuid
+# http
+from app.api.http_response import *
 
 TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 WALLET_CONFIG = config.Config.WALLET_CONFIG
@@ -121,6 +123,6 @@ class WithdrawServices:
             "valid_until"     : va_response["valid_until"],
             "amount"          : va_response["amount"]
         }
-        return response
+        return ok(response)
     #end def
 #end class

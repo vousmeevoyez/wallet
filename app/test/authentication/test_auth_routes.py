@@ -29,15 +29,17 @@ class TestMockAuthRoutes(BaseTestCase):
         """ test using mock get access token"""
 
         mock_create_token.return_value = {
-            "access_token" : "some_access_token",
-            "refresh_token" : "some_refresh_token",
+            "data" : {
+                "access_token" : "some_access_token",
+                "refresh_token" : "some_refresh_token",
+            }
         }
 
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
 
-        self.assertTrue(response["access_token"])
-        self.assertTrue(response["refresh_token"])
+        self.assertTrue(response["data"]["access_token"])
+        self.assertTrue(response["data"]["refresh_token"])
     #end def
 
 class TestAuthRoutes(BaseTestCase):
@@ -51,8 +53,8 @@ class TestAuthRoutes(BaseTestCase):
         response = result.get_json()
 
         self.assertEqual(result.status_code, 200)
-        self.assertTrue(response["access_token"])
-        self.assertTrue(response["refresh_token"])
+        self.assertTrue(response["data"]["access_token"])
+        self.assertTrue(response["data"]["refresh_token"])
     #end def
 
     def test_get_access_token_invalid_params(self):
@@ -85,7 +87,7 @@ class TestAuthRoutes(BaseTestCase):
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
 
-        refresh_token = response["refresh_token"]
+        refresh_token = response["data"]["refresh_token"]
 
         result = self.get_refresh_token(refresh_token)
         response = result.get_json()
@@ -99,7 +101,7 @@ class TestAuthRoutes(BaseTestCase):
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
 
-        access_token = response["access_token"]
+        access_token = response["data"]["access_token"]
 
         result = self.get_refresh_token(access_token)
         response = result.get_json()
@@ -121,7 +123,7 @@ class TestAuthRoutes(BaseTestCase):
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
 
-        access_token = response["access_token"]
+        access_token = response["data"]["access_token"]
 
         result = self.revoke_access_token(access_token)
         self.assertEqual(result.status_code, 204)
@@ -141,7 +143,7 @@ class TestAuthRoutes(BaseTestCase):
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
 
-        refresh_token = response["refresh_token"]
+        refresh_token = response["data"]["refresh_token"]
 
         result = self.revoke_refresh_token(refresh_token)
         self.assertEqual(result.status_code, 204)

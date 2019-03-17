@@ -146,4 +146,4 @@ class BankTask(celery.Task):
             print(error)
             db.session.rollback()
         #end if
-        return transfer_info
+        return str(debit_trx.id)

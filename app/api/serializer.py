@@ -201,8 +201,7 @@ class VirtualAccountSchema(ma.Schema):
 class WalletSchema(ma.Schema):
     """ This is class that represent wallet schema"""
     id         = fields.Str()
-    label      = fields.Str(required=True, load_only=True,
-                            validate=(cannot_be_blank, validate_label))
+    label      = fields.Str(required=True, validate=(cannot_be_blank, validate_label))
     user_id    = fields.Int(load_only=True)
     pin        = fields.Str(required=True, attribute="pin_hash",
                             validate=(cannot_be_blank, validate_pin), load_only=True)

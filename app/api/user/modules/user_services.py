@@ -17,9 +17,8 @@ from app.api.wallet.modules.wallet_services import WalletServices
 from app.api.virtual_account.modules.va_services import VirtualAccountServices
 
 # http response
-from app.api.http_response import created
-from app.api.http_response import no_content
-
+from app.api.http_response import *
+# utility
 from app.api.utility.utils import validate_uuid
 
 # exceptions
@@ -96,17 +95,13 @@ class UserServices:
         """ show all stored user for admin"""
         users = User.query.filter_by(status=STATUS_CONFIG["ACTIVE"]).all()
         response = UserSchema(many=True).dump(users).data
-        return response
+        return ok(response)
     #end def
 
     def info(self):
         """ return single user information"""
         user_information = UserSchema().dump(self.user).data
-
-        response = {
-            "user_info" : user_information
-        }
-        return response
+        return ok(user_information)
     #end def
 
     def update(self, params):

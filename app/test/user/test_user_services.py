@@ -77,8 +77,7 @@ class TestUserServices(BaseTestCase):
 
         user_id = result[0]["data"]["user_id"]
         result = UserServices(user_id).info()
-        self.assertTrue(result["user_info"])
-        #self.assertTrue(result["wallet_information"])
+        self.assertTrue(result[0]["data"])
 
     def test_user_info_failed_record_not_found(self):
         """ test get single user info but user not found"""

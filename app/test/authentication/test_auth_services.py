@@ -80,6 +80,7 @@ class TestAuthServices(BaseTestCase):
         """ test success create access & refresh token"""
         result = AuthServices().create_token({"username" : "MODANAADMIN",\
                                               "password" : "password"})
+        result = result[0]["data"]
 
         self.assertTrue(result["access_token"])
         self.assertTrue(result["refresh_token"])
@@ -103,6 +104,7 @@ class TestAuthServices(BaseTestCase):
 
         user = User.query.filter_by(username="MODANAADMIN").first()
         result = AuthServices().refresh_token(user)
+        result = result[0]["data"]
 
         self.assertTrue(result["access_token"])
 
@@ -110,7 +112,7 @@ class TestAuthServices(BaseTestCase):
         """ test blacklist access token """
         result = AuthServices().create_token({"username" : "MODANAADMIN",\
                                               "password" : "password"})
-
+        result = result[0]["data"]
         access_token = result["access_token"]
         result = AuthServices().logout_access_token(access_token)
         self.assertTrue(result[1], 204) # no content
@@ -119,7 +121,7 @@ class TestAuthServices(BaseTestCase):
         """ test blacklist access token """
         result = AuthServices().create_token({"username" : "MODANAADMIN",\
                                               "password" : "password"})
-
+        result = result[0]["data"]
         refresh_token = result["refresh_token"]
         result = AuthServices().logout_refresh_token(refresh_token)
 

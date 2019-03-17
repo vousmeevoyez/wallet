@@ -20,6 +20,12 @@ class TestUserRoutes(BaseTestCase):
     def setUp(self):
         super().setUp()
 
+        result = self.get_access_token("MODANAADMIN", "password")
+        response = result.get_json()
+        access_token = response["data"]["access_token"]
+
+        self._token = access_token
+
     """
         TEST BEGIN HERE 
     """
@@ -35,11 +41,7 @@ class TestUserRoutes(BaseTestCase):
             "pin"          : "123456",
             "role"         : "USER"
         }
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["access_token"]
-
-        result = self.create_user(params, access_token)
+        result = self.create_user(params, self._token)
         response = result.get_json()["data"]
 
         self.assertTrue(response["user_id"])
@@ -57,23 +59,15 @@ class TestUserRoutes(BaseTestCase):
             "pin"          : "123456",
             "role"         : "USER"
         }
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["access_token"]
-
-        result = self.create_user(params, access_token)
+        result = self.create_user(params, self._token)
         self.assertEqual(result.status_code, 400) # bad request
 
     def test_get_all_user(self):
         """ test method that return all user """
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["access_token"]
-
-        result = self.get_all_user(access_token)
+        result = self.get_all_user(self._token)
         status_code = result.status_code
-
         response = result.get_json()
+
         self.assertEqual(status_code, 200) # ok
 
     def test_update_user(self):
@@ -88,11 +82,7 @@ class TestUserRoutes(BaseTestCase):
             "pin"          : "123456",
             "role"         : "USER"
         }
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["access_token"]
-
-        result = self.create_user(params, access_token)
+        result = self.create_user(params, self._token)
         response = result.get_json()["data"]
 
         user_id = response["user_id"]
@@ -104,25 +94,17 @@ class TestUserRoutes(BaseTestCase):
             "email"        : "jennie@blckpink.com",
             "password"     : "password",
         }
-        result = self.update_user(params, user_id, access_token)
+        result = self.update_user(params, user_id, self._token)
         self.assertEqual(result.status_code, 204)
 
     def test_get_user(self):
         """ test method that get user info"""
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["access_token"]
-
-        result = self.get_user(str(self.user.id), access_token)
+        result = self.get_user(str(self.user.id), self._token)
         self.assertEqual(result.status_code, 200) # ok
 
     def test_create_user_bank_account_success(self):
         """ test method that get user info"""
         # get access token first
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["access_token"]
-
         params = {
             "account_no": "3333333333",
             "name"      : "Bpk KEN AROK",
@@ -130,17 +112,13 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account(str(self.user.id), params, access_token)
+        result = self.create_user_bank_account(str(self.user.id), params,
+                                               self._token)
         self.assertEqual(result.status_code, 201) # created
 
     def test_create_user_bank_account_validate_failed(self):
         """ test method that get user info but failed because some invalid
         input"""
-        # get access token first
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["access_token"]
-
         params = {
             "account_no": "",
             "name"      : "Bpk KEN AROK",
@@ -148,16 +126,12 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account(str(self.user.id), params, access_token)
+        result = self.create_user_bank_account(str(self.user.id), params,
+                                               self._token)
         self.assertEqual(result.status_code, 400) # ok
 
     def test_get_user_bank_account(self):
         """ test routes that return bank account information"""
-        # get access token first
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["access_token"]
-
         params = {
             "account_no": "3333333333",
             "name"      : "Bpk KEN AROK",
@@ -165,19 +139,16 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account(str(self.user.id), params, access_token)
+        result = self.create_user_bank_account(str(self.user.id), params,
+                                               self._token)
         status_code = result.status_code
 
-        result = self.get_bank_account(str(self.user.id), access_token)
+        result = self.get_bank_account(str(self.user.id), self._token)
         self.assertEqual(result.status_code, 200) # ok
 
     def test_remove_bank_account(self):
         """ test routes that remove bank account"""
         # get access token first
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["access_token"]
-
         params = {
             "account_no": "3333333333",
             "name"      : "Bpk KEN AROK",
@@ -185,20 +156,18 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account(str(self.user.id), params, access_token)
+        result = self.create_user_bank_account(str(self.user.id), params,
+                                               self._token)
         self.assertEqual(result.status_code, 201) # ok
 
         bank_account_id = result.get_json()["data"]["bank_account_id"]
 
-        result = self.remove_bank_account(str(self.user.id), bank_account_id, access_token)
+        result = self.remove_bank_account(str(self.user.id), bank_account_id,
+                                          self._token)
         self.assertEqual(result.status_code, 204) # no content
 
     def test_update_user_bank_account_success(self):
         """ test method that update user bank account information"""
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["access_token"]
-
         params = {
             "account_no": "3333333333",
             "name"      : "Bpk KEN AROK",
@@ -206,7 +175,8 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account(str(self.user.id), params, access_token)
+        result = self.create_user_bank_account(str(self.user.id), params,
+                                               self._token)
         self.assertEqual(result.status_code, 201) # ok
 
         bank_account_id = result.get_json()["data"]["bank_account_id"]
@@ -218,7 +188,8 @@ class TestUserRoutes(BaseTestCase):
             "label"     : "Kelvin Bank Accounts",
             "bank_code" : "014"
         }
-        result = self.update_bank_account(str(self.user.id), bank_account_id, params, access_token)
+        result = self.update_bank_account(str(self.user.id), bank_account_id,
+                                          params, self._token)
         status_code = result.status_code
 
         self.assertEqual(status_code, 204) # ok

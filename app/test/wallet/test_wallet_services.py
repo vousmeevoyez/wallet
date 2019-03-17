@@ -31,8 +31,8 @@ class TestWalletServices(BaseTestCase):
     #end def
 
     def test_wallet_owner_info(self):
-        result = WalletServices(self.wallet_id).owner_info()
-        self.assertTrue(result["user_info"])
+        result = WalletServices(self.wallet_id).owner_info()[0]
+        self.assertTrue(result["data"])
 
     def test_add_wallet(self):
         """ test method for creating wallet"""
@@ -45,8 +45,8 @@ class TestWalletServices(BaseTestCase):
 
     def test_wallet_info(self):
         """ test method for get wallet info """
-        result = WalletServices(self.wallet_id).info()
-        self.assertTrue(result["wallet"])
+        result = WalletServices(self.wallet_id).info()[0]
+        self.assertTrue(result["data"])
 
     def test_wallet_info_failed_invalid_id(self):
         """ test method for get wallet info but not found """
@@ -61,7 +61,7 @@ class TestWalletServices(BaseTestCase):
 
     def test_wallet_balance(self):
         """ test checking wallet balance"""
-        result = WalletServices(self.wallet_id).check_balance()
+        result = WalletServices(self.wallet_id).check_balance()[0]["data"]
         self.assertEqual(result["balance"], 0)
 
     def test_wallet_not_found(self):
@@ -76,7 +76,7 @@ class TestWalletServices(BaseTestCase):
             "end_date" : "2019/02/02",
             "flag" : "IN"
         }
-        result = WalletServices(self.wallet_id).history(params)
+        result = WalletServices(self.wallet_id).history(params)[0]["data"]
         self.assertEqual(result, [])
 
     def test_wallet_out_history(self):
@@ -84,7 +84,7 @@ class TestWalletServices(BaseTestCase):
         result = WalletServices(self.wallet_id).history({
                                            "start_date" : "2019/02/01",
                                            "end_date" : "2019/02/02",
-                                           "flag" : "OUT"})
+                                           "flag" : "OUT"})[0]["data"]
         self.assertEqual(result, [])
 
     @patch.object(Sms, "send")
@@ -121,7 +121,7 @@ class TestWalletServices(BaseTestCase):
 
     def test_get_qr(self):
         """ test method to generate qr code wallet """
-        result = WalletServices(self.wallet_id).get_qr()
+        result = WalletServices(self.wallet_id).get_qr()[0]["data"]
         self.assertTrue(result["qr_string"])
 
     @patch.object(Sms, "send")

@@ -23,8 +23,7 @@ from app.api.serializer import WalletSchema
 from app.api.serializer import TransactionSchema
 from app.api.serializer import VirtualAccountSchema
 # http error
-from app.api.http_response import created
-from app.api.http_response import no_content
+from app.api.http_response import *
 # exception
 from app.api.error.http import *
 from app.api.utility.modules.sms_services import SmsError
@@ -79,8 +78,8 @@ class WalletServices:
             function to show all user wallet
             args -- params
         """
-        response = WalletSchema(many=True).dump(user.wallets).data
-        return response
+        wallets = WalletSchema(many=True).dump(user.wallets).data
+        return ok(wallets)
     #end def
 
     def info(self):
@@ -89,12 +88,8 @@ class WalletServices:
             args:
                 params --
         """
-        wallet_information = WalletSchema().dump(self.wallet).data
-
-        response = {
-            "wallet" : wallet_information
-        }
-        return response
+        wallet = WalletSchema().dump(self.wallet).data
+        return ok(wallet)
     #end def
 
     def remove(self):
@@ -122,7 +117,7 @@ class WalletServices:
             "id"      : str(self.wallet.id),
             "balance" : self.wallet.balance
         }
-        return response
+        return ok(response)
     #end def
 
     def history(self, params):
@@ -156,10 +151,10 @@ class WalletServices:
                                                  Transaction.payment_id == \
                                                  Payment.id,
                                                  ).filter(*conditions)
-        response = TransactionSchema(many=True,
-                                     exclude=["payment_details","wallet_id"]).\
-                                     dump(wallet_response).data
-        return response
+        transaction_history = TransactionSchema(many=True,
+                                                exclude=["payment_details","wallet_id"]).\
+                                                dump(wallet_response).data
+        return ok(transaction_history)
     #end def
 
     def history_details(self, transaction_id):
@@ -175,8 +170,8 @@ class WalletServices:
             raise RequestNotFound(ERROR_CONFIG["TRANSACTION_NOT_FOUND"]["TITLE"],
                                   ERROR_CONFIG["TRANSACTION_NOT_FOUND"]["MESSAGE"])
         #end if
-        response = TransactionSchema().dump(history_details).data
-        return response
+        transaction_details = TransactionSchema().dump(history_details).data
+        return ok(transaction_details)
     #end def
 
     def update_pin(self, params):
@@ -314,10 +309,7 @@ class WalletServices:
         qr_data = {"wallet_id" : str(self.wallet.id)}
         qr_string = QR().generate(qr_data)
 
-        response = {
-            "qr_string" : qr_string
-        }
-        return response
+        return ok({"qr_string" : qr_string})
     #end def
 
     def owner_info(self):
@@ -325,9 +317,8 @@ class WalletServices:
             function to return wallet owner information
         """
         user_info = UserSchema(only=('name',
-                                     'msisdn')).dump(self.wallet.user).data
-        response = {"user_info" : user_info}
-        return response
+                                     'msisdn', 'wallets.id', 'wallets.label')).dump(self.wallet.user).data
+        return ok(user_info)
     #end def
 
     def check(self, pin):
@@ -342,6 +333,6 @@ class WalletServices:
         response = {
             "message" : "PIN VERIFIED"
         }
-        return response
+        return ok(response)
     #end def
 #end class

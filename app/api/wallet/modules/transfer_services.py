@@ -18,9 +18,8 @@ from app.api.wallet.modules.transaction_core import TransactionCore
 from app.api.wallet.modules.transaction_core import TransactionError
 # exceptions
 from app.api.error.http import *
-#ttp errors
-from app.api.http_response import accepted
-from app.api.http_response import no_content
+#http response
+from app.api.http_response import *
 # configuration
 from app.config import config
 # serializer
@@ -191,7 +190,7 @@ class TransferServices:
             raise UnprocessableEntity(ERROR_CONFIG["TRANSFER_FAILED"]["TITLE"],
                                       ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
         #end if
-        return accepted()
+        return accepted({"id" : str(debit_trx.id)})
     #end def
 
     def external_transfer(self, params):
@@ -254,10 +253,10 @@ class TransferServices:
                                           ERROR_CONFIG["TRANSFER_FAILED"]["MESSAGE"])
 
         # send queue here
-        result = BankTask().bank_transfer.delay(debit_payment_id,
-                                                fee_payment_id,
-                                                transfer_notes)
-        return accepted()
+        debit_trx_id = BankTask().bank_transfer.delay(debit_payment_id,
+                                                      fee_payment_id,
+                                                      transfer_notes)
+        return accepted({"id": debit_trx_id})
     #end def
 
     @staticmethod
@@ -276,7 +275,6 @@ class TransferServices:
         # serialize
         user_info = UserSchema(only=('name', 'msisdn','wallets.id',
                                      'wallets.status')).dump(user).data
-        response = {"user_info" : user_info}
-        return response
+        return ok(user_info)
     #end def
 #end class

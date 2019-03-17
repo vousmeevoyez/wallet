@@ -50,11 +50,11 @@ class BaseTestCase(TestCase):
 
         # add dummy user
         user = User(
-            username='jenniebp',
-            name='jennie',
-            email='jennie@bp.com',
+            username='jenniekkk',
+            name='jenniekkk',
+            email='jenniekkk@bp.com',
             phone_ext='62',
-            phone_number='81209644314',
+            phone_number='89289644314',
             role_id=role.id,
         )
         user.set_password("password")

@@ -22,7 +22,7 @@ from app.api.error.http import *
 
 from app.api.utility.utils import validate_uuid
 # http response
-from app.api.http_response import no_content
+from app.api.http_response import *
 # configuration
 from app.config import config
 
@@ -106,7 +106,7 @@ class AuthServices:
             "access_token" : access_token,
             "refresh_token": refresh_token
         }
-        return response
+        return ok(response)
     #end def
 
     def refresh_token(self, current_user):
@@ -119,7 +119,7 @@ class AuthServices:
         response = {
             "access_token" : access_token,
         }
-        return response
+        return ok(response)
     #end def
 
     def logout_access_token(self, token):

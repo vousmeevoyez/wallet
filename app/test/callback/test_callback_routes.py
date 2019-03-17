@@ -41,7 +41,7 @@ class TestCallbackRoutes(BaseTestCase):
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
 
-        access_token = response["access_token"]
+        access_token = response["data"]["access_token"]
 
         result = self.create_user(params, access_token)
         response = result.get_json()["data"]
