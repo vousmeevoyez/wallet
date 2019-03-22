@@ -37,7 +37,7 @@ class BankServices:
         if type(obj) == dict:
             for key, value in obj[error_key].items():
                 if key == "parameters":
-                    for key, value in value.iteritems():
+                    for key, value in value.items():
                         if key == "errorMessage":
                             error_message = value
         else:
