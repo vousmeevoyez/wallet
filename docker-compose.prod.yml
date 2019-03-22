@@ -11,7 +11,7 @@ services:
                 - rabbitmq
                 restart: always
                 ports:
-                - 6000:5000
+                - 6000:6000
 
         postgres:
                 build:
@@ -26,7 +26,7 @@ services:
                         context: dockerfiles/rabbitmq/
                 env_file: env/prod.env
                 ports:
-                - 15000:15672
+                - 16000:15672
 
         celery:
                 env_file: env/prod.env
@@ -40,7 +40,7 @@ services:
                 env_file: env/prod.env
                 image: mher/flower
                 ports:
-                - 5555:5555
+                - 6555:5555
                 depends_on:
                 - rabbitmq
 
