@@ -116,3 +116,37 @@ class BNIUtilityRequestSchema:
     parser.add_argument("account_no", type=str, required=True)
     parser.add_argument("amount", type=int, required=True)
 #end class
+
+class BNIUtilityDoPaymentRequestSchema:
+    """Define all mandatory argument for BNI Do Payment"""
+    parser = reqparse.RequestParser()
+    parser.add_argument("method", type=str, required=True)
+    parser.add_argument("source_account", type=str, required=True)
+    parser.add_argument("account_no", type=str, required=True)
+    parser.add_argument("amount", type=str, required=True)
+    parser.add_argument("email", type=str, required=True)
+    parser.add_argument("clearing_code", type=str, required=True)
+    parser.add_argument("account_name", type=str, required=True)
+    parser.add_argument("address", type=str, required=True)
+    parser.add_argument("charge_mode", type=str, required=True)
+#end class
+
+class BNIUtilityInterbankInquiryRequestSchema:
+    """Define all mandatory argument for BNI Do Payment"""
+    parser = reqparse.RequestParser()
+    parser.add_argument("source_account", location='args', type=str, required=True)
+    parser.add_argument("bank_code", location='args', type=str, required=True)
+    parser.add_argument("account_no", location='args', type=str, required=True)
+#end class
+
+class BNIUtilityInterbankPaymentRequestSchema:
+    """Define all mandatory argument for BNI Do Payment"""
+    parser = reqparse.RequestParser()
+    parser.add_argument("source_account", type=str, required=True)
+    parser.add_argument("account_no", type=str, required=True)
+    parser.add_argument("account_name", type=str, required=True)
+    parser.add_argument("bank_code", type=str, required=True)
+    parser.add_argument("bank_name", type=str, required=True)
+    parser.add_argument("amount", type=str, required=True)
+    parser.add_argument("transfer_ref", type=str, required=True)
+#end class

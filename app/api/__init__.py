@@ -17,6 +17,8 @@ import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from app.config import config
+# import logging config immediately
+from app.config import logging
 
 db = SQLAlchemy()
 ma = Marshmallow()
@@ -36,7 +38,6 @@ def create_app(config_name):
     db.init_app(app)
     ma.init_app(app)
     celery.conf.update(app.config) # update celery with flask application configuration
-
 
     if not app.testing and not app.debug:
         sentry_sdk.init(

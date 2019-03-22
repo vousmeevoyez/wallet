@@ -63,6 +63,23 @@ class BaseTestCase(TestCase):
 
         self.user = user
 
+    def _dict_to_url_query(self, params):
+        # pattern ?key=value
+        query = ""
+        pattern = "{}={}"
+        counter = 1
+        for key, value in params.items():
+            query = query + pattern.format(key, value)
+            if counter == 1:
+                query = "?" + query
+
+            if counter != len(params):
+                query = query + "&"
+            #end if
+            counter += 1
+        #end for
+        return query
+
     """
         API CALL
     """
@@ -444,6 +461,112 @@ class BaseTestCase(TestCase):
             BASE_URL + "/wallets/" + wallet_id + "/qr/checkout",
             data=dict(
                 qr_string=params["qr_string"],
+            ),
+            headers=headers
+        )
+    #end def
+
+    """
+        BNI UTILITY
+    """
+    def check_bni_balance(self, account_no, access_token):
+        """ Api Call for getting bni account balance """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.get(
+            BASE_URL + "/banks/bni/balance/" + account_no,
+            headers=headers
+        )
+    #end def
+
+    def check_bni_inquiry(self, account_no, access_token):
+        """ Api Call for getting bni account information """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.get(
+            BASE_URL + "/banks/bni/inquiry/" + account_no,
+            headers=headers
+        )
+    #end def
+
+    def check_bni_payment(self, reference_number, access_token):
+        """ Api Call for getting bni reference number"""
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.get(
+            BASE_URL + "/banks/bni/payment/" + reference_number,
+            headers=headers
+        )
+    #end def
+
+    def void_bni_payment(self, params, access_token):
+        """ Api Call for cancelling bni transfer"""
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.delete(
+            BASE_URL + "/banks/bni/payment/" + params["reference_number"],
+            data=dict(
+                account_no=params["account_no"],
+                amount=params["amount"]
+            ),
+            headers=headers
+        )
+    #end def
+
+    def bni_do_payment(self, params, access_token):
+        """ Api Call for do payment """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.post(
+            BASE_URL + "/banks/bni/payment/",
+            data=dict(
+                method=params["method"],
+                source_account=params["source_account"],
+                account_no=params["account_no"],
+                amount=params["amount"],
+                email=params["email"],
+                clearing_code=params["clearing_code"],
+                account_name=params["account_name"],
+                address=params["address"],
+                charge_mode=params["charge_mode"],
+            ),
+            headers=headers
+        )
+    #end def
+
+    def bni_interbank_inquiry(self, params, access_token):
+        """ Api Call for do bni interbank inquiry"""
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        # build argument query
+        query = self._dict_to_url_query(params)
+        return self.client.get(
+            BASE_URL + "/banks/bni/interbank/payment/{}".format(query),
+            headers=headers
+        )
+    #end def
+
+    def bni_interbank_payment(self, params, access_token):
+        """ Api Call for do bni interbank payment"""
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.post(
+            BASE_URL + "/banks/bni/interbank/payment/",
+            data=dict(
+                source_account=params["source_account"],
+                account_no=params["account_no"],
+                account_name=params["account_name"],
+                amount=params["amount"],
+                bank_code=params["bank_code"],
+                bank_name=params["bank_name"],
+                transfer_ref=params["transfer_ref"]
             ),
             headers=headers
         )

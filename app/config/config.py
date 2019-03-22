@@ -401,7 +401,7 @@ class ProductionConfig(Config):
     PRESERVE_CONTEXT_ON_EXCEPTION = False
 
     SENTRY_CONFIG = Config.SENTRY_CONFIG
-    SENTRY_CONFIG["dsn"] = "https://c864361a612b47a3827e2c5b3280a727:24dd1b18103842159d31e273a369ce56@sentry.io/1385947"
+    SENTRY_CONFIG["dsn"] = os.environ.get("SENTRY_DSN")
 #end class
 
 

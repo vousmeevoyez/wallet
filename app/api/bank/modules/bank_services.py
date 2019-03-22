@@ -32,6 +32,18 @@ class BankServices:
         return response
     #end def
 
+    def _extract_error(self, obj, error_key=None):
+        error_message = ""
+        if type(obj) == dict:
+            for key, value in obj[error_key].iteritems():
+                if key == "parameters":
+                    for key, value in value.iteritems():
+                        if key == "errorMessage":
+                            error_message = value
+        else:
+            error_message = obj.message
+        return error_message
+
     """
         BNI
     """
@@ -42,10 +54,9 @@ class BankServices:
                 "account_no" : account_no
             })
         except ApiError as error:
-            error_msg =\
-            error.original_exception["getBalanceResponse"]["parameters"]["errorMessage"]
+            message = self._extract_error(error.original_exception, "getBalanceResponse")
             raise UnprocessableEntity(ERROR_CONFIG["BANK_PROCESS_FAILED"]["TITLE"],
-                                      error_msg)
+                                      message)
         return response
     #end def
 
@@ -56,10 +67,10 @@ class BankServices:
                 "account_no" : account_no
             })
         except ApiError as error:
-            error_msg =\
-            error.original_exception["getInHouseInquiryResponse"]["parameters"]["errorMessage"]
+            message = self._extract_error(error.original_exception,
+                                          "getInHouseInquiryResponse")
             raise UnprocessableEntity(ERROR_CONFIG["BANK_PROCESS_FAILED"]["TITLE"],
-                                      error_msg)
+                                      message)
         return response
     #end def
 
@@ -70,10 +81,10 @@ class BankServices:
                 "request_ref" : reference_number
             })
         except ApiError as error:
-            error_msg =\
-            error.original_exception["getPaymentStatusResponse"]["parameters"]["errorMessage"]
+            message = self._extract_error(error.original_exception,
+                                          "getPaymentStatusResponse")
             raise UnprocessableEntity(ERROR_CONFIG["BANK_PROCESS_FAILED"]["TITLE"],
-                                      error_msg)
+                                      message)
         return response
     #end def
 
@@ -86,10 +97,46 @@ class BankServices:
                 "amount"      : amount
             })
         except ApiError as error:
-            error_msg =\
-            error.original_exception["holdAmountResponse"]["parameters"]["errorMessage"]
+            message = self._extract_error(error.original_exception,
+                                          "holdAmountResponse")
             raise UnprocessableEntity(ERROR_CONFIG["BANK_PROCESS_FAILED"]["TITLE"],
-                                      error_msg)
+                                      message)
         return response
     #end def
+
+    def do_payment(self, params):
+        """ execute do payment """
+        try:
+            response = CoreBank().do_payment(params)
+        except ApiError as error:
+            message = self._extract_error(error.original_exception,
+                                          "doPaymentResponse")
+            raise UnprocessableEntity(ERROR_CONFIG["BANK_PROCESS_FAILED"]["TITLE"],
+                                      message)
+        return response
+    #end try
+
+    def interbank_inquiry(self, params):
+        """ interbank inquiry"""
+        try:
+            response = CoreBank().get_interbank_inquiry(params)
+        except ApiError as error:
+            message = self._extract_error(error.original_exception,
+                                          "getInterbankInquiryResponse")
+            raise UnprocessableEntity(ERROR_CONFIG["BANK_PROCESS_FAILED"]["TITLE"],
+                                      message)
+        return response
+    #end try
+
+    def interbank_payment(self, params):
+        """ interbank payment """
+        try:
+            response = CoreBank().get_interbank_payment(params)
+        except ApiError as error:
+            message = self._extract_error(error.original_exception,
+                                          "getInterbankPaymentResponse")
+            raise UnprocessableEntity(ERROR_CONFIG["BANK_PROCESS_FAILED"]["TITLE"],
+                                      message)
+        return response
+    #end try
 #end class
