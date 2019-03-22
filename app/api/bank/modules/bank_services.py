@@ -35,7 +35,7 @@ class BankServices:
     def _extract_error(self, obj, error_key=None):
         error_message = ""
         if type(obj) == dict:
-            for key, value in obj[error_key].iteritems():
+            for key, value in obj[error_key].items():
                 if key == "parameters":
                     for key, value in value.iteritems():
                         if key == "errorMessage":
