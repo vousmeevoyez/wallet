@@ -226,8 +226,8 @@ class WalletServices:
         #end if
 
         # second generate random verify otp number to user phone
-        start_range = 1000
-        end_range = 9999
+        start_range = 100000
+        end_range = 999999
         otp_code = random.randint(start_range, end_range)
 
         # third add record to database contain hashed otp code
