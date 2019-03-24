@@ -1,8 +1,8 @@
-"""init tables
+"""new structure
 
-Revision ID: 554bbfa8bd08
+Revision ID: bf2526d1ff5c
 Revises: 
-Create Date: 2019-02-21 17:11:53.902769
+Create Date: 2019-03-24 12:36:42.198976
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '554bbfa8bd08'
+revision = 'bf2526d1ff5c'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -103,10 +103,7 @@ def upgrade():
     sa.ForeignKeyConstraint(['bank_id'], ['bank.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('account_no'),
-    sa.UniqueConstraint('id'),
-    sa.UniqueConstraint('label'),
-    sa.UniqueConstraint('name')
+    sa.UniqueConstraint('id')
     )
     op.create_table('payment',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -120,8 +117,7 @@ def upgrade():
     sa.Column('channel_id', postgresql.UUID(as_uuid=True), nullable=True),
     sa.ForeignKeyConstraint(['channel_id'], ['payment_channel.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('id'),
-    sa.UniqueConstraint('ref_number')
+    sa.UniqueConstraint('id')
     )
     op.create_table('wallet',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -158,6 +154,7 @@ def upgrade():
     op.create_table('transaction',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('wallet_id', postgresql.UUID(as_uuid=True), nullable=True),
+    sa.Column('last_balance', sa.Float(), nullable=True),
     sa.Column('amount', sa.Float(), nullable=True),
     sa.Column('transaction_type', sa.Integer(), nullable=True),
     sa.Column('notes', sa.String(length=255), nullable=True),

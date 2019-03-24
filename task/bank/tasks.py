@@ -101,8 +101,11 @@ class BankTask(celery.Task):
         # get bank account information
         bank_account = BankAccount.query.filter_by(account_no=bank_account_no).first()
 
+        # convert amount to positive
+        amount = abs(int(payment.amount))
+
         transfer_payload = {
-            "amount"         : abs(int(payment.amount)), # BANK CODE
+            "amount"         : amount, # BANK CODE
             "bank_code"      : bank_account.bank.code, # BANK CODE
             "source_account" : BNI_OPG_CONFIG["MASTER_ACCOUNT"], # MASTER ACCOUNT ID
             "account_no"     : bank_account_no# destination account bank transfer
@@ -131,7 +134,7 @@ class BankTask(celery.Task):
             # DEDUCT BALANCE
             debit_trx = TransactionCore.debit_transaction(wallet,
                                                           str(payment.id),
-                                                          payment.amount,
+                                                          amount,
                                                           "TRANSFER_OUT", transfer_notes)
 
             if fee_payment_id is not None:
@@ -139,7 +142,7 @@ class BankTask(celery.Task):
                 fee_notes = "Biaya Transaksi"
                 fee_trx = TransactionCore.debit_transaction(wallet,
                                                             str(fee_payment.id),
-                                                            fee_payment.amount,
+                                                            abs(fee_payment.amount),
                                                             "TRANSFER_FEE",
                                                             fee_notes)
         except TransactionError as error:

@@ -57,7 +57,8 @@ class TransactionCore:
             wallet_id=wallet.id,
             amount=amount,
             transaction_type=transaction_type,
-            notes=notes
+            notes=notes,
+            balance=wallet.balance+amount
         )
         try:
             db.session.add(debit_transaction)
@@ -89,7 +90,8 @@ class TransactionCore:
             wallet_id=wallet.id,
             amount=amount,
             transaction_type=transaction_type,
-            notes=notes
+            notes=notes,
+            balance=wallet.balance+amount
         )
         try:
             db.session.add(credit_transaction)

@@ -475,6 +475,7 @@ class Transaction(db.Model):
     id                 = db.Column(UUID(as_uuid=True), unique=True,
                                    primary_key=True, default=uid)
     wallet_id          = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
+    balance            = db.Column(db.Float, default=0)
     amount             = db.Column(db.Float, default=0)
     transaction_type   = db.Column(db.Integer) # withdraw / deposit / transfer_bank / transfer_va
     notes              = db.Column(db.String(255)) # transaction notes if there are

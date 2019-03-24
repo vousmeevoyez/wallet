@@ -49,7 +49,7 @@ class CallbackServices:
             args:
                 params -- parameter
         """
-        payment_amount = params["payment_amount"]
+        payment_amount = float(params["payment_amount"])
         reference_number = params["payment_ntb"]
         payment_channel_key = params["payment_channel_key"]
 
