@@ -326,9 +326,13 @@ class WalletServices:
             function to check and verify pin
         """
         # first make sure the old pin is correct
-        if self.wallet.check_pin(pin) is not True:
+        pin_status = self.wallet.check_pin(pin)
+        if pin_status == "INCORRECT":
             raise UnprocessableEntity(ERROR_CONFIG["INCORRECT_PIN"]["TITLE"],
                                       ERROR_CONFIG["INCORRECT_PIN"]["MESSAGE"])
+        elif pin_status == "MAX_ATTEMPT":
+            raise UnprocessableEntity(ERROR_CONFIG["MAX_ATTEMPT_PIN"]["TITLE"],
+                                      ERROR_CONFIG["MAX_ATTEMPT_PIN"]["MESSAGE"])
         #end if
         response = {
             "message" : "PIN VERIFIED"

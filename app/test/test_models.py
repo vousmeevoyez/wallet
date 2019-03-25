@@ -235,8 +235,29 @@ class WalletModelCase(BaseTestCase):
         # set pin
         wallet.set_pin("123456")
         # check pin
-        self.assertTrue(wallet.check_pin("123456") )
-        self.assertFalse(wallet.check_pin("123654") )
+        result = wallet.check_pin("123456")
+        self.assertEqual(result, "CORRECT")
+
+        result = wallet.check_pin("121456")
+        self.assertEqual(result, "INCORRECT")
+
+        result = wallet.check_pin("121456")
+        self.assertEqual(result, "INCORRECT")
+
+        result = wallet.check_pin("121456")
+        self.assertEqual(result, "INCORRECT")
+
+        result = wallet.check_pin("121456")
+        self.assertEqual(result, "MAX_ATTEMPT")
+
+        result = wallet.check_pin("121456")
+        self.assertEqual(result, "MAX_ATTEMPT")
+
+        result = wallet.check_pin("123456")
+        self.assertEqual(result, "MAX_ATTEMPT")
+
+        result = wallet.check_pin("000000")
+        self.assertEqual(result, "MAX_ATTEMPT")
 
     def test_va_relationship(self):
         # create dummy wallet here
@@ -719,5 +740,57 @@ class PaymentModelCase(BaseTestCase):
         self.assertEqual(len(payments), 2)
     #end def
 #end class
+
+class IncorrectWalletPin(BaseTestCase):
+    def test_incorrect_pin(self):
+        """ 
+            simulate incorrect pin where person enter incorrect pin 3 times
+        """
+        # create wallet
+        wallet = Wallet()
+        db.session.add(wallet)
+        db.session.commit()
+
+        # first check and make sure there's no incorrect pin record
+        result = IncorrectPin.query.filter(IncorrectPin.wallet_id==wallet.id,
+                                           IncorrectPin.valid_until >
+                                           datetime.now()).first()
+        self.assertEqual(result, None)
+
+        # user enter incorrect pin create a incorrect pin record here
+        # this record valid for next 60 minutes
+        valid_until = datetime.now() + timedelta(minutes=60)
+        incorrect_attempt = IncorrectPin(
+            wallet_id=wallet.id,
+            valid_until=valid_until
+        )
+        db.session.add(incorrect_attempt)
+        db.session.commit()
+
+        # second check and make sure there's incorrect pin record
+        incorrect_pin = IncorrectPin.query.filter(IncorrectPin.wallet_id==wallet.id,
+                                           IncorrectPin.valid_until >
+                                           datetime.now()).first()
+        self.assertEqual(incorrect_pin.attempt, 1)
+
+        # update incorrect pin attempt
+        incorrect_pin.attempt += 1
+        db.session.commit()
+
+        # check and make sure there's incorrect pin record
+        incorrect_pin = IncorrectPin.query.filter(IncorrectPin.wallet_id==wallet.id,
+                                           IncorrectPin.valid_until >
+                                           datetime.now()).first()
+        self.assertEqual(incorrect_pin.attempt, 2)
+
+        # update incorrect pin attempt
+        incorrect_pin.attempt += 1
+        db.session.commit()
+
+        # check and make sure there's incorrect pin record
+        result =\
+        IncorrectPin.query.filter(IncorrectPin.wallet_id==wallet.id).first()
+        print(result)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

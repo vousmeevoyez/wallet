@@ -37,9 +37,13 @@ class WithdrawServices:
                                   ERROR_CONFIG["WALLET_NOT_FOUND"]["MESSAGE"])
         #end if
 
-        if wallet_record.check_pin(pin) is not True:
+        pin_status = wallet_record.check_pin(pin)
+        if pin_status == "INCORRECT":
             raise UnprocessableEntity(ERROR_CONFIG["INCORRECT_PIN"]["TITLE"],
                                       ERROR_CONFIG["INCORRECT_PIN"]["MESSAGE"])
+        elif pin_status == "MAX_ATTEMPT":
+            raise UnprocessableEntity(ERROR_CONFIG["MAX_PIN_ATTEMPT"]["TITLE"],
+                                      ERROR_CONFIG["MAX_PIN_ATTEMPT"]["MESSAGE"])
         #end if
 
         self.va_type = VaType.query.filter_by(key="DEBIT").first()

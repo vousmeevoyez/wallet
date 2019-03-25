@@ -69,8 +69,8 @@ class Config:
 
     VIRTUAL_ACCOUNT_CONFIG = {
         "BNI" : {
-            "CREDIT_VA_TIMEOUT"  : 4350, # 1 year
-            "DEBIT_VA_TIMEOUT": 5, # 10 minutes cardless
+            "CREDIT_VA_TIMEOUT": 4350, # 1 year
+            "DEBIT_VA_TIMEOUT" : 5, # 10 minutes cardless
         }
     }
 
@@ -89,6 +89,8 @@ class Config:
             "ONLINE"   : 6500
         },
         "OTP_TIMEOUT"        : 2, # set otp timeout in minutes
+        "INCORRECT_TIMEOUT"  : os.getenv('INCORRECT_TIMEOUT') or 60, # set wallet locking timeout in minutes
+        "INCORRECT_RETRY"    : os.getenv('INCORRECT_RETRY') or 3, # set max pin retry
         "QR_SECRET_KEY"      : "1#$@!%2jajdasnknvxivodisufu039021ofjldsjfa@@!"
     }
 
@@ -228,6 +230,10 @@ class Config:
         "INCORRECT_PIN" : {
             "TITLE"   : "INCORRECT_PIN",
             "MESSAGE" : "Incorrect Pin"
+        },
+        "MAX_PIN_ATTEMPT" : {
+            "TITLE"   : "MAX_PIN_ATTEMPT",
+            "MESSAGE" : "Entered an incorrect PIN too many times"
         },
         "UNMATCH_PIN" : {
             "TITLE"   : "UNMATCH_PIN",

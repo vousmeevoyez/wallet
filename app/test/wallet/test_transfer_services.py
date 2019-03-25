@@ -143,6 +143,30 @@ class TestTransferServices(BaseTestCase):
             result = TransferServices(str(self.source.id), "111111",
                                       str(self.destination.id)).internal_transfer(params)
 
+    def test_internal_transfer_failed_source_max_wrong_pin(self):
+        """ test function to create main transaction """
+        params = {
+            "amount" : 1,
+            "notes" : "Some transfer notes"
+        }
+
+        with self.assertRaises(UnprocessableEntity):
+            result = TransferServices(str(self.source.id), "111111",
+                                      str(self.destination.id)).internal_transfer(params)
+
+        with self.assertRaises(UnprocessableEntity):
+            result = TransferServices(str(self.source.id), "111111",
+                                      str(self.destination.id)).internal_transfer(params)
+
+        with self.assertRaises(UnprocessableEntity):
+            result = TransferServices(str(self.source.id), "111111",
+                                      str(self.destination.id)).internal_transfer(params)
+
+        with self.assertRaises(UnprocessableEntity):
+            result = TransferServices(str(self.source.id), "111111",
+                                      str(self.destination.id)).internal_transfer(params)
+
+
     def test_internal_transfer_failed_source_insufficient_balance(self):
         """ test function to create main transaction """
         # create sourc wallet first

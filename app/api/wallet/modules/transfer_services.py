@@ -51,9 +51,13 @@ class TransferServices:
                                       ERROR_CONFIG["WALLET_LOCKED"]["MESSAGE"])
         #end if
 
-        if source_wallet.check_pin(pin) is not True:
+        pin_status = source_wallet.check_pin(pin)
+        if pin_status == "INCORRECT":
             raise UnprocessableEntity(ERROR_CONFIG["INCORRECT_PIN"]["TITLE"],
                                       ERROR_CONFIG["INCORRECT_PIN"]["MESSAGE"])
+        elif pin_status == "MAX_ATTEMPT":
+            raise UnprocessableEntity(ERROR_CONFIG["MAX_PIN_ATTEMPT"]["TITLE"],
+                                      ERROR_CONFIG["MAX_PIN_ATTEMPT"]["MESSAGE"])
         #end if
 
         if destination is not None:

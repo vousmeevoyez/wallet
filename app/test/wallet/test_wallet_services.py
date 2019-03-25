@@ -59,6 +59,23 @@ class TestWalletServices(BaseTestCase):
         with self.assertRaises(UnprocessableEntity):
             result = WalletServices(self.wallet_id).remove()
 
+    def test_wallet_check_pin(self):
+        """ test checking wallet balance"""
+        result = WalletServices(self.wallet_id).check("123456")
+        self.assertEqual(result[0]['data']["message"], "PIN VERIFIED")
+
+        with self.assertRaises(UnprocessableEntity):
+            result = WalletServices(self.wallet_id).check("113456")
+
+        with self.assertRaises(UnprocessableEntity):
+            result = WalletServices(self.wallet_id).check("113456")
+
+        with self.assertRaises(UnprocessableEntity):
+            result = WalletServices(self.wallet_id).check("113456")
+
+        with self.assertRaises(UnprocessableEntity):
+            result = WalletServices(self.wallet_id).check("113456")
+
     def test_wallet_balance(self):
         """ test checking wallet balance"""
         result = WalletServices(self.wallet_id).check_balance()[0]["data"]

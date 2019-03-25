@@ -162,6 +162,7 @@ class Wallet(db.Model):
     user             = db.relationship("User", back_populates="wallets") # many to one
     virtual_accounts = db.relationship("VirtualAccount", cascade="delete") # one to many
     forgot_pin       = db.relationship("ForgotPin") # one to many
+    incorrect_pin    = db.relationship("IncorrectPin") # one to many
     withdraw         = db.relationship("Withdraw") # one to many
     transactions     = db.relationship("Transaction", back_populates="wallet") # one to many
 
@@ -218,7 +219,42 @@ class Wallet(db.Model):
         """
             Function to check wallet pin
         """
-        return check_password_hash(self.pin_hash, pin)
+        status = "INCORRECT"
+
+        # check the pin
+        is_pin_correct = check_password_hash(self.pin_hash, pin)
+        # first check is there incorrect pin record or not
+        incorrect_record= IncorrectPin.query.filter(
+            IncorrectPin.wallet_id==self.id,
+            IncorrectPin.valid_until > datetime.now()
+        ).first()
+        # if pin incorrect
+        if is_pin_correct is False:
+            if incorrect_record is None:
+                # create incorrect record here
+                valid_until = datetime.now() +\
+                timedelta(minutes=int(WALLET_CONFIG['INCORRECT_TIMEOUT']))
+                incorrect_record = IncorrectPin(
+                    wallet_id=self.id,
+                    valid_until=valid_until
+                )
+                db.session.add(incorrect_record)
+                db.session.commit()
+            # if incorrect pin already happen and not reach maximal retry increment
+            else:
+                if incorrect_record.attempt <\
+                int(WALLET_CONFIG["INCORRECT_RETRY"]):
+                    incorrect_record.attempt += 1
+                    db.session.commit()
+                else:
+                    # max retry reached
+                    status = "MAX_ATTEMPT"
+        else:
+            if incorrect_record is not None:
+                status = "MAX_ATTEMPT"
+            else:
+                status = "CORRECT"
+        return status
     #end def
 
     @staticmethod
@@ -619,3 +655,17 @@ class Withdraw(db.Model):
         return '<Withdraw {} {} {} {}>'.format(self.id, self.amount, self.wallet_id, self.status)
     #end def
 #end class
+
+class IncorrectPin(db.Model):
+    """
+        Class model for Wallet Pin
+    """
+    id          = db.Column(db.Integer, primary_key=True)
+    attempt     = db.Column(db.Integer, default=1)
+    created_at  = db.Column(db.DateTime, default=now)
+    valid_until = db.Column(db.DateTime)
+    wallet_id   = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
+
+    def __repr__(self):
+        return '<IncorrectPin {} {} {}>'.format(self.id, self.attempt, self.wallet_id)
+    #end def
