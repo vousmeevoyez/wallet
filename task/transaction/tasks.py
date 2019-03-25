@@ -72,6 +72,12 @@ class TransactionTask(celery.Task):
             db.session.add(log)
         #end if
 
+        transaction = Transaction.query.filter_by(payment_id=payment.id).first()
+        if transaction is None:
+            # should abort the transfer
+            print("transaction not found")
+        #end if
+
         # update log state here
         log.state = 1 # PENDING
         log.created_at = now
@@ -93,6 +99,10 @@ class TransactionTask(celery.Task):
             payment.status = PAYMENT_STATUS_CONFIG["DONE"]
             log.state = 2 # COMPLETED
             log.created_at = now
+
+            # added transaction balance
+            transaction.balance = wallet.balance
+
             # commit everything here
             db.session.commit()
         except (IntegrityError, OperationalError) as error:
