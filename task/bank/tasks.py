@@ -136,6 +136,8 @@ class BankTask(celery.Task):
                                                           str(payment.id),
                                                           amount,
                                                           "TRANSFER_OUT", transfer_notes)
+            # release lock
+            db.session.commit()
 
             if fee_payment_id is not None:
                 wallet = \
@@ -148,6 +150,8 @@ class BankTask(celery.Task):
                                                             abs(fee_payment.amount),
                                                             "TRANSFER_FEE",
                                                             fee_notes)
+                # release lock
+                db.session.commit()
         except TransactionError as error:
             print(error)
             db.session.rollback()
