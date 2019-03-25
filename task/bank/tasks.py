@@ -138,6 +138,9 @@ class BankTask(celery.Task):
                                                           "TRANSFER_OUT", transfer_notes)
 
             if fee_payment_id is not None:
+                wallet = \
+                Wallet.query.filter_by(id=payment.source_account).with_for_update().first()
+
                 fee_payment = Payment.query.filter_by(id=fee_payment_id).first()
                 fee_notes = "Biaya Transaksi"
                 fee_trx = TransactionCore.debit_transaction(wallet,
