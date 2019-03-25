@@ -51,6 +51,9 @@ class TransactionCore:
             notes = transfer_notes
         #end if
 
+        # get latest wallet record here
+        wallet = Wallet.query.filter_by(id=wallet.id).first()
+
         # debit (-) we increase balance
         debit_transaction = Transaction(
             payment_id=payment_id,
@@ -83,6 +86,9 @@ class TransactionCore:
         else:
             notes = transfer_notes
         #end if
+
+        # get latest wallet record here
+        wallet = Wallet.query.filter_by(id=wallet.id).first()
 
         # credit (+) we increase balance
         credit_transaction = Transaction(
