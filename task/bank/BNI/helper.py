@@ -460,7 +460,7 @@ class CoreBank:
         try:
             post_resp = self._post(api_name, payload)
         except ServicesFailed as error:
-            raise ApiError(error)
+            raise ApiError(error.original_exception)
         #end if
 
         # access the data here
@@ -580,7 +580,7 @@ class CoreBank:
             try:
                 response = self.do_payment(params)
             except ApiError as error:
-                raise ApiError(error)
+                raise ApiError(error.original_exception)
         else:
             try:
                 interbank_response = self.get_interbank_inquiry(params)
@@ -588,7 +588,7 @@ class CoreBank:
                 # should raise invalid account
                 text = "Account {} on {} not found".format(params["account_no"], \
                                                            params["bank_code"])
-                raise ApiError(error)
+                raise ApiError(error.original_exception)
             #end try
 
             params["bank_name"] = interbank_response['data']['inquiry_info']["transfer_bank_name"]
@@ -598,7 +598,7 @@ class CoreBank:
             try:
                 payment_response = self.get_interbank_payment(params)
             except ApiError as error:
-                raise ApiError(error)
+                raise ApiError(error.original_exception)
             #end try
             response["data"] = payment_response["data"]
         return response
@@ -633,7 +633,7 @@ class CoreBank:
         try:
             post_resp = self._post(api_name, payload)
         except ServicesFailed as error:
-            raise ApiError(error)
+            raise ApiError(error.original_exception)
         #end try
 
         # access the data here
@@ -690,7 +690,7 @@ class CoreBank:
         try:
             post_resp = self._post(api_name, payload)
         except ServicesFailed as error:
-            raise ApiError(error)
+            raise ApiError(error.original_exception)
         #end try
 
         # access the data here
