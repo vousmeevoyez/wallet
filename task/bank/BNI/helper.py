@@ -431,13 +431,14 @@ class CoreBank:
         destination_account_name    = params["account_name" ]
         destination_account_address = params["address"      ]
         charge_mode                 = params["charge_mode"  ]
+        ref_number                  = params["ref_number"   ] or \
+        self._generate_ref_number()
 
         # build payload here
         now = datetime.utcnow()
         value_date = now.strftime("%Y%m%d%H%M%S")
         currency = "IDR"
 
-        ref_number = self._generate_ref_number()
         payload = {
             "customerReferenceNumber" : ref_number,
             "paymentMethod"           : payment_method, # 0 IN_HOUSE // 1 RTGS // 3 CLEARING
@@ -618,9 +619,10 @@ class CoreBank:
         source_account = params["source_account"]
         bank_code      = params["bank_code"     ]
         account_no     = params["account_no"    ]
+        ref_number     = params["ref_number"    ] or \
+        self._generate_ref_number()
 
         # build payload here
-        ref_number = self._generate_ref_number()
         payload = {
             "customerReferenceNumber": ref_number,
             "accountNum"             : source_account,
@@ -671,9 +673,10 @@ class CoreBank:
         bank_name      = params["bank_name"     ]
         amount         = params["amount"        ]
         transfer_ref   = params["transfer_ref"  ]
+        ref_number     = params["ref_number"    ] or \
+        self._generate_ref_number()
 
         # build payload here
-        ref_number = self._generate_ref_number()
         payload = {
             "customerReferenceNumber": ref_number,
             "amount"                 : amount,

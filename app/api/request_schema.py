@@ -129,6 +129,7 @@ class BNIUtilityDoPaymentRequestSchema:
     parser.add_argument("account_name", type=str, required=True)
     parser.add_argument("address", type=str, required=True)
     parser.add_argument("charge_mode", type=str, required=True)
+    parser.add_argument("ref_number", type=str)
 #end class
 
 class BNIUtilityInterbankInquiryRequestSchema:
@@ -137,6 +138,7 @@ class BNIUtilityInterbankInquiryRequestSchema:
     parser.add_argument("source_account", location='args', type=str, required=True)
     parser.add_argument("bank_code", location='args', type=str, required=True)
     parser.add_argument("account_no", location='args', type=str, required=True)
+    parser.add_argument("ref_number", location='args', type=str)
 #end class
 
 class BNIUtilityInterbankPaymentRequestSchema:
@@ -149,4 +151,5 @@ class BNIUtilityInterbankPaymentRequestSchema:
     parser.add_argument("bank_name", type=str, required=True)
     parser.add_argument("amount", type=str, required=True)
     parser.add_argument("transfer_ref", type=str, required=True)
+    parser.add_argument("ref_number", type=str)
 #end class

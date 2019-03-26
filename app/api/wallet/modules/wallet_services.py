@@ -331,8 +331,8 @@ class WalletServices:
             raise UnprocessableEntity(ERROR_CONFIG["INCORRECT_PIN"]["TITLE"],
                                       ERROR_CONFIG["INCORRECT_PIN"]["MESSAGE"])
         elif pin_status == "MAX_ATTEMPT":
-            raise UnprocessableEntity(ERROR_CONFIG["MAX_ATTEMPT_PIN"]["TITLE"],
-                                      ERROR_CONFIG["MAX_ATTEMPT_PIN"]["MESSAGE"])
+            raise UnprocessableEntity(ERROR_CONFIG["MAX_PIN_ATTEMPT"]["TITLE"],
+                                      ERROR_CONFIG["MAX_PIN_ATTEMPT"]["MESSAGE"])
         #end if
         response = {
             "message" : "PIN VERIFIED"
