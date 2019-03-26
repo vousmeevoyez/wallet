@@ -248,7 +248,7 @@ class WalletModelCase(BaseTestCase):
         self.assertEqual(result, "INCORRECT")
 
         result = wallet.check_pin("121456")
-        self.assertEqual(result, "MAX_ATTEMPT")
+        self.assertEqual(result, "INCORRECT")
 
         result = wallet.check_pin("121456")
         self.assertEqual(result, "MAX_ATTEMPT")

@@ -205,7 +205,7 @@ class WalletSchema(ma.Schema):
     user_id    = fields.Int(load_only=True)
     pin        = fields.Str(required=True, attribute="pin_hash",
                             validate=(cannot_be_blank, validate_pin), load_only=True)
-    created_at = fields.DateTime('%Y-%m-%d %H:%M:%S', load_only=True)
+    created_at = fields.DateTime(load_only=True)
     status     = fields.Method("bool_to_status")
     balance    = fields.Float()
     virtual_accounts = fields.Nested(VirtualAccountSchema, many=True)
@@ -244,7 +244,7 @@ class UserSchema(ma.Schema):
     password    = fields.Str(required=True, attribute="password_hash", validate=cannot_be_blank, load_only=True)
     pin         = fields.Str(required=True, validate=(cannot_be_blank,
                                                       validate_pin), load_only=True)
-    created_at  = fields.DateTime('%Y-%m-%d %H:%M:%S')
+    created_at  = fields.DateTime()
     status      = fields.Method("bool_to_status")
     wallets     = fields.Nested(WalletSchema, many=True)
 
@@ -404,7 +404,7 @@ class TransactionSchema(ma.Schema):
     instructions     = fields.List(fields.Nested("TransactionSchema"),
                                    allow_none=True)
     payment_details  = fields.Method("payment_id_to_details")
-    created_at       = fields.DateTime('%Y-%m-%d %H:%M:%S')
+    created_at       = fields.DateTime()
 
     @validates('notes')
     def validate_notes(self, notes):
@@ -578,7 +578,7 @@ class ExternalLogSchema(ma.Schema):
     request    = fields.Str(dump_only=True)
     response   = fields.Str(dump_only=True)
     api_type   = fields.Method("api_type_to_type", dump_only=True)
-    created_at = fields.DateTime('%Y-%m-%d %H:%M:%S')
+    created_at = fields.DateTime()
     response_time = fields.Float(dump_only=True)
 
     def bool_to_status(self, obj):
