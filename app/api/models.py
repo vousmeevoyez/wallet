@@ -242,7 +242,7 @@ class Wallet(db.Model):
                 db.session.commit()
             # if incorrect pin already happen and not reach maximal retry increment
             else:
-                if incorrect_record.attempt <\
+                if incorrect_record.attempt <=\
                 int(WALLET_CONFIG["INCORRECT_RETRY"]):
                     incorrect_record.attempt += 1
                     db.session.commit()

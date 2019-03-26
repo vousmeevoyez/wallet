@@ -108,7 +108,8 @@ class BankTask(celery.Task):
             "amount"         : amount, # BANK CODE
             "bank_code"      : bank_account.bank.code, # BANK CODE
             "source_account" : BNI_OPG_CONFIG["MASTER_ACCOUNT"], # MASTER ACCOUNT ID
-            "account_no"     : bank_account_no# destination account bank transfer
+            "account_no"     : bank_account_no,# destination account bank transfer
+            "ref_number"     : None # use system generated refnumber
         }
 
         try:
