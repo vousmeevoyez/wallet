@@ -21,6 +21,7 @@ from app.api.http_response import no_content
 from app.config import config
 # utility
 from app.api.utility.utils import validate_uuid
+from app.api.utility.utils import Notif
 # task
 from task.transaction.tasks import TransactionTask
 
@@ -68,6 +69,13 @@ class TransactionCore:
         #end try
         # should send queue here
         result = TransactionTask().transfer.delay(payment_id)
+        # send notification here
+        notif_status = Notif().send({
+            "wallet_id"        : str(wallet.id),
+            "amount"           : amount,
+            "transaction_type" : flag,
+            "notes"            : notes
+        })
         return debit_transaction
     #end def
 
@@ -100,6 +108,13 @@ class TransactionCore:
         #end try
         # send queue here
         result = TransactionTask().transfer.delay(payment_id)
+        # send notification here
+        notif_status = Notif().send({
+            "wallet_id"        : str(wallet.id),
+            "amount"           : amount,
+            "transaction_type" : flag,
+            "notes"            : notes
+        })
         return credit_transaction
     #end def
 #end class

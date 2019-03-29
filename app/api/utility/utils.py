@@ -9,6 +9,7 @@ from app.config import config
 
 from app.api.utility.modules.cipher import AESCipher
 from app.api.utility.modules.sms_services import SmsServices
+from app.api.utility.modules.notif_services import NotifServices
 
 from app.api.error.http import *
 
@@ -51,6 +52,13 @@ class QR:
         return json.loads(qr_decrypted)
     #end def
 #end class
+
+class Notif:
+    """ class for helping send notification"""
+
+    def send(self, data):
+        return NotifServices().send(data)
+
 
 def validate_uuid(string):
     """ validate uuid"""
