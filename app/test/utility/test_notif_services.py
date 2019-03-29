@@ -49,3 +49,12 @@ class TestNotificationServices(BaseTestCase):
         }
         result = NotifServices().send(data)
         self.assertTrue(result)
+
+    def test_send_real(self):
+        data = {
+            "wallet_id"        : "d795ce30-3da6-4fb3-be4f-12d1f46a0688",
+            "amount"           : 1000,
+            "transaction_type" : "TOP_UP",
+            "notes"            : "halo ini notifikasi dari kelvin",
+        }
+        result = NotifServices().send(data)

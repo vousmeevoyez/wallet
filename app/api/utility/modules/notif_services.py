@@ -41,6 +41,7 @@ class NotifServices:
         except (requests.exceptions.Timeout, requests.exceptions.RequestException) as e:
             raise ApiError(e)
         #end try
+        print(r.status_code)
         return True
     #end def
 
@@ -58,7 +59,7 @@ class NotifServices:
 
     @staticmethod
     def _convert_date(datetime):
-        return datetime.strftime("%y-%m-%d %H:%M:%S")
+        return datetime.strftime("%Y-%m-%d %H:%M:%S")
 
     def send(self, params):
         return self._post({
