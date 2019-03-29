@@ -489,7 +489,8 @@ class TestTransactionSchema(BaseTestCase):
         debit_trx = Transaction(
             wallet_id=wallet.id,
             amount=trx_amount,
-            payment_id=debit_payment.id
+            payment_id=debit_payment.id,
+            transaction_type=6
         )
         db.session.add(debit_trx)
         # deduct balance

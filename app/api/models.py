@@ -30,7 +30,7 @@ from app.api.error.authentication import SignatureExpiredError
 from app.api.error.authentication import InvalidTokenError
 from app.api.error.authentication import EmptyPayloadError
 
-now = datetime.utcnow()
+now = datetime.utcnow
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 WALLET_CONFIG = config.Config.WALLET_CONFIG
@@ -163,6 +163,7 @@ class Wallet(db.Model):
     virtual_accounts = db.relationship("VirtualAccount", cascade="delete") # one to many
     forgot_pin       = db.relationship("ForgotPin") # one to many
     incorrect_pin    = db.relationship("IncorrectPin") # one to many
+    wallet_lock      = db.relationship("WalletLock") # one to many
     withdraw         = db.relationship("Withdraw") # one to many
     transactions     = db.relationship("Transaction", back_populates="wallet") # one to many
 
@@ -181,10 +182,13 @@ class Wallet(db.Model):
         """
             Function to return wallet lock status
         """
-        if self.status == 3:
-            return False
-        else:
-            return True
+        wallet_lock = WalletLock.query.filter(
+            WalletLock.wallet_id == self.id,
+            WalletLock.lock_until > datetime.now(),
+            WalletLock.status == True
+        ).first()
+        # if is found then it means locked, but it ifs not it mean not unlocked
+        return bool(not wallet_lock)
     #end def
 
     def add_balance(self, amount):
@@ -198,14 +202,38 @@ class Wallet(db.Model):
         """
             Function to lock wallet
         """
-        self.status = 3
+        # first check if there are already existing lock or not
+        wallet_lock = WalletLock.query.filter(
+            WalletLock.wallet_id == self.id,
+            WalletLock.lock_until > datetime.now(),
+            WalletLock.status == True
+        ).first()
+
+        if wallet_lock is None:
+            # add lock record
+            lock_until = datetime.now() + \
+            timedelta(minutes=int(WALLET_CONFIG['LOCK_TIMEOUT']))
+
+            wallet_lock = WalletLock(
+                wallet_id=self.id,
+                lock_until=lock_until
+            )
+            db.session.add(wallet_lock)
+            db.session.commit()
     #end def
 
     def unlock(self):
         """
             Function to unlock wallet
         """
-        self.status = 1
+        wallet_lock = WalletLock.query.filter(
+            WalletLock.wallet_id == self.id,
+            WalletLock.lock_until > datetime.now(),
+            WalletLock.status == True
+        ).first()
+        # unlock it here
+        wallet_lock.status = False
+        db.session.commit()
     #end def
 
     def set_pin(self, pin):
@@ -221,37 +249,43 @@ class Wallet(db.Model):
         """
         status = "INCORRECT"
 
-        # check the pin
+        # first check pin hash
         is_pin_correct = check_password_hash(self.pin_hash, pin)
-        # first check is there incorrect pin record or not
+        # second check is there incorrect pin record or not
         incorrect_record= IncorrectPin.query.filter(
-            IncorrectPin.wallet_id==self.id,
+            IncorrectPin.wallet_id == self.id,
             IncorrectPin.valid_until > datetime.now()
         ).first()
         # if pin incorrect
         if is_pin_correct is False:
             if incorrect_record is None:
-                # create incorrect record here
-                valid_until = datetime.now() +\
+                # create first incorrect record here
+                # that valid for certain amount of time
+                valid_until = datetime.now() + \
                 timedelta(minutes=int(WALLET_CONFIG['INCORRECT_TIMEOUT']))
                 incorrect_record = IncorrectPin(
                     wallet_id=self.id,
-                    valid_until=valid_until
+                    valid_until=valid_until,
                 )
                 db.session.add(incorrect_record)
                 db.session.commit()
-            # if incorrect pin already happen and not reach maximal retry increment
             else:
-                if incorrect_record.attempt <=\
+                # if its already exist increment the attempt
+                incorrect_record.attempt = incorrect_record.attempt + 1
+                #print("number of attempt: {}".format(incorrect_record.attempt))
+                if incorrect_record.attempt > \
                 int(WALLET_CONFIG["INCORRECT_RETRY"]):
-                    incorrect_record.attempt += 1
-                    db.session.commit()
-                else:
-                    # max retry reached
-                    status = "MAX_ATTEMPT"
+                    if self.is_unlocked() is not True:
+                        status = "LOCKED"
+                    else:
+                        status = "MAX_ATTEMPT"
+                        # lock the account
+                        self.lock()
+                #end if
+                db.session.commit()
         else:
-            if incorrect_record is not None:
-                status = "MAX_ATTEMPT"
+            if self.is_unlocked() is not True:
+                status = "LOCKED"
             else:
                 status = "CORRECT"
         return status
@@ -664,8 +698,24 @@ class IncorrectPin(db.Model):
     attempt     = db.Column(db.Integer, default=1)
     created_at  = db.Column(db.DateTime, default=now)
     valid_until = db.Column(db.DateTime)
+    locked      = db.Column(db.Boolean, default=False)
     wallet_id   = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
 
     def __repr__(self):
         return '<IncorrectPin {} {} {}>'.format(self.id, self.attempt, self.wallet_id)
+    #end def
+
+class WalletLock(db.Model):
+    """
+        Class model for Wallet Lock
+    """
+    id          = db.Column(db.Integer, primary_key=True)
+    created_at  = db.Column(db.DateTime, default=now)
+    lock_until  = db.Column(db.DateTime)
+    status      = db.Column(db.Boolean, default=True) # ACTIVE | RELEASE
+    wallet_id   = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
+
+    def __repr__(self):
+        return '<WalletLock {} {} {}>'.format(self.created_at, self.lock_until,
+                                              self.wallet_id)
     #end def

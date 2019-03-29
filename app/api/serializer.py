@@ -397,6 +397,7 @@ class TransactionSchema(ma.Schema):
     id               = fields.Str()
     pin              = fields.Str(load_only=True, validate=validate_pin)
     wallet_id        = fields.Str()
+    types            = fields.Str(allow_none=True)
     balance          = fields.Float()
     amount           = fields.Float(validate=validate_amount)
     transaction_type = fields.Method("transaction_type_id_to_string")
@@ -405,6 +406,18 @@ class TransactionSchema(ma.Schema):
                                    allow_none=True)
     payment_details  = fields.Method("payment_id_to_details")
     created_at       = fields.DateTime()
+
+    @validates('types')
+    def validate_transfer_types(self, types):
+        """
+            function to validate transaction types
+            args :
+                transfer types
+        """
+        if types is not None:
+            if types not in ["PAYROLL"]:
+                raise ValidationError('Invalid Transfer Types')
+    #end def
 
     @validates('notes')
     def validate_notes(self, notes):
@@ -459,8 +472,10 @@ class TransactionSchema(ma.Schema):
             result = "TRANSFER_OUT"
         elif obj.transaction_type == 5:
             result = "RECEIVE_TRANSFER"
-        else:
+        elif obj.transaction_type == 6:
             result = "TRANSACTION_FEE"
+        elif obj.transaction_type == 7:
+            result = "PAYROLL"
         return result
     #end def
 

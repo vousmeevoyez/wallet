@@ -47,6 +47,19 @@ class WalletServices:
         #end if
         self.wallet = wallet_record
 
+    def _check_pin(self, pin):
+        pin_status = self.wallet.check_pin(pin)
+        if pin_status == "INCORRECT":
+            raise UnprocessableEntity(ERROR_CONFIG["INCORRECT_PIN"]["TITLE"],
+                                      ERROR_CONFIG["INCORRECT_PIN"]["MESSAGE"])
+        elif pin_status == "MAX_ATTEMPT":
+            raise UnprocessableEntity(ERROR_CONFIG["MAX_PIN_ATTEMPT"]["TITLE"],
+                                      ERROR_CONFIG["MAX_PIN_ATTEMPT"]["MESSAGE"])
+        elif pin_status == "LOCKED":
+            raise UnprocessableEntity(ERROR_CONFIG["WALLET_LOCKED"]["TITLE"],
+                                      ERROR_CONFIG["WALLET_LOCKED"]["MESSAGE"])
+        return pin_status
+
     @staticmethod
     def add(user, wallet, pin):
         """
@@ -185,10 +198,7 @@ class WalletServices:
         confirm_pin = params["confirm_pin"]
 
         # first make sure the old pin is correct
-        if self.wallet.check_pin(old_pin) is not True:
-            raise UnprocessableEntity(ERROR_CONFIG["INCORRECT_PIN"]["TITLE"],
-                                      ERROR_CONFIG["INCORRECT_PIN"]["MESSAGE"])
-        #end if
+        self._check_pin(old_pin)
 
         # second need to check pin and confirmation pin must same
         if pin != confirm_pin:
@@ -197,7 +207,7 @@ class WalletServices:
         #end if
 
         # third make sure the new pin is not the same with the old one
-        if self.wallet.check_pin(pin) is True:
+        if self._check_pin(pin) == "CORRECT":
             raise UnprocessableEntity(ERROR_CONFIG["DUPLICATE_PIN"]["TITLE"],
                                       ERROR_CONFIG["DUPLICATE_PIN"]["MESSAGE"])
         #end if
@@ -326,14 +336,8 @@ class WalletServices:
             function to check and verify pin
         """
         # first make sure the old pin is correct
-        pin_status = self.wallet.check_pin(pin)
-        if pin_status == "INCORRECT":
-            raise UnprocessableEntity(ERROR_CONFIG["INCORRECT_PIN"]["TITLE"],
-                                      ERROR_CONFIG["INCORRECT_PIN"]["MESSAGE"])
-        elif pin_status == "MAX_ATTEMPT":
-            raise UnprocessableEntity(ERROR_CONFIG["MAX_PIN_ATTEMPT"]["TITLE"],
-                                      ERROR_CONFIG["MAX_PIN_ATTEMPT"]["MESSAGE"])
-        #end if
+        pin_status = self._check_pin(pin)
+
         response = {
             "message" : "PIN VERIFIED"
         }

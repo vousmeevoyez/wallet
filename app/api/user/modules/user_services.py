@@ -121,12 +121,13 @@ class UserServices:
             })
 
         email = params["email"]
-        if self.user.email == email:
-            error.append({
-                "email" : [
-                    "email can't be the same with the old one"
-                ]
-            })
+        if email is not None:
+            if self.user.email == email:
+                error.append({
+                    "email" : [
+                        "email can't be the same with the old one"
+                    ]
+                })
 
         if error != []:
             raise UnprocessableEntity(ERROR_CONFIG["DUPLICATE_UPDATE_ENTRY"]["TITLE"],

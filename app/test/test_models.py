@@ -204,7 +204,6 @@ class WalletModelCase(BaseTestCase):
         db.session.commit()
 
         wallet.lock()
-        db.session.commit()
 
         # check lock here
         lock_status = wallet.is_unlocked()
@@ -218,11 +217,9 @@ class WalletModelCase(BaseTestCase):
         db.session.commit()
 
         wallet.lock()
-        db.session.commit()
 
         # unlock here
         wallet.unlock()
-        db.session.commit()
         lock_status = wallet.is_unlocked()
 
         # make sure the wallet is unlocked
@@ -234,13 +231,12 @@ class WalletModelCase(BaseTestCase):
         )
         # set pin
         wallet.set_pin("123456")
+
         # check pin
         result = wallet.check_pin("123456")
         self.assertEqual(result, "CORRECT")
 
-        result = wallet.check_pin("121456")
-        self.assertEqual(result, "INCORRECT")
-
+        # incorrect 3 times
         result = wallet.check_pin("121456")
         self.assertEqual(result, "INCORRECT")
 
@@ -252,12 +248,18 @@ class WalletModelCase(BaseTestCase):
 
         result = wallet.check_pin("121456")
         self.assertEqual(result, "MAX_ATTEMPT")
+
+        result = wallet.check_pin("121156")
+        self.assertEqual(result, "LOCKED")
 
         result = wallet.check_pin("123456")
-        self.assertEqual(result, "MAX_ATTEMPT")
+        self.assertEqual(result, "LOCKED")
 
-        result = wallet.check_pin("000000")
-        self.assertEqual(result, "MAX_ATTEMPT")
+        result = wallet.check_pin("123456")
+        self.assertEqual(result, "LOCKED")
+
+        result = wallet.check_pin("123456")
+        self.assertEqual(result, "LOCKED")
 
     def test_va_relationship(self):
         # create dummy wallet here

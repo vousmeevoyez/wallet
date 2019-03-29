@@ -89,9 +89,10 @@ class Config:
             "ONLINE"   : 6500
         },
         "OTP_TIMEOUT"        : 2, # set otp timeout in minutes
-        "INCORRECT_TIMEOUT"  : os.getenv('INCORRECT_TIMEOUT') or 60, # set wallet locking timeout in minutes
+        "INCORRECT_TIMEOUT"  : os.getenv('INCORRECT_TIMEOUT') or 5, # set wallet locking timeout in minutes
         "INCORRECT_RETRY"    : os.getenv('INCORRECT_RETRY') or 3, # set max pin retry
-        "QR_SECRET_KEY"      : "1#$@!%2jajdasnknvxivodisufu039021ofjldsjfa@@!"
+        "QR_SECRET_KEY"      : "1#$@!%2jajdasnknvxivodisufu039021ofjldsjfa@@!",
+        "LOCK_TIMEOUT"       : os.getenv('LOCK_TIMEOUT') or 5
     }
 
     TRANSACTION_CONFIG = {
@@ -101,7 +102,8 @@ class Config:
             "TRANSFER_IN" : 3, # transfer between user
             "TRANSFER_OUT": 4, # transfer to external system
             "RECEIVE_TRANSFER": 5,
-            "TRANSFER_FEE"    : 6 # internal deduction
+            "TRANSFER_FEE"    : 6,# internal deduction
+            "PAYROLL"         : 7 # payroll disbursement
         }
     }
 
@@ -234,6 +236,10 @@ class Config:
         "MAX_PIN_ATTEMPT" : {
             "TITLE"   : "MAX_PIN_ATTEMPT",
             "MESSAGE" : "Entered an incorrect PIN too many times"
+        },
+        "WALLET_LOCKED" : {
+            "TITLE"   : "WALLET_LOCKED",
+            "MESSAGE" : "Wallet is temporary locked"
         },
         "UNMATCH_PIN" : {
             "TITLE"   : "UNMATCH_PIN",

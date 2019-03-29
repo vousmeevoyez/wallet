@@ -46,11 +46,6 @@ class TransferServices:
                                   ERROR_CONFIG["WALLET_NOT_FOUND"]["MESSAGE"])
         #end if
 
-        if source_wallet.is_unlocked() is False:
-            raise UnprocessableEntity(ERROR_CONFIG["WALLET_LOCKED"]["TITLE"],
-                                      ERROR_CONFIG["WALLET_LOCKED"]["MESSAGE"])
-        #end if
-
         pin_status = source_wallet.check_pin(pin)
         if pin_status == "INCORRECT":
             raise UnprocessableEntity(ERROR_CONFIG["INCORRECT_PIN"]["TITLE"],
@@ -58,6 +53,9 @@ class TransferServices:
         elif pin_status == "MAX_ATTEMPT":
             raise UnprocessableEntity(ERROR_CONFIG["MAX_PIN_ATTEMPT"]["TITLE"],
                                       ERROR_CONFIG["MAX_PIN_ATTEMPT"]["MESSAGE"])
+        elif pin_status == "LOCKED":
+            raise UnprocessableEntity(ERROR_CONFIG["WALLET_LOCKED"]["TITLE"],
+                                      ERROR_CONFIG["WALLET_LOCKED"]["MESSAGE"])
         #end if
 
         if destination is not None:
@@ -128,6 +126,7 @@ class TransferServices:
         """ method to transfer money internally"""
         amount = params["amount"]
         transfer_notes = params["notes"]
+        transfer_types = params["types"] or "TRANSFER_IN"
 
         if float(amount) > float(self.source.balance):
             raise UnprocessableEntity(ERROR_CONFIG["INSUFFICIENT_BALANCE"]["TITLE"],
@@ -156,7 +155,7 @@ class TransferServices:
         try:
             debit_trx = TransactionCore.debit_transaction(self.source,
                                                           debit_payment_id, amount,
-                                                          "TRANSFER_IN", transfer_notes)
+                                                          transfer_types, transfer_notes)
         except TransactionError as error:
             print(error)
             db.session.rollback()

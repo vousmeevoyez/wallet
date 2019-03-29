@@ -283,7 +283,8 @@ class TestWalletRoutes(BaseTestCase):
         params = {
             "amount" : "15",
             "notes" : "some notes",
-            "pin" : "123456"
+            "pin" : "123456",
+            "types": "PAYROLL"
         }
 
         result = self.transfer(self._wallet1, self._wallet2, params,
@@ -324,12 +325,45 @@ class TestWalletRoutes(BaseTestCase):
             "pin" : "111111"
         }
 
+        # first attempt
         result = self.transfer(self._wallet1, self._wallet2, params,
                                self._token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
         self.assertTrue(response["error"], "INCORRECT_PIN")
+
+        # second attempt
+        result = self.transfer(self._wallet1, self._wallet2, params,
+                               self._token)
+        response = result.get_json()
+
+        self.assertEqual(result.status_code, 422)
+        self.assertTrue(response["error"], "INCORRECT_PIN")
+
+        # third attempt
+        result = self.transfer(self._wallet1, self._wallet2, params,
+                               self._token)
+        response = result.get_json()
+
+        self.assertEqual(result.status_code, 422)
+        self.assertTrue(response["error"], "INCORRECT_PIN")
+
+        # fourth attempt
+        result = self.transfer(self._wallet1, self._wallet2, params,
+                               self._token)
+        response = result.get_json()
+
+        self.assertEqual(result.status_code, 422)
+        self.assertTrue(response["error"], "MAX_PIN_ATTEMPT")
+
+        # fifth attempt
+        result = self.transfer(self._wallet1, self._wallet2, params,
+                               self._token)
+        response = result.get_json()
+
+        self.assertEqual(result.status_code, 422)
+        self.assertTrue(response["error"], "WALLET_LOCKED")
 
     def test_transfer_invalid_destination(self):
         """ CASE 4 Transfer : try transfer with same between source """

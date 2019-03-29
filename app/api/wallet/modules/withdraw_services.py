@@ -44,6 +44,9 @@ class WithdrawServices:
         elif pin_status == "MAX_ATTEMPT":
             raise UnprocessableEntity(ERROR_CONFIG["MAX_PIN_ATTEMPT"]["TITLE"],
                                       ERROR_CONFIG["MAX_PIN_ATTEMPT"]["MESSAGE"])
+        elif pin_status == "LOCKED":
+            raise UnprocessableEntity(ERROR_CONFIG["WALLET_LOCKED"]["TITLE"],
+                                      ERROR_CONFIG["WALLET_LOCKED"]["MESSAGE"])
         #end if
 
         self.va_type = VaType.query.filter_by(key="DEBIT").first()

@@ -73,6 +73,8 @@ class TestWalletServices(BaseTestCase):
         with self.assertRaises(UnprocessableEntity):
             result = WalletServices(self.wallet_id).check("113456")
 
+        result = WalletServices(self.wallet_id).check("123456")
+
         with self.assertRaises(UnprocessableEntity):
             result = WalletServices(self.wallet_id).check("113456")
 

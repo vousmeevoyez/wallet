@@ -78,7 +78,8 @@ class TestTransferServices(BaseTestCase):
         """ test function to create main transaction """
         params = {
             "amount" : 1,
-            "notes" : "Some transfer notes"
+            "notes" : "Some transfer notes",
+            "types" : None
         }
 
         result = TransferServices(str(self.source.id), "123456",
@@ -93,10 +94,9 @@ class TestTransferServices(BaseTestCase):
         """ test function to create main transaction """
         # create sourc wallet first
         params = {
-            "source_account" : "12345",
-            "to" : str(self.destination.id),
             "amount" : 1,
-            "pin" : "123456",
+            "notes" : "Some transfer notes",
+            "types" : None
         }
 
         with self.assertRaises(BadRequest):
@@ -107,10 +107,9 @@ class TestTransferServices(BaseTestCase):
         """ test function to create main transaction """
         # create sourc wallet first
         params = {
-            "source_account" : "12345",
-            "to" : str(self.destination.id),
             "amount" : 1,
-            "pin" : "123456",
+            "notes" : "Some transfer notes",
+            "types" : None
         }
 
         with self.assertRaises(RequestNotFound):
@@ -125,7 +124,8 @@ class TestTransferServices(BaseTestCase):
 
         params = {
             "amount" : 1,
-            "notes" : "some transfer notes"
+            "notes" : "some transfer notes",
+            "types" : None
         }
 
         with self.assertRaises(UnprocessableEntity):
@@ -136,7 +136,8 @@ class TestTransferServices(BaseTestCase):
         """ test function to create main transaction """
         params = {
             "amount" : 1,
-            "notes" : "Some transfer notes"
+            "notes" : "Some transfer notes",
+            "types" : None
         }
 
         with self.assertRaises(UnprocessableEntity):
@@ -147,7 +148,8 @@ class TestTransferServices(BaseTestCase):
         """ test function to create main transaction """
         params = {
             "amount" : 1,
-            "notes" : "Some transfer notes"
+            "notes" : "Some transfer notes",
+            "types" : None
         }
 
         with self.assertRaises(UnprocessableEntity):
@@ -175,7 +177,8 @@ class TestTransferServices(BaseTestCase):
 
         params = {
             "amount" : 10,
-            "notes" : "some transfer notes"
+            "notes" : "some transfer notes",
+            "types" : None
         }
 
         with self.assertRaises(UnprocessableEntity):
@@ -186,7 +189,8 @@ class TestTransferServices(BaseTestCase):
         """ test function to create main transaction """
         params = {
             "amount" : 1,
-            "notes" : "some transfer notes"
+            "notes" : "some transfer notes",
+            "types" : None
         }
 
         with self.assertRaises(RequestNotFound):
@@ -200,7 +204,8 @@ class TestTransferServices(BaseTestCase):
 
         params = {
             "amount" : 1,
-            "notes" : "some transfer notes"
+            "notes" : "some transfer notes",
+            "types" : None
         }
 
         with self.assertRaises(UnprocessableEntity):
@@ -212,7 +217,8 @@ class TestTransferServices(BaseTestCase):
         # create sourc wallet first
         params = {
             "amount" : 1,
-            "notes" : "some transfer notes"
+            "notes" : "some transfer notes",
+            "types" : None
         }
 
         with self.assertRaises(UnprocessableEntity):
@@ -224,7 +230,8 @@ class TestTransferServices(BaseTestCase):
         """ test function to create main transaction """
         params = {
             "amount" : 1,
-            "notes"  : None
+            "notes"  : None,
+            "types" : None
         }
 
         mock_transfer_services.side_effect = TransactionError("test")
