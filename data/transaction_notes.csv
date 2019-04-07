@@ -1,0 +1,9 @@
+key;description
+TOP_UP;Top up balance {} from Virtual Account
+WITHDRAW;Withdraw balance {}
+TRANSFER_IN;Transfer Balance {}
+TRANSFER_OUT;Transfer to Bank {}
+RECEIVE_TRANSFER;Receive Balance {}
+TRANSFER_FEE;Transfer Fee {}
+PAYROLL;Disburse Payroll {}
+REFUND;Transaction Refund {}

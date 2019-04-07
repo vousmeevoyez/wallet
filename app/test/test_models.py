@@ -1,9 +1,10 @@
-""" 
+"""
     Test Models
     ___________
-    test all module here
 """
 from datetime import datetime, timedelta
+
+from sqlalchemy.sql import func
 
 from app.test.base  import BaseTestCase
 from app.api        import db
@@ -463,6 +464,84 @@ class TransactionModelCase(BaseTestCase):
         self.assertEqual(wallet2.balance, 1010)
         self.assertEqual(len(wallet2.transactions), 1)
 
+    def test_transaction_link(self):
+        # create 2 dummy wallet here
+        wallet = Wallet()
+        wallet2 = Wallet()
+
+        db.session.add(wallet)
+        db.session.add(wallet2)
+        db.session.flush()
+
+        wallet.add_balance(1000)
+        db.session.flush()
+
+        self.assertEqual(wallet.balance, 1000)
+
+        wallet2.add_balance(1000)
+        db.session.flush()
+
+        self.assertEqual(wallet2.balance, 1000)
+
+        #start transaction here
+        amount = -10
+        # first create debit payment
+        debit_payment = Payment(
+            source_account=wallet.id,
+            to=wallet2.id,
+            amount=amount,
+            payment_type=False,
+        )
+        db.session.add(debit_payment)
+
+        #create debit transaction
+        debit_trx = Transaction(
+            wallet_id=wallet.id,
+            amount=amount,
+        )
+        db.session.add(debit_trx)
+        # deduct balance
+        wallet.add_balance(amount)
+
+        db.session.flush()
+
+        #start another transaction here
+        amount = 10
+        # second create credit payment
+        credit_payment = Payment(
+            source_account=wallet.id,
+            to=wallet2.id,
+            amount=amount,
+        )
+        db.session.add(credit_payment)
+
+        #create debit transaction
+        credit_trx = Transaction(
+            wallet_id=wallet2.id,
+            amount=amount,
+        )
+        db.session.add(credit_trx)
+        # deduct user balance here
+        wallet2.add_balance(amount)
+
+        db.session.flush()
+
+        # link transaction
+        debit_trx.transaction_link_id = credit_trx.id
+        credit_trx.transaction_link_id = debit_trx.id
+        db.session.commit()
+        print(debit_trx)
+        print(credit_trx)
+        print(debit_trx.transaction_link)
+        print(credit_trx.transaction_link)
+
+        # make sure each account have correct balance after each transaction
+        self.assertEqual(wallet.balance, 990)
+        self.assertEqual(len(wallet.transactions), 1)
+
+        self.assertEqual(wallet2.balance, 1010)
+        self.assertEqual(len(wallet2.transactions), 1)
+
 class ExternalModelCase(BaseTestCase):
 
     def test_set_status(self):
@@ -743,7 +822,7 @@ class PaymentModelCase(BaseTestCase):
     #end def
 #end class
 
-class IncorrectWalletPin(BaseTestCase):
+class IncorrectWalletPinCase(BaseTestCase):
     def test_incorrect_pin(self):
         """ 
             simulate incorrect pin where person enter incorrect pin 3 times
@@ -793,6 +872,155 @@ class IncorrectWalletPin(BaseTestCase):
         result =\
         IncorrectPin.query.filter(IncorrectPin.wallet_id==wallet.id).first()
         print(result)
+
+class RepaymentCase(BaseTestCase):
+
+    def test_simulate_lending_payment_with_late_fee(self):
+        # create dummy wallet
+        wallet = Wallet(
+        )
+        db.session.add(wallet)
+        db.session.commit()
+        # add balance here
+        wallet.add_balance(1000)
+
+        # create loan product
+        product = Product(
+            name="Modana Cicil",
+            description="Quick Payday loan"
+        )
+        db.session.add(product)
+        db.session.commit()
+
+        # create loan charge
+        due_date = datetime(2019, 2, 25)
+        plan = Plan(
+            destination="some-bank-account-number",
+            name="Modana Cicil Schedule Payment",
+            amount=1000,
+            mode=True, # adjustable
+            types=3, # monthly
+            due_date=due_date
+        )
+        db.session.add(plan)
+        db.session.commit()
+
+        # create additional charge
+        created_at = datetime(2019, 2, 26)
+        additional_plan = AdditionalPlan(
+            plan_id=plan.id,
+            key="LATE_FEE",
+            description="biaya penalti karena telat bayar 2019-2-26",
+            amount=100,
+            created_at=created_at
+        )
+        db.session.add(additional_plan)
+        db.session.commit()
+
+        # create additional charge
+        created_at = datetime(2019, 2, 27)
+        additional_plan = AdditionalPlan(
+            plan_id=plan.id,
+            key="LATE_FEE",
+            description="biaya penalti karena telat bayar 2019-2-27",
+            amount=100,
+            created_at=created_at
+        )
+        db.session.add(additional_plan)
+        db.session.commit()
+
+        # create additional charge
+        created_at = datetime(2019, 2, 28)
+        additional_plan = AdditionalPlan(
+            plan_id=plan.id,
+            key="LATE_FEE",
+            description="biaya penalti karena telat bayar 2019-2-28",
+            amount=100,
+            created_at=created_at
+        )
+        db.session.add(additional_plan)
+        db.session.commit()
+
+
+        # subscribe wallet to a loan charge
+        subscription = Subscription(
+            wallet_id=wallet.id,
+            plan_id=plan.id
+        )
+        db.session.add(subscription)
+        db.session.commit()
+
+        today = datetime(2019, 3, 1)
+        charge = Plan.query.filter_by(id=plan.id).first()
+        self.assertEqual(charge.total("LATE_FEE", today), 1300)
+
+    def test_simulate_lending_payment(self):
+        # create dummy wallet
+        wallet = Wallet(
+        )
+        db.session.add(wallet)
+        db.session.commit()
+        # add balance here
+        wallet.add_balance(1000)
+
+        # create loan product
+        product = Product(
+            name="Modana Cicil",
+            description="Quick Payday loan"
+        )
+        db.session.add(product)
+        db.session.commit()
+
+        # create loan charge
+        due_date = datetime(2019, 2, 25)
+        plan = Plan(
+            destination="some-bank-account-number",
+            name="Modana Cicil Schedule Payment",
+            amount=1000,
+            mode=True, # adjustable
+            types=3, # monthly
+            due_date=due_date
+        )
+        db.session.add(plan)
+        db.session.commit()
+
+        today = datetime(2019, 3, 1)
+        plan = Plan.query.filter_by(id=plan.id).first()
+        self.assertEqual(plan.total("LATE_FEE", today), 1000)
+
+    def test_simulate_bill_payment(self):
+        # create dummy wallet
+        wallet = Wallet(
+        )
+        db.session.add(wallet)
+        db.session.commit()
+        # add balance here
+        wallet.add_balance(1000000)
+
+        # create loan product
+        product = Product(
+            name="Modana Pulsa",
+            description="Bill Payment"
+        )
+        db.session.add(product)
+        db.session.commit()
+
+        # create loan charge
+        due_date = datetime(2019, 2, 25)
+        plan = Plan(
+            destination="some-wallet-number",
+            name="Modana Pulsa Schedule Payment",
+            amount=100000,
+            mode=False, # adjustable
+            types=3, # monthly
+            due_date=due_date
+        )
+        db.session.add(plan)
+        db.session.commit()
+
+        today = datetime(2019, 3, 1)
+        plan = Plan.query.filter_by(id=plan.id).first()
+        self.assertEqual(plan.amount, 100000)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -1,0 +1,9 @@
+key;notes
+TOP_UP;Top Up
+WITHDRAW;Withdraw
+TRANSFER_IN;Transfer Between User
+TRANSFER_OUT;Transfer to external System
+RECEIVE_TRANSFER;Receive Transfer
+TRANSFER_FEE;Transfer Fee
+PAYROLL;Disburse Payroll
+REFUND;Transaction Refund

@@ -6,18 +6,12 @@ from unittest.mock import Mock, patch
 
 from app.test.base import BaseTestCase
 
-# mock all response incoming from user services
-from app.api.user.modules.user_services import UserServices
-from app.api.user.modules.bank_account_services import BankAccountServices
-
 from app.api.models import *
 from app.api import db
 
 from task.bank.BNI.utility import remote_call
 
 from app.config import config
-
-BASE_URL = "/api/v1"
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 

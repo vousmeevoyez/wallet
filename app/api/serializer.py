@@ -9,13 +9,12 @@ import re
 from datetime import datetime
 from marshmallow import fields, ValidationError, post_load, validates
 
-from app.api         import ma
+from app.api import ma
 from app.api.models  import *
 from app.config  import config
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 WALLET_CONFIG = config.Config.WALLET_CONFIG
-TRANSACTION_CONFIG = config.Config.TRANSACTION_CONFIG
 
 """
     GLOBAL VALIDATION FUNCTION
@@ -400,8 +399,8 @@ class TransactionSchema(ma.Schema):
     types            = fields.Str(allow_none=True)
     balance          = fields.Float()
     amount           = fields.Float(validate=validate_amount)
-    transaction_type = fields.Method("transaction_type_id_to_string")
-    notes            = fields.Str(allow_none=True)
+    transaction_type = fields.Method("transaction_type_to_string")
+    notes            = fields.Str(allow_none=True, attribute="transaction_note")
     instructions     = fields.List(fields.Nested("TransactionSchema"),
                                    allow_none=True)
     payment_details  = fields.Method("payment_id_to_details")
@@ -454,29 +453,14 @@ class TransactionSchema(ma.Schema):
         return payment_details
     #end def
 
-    def transaction_type_id_to_string(self, obj):
+    def transaction_type_to_string(self, obj):
         """
             Function to convert transaction type id to readable transaction
             type
             args :
                 obj -- payment object
         """
-        result = ""
-        if obj.transaction_type == 1:
-            result = "TOP_UP"
-        elif obj.transaction_type == 2:
-            result = "WITHDRAW"
-        elif obj.transaction_type == 3:
-            result = "TRANSFER_IN"
-        elif obj.transaction_type == 4:
-            result = "TRANSFER_OUT"
-        elif obj.transaction_type == 5:
-            result = "RECEIVE_TRANSFER"
-        elif obj.transaction_type == 6:
-            result = "TRANSACTION_FEE"
-        elif obj.transaction_type == 7:
-            result = "PAYROLL"
-        return result
+        return obj.transaction_type.key
     #end def
 
     def payment_type_to_string(self, payment_type):
@@ -663,3 +647,76 @@ class WalletTransactionSchema(ma.Schema):
             raise ValidationError('Invalid end date format')
     #end def
 #end class
+
+class ProductSchema(ma.Schema):
+    """ this is schema for product object """
+    id           = fields.Str(allow_none=True)
+    name         = fields.Str(required=True, validate=(cannot_be_blank,
+                                                       validate_name))
+    description  = fields.Str(required=True, validate=(cannot_be_blank,
+                                                       validate_name))
+    types        = fields.Str(load_only=True)
+    created_at   = fields.DateTime()
+    status       = fields.Method("bool_to_status")
+    product_type = fields.Method("type_to_product_type", attribut=types)
+
+    @post_load
+    def make_product(self, data):
+        """ create product object from data"""
+        # validate product ID if its set by user
+        if data['id'] is not None:
+            # make sure the id is not existed and used here
+            product_record = Product.query.filter_by(id=data['id']).first()
+            if product_record is not None:
+                raise ValidationError('Product ID Already Existed')
+            # end if
+        else:
+            del data['id']
+        # end if
+        # convert types from string to ID
+        if data['types'] == "SERVICE":
+            data['types'] = 1
+        elif data['types'] == "GOOD":
+            data['types'] = 2
+        # end if
+        return Product(**data)
+    # end def
+
+    def bool_to_status(self, obj):
+        """
+            function to convert boolean into human friendly string
+            args:
+                obj - product object
+        """
+        status = "ACTIVE"
+        if obj.status is False:
+            status = "DEACTIVE"
+        # end if
+        return status
+    # end def
+
+    def type_to_product_type(self, obj):
+        """
+            function to convert tpye into human friendly 
+            args:
+                obj - product object
+        """
+        types = "GOOD"
+        if obj.types:
+            types = "SERVICE"
+        # end if
+        return types
+    #end def
+
+    @validates('types')
+    def validate_types(self, types):
+        """
+            function to validate product types
+            args:
+                types -- Product type
+        """
+        if types not in ["SERVICE", "GOOD"]:
+            raise ValidationError('Invalid Product Types')
+        # end if
+    # end def
+# end class

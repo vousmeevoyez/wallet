@@ -485,12 +485,14 @@ class TestTransactionSchema(BaseTestCase):
         )
         db.session.add(debit_payment)
 
+        transaction_type =\
+        TransactionType.query.filter_by(key="TRANSFER_FEE").first()
         #create debit transaction
         debit_trx = Transaction(
             wallet_id=wallet.id,
             amount=trx_amount,
             payment_id=debit_payment.id,
-            transaction_type=6
+            transaction_type_id=transaction_type.id,
         )
         db.session.add(debit_trx)
         # deduct balance
@@ -498,7 +500,7 @@ class TestTransactionSchema(BaseTestCase):
         db.session.commit()
 
         result = TransactionSchema().dump(debit_trx).data
-        self.assertEqual(result["transaction_type"], "TRANSACTION_FEE")
+        self.assertTrue(result["transaction_type"] )
 
 class TestCallbackSchema(BaseTestCase):
 

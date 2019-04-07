@@ -31,3 +31,11 @@ class CallbackNamespace:
 class LogNamespace:
     api = Namespace("log")
 #end class
+
+class TransactionNamespace:
+    api = Namespace("Transaction")
+#end class
+
+class ProductNamespace:
+    api = Namespace("Product")
+#end class

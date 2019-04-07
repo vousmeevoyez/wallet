@@ -12,17 +12,18 @@ from app.api import celery
 from app.api.models import *
 
 from task.bank.BNI.helper import VirtualAccount as VaServices
-from task.bank.BNI.helper import CoreBank as CoreServices
+from task.bank.BNI.helper import CoreBank
 
-from app.api.wallet.modules.transaction_core import TransactionCore
-from app.api.wallet.modules.transaction_core import TransactionError
+# services
+from app.api.transactions.modules.transaction_services import \
+TransactionServices
 
 # exceptions
 from task.bank.exceptions.general import *
+from celery.exceptions import MaxRetriesExceededError, Reject, Retry
 
 from app.config import config
 
-TRANSACTION_CONFIG = config.Config.TRANSACTION_CONFIG
 TRANSACTION_LOG_CONFIG = config.Config.TRANSACTION_LOG_CONFIG
 PAYMENT_STATUS_CONFIG = config.Config.PAYMENT_STATUS_CONFIG
 BNI_OPG_CONFIG = config.Config.BNI_OPG_CONFIG
@@ -94,7 +95,7 @@ class BankTask(celery.Task):
                  task_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
                  acks_late=WORKER_CONFIG["ACKS_LATE"],
                 )
-    def bank_transfer(self, payment_id, fee_payment_id, transfer_notes=None):
+    def bank_transfer(self, payment_id):
         payment = Payment.query.filter_by(id=payment_id).first()
 
         bank_account_no = payment.to
@@ -113,40 +114,25 @@ class BankTask(celery.Task):
         }
 
         try:
-            result = CoreServices().transfer(transfer_payload)
+            result = CoreBank().transfer(transfer_payload)
         except ApiError as error:
-            self.retry(countdown=backoff(self.request.retries), exc=error)
-        #end try
-
-        # get reference number from transfer response
-        transfer_info = result["data"]["transfer_info"]
-        # update referenc number here
-        request_reference = transfer_info["ref_number"]
-        # try fetch bank reference if available
-        response_reference = transfer_info.get("bank_ref", "NA")
-        payment.ref_number = request_reference + "-" + response_reference
-
-        db.session.commit()
-
-        try:
-            wallet = \
-            Wallet.query.filter_by(id=payment.source_account).with_for_update().first()
-
-            # DEDUCT BALANCE
-            debit_trx = TransactionCore.debit_transaction(wallet,
-                                                          str(payment.id),
-                                                          amount,
-                                                          "TRANSFER_OUT", transfer_notes)
-            if fee_payment_id is not None:
-                fee_payment = Payment.query.filter_by(id=fee_payment_id).first()
-                fee_notes = "Biaya Transaksi"
-                fee_trx = TransactionCore.debit_transaction(wallet,
-                                                            str(fee_payment.id),
-                                                            abs(fee_payment.amount),
-                                                            "TRANSFER_FEE",
-                                                            fee_notes)
-        except TransactionError as error:
-            print(error)
-            db.session.rollback()
-        #end if
-        return str(debit_trx.id)
+            # handle celery exception here
+            try:
+                #self.retry(countdown=backoff(self.request.retries), exc=error)
+                self.retry(countdown=backoff(self.request.retries))
+            except MaxRetriesExceededError:
+                print("should refund here")
+                # creat transaction refund here
+                transaction_id = str(payment.transaction.id)
+                result = TransactionServices(transaction_id=transaction_id).refund()
+                print(result)
+        else:
+            # get reference number from transfer response
+            transfer_info = result["data"]["transfer_info"]
+            # update referenc number here
+            request_reference = transfer_info["ref_number"]
+            # try fetch bank reference if available
+            response_reference = transfer_info.get("bank_ref", "NA")
+            payment.ref_number = request_reference + "-" + response_reference
+            db.session.commit()
+        # end try

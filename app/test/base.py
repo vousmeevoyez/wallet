@@ -48,18 +48,21 @@ class BaseTestCase(TestCase):
         db.session.add(role)
         db.session.commit()
 
-        # add dummy user
-        user = User(
-            username='jenniekkk',
-            name='jenniekkk',
-            email='jenniekkk@bp.com',
-            phone_ext='62',
-            phone_number='89289644314',
-            role_id=role.id,
-        )
-        user.set_password("password")
-        db.session.add(user)
-        db.session.commit()
+        username = "somerandomstranger"
+        user = User.query.filter_by(username=username).first()
+        if user is None:
+            # add dummy user
+            user = User(
+                username=username,
+                name='somerandomstranger',
+                email='somerandomstranger@test.com',
+                phone_ext='62',
+                phone_number='88308644314',
+                role_id=role.id,
+            )
+            user.set_password("password")
+            db.session.add(user)
+            db.session.commit()
 
         self.user = user
 
@@ -466,6 +469,17 @@ class BaseTestCase(TestCase):
         )
     #end def
 
+    def refund_transaction(self, transaction_id, access_token):
+        """ Api Call for refunding transaction """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.delete(
+            BASE_URL + "/transactions/refund/" + transaction_id,
+            headers=headers
+        )
+    #end def
+
     """
         BNI UTILITY
     """
@@ -568,6 +582,68 @@ class BaseTestCase(TestCase):
                 bank_name=params["bank_name"],
                 transfer_ref=params["transfer_ref"]
             ),
+            headers=headers
+        )
+    #end def
+
+    """ PRODUCT """
+    def create_product(self, params, api_key):
+        """ Api Call for Creating product """
+        headers = {
+            'X-Api-Key': '{}'.format(api_key)
+        }
+        return self.client.post(
+            BASE_URL + "/products/",
+            data=dict(**params),
+            headers=headers
+        )
+    #end def
+
+    def update_product(self, product_id, params, api_key):
+        """ Api Call for updating product """
+        headers = {
+            'X-Api-Key': '{}'.format(api_key)
+        }
+        return self.client.put(
+            BASE_URL + "/products/" + product_id,
+            data=dict(
+                name=params["name"],
+                description=params["description"],
+                types=params["types"]
+            ),
+            headers=headers
+        )
+    #end def
+
+    def get_product(self, product_id, api_key):
+        """ Api Call for get product """
+        headers = {
+            'X-Api-Key': '{}'.format(api_key)
+        }
+        return self.client.get(
+            BASE_URL + "/products/" + product_id,
+            headers=headers
+        )
+    #end def
+
+    def get_products(self, api_key):
+        """ Api Call for get all product """
+        headers = {
+            'X-Api-Key': '{}'.format(api_key)
+        }
+        return self.client.get(
+            BASE_URL + "/products/",
+            headers=headers
+        )
+    #end def
+
+    def remove_product(self, product_id, api_key):
+        """ Api Call for removing product """
+        headers = {
+            'X-Api-Key': '{}'.format(api_key)
+        }
+        return self.client.delete(
+            BASE_URL + "/products/" + product_id,
             headers=headers
         )
     #end def

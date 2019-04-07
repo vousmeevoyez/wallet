@@ -16,6 +16,7 @@ import random
 import uuid
 import jwt
 
+from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 
 from werkzeug.security import generate_password_hash 
@@ -34,12 +35,14 @@ now = datetime.utcnow
 
 BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 WALLET_CONFIG = config.Config.WALLET_CONFIG
-TRANSACTION_NOTES = config.Config.TRANSACTION_NOTES
 JWT_CONFIG = config.Config.JWT_CONFIG
 VIRTUAL_ACCOUNT_CONFIG = config.Config.VIRTUAL_ACCOUNT_CONFIG
 
 def uid():
     return uuid.uuid4()
+
+def string_uid():
+    return str(uuid.uuid4())
 
 class Role(db.Model):
     """
@@ -166,6 +169,7 @@ class Wallet(db.Model):
     wallet_lock      = db.relationship("WalletLock") # one to many
     withdraw         = db.relationship("Withdraw") # one to many
     transactions     = db.relationship("Transaction", back_populates="wallet") # one to many
+    subscriptions    = db.relationship("Subscription", back_populates="wallet") # one to many
 
     def __repr__(self):
         return '<Wallet {} {} {}>'.format(self.id, self.balance, self.user_id)
@@ -387,19 +391,19 @@ class Payment(db.Model):
                                primary_key=True, default=uid)
     source_account = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount (money comes from)
     to             = db.Column(db.String(100)) # can be bank account number / wallet / virtual acount ( money goes)
-    ref_number     = db.Column(db.String(100)) # journal number from the bank
+    ref_number     = db.Column(db.String(100), unique=True) # journal number from the bank
     amount         = db.Column(db.Float)
     created_at     = db.Column(db.DateTime, default=now) # UTC
     payment_type   = db.Column(db.Boolean, default=True) # True = Credit / False = Debit
-    status         = db.Column(db.Integer, default=0) # PENDING / COMPLETED / FAILED
+    status         = db.Column(db.Integer, default=0) # PENDING / COMPLETED / REFUNDED / FAILED
     channel_id     = db.Column(UUID(as_uuid=True), db.ForeignKey("payment_channel.id"))
     payment_channel= db.relationship("PaymentChannel", back_populates="payments", uselist=False) # one to one
     transaction    = db.relationship("Transaction", back_populates="payment", uselist=False) # one to one
     log            = db.relationship("Log", back_populates="payment", uselist=False) # one to one
 
     def __repr__(self):
-        return '<Payment {} {} {} {} {} {}>'.format(self.id, self.source_account, self.payment_type,
-                                                 self.ref_number, self.amount, self.status)
+        return '<Payment {} {} {} {} {} {}>'.format(self.source_account, self.to, self.payment_type,
+                                                    self.ref_number, self.amount, self.status)
     #end def
 #end class
 
@@ -538,21 +542,51 @@ class Log(db.Model):
         return '<Log {} {} {}'.format(self.id, self.state,
                                       self.payment_id)
 
+class TransactionNote(db.Model):
+    """
+        This is class that represent Transaction Notes Database Object
+    """
+    id          = db.Column(UUID(as_uuid=True), unique=True,
+                            primary_key=True, default=uid)
+    key         = db.Column(db.String(100), unique=True)
+    notes       = db.Column(db.String(255))
+    created_at  = db.Column(db.DateTime, default=now)
+
+    def __repr__(self):
+        return '<TransactionNotes {} {} {}>'.format(self.id, self.key, self.notes)
+
+class TransactionType(db.Model):
+    """
+        This is class that represent Transaction Type Database Object
+    """
+    id          = db.Column(UUID(as_uuid=True), unique=True,
+                            primary_key=True, default=uid)
+    key         = db.Column(db.String(100), unique=True)
+    description = db.Column(db.String(100))
+    created_at  = db.Column(db.DateTime, default=now)
+    transaction = db.relationship("Transaction", back_populates="transaction_type")
+
+    def __repr__(self):
+        return '<TransactionType {} {} {}>'.format(self.id, self.key, self.description)
+
 class Transaction(db.Model):
     """
         This is class that represent Transaction Database Object
     """
-    id                 = db.Column(UUID(as_uuid=True), unique=True,
+    id                  = db.Column(UUID(as_uuid=True), unique=True,
                                    primary_key=True, default=uid)
-    wallet_id          = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
-    balance            = db.Column(db.Float, default=0)
-    amount             = db.Column(db.Float, default=0)
-    transaction_type   = db.Column(db.Integer) # withdraw / deposit / transfer_bank / transfer_va
-    notes              = db.Column(db.String(255)) # transaction notes if there are
-    created_at         = db.Column(db.DateTime, default=now) # UTC
-    payment_id         = db.Column(UUID(as_uuid=True), db.ForeignKey("payment.id"))
-    payment            = db.relationship("Payment", back_populates="transaction", uselist=False) # one to one
-    wallet             = db.relationship("Wallet", back_populates="transactions", uselist=False) # one to one
+    wallet_id           = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
+    balance             = db.Column(db.Float, default=0)
+    amount              = db.Column(db.Float, default=0)
+    notes               = db.Column(db.String(255))
+    created_at          = db.Column(db.DateTime, default=now) # UTC
+    payment_id          = db.Column(UUID(as_uuid=True), db.ForeignKey("payment.id"))
+    payment             = db.relationship("Payment", back_populates="transaction", uselist=False) # one to one
+    transaction_type_id = db.Column(UUID(as_uuid=True), db.ForeignKey("transaction_type.id"))
+    transaction_type    = db.relationship("TransactionType", back_populates="transaction", uselist=False) # one to one
+    wallet              = db.relationship("Wallet", back_populates="transactions", uselist=False) # one to one
+    transaction_link_id = db.Column(UUID(as_uuid=True), db.ForeignKey("transaction.id")) #self referential
+    transaction_link    = db.relationship("Transaction", remote_side=[id]) # one to one
 
     def __repr__(self):
         return '<Transaction {} {} {} {} {}>'.format(self.id, self.wallet_id, self.amount,
@@ -718,4 +752,103 @@ class WalletLock(db.Model):
     def __repr__(self):
         return '<WalletLock {} {} {}>'.format(self.created_at, self.lock_until,
                                               self.wallet_id)
+    #end def
+
+class Product(db.Model):
+    """
+        Class model for Wallet Product
+    """
+    id          = db.Column(db.String(255), unique=True,
+                            primary_key=True, default=string_uid)
+    name        = db.Column(db.String(100))
+    description = db.Column(db.String(100))
+    types       = db.Column(db.Integer, default=1) # SERVICES | GOOD
+    created_at  = db.Column(db.DateTime, default=now)
+    status      = db.Column(db.Boolean, default=True) # ACTIVE | DEACTIVE
+    plans       = db.relationship("Plan", back_populates="product", cascade="delete") # one to many
+
+    def __repr__(self):
+        return '<Product {} {} {} {}>'.format(self.id, self.name, self.description,
+                                              self.types)
+    #end def
+
+class Plan(db.Model):
+    """
+        Class model for Product Plan
+    """
+    id                 = db.Column(UUID(as_uuid=True), unique=True,
+                                   primary_key=True, default=uid)
+    destination        = db.Column(db.String(120)) # Wallet ID | Bank Account
+    name               = db.Column(db.String(120)) # charge name
+    amount             = db.Column(db.Float)
+    mode               = db.Column(db.Boolean, default=True) # adjustable | fixed
+    types              = db.Column(db.Integer) # daily | weekly | monthly | yearly
+    due_date           = db.Column(db.DateTime) # due date
+    created_at         = db.Column(db.DateTime, default=now)
+    status             = db.Column(db.Integer, default=1) # active | finish
+    product_id         = db.Column(db.String(255), db.ForeignKey('product.id'))
+    product            = db.relationship("Product", back_populates="plans") # one to one
+    subscription       = db.relationship("Subscription",
+                                         back_populates="plan") # one to one
+    additional_plans   = db.relationship("AdditionalPlan",
+                                         back_populates="plan") # one to one
+
+    def __repr__(self):
+        return '<Charge {} {} {} {} {} {}>'.format(self.destination, self.name,
+                                                   self.amount, self.mode,
+                                                   self.types, self.due_date)
+    #end def
+
+    def total(self, key, date_time):
+        """ special method to calculate total charge for specific key and
+        specific datetime """
+        additional_charge = 0
+
+        charges = \
+        AdditionalPlan.query.with_entities(
+            func.sum(AdditionalPlan.amount).label("total_amount")
+        ).filter(
+            AdditionalPlan.plan_id == self.id,
+            AdditionalPlan.key == key,
+            AdditionalPlan.created_at < date_time
+        ).first()[0]
+        if charges is not None:
+            additional_charge = charges
+        #end if
+        return self.amount + additional_charge
+    #end def
+
+class AdditionalPlan(db.Model):
+    """ additional plan model """
+    id          = db.Column(UUID(as_uuid=True), unique=True,
+                            primary_key=True, default=uid)
+    key         = db.Column(db.String(120)) # special key to filter charge
+    description = db.Column(db.String(120)) # description
+    amount      = db.Column(db.Float)
+    created_at  = db.Column(db.DateTime, default=now)
+    plan_id     = db.Column(UUID(as_uuid=True), db.ForeignKey('plan.id'))
+    plan        = db.relationship("Plan", back_populates="additional_plans")
+
+    def __repr__(self):
+        return '<AdditionalPlan {} {} {} {}>'.format(self.plan,
+                                                     self.description,
+                                                     self.amount,
+                                                     self.created_at)
+    #end def
+
+class Subscription(db.Model):
+    """
+        Class model for Subscription
+    """
+    id        = db.Column(UUID(as_uuid=True), unique=True,
+                          primary_key=True, default=uid)
+    created_at= db.Column(db.DateTime, default=now)
+    status    = db.Column(db.Boolean, default=True) # ACTIVE | DEACTIVE
+    wallet_id = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
+    wallet    = db.relationship("Wallet", back_populates="subscriptions")#1toN
+    plan_id   = db.Column(UUID(as_uuid=True), db.ForeignKey('plan.id'))
+    plan      = db.relationship("Plan", back_populates="subscription")#1toN
+
+    def __repr__(self):
+        return '<Subscription {} {}>'.format(self.wallet, self.charge)
     #end def

@@ -4,24 +4,23 @@
     This is module to process business logic from routes and return API
     response
 """
-from sqlalchemy.exc import IntegrityError
-
+# database
 from app.api import db
+# model
 from app.api.models import *
-
-from app.config import config
-
-from app.api.wallet.modules.transfer_services import TransferServices
-from app.api.wallet.modules.transaction_core import TransactionCore
-from app.api.wallet.modules.transaction_core import TransactionError
-
+# services
+from app.api.wallets.modules.transfer_services import TransferServices
+from app.api.wallets.modules.transaction_core import TransactionCore
+# exceptions
 from app.api.error.http import *
+# configuration
+from app.config import config
 
 ERROR_CONFIG = config.Config.ERROR_CONFIG
 LOGGING_CONFIG = config.Config.LOGGING_CONFIG
 
 class CallbackServices:
-    """ Callback Services Class to handle all callback process here"""
+    """ Callback Services Class """
 
     def __init__(self, virtual_account, trx_id):
         virtual_account = VirtualAccount.query.filter_by(account_no=virtual_account,
@@ -55,41 +54,16 @@ class CallbackServices:
 
         payment_channel = PaymentChannel.query.filter_by(key=payment_channel_key).first()
 
-        # create log here
-        log = Log()
-        db.session.add(log)
+        credit_trx = TransactionCore().process_transaction(
+            source=self.virtual_account.account_no,
+            destination=self.virtual_account.wallet,
+            amount=payment_amount,
+            payment_type=True,
+            transfer_types="TOP_UP",
+            channel_id=payment_channel.id,
+            reference_number=reference_number
+        )
 
-        # create payment
-        payment_payload = {
-            "channel_id"    : payment_channel.id,
-            "source_account": self.virtual_account.account_no,
-            "to"            : self.virtual_account.wallet_id,
-            "ref_number"    : reference_number,
-            "amount"        : payment_amount,
-            "payment_type"  : True # Credit
-        }
-        payment_id = TransferServices.create_payment(payment_payload)
-        log.payment_id = payment_id
-
-        try:
-            db.session.commit()
-        except IntegrityError:
-            db.session.rollback()
-        #end def
-
-        wallet = self.virtual_account.wallet
-        amount = payment_amount
-
-        try:
-            credit_transaction = TransactionCore.credit_transaction(wallet,
-                                                                    payment_id,
-                                                                    amount,
-                                                                    "TOP_UP")
-        except TransactionError as error:
-            db.session.rollback()
-            raise UnprocessableEntity(ERROR_CONFIG["DEPOSIT_CALLBACK_FAILED"]["TITLE"],
-                                      ERROR_CONFIG["DEPOSIT_CALLBACK_FAILED"]["MESSAGE"])
-        #end def
         response = {
             "status" : "000"
         }
@@ -107,43 +81,20 @@ class CallbackServices:
         payment_channel_key = params["payment_channel_key"]
 
         payment_channel = PaymentChannel.query.filter_by(key=payment_channel_key).first()
+ 
 
-        # create log here
-        log = Log()
-        db.session.add(log)
-
-        # create payment
-        payment_payload = {
-            "channel_id"    : payment_channel.id,
-            "source_account": self.virtual_account.wallet_id,
-            "to"            : self.virtual_account.account_no,
-            "ref_number"    : reference_number,
-            "amount"        : -payment_amount,
-            "payment_type"  : False #DEBIT
-        }
-        payment_id = TransferServices.create_payment(payment_payload)
-        log.payment_id = payment_id
-
-        try:
-            db.session.commit()
-        except IntegrityError:
-            db.session.rollback()
-        #end def
-
-        wallet = self.virtual_account.wallet
-
-        try:
-            transfer_notes = "Cardless Withdraw {}".format(str(-payment_amount))
-            debit_transaction = TransactionCore.debit_transaction(wallet,
-                                                                  payment_id,
-                                                                  payment_amount,
-                                                                  "WITHDRAW",
-                                                                  transfer_notes)
-        except TransactionError as error:
-            db.session.rollback()
-            raise UnprocessableEntity(ERROR_CONFIG["WITHDRAW_CALLBACK_FAILED"]["TITLE"],
-                                      ERROR_CONFIG["WITHDRAW_CALLBACK_FAILED"]["MESSAGE"])
-        #end def
+        transfer_notes = "Cardless Withdraw {}".format(str(-payment_amount))
+        debit_trx = TransactionCore().process_transaction(
+            source=self.virtual_account.wallet,
+            destination=self.virtual_account.account_no,
+            amount=-payment_amount,
+            payment_type=False,
+            transfer_types="WITHDRAW",
+            transfer_notes=transfer_notes,
+            channel_id=payment_channel.id,
+            reference_number=reference_number
+        )
+        
         response = {
             "status" : "000"
         }

@@ -53,7 +53,9 @@ class NotifServices:
             "WITHDRAW"         : "withdraw_to_atm",
             "TRANSFER_IN"      : "transfer",
             "PAYROLL"          : "transfer",
+            "TRANSFER_FEE"     : "transfer",
             "RECEIVE_TRANSFER" : "transfer",
+            "REFUND"           : "transfer",
         }
         return transfer_types[types]
 

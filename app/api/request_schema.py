@@ -111,6 +111,15 @@ class QRTransferRequestSchema:
     parser.add_argument("qr_string", type=str, required=True)
 #end class
 
+class ProductRequestSchema:
+    """Define all mandatory argument for creating Product"""
+    parser = reqparse.RequestParser()
+    parser.add_argument("id", type=str)
+    parser.add_argument("name", type=str, required=True)
+    parser.add_argument("description", type=str, required=True)
+    parser.add_argument("types", type=str, required=True)
+#end class
+
 class BNIUtilityRequestSchema:
     """Define all mandatory argument for BNI utility """
     parser = reqparse.RequestParser()

@@ -6,7 +6,7 @@
 from unittest.mock import Mock, patch
 
 from app.test.base import BaseTestCase
-from app.api.bank.modules.bank_services import BankServices
+from app.api.banks.modules.bank_services import BankServices
 
 from task.bank.BNI.helper import CoreBank
 from task.bank.exceptions.general import *

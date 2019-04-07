@@ -93,29 +93,7 @@ class Config:
         "INCORRECT_RETRY"    : os.getenv('INCORRECT_RETRY') or 3, # set max pin retry
         "QR_SECRET_KEY"      : "1#$@!%2jajdasnknvxivodisufu039021ofjldsjfa@@!",
         "LOCK_TIMEOUT"       : os.getenv('LOCK_TIMEOUT') or 5
-    }
-
-    TRANSACTION_CONFIG = {
-        "TYPES" : {
-            "TOP_UP"      : 1,
-            "WITHDRAW"    : 2,
-            "TRANSFER_IN" : 3, # transfer between user
-            "TRANSFER_OUT": 4, # transfer to external system
-            "RECEIVE_TRANSFER": 5,
-            "TRANSFER_FEE"    : 6,# internal deduction
-            "PAYROLL"         : 7 # payroll disbursement
-        }
-    }
-
-    # MASTER WALLET SETTINGS
-    TRANSACTION_NOTES = {
-        "DEPOSIT"         : "Top up balance {} from Virtual Account",
-        "INJECT"          : "Injected balance {}",
-        "SEND_TRANSFER"   : "Transfer balance {}",
-        "RECEIVE_TRANSFER": "Received balance {}",
-        "WITHDRAW_NOTIF"  : "Withdraw balance {} from Virtual Account",
-        "TRANSFER_FEE"    : "Transfer Fee {}"
-    }
+    }    
 
     # BNI E-COLLECTION CONFIG
     BNI_ECOLLECTION_CONFIG = {
@@ -226,6 +204,10 @@ class Config:
             "TITLE"   : "FORGOT_OTP_NOT_FOUND",
             "MESSAGE" : "Forgot OTP not found"
         },
+        "PRODUCT_NOT_FOUND" : {
+            "TITLE"   : "PRODUCT_NOT_FOUND",
+            "MESSAGE" : "Product not found"
+        },
         "INVALID_CREDENTIALS" : {
             "TITLE"   : "INVALID_CREDENTIALS",
             "MESSAGE" : "Incorrect Username / Password"
@@ -329,9 +311,25 @@ class Config:
             "TITLE"   : "DUPLICATE_VA",
             "MESSAGE" : "Virtual Account already existed"
         },
+        "DUPLICATE_PRODUCT" : {
+            "TITLE"   : "DUPLICATE_PRODUCT",
+            "MESSAGE" : "Product already existed"
+        },
+        "DUPLICATE_PAYMENT" : {
+            "TITLE"   : "DUPLICATE_PAYMENT",
+            "MESSAGE" : "Similiar payment already exist"
+        },
         "TRANSFER_FAILED" : {
             "TITLE"   : "TRANSFER_FAILED",
             "MESSAGE" : "Transfer failed"
+        },
+        "INVALID_REFUND" : {
+            "TITLE"   : "INVALID_REFUND",
+            "MESSAGE" : "Invalid Refund"
+        },
+        "TRANSACTION_REFUNDED" : {
+            "TITLE"   : "TRANSACTION_REFUNDED",
+            "MESSAGE" : "Transaction already refunded"
         },
         "MIN_WITHDRAW": {
             "TITLE"   : "MIN_WITHDRAW",
@@ -397,6 +395,8 @@ class TestingConfig(Config):
             DATABASE["DB_NAME"] + "_testing"
 
     CELERY_RESULT_BACKEND = "db+" + SQLALCHEMY_DATABASE_URI
+
+    #CELERY_TASK_ALWAYS_EAGER = True
 
     PRESERVE_CONTEXT_ON_EXCEPTION = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
