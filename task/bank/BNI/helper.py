@@ -307,6 +307,8 @@ class CoreBank:
             response["data"] = resp
         except requests.exceptions.Timeout as error:
             raise ServicesFailed("TIMEOUT", error)
+        except requests.exceptions.SSLError as error:
+            raise ServicesFailed("SSL_ERROR", error)
         return response
     #end def
 
