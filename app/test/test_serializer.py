@@ -1,7 +1,10 @@
 from app.test.base      import BaseTestCase
 from app.api.serializer import *
 from app.api.models     import *
+from app.api import db
 from app.config     import config
+
+from marshmallow.exceptions import ValidationError
 
 class TestUserSchema(BaseTestCase):
 
@@ -719,7 +722,7 @@ class TestBankAccountSchema(BaseTestCase):
         self.assertEqual(errors, expected_error)
 
         data = {
-            "account_no": "123456",
+            "account_no": "12345",
             "name"      : "Irene",
             "label"     : "Irene Bank Account",
             "bank_code" : "009"
@@ -835,6 +838,214 @@ class TestBankAccountSchema(BaseTestCase):
 
         result = BankAccountSchema().dump(bank_account).data
         self.assertEqual(result["bank_name"],bank_name)
+
+class TestPaymentPlanSchema(BaseTestCase):
+
+    def test_validate_payment_schema_id(self):
+        # no errors
+        data = {
+            "id" : "some-payment-plan-id",
+            "destination" : "123456789",
+            "wallet_id" : "some-wallet-id",
+        }
+        errors = PaymentPlanSchema().validate(data)
+        self.assertEqual(errors, {})
+
+        # INVALID ID
+        data = {
+            "id" : "#!@&#*(&@#(&#*",
+            "destination" : "123456789",
+            "wallet_id" : "some-wallet-id",
+        }
+        errors = PaymentPlanSchema().validate(data)
+        expected_error = {'id': ['Invalid Identifier']}
+        self.assertEqual(errors, expected_error)
+
+        data = {
+            "id" : "abc",
+            "destination" : "123456789",
+            "wallet_id" : "some-wallet-id",
+        }
+        errors = PaymentPlanSchema().validate(data)
+        expected_error = {'id': ['Invalid Identifier']}
+        self.assertEqual(errors, expected_error)
+
+        # register id first here
+        payment_plan = PaymentPlan(
+            id="some-payment-plan-id"
+        )
+        db.session.add(payment_plan)
+        db.session.commit()
+
+        # DUPLICATE ID
+        data = {
+            "id" : "some-payment-plan-id",
+            "destination" : "123456789",
+            "wallet_id" : "some-wallet-id",
+        }
+        with self.assertRaises(ValidationError):
+            data = PaymentPlanSchema(strict=True).load(data)
+
+    def test_validate_payment_schema_destination(self):
+        # no errors
+        data = {
+            "id" : "some-payment-plan-id",
+            "destination" : "123456789",
+            "wallet_id" : "some-wallet-id",
+        }
+        errors = PaymentPlanSchema().validate(data)
+        self.assertEqual(errors, {})
+
+        # INVALID destination
+        data = {
+            "id" : "some-payment-plan-id",
+            "destination" : "00000000000000",
+            "wallet_id" : "some-wallet-id",
+        }
+        errors = PaymentPlanSchema().validate(data)
+        expected_error = {"destination" : ["destination can't be 0"]}
+        self.assertEqual(errors, expected_error)
+
+        # INVALID destination
+        data = {
+            "id" : "some-payment-plan-id",
+            "destination" : "asdklakskdasldjalksjldajs",
+            "wallet_id" : "some-wallet-id",
+        }
+        errors = PaymentPlanSchema().validate(data)
+        expected_error = {"destination" : ["Invalid destination account number, only number allowed"]}
+        self.assertEqual(errors, expected_error)
+
+    def test_nested_plan(self):
+        """ test serializing nested plan """
+        plans = [
+            {
+                "id" : "some-payment-plan-id",
+                "amount" : 10000,
+                "type" : "MAIN",
+                "due_date" : "2025/11/11",
+            },
+            {
+                "id" : "some-payment-plan-id",
+                "amount" : 10000,
+                "type" : "MAIN",
+                "due_date" : "2025/11/11",
+            },
+            {
+                "id" : "some-payment-plan-id",
+                "amount" : 10000,
+                "type" : "MAIN",
+                "due_date" : "2025/11/11",
+            }
+        ]
+        data = {
+            "id" : "some-payment-plan-id",
+            "destination" : "123456",
+            "wallet_id" : "some-wallet-id",
+            "plans" : plans
+        }
+        payment_plan = PaymentPlanSchema(strict=True).load(data)
+        print(payment_plan.data)
+
+class TestPlanSchema(BaseTestCase):
+    """ testing Plan Schema Serializer """
+
+    def test_plan_id(self):
+        data = {
+            "id" : "some-payment-plan-id",
+            "amount" : 10000,
+            "type" : "MAIN",
+            "due_date" : "2025/11/11",
+        }
+        errors = PlanSchema().validate(data)
+        self.assertEqual(errors, {})
+
+        data = {
+            "id" : "asdas",
+            "amount" : 10000,
+            "type" : "MAIN",
+            "due_date" : "2025/11/11",
+        }
+        errors = PlanSchema().validate(data)
+        expected_error = {'id': ['Invalid Identifier']}
+        self.assertEqual(errors, expected_error)
+
+        data = {
+            "id" : "!@*(!@*(!*(@!(*@",
+            "amount" : 10000,
+            "type" : "MAIN",
+            "due_date" : "2025/11/11",
+        }
+        errors = PlanSchema().validate(data)
+        expected_error = {'id': ['Invalid Identifier']}
+        self.assertEqual(errors, expected_error)
+
+        # duplicate
+        plan = Plan(id="some-plan-id")
+        db.session.add(plan)
+        db.session.commit()
+
+        data = {
+            "id" : "some-plan-id",
+            "amount" : 10000,
+            "type" : "MAIN",
+            "due_date" : "2025/11/11",
+        }
+        with self.assertRaises(ValidationError):
+            result = PlanSchema(strict=True).load(data)
+
+    def test_plan_amount(self):
+        data = {
+            "id" : "some-payment-plan-id",
+            "amount" : -10000,
+            "type" : "MAIN",
+            "due_date" : "2025/11/11",
+        }
+        errors = PlanSchema().validate(data)
+        expected_error = {'amount': ['Invalid Amount, cannot be less than 0']}
+        self.assertEqual(errors, expected_error)
+
+    def test_plan_type(self):
+        data = {
+            "id" : "some-payment-plan-id",
+            "amount" : 10000,
+            "type" : "SECONDARY",
+            "due_date" : "2025/11/11",
+        }
+        errors = PlanSchema().validate(data)
+        expected_error = {'type': ['Invalid plan type']}
+        self.assertEqual(errors, expected_error)
+
+    def test_plan_due_date(self):
+        data = {
+            "id" : "some-payment-plan-id",
+            "amount" : 10000,
+            "type" : "MAIN",
+            "due_date" : "2025-02-31",
+        }
+        errors = PlanSchema().validate(data)
+        expected_error = {'due_date': ["time data '2025-02-31' does not match format '%Y/%m/%d'"]}
+        self.assertEqual(errors, expected_error)
+
+        data = {
+            "id" : "some-payment-plan-id",
+            "amount" : 10000,
+            "type" : "MAIN",
+            "due_date" : "2018/02/31",
+        }
+        errors = PlanSchema().validate(data)
+        expected_error = {'due_date': ['day is out of range for month']}
+        self.assertEqual(errors, expected_error)
+
+        data = {
+            "id" : "some-payment-plan-id",
+            "amount" : 10000,
+            "type" : "MAIN",
+            "due_date" : "2018/02/26",
+        }
+        errors = PlanSchema().validate(data)
+        expected_error = {'due_date': ['Due date already expired']}
+        self.assertEqual(errors, expected_error)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -204,9 +204,9 @@ class Config:
             "TITLE"   : "FORGOT_OTP_NOT_FOUND",
             "MESSAGE" : "Forgot OTP not found"
         },
-        "PRODUCT_NOT_FOUND" : {
-            "TITLE"   : "PRODUCT_NOT_FOUND",
-            "MESSAGE" : "Product not found"
+        "PAYMENT_PLAN_NOT_FOUND" : {
+            "TITLE"   : "PAYMENT_PLAN_NOT_FOUND",
+            "MESSAGE" : "Payment Plan not Found"
         },
         "INVALID_CREDENTIALS" : {
             "TITLE"   : "INVALID_CREDENTIALS",

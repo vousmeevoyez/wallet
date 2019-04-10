@@ -354,6 +354,20 @@ class BaseTestCase(TestCase):
         )
     #end def
 
+    def check_pin(self, wallet_id, params, access_token):
+        """ Api Call for checking pin """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.post(
+            BASE_URL + "/wallets/" + wallet_id + "/pin/",
+            data=dict(
+                pin=params["pin"],
+            ),
+            headers=headers
+        )
+    #end def
+
     def update_pin(self, wallet_id, params, access_token):
         """ Api Call for updating pin """
         headers = {
@@ -481,6 +495,71 @@ class BaseTestCase(TestCase):
     #end def
 
     """
+        PAYMENT PLAN 
+    
+    """
+    def create_payment_plan(self, params, api_key):
+        """ Api Call for creating payment plan """
+        headers = {
+            'X-Api-Key': 'Bearer {}'.format(api_key)
+        }
+        return self.client.post(
+            BASE_URL + "/payment_plans/",
+            data=json.dumps(params),
+            content_type="application/json",
+            headers=headers
+        )
+    #end def
+
+    def get_payment_plan(self, payment_plan_id, api_key):
+        """ Api Call for getting payment plan """
+        headers = {
+            'X-Api-Key': 'Bearer {}'.format(api_key)
+        }
+        return self.client.get(
+            BASE_URL + "/payment_plans/" + payment_plan_id,
+            headers=headers
+        )
+    #end def
+
+    def get_payment_plans(self, api_key):
+        """ Api Call for getting all payment plan """
+        headers = {
+            'X-Api-Key': 'Bearer {}'.format(api_key)
+        }
+        return self.client.get(
+            BASE_URL + "/payment_plans/",
+            headers=headers
+        )
+    #end def
+
+    def update_payment_plan(self, payment_plan_id, params, api_key):
+        """ Api Call for update payment plan """
+        headers = {
+            'X-Api-Key': 'Bearer {}'.format(api_key)
+        }
+        return self.client.put(
+            BASE_URL + "/payment_plans/" + payment_plan_id,
+            data=dict(
+                destination=params["destination"],
+                wallet_id=params["wallet_id"],
+            ),
+            headers=headers
+        )
+    #end def
+
+    def remove_payment_plan(self, payment_plan_id, api_key):
+        """ Api Call for remove payment plan """
+        headers = {
+            'X-Api-Key': 'Bearer {}'.format(api_key)
+        }
+        return self.client.delete(
+            BASE_URL + "/payment_plans/" + payment_plan_id,
+            headers=headers
+        )
+    #end def
+
+    """
         BNI UTILITY
     """
     def check_bni_balance(self, account_no, access_token):
@@ -582,68 +661,6 @@ class BaseTestCase(TestCase):
                 bank_name=params["bank_name"],
                 transfer_ref=params["transfer_ref"]
             ),
-            headers=headers
-        )
-    #end def
-
-    """ PRODUCT """
-    def create_product(self, params, api_key):
-        """ Api Call for Creating product """
-        headers = {
-            'X-Api-Key': '{}'.format(api_key)
-        }
-        return self.client.post(
-            BASE_URL + "/products/",
-            data=dict(**params),
-            headers=headers
-        )
-    #end def
-
-    def update_product(self, product_id, params, api_key):
-        """ Api Call for updating product """
-        headers = {
-            'X-Api-Key': '{}'.format(api_key)
-        }
-        return self.client.put(
-            BASE_URL + "/products/" + product_id,
-            data=dict(
-                name=params["name"],
-                description=params["description"],
-                types=params["types"]
-            ),
-            headers=headers
-        )
-    #end def
-
-    def get_product(self, product_id, api_key):
-        """ Api Call for get product """
-        headers = {
-            'X-Api-Key': '{}'.format(api_key)
-        }
-        return self.client.get(
-            BASE_URL + "/products/" + product_id,
-            headers=headers
-        )
-    #end def
-
-    def get_products(self, api_key):
-        """ Api Call for get all product """
-        headers = {
-            'X-Api-Key': '{}'.format(api_key)
-        }
-        return self.client.get(
-            BASE_URL + "/products/",
-            headers=headers
-        )
-    #end def
-
-    def remove_product(self, product_id, api_key):
-        """ Api Call for removing product """
-        headers = {
-            'X-Api-Key': '{}'.format(api_key)
-        }
-        return self.client.delete(
-            BASE_URL + "/products/" + product_id,
             headers=headers
         )
     #end def

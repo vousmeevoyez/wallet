@@ -117,7 +117,7 @@ class BankAccountSchema(ma.Schema):
                 account_no -- bank account no
         """
         # only allow 0-9, minimal 10 and maximal is 16 digit
-        pattern = r"^[0-9]{10,30}$"
+        pattern = r"^[0-9]{6,30}$"
         if re.search(pattern, account_no) is None:
             raise ValidationError('Invalid account number, only number allowed')
         elif int(account_no) < 1:
@@ -648,39 +648,166 @@ class WalletTransactionSchema(ma.Schema):
     #end def
 #end class
 
-class ProductSchema(ma.Schema):
-    """ this is schema for product object """
-    id           = fields.Str(allow_none=True)
-    name         = fields.Str(required=True, validate=(cannot_be_blank,
-                                                       validate_name))
-    description  = fields.Str(required=True, validate=(cannot_be_blank,
-                                                       validate_name))
-    types        = fields.Str(load_only=True)
-    created_at   = fields.DateTime()
-    status       = fields.Method("bool_to_status")
-    product_type = fields.Method("type_to_product_type", attribut=types)
+class PlanSchema(ma.Schema):
+    """ this is schema for plan """
+    id = fields.Str(missing=None)
+    amount = fields.Float(validate=validate_amount)
+    type = fields.Method("type_id_to_type")
+    status = fields.Method("bool_to_status")
+    due_date = fields.Str()
+    created_at = fields.DateTime()
 
     @post_load
-    def make_product(self, data):
-        """ create product object from data"""
+    def make_plan(self, data):
+        """ create payment plan from data"""
         # validate product ID if its set by user
         if data['id'] is not None:
             # make sure the id is not existed and used here
-            product_record = Product.query.filter_by(id=data['id']).first()
-            if product_record is not None:
-                raise ValidationError('Product ID Already Existed')
+            plan = Plan.query.filter_by(id=data['id']).first()
+            if plan is not None:
+                raise ValidationError('Plan ID Already Existed')
             # end if
         else:
             del data['id']
         # end if
-        # convert types from string to ID
-        if data['types'] == "SERVICE":
-            data['types'] = 1
-        elif data['types'] == "GOOD":
-            data['types'] = 2
+        
+        # convert datetime to utc
+        due_date = datetime.strptime(data['due_date'], "%Y/%m/%d")
+        data['due_date'] = due_date
+
+        # convert type to value
+        if data['type'] == "MAIN":
+            data['type'] = 0
+        elif data['type'] == "ADDITIONAL":
+            data['type'] = 1
         # end if
-        return Product(**data)
+        return Plan(**data)
     # end def
+
+    @validates('id')
+    def validate_id(self, id):
+        """
+            function to validate id
+        """
+        # only allow alphanumeric  6 and maximal is 32 digit
+        if id is not None:
+            pattern = r"^[A-Za-z0-9 ,_.-]{6,32}$"
+            if re.search(pattern, id) is None:
+                raise ValidationError('Invalid Identifier')
+            # end if
+        # end if
+    #end def
+
+    @validates('type')
+    def validate_type(self, type):
+        """
+            function to validate payment type
+        """
+        if type not in ["MAIN", "ADDITIONAL"]:
+            raise ValidationError('Invalid plan type')
+    #end def
+
+    @validates('due_date')
+    def validate_due_date(self, due_date):
+        """
+            function to validate start_date
+        """
+        today = datetime.now()
+        try:
+            due_date = datetime.strptime(due_date, "%Y/%m/%d")
+        except ValueError as error:
+            raise ValidationError(str(error))
+        else:
+            if due_date < today:
+                raise ValidationError("Due date already expired")
+        #end try
+    #end def
+
+    def bool_to_status(self, obj):
+        """
+            function to convert boolean into human friendly string
+            args:
+                obj - product object
+        """
+        status = "PENDING"
+        if obj.status == 1:
+            status = "RETRY"
+        elif obj.status == 2:
+            status = "PROCESSED"
+        elif obj.status == 3:
+            status = "FAIL"
+        return status
+    # end def
+
+    def type_id_to_type(self, obj):
+        """
+            function to convert type id into human friendly string
+            args:
+                obj - product object
+        """
+        status = "MAIN"
+        if obj.status == 1:
+            status = "ADDITIONAL"
+        return status
+    # end def
+# end class
+
+class PaymentPlanSchema(ma.Schema):
+    """ this is schema for payment plan """
+    id = fields.Str(allow_none=True)
+    destination = fields.Str(
+        required=True, validate=cannot_be_blank
+    )
+    wallet_id = fields.Str(dump_only=True)
+    status = fields.Method("bool_to_status")
+    plans = fields.Nested(PlanSchema, many=True, allow_none=True)
+    created_at = fields.DateTime()
+
+    @post_load
+    def make_payment_plan(self, data):
+        """ create payment plan from data"""
+        # validate product ID if its set by user
+        if data['id'] is not None:
+            # make sure the id is not existed and used here
+            payment_plan_record = PaymentPlan.query.filter_by(id=data['id']).first()
+            if payment_plan_record is not None:
+                raise ValidationError('Payment Plan ID Already Existed')
+            # end if
+        else:
+            del data['id']
+        # end if
+        if data['plans'] is None:
+            del data['plans']
+        # end if
+        return PaymentPlan(**data)
+    # end def
+
+    @validates('id')
+    def validate_id(self, id):
+        """
+            function to validate id
+        """
+        # only allow alphanumeric  6 and maximal is 32 digit
+        if id is not None:
+            pattern = r"^[A-Za-z0-9 ,_.-]{6,32}$"
+            if re.search(pattern, id) is None:
+                raise ValidationError('Invalid Identifier')
+            # end if
+    #end def
+
+    @validates('destination')
+    def validate_destination(self, destination):
+        """
+            function to validate destination field
+        """
+        # only allow 0-9, minimal 6 and maximal is 16 digit
+        pattern = r"^[0-9]{6,30}$"
+        if re.search(pattern, destination) is None:
+            raise ValidationError('Invalid destination account number, only number allowed')
+        elif int(destination) < 1:
+            raise ValidationError("destination can't be 0")
+        #end if
+    #end def
 
     def bool_to_status(self, obj):
         """
@@ -693,30 +820,5 @@ class ProductSchema(ma.Schema):
             status = "DEACTIVE"
         # end if
         return status
-    # end def
-
-    def type_to_product_type(self, obj):
-        """
-            function to convert tpye into human friendly 
-            args:
-                obj - product object
-        """
-        types = "GOOD"
-        if obj.types:
-            types = "SERVICE"
-        # end if
-        return types
-    #end def
-
-    @validates('types')
-    def validate_types(self, types):
-        """
-            function to validate product types
-            args:
-                types -- Product type
-        """
-        if types not in ["SERVICE", "GOOD"]:
-            raise ValidationError('Invalid Product Types')
-        # end if
     # end def
 # end class

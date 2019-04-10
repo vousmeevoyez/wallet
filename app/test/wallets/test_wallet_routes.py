@@ -295,6 +295,48 @@ class TestWalletRoutes(BaseTestCase):
         self.assertEqual(result.status_code, 422)
 
     """
+        CHECK PIN
+    """
+    def test_check_pin(self):
+        """CASE 1 CHECK PIN : Check pin successfully"""
+        params = {
+            "pin" : "123456",
+        }
+        result = self.check_pin(self._wallet1, params, self._token)
+        response = result.get_json()
+        self.assertEqual(response['data']['message'], "PIN VERIFIED")
+
+    def test_check_pin_incorrect(self):
+        """CASE 2 CHECK PIN : Check pin incorrectly """
+        params = {
+            "pin" : "123452",
+        }
+        result = self.check_pin(self._wallet1, params, self._token)
+        response = result.get_json()
+        self.assertEqual(response['error'], "INCORRECT_PIN")
+
+        params = {
+            "pin" : "123452",
+        }
+        result = self.check_pin(self._wallet1, params, self._token)
+        response = result.get_json()
+        self.assertEqual(response['error'], "INCORRECT_PIN")
+
+        params = {
+            "pin" : "123452",
+        }
+        result = self.check_pin(self._wallet1, params, self._token)
+        response = result.get_json()
+        self.assertEqual(response['error'], "INCORRECT_PIN")
+
+        params = {
+            "pin" : "123452",
+        }
+        result = self.check_pin(self._wallet1, params, self._token)
+        response = result.get_json()
+        self.assertEqual(response['error'], "MAX_PIN_ATTEMPT")
+
+    """
         TRANSFER 
     """
     def test_transfer(self):

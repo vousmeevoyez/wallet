@@ -5,6 +5,7 @@
 #pylint: disable=bad-whitespace
 #pylint: disable=import-error
 
+from werkzeug.datastructures import ImmutableList
 from flask_restplus import reqparse
 
 class UserRequestSchema:
@@ -105,19 +106,22 @@ class WalletTransactionRequestSchema:
     parser.add_argument("start_date", type=str, location="args")
     parser.add_argument("end_date", type=str, location="args")
 
-class QRTransferRequestSchema:
-    """Define all mandatory argument for qr transfer """
-    parser = reqparse.RequestParser()
-    parser.add_argument("qr_string", type=str, required=True)
-#end class
-
-class ProductRequestSchema:
-    """Define all mandatory argument for creating Product"""
+class PaymentPlanRequestSchema:
+    """Define all mandatory argument for creating Payment Plan """
     parser = reqparse.RequestParser()
     parser.add_argument("id", type=str)
-    parser.add_argument("name", type=str, required=True)
-    parser.add_argument("description", type=str, required=True)
-    parser.add_argument("types", type=str, required=True)
+    parser.add_argument("destination", type=str, required=True)
+    parser.add_argument("wallet_id", type=str, required=True)
+    parser.add_argument("plans", type=dict, action='append')
+#end class
+
+class PlanRequestSchema:
+    """Define all mandatory argument for creating Payment Plan """
+    parser = reqparse.RequestParser()
+    parser.add_argument("id", type=str)
+    parser.add_argument("amount", type=int)
+    parser.add_argument("type", type=str, required=True)
+    parser.add_argument("due_date", type=str, required=True)
 #end class
 
 class BNIUtilityRequestSchema:
@@ -162,4 +166,10 @@ class BNIUtilityInterbankPaymentRequestSchema:
     parser.add_argument("amount", type=str, required=True)
     parser.add_argument("transfer_ref", type=str, required=True)
     parser.add_argument("ref_number", type=str)
+#end class
+
+class QRTransferRequestSchema:
+    """Define all mandatory argument for qr transfer """
+    parser = reqparse.RequestParser()
+    parser.add_argument("qr_string", type=str, required=True)
 #end class

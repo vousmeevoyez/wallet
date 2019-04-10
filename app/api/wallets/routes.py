@@ -254,7 +254,7 @@ class WalletPinRoutes(BaseRoutes):
                              self.error_response["INVALID_PARAMETER"]["MESSAGE"],
                              error.messages)
         # need to serialize here
-        response = WalletServices(wallet_id).check(request_data["pin"])
+        response = WalletServices(wallet_id, request_data["pin"]).check()
         return response
     #end def
 #end class

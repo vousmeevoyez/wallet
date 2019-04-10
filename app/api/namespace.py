@@ -33,9 +33,9 @@ class LogNamespace:
 #end class
 
 class TransactionNamespace:
-    api = Namespace("Transaction")
+    api = Namespace("transactions")
 #end class
 
-class ProductNamespace:
-    api = Namespace("Product")
+class PaymentPlanNamespace:
+    api = Namespace("payment_plans")
 #end class

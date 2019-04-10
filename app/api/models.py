@@ -10,6 +10,8 @@
 #pylint: disable=too-few-public-methods
 
 from datetime import datetime, timedelta
+from dateutil import relativedelta
+
 import pytz
 import secrets
 import random
@@ -168,8 +170,8 @@ class Wallet(db.Model):
     incorrect_pin    = db.relationship("IncorrectPin") # one to many
     wallet_lock      = db.relationship("WalletLock") # one to many
     withdraw         = db.relationship("Withdraw") # one to many
+    payment_plans    = db.relationship("PaymentPlan", back_populates="wallet") # one to many
     transactions     = db.relationship("Transaction", back_populates="wallet") # one to many
-    subscriptions    = db.relationship("Subscription", back_populates="wallet") # one to many
 
     def __repr__(self):
         return '<Wallet {} {} {}>'.format(self.id, self.balance, self.user_id)
@@ -754,101 +756,57 @@ class WalletLock(db.Model):
                                               self.wallet_id)
     #end def
 
-class Product(db.Model):
+class PaymentPlan(db.Model):
     """
-        Class model for Wallet Product
+        Class model for Payment Plan
     """
-    id          = db.Column(db.String(255), unique=True,
-                            primary_key=True, default=string_uid)
-    name        = db.Column(db.String(100))
-    description = db.Column(db.String(100))
-    types       = db.Column(db.Integer, default=1) # SERVICES | GOOD
+    id = db.Column(db.String(255), unique=True, primary_key=True,
+                   default=string_uid
+                   )
+    destination = db.Column(db.String(120)) # Wallet ID | Bank Account
+    wallet_id   = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
+    wallet      = db.relationship("Wallet", back_populates="payment_plans") # many to one
+    status      = db.Column(db.Boolean, default=True) # ACTIVE | STATUS
     created_at  = db.Column(db.DateTime, default=now)
-    status      = db.Column(db.Boolean, default=True) # ACTIVE | DEACTIVE
-    plans       = db.relationship("Plan", back_populates="product", cascade="delete") # one to many
+    plans       = db.relationship("Plan", back_populates="payment_plan") # one to many
 
     def __repr__(self):
-        return '<Product {} {} {} {}>'.format(self.id, self.name, self.description,
-                                              self.types)
+        return '<PaymentPlan {} {} {} {}>'.format(self.destination, self.wallet,
+                                                  self.status, self.plans)
     #end def
+
+    def total(self, current_due_date):
+        """  calculate total payment plan amount for that specific amount until
+        the due_date """
+        next_due_date = current_due_date + relativedelta.relativedelta(months=1)
+        total_payment = Plan.query.with_entities(
+            func.sum(Plan.amount).label("total_amount")
+        ).filter(
+            Plan.due_date < next_due_date
+        ).first()[0]
+        return total_payment
+    #end def
+# end class
 
 class Plan(db.Model):
     """
-        Class model for Product Plan
+        Class model for Plan
     """
-    id                 = db.Column(UUID(as_uuid=True), unique=True,
-                                   primary_key=True, default=uid)
-    destination        = db.Column(db.String(120)) # Wallet ID | Bank Account
-    name               = db.Column(db.String(120)) # charge name
-    amount             = db.Column(db.Float)
-    mode               = db.Column(db.Boolean, default=True) # adjustable | fixed
-    types              = db.Column(db.Integer) # daily | weekly | monthly | yearly
-    due_date           = db.Column(db.DateTime) # due date
-    created_at         = db.Column(db.DateTime, default=now)
-    status             = db.Column(db.Integer, default=1) # active | finish
-    product_id         = db.Column(db.String(255), db.ForeignKey('product.id'))
-    product            = db.relationship("Product", back_populates="plans") # one to one
-    subscription       = db.relationship("Subscription",
-                                         back_populates="plan") # one to one
-    additional_plans   = db.relationship("AdditionalPlan",
-                                         back_populates="plan") # one to one
+    id = db.Column(db.String(255), unique=True, primary_key=True,
+                   default=string_uid
+                   )
+    amount = db.Column(db.Float) # amount
+    type   = db.Column(db.Integer, default=0)# MAIN | LATE | DLL
+    status = db.Column(db.Integer, default=0)# PENDING| RETRY | SENDING | FAIL
+    due_date = db.Column(db.DateTime)
+    payment_plan_id = db.Column(db.String(255), db.ForeignKey('payment_plan.id'))
+    payment_plan = db.relationship("PaymentPlan", back_populates="plans") # many to one
+    created_at = db.Column(db.DateTime, default=now)
 
     def __repr__(self):
-        return '<Charge {} {} {} {} {} {}>'.format(self.destination, self.name,
-                                                   self.amount, self.mode,
-                                                   self.types, self.due_date)
+        return '<Plan {} {} {} {}>'.format(
+            self.amount, self.type,
+            self.status, self.due_date
+        )
     #end def
-
-    def total(self, key, date_time):
-        """ special method to calculate total charge for specific key and
-        specific datetime """
-        additional_charge = 0
-
-        charges = \
-        AdditionalPlan.query.with_entities(
-            func.sum(AdditionalPlan.amount).label("total_amount")
-        ).filter(
-            AdditionalPlan.plan_id == self.id,
-            AdditionalPlan.key == key,
-            AdditionalPlan.created_at < date_time
-        ).first()[0]
-        if charges is not None:
-            additional_charge = charges
-        #end if
-        return self.amount + additional_charge
-    #end def
-
-class AdditionalPlan(db.Model):
-    """ additional plan model """
-    id          = db.Column(UUID(as_uuid=True), unique=True,
-                            primary_key=True, default=uid)
-    key         = db.Column(db.String(120)) # special key to filter charge
-    description = db.Column(db.String(120)) # description
-    amount      = db.Column(db.Float)
-    created_at  = db.Column(db.DateTime, default=now)
-    plan_id     = db.Column(UUID(as_uuid=True), db.ForeignKey('plan.id'))
-    plan        = db.relationship("Plan", back_populates="additional_plans")
-
-    def __repr__(self):
-        return '<AdditionalPlan {} {} {} {}>'.format(self.plan,
-                                                     self.description,
-                                                     self.amount,
-                                                     self.created_at)
-    #end def
-
-class Subscription(db.Model):
-    """
-        Class model for Subscription
-    """
-    id        = db.Column(UUID(as_uuid=True), unique=True,
-                          primary_key=True, default=uid)
-    created_at= db.Column(db.DateTime, default=now)
-    status    = db.Column(db.Boolean, default=True) # ACTIVE | DEACTIVE
-    wallet_id = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
-    wallet    = db.relationship("Wallet", back_populates="subscriptions")#1toN
-    plan_id   = db.Column(UUID(as_uuid=True), db.ForeignKey('plan.id'))
-    plan      = db.relationship("Plan", back_populates="subscription")#1toN
-
-    def __repr__(self):
-        return '<Subscription {} {}>'.format(self.wallet, self.charge)
-    #end def
+# end class

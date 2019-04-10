@@ -2,7 +2,8 @@
     Test Models
     ___________
 """
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from dateutil import relativedelta
 
 from sqlalchemy.sql import func
 
@@ -873,9 +874,10 @@ class IncorrectWalletPinCase(BaseTestCase):
         IncorrectPin.query.filter(IncorrectPin.wallet_id==wallet.id).first()
         print(result)
 
-class RepaymentCase(BaseTestCase):
+class PaymentPlanCase(BaseTestCase):
+    """ Payment Plan Case """
 
-    def test_simulate_lending_payment_with_late_fee(self):
+    def test_payment_plan_january_fee(self):
         # create dummy wallet
         wallet = Wallet(
         )
@@ -884,77 +886,75 @@ class RepaymentCase(BaseTestCase):
         # add balance here
         wallet.add_balance(1000)
 
-        # create loan product
-        product = Product(
-            name="Modana Cicil",
-            description="Quick Payday loan"
+        # create payment plan
+        payment_plan = PaymentPlan(
+            destination="some-bank-account-number",
+            wallet_id=wallet.id
         )
-        db.session.add(product)
+        db.session.add(payment_plan)
         db.session.commit()
 
-        # create loan charge
-        due_date = datetime(2019, 2, 25)
-        plan = Plan(
-            destination="some-bank-account-number",
-            name="Modana Cicil Schedule Payment",
-            amount=1000,
-            mode=True, # adjustable
-            types=3, # monthly
+        # create plan
+        due_date = datetime(2019, 1, 25)
+        january_plan = Plan(
+            payment_plan_id=payment_plan.id,
+            amount=10000,
             due_date=due_date
         )
-        db.session.add(plan)
-        db.session.commit()
+        db.session.add(january_plan)
 
-        # create additional charge
-        created_at = datetime(2019, 2, 26)
-        additional_plan = AdditionalPlan(
-            plan_id=plan.id,
-            key="LATE_FEE",
-            description="biaya penalti karena telat bayar 2019-2-26",
-            amount=100,
-            created_at=created_at
+        # create plan
+        due_date = datetime(2019, 1, 28)
+        january_late_plan = Plan(
+            payment_plan_id=payment_plan.id,
+            amount=1000,
+            type=1, # LATE
+            due_date=due_date
         )
-        db.session.add(additional_plan)
-        db.session.commit()
+        db.session.add(january_late_plan)
 
-        # create additional charge
-        created_at = datetime(2019, 2, 27)
-        additional_plan = AdditionalPlan(
-            plan_id=plan.id,
-            key="LATE_FEE",
-            description="biaya penalti karena telat bayar 2019-2-27",
-            amount=100,
-            created_at=created_at
+        # create plan
+        due_date = datetime(2019, 1, 29)
+        january_late_plan2 = Plan(
+            payment_plan_id=payment_plan.id,
+            amount=1000,
+            type=1, # LATE
+            due_date=due_date
         )
-        db.session.add(additional_plan)
-        db.session.commit()
+        db.session.add(january_late_plan2)
 
-        # create additional charge
-        created_at = datetime(2019, 2, 28)
-        additional_plan = AdditionalPlan(
-            plan_id=plan.id,
-            key="LATE_FEE",
-            description="biaya penalti karena telat bayar 2019-2-28",
-            amount=100,
-            created_at=created_at
+        # create plan
+        due_date = datetime(2019, 2, 25)
+        february_plan = Plan(
+            payment_plan_id=payment_plan.id,
+            amount=10000,
+            due_date=due_date
         )
-        db.session.add(additional_plan)
-        db.session.commit()
+        db.session.add(february_plan)
 
-
-        # subscribe wallet to a loan charge
-        subscription = Subscription(
-            wallet_id=wallet.id,
-            plan_id=plan.id
+        # create plan
+        due_date = datetime(2019, 3, 25)
+        march_plan = Plan(
+            payment_plan_id=payment_plan.id,
+            amount=10000,
+            due_date=due_date
         )
-        db.session.add(subscription)
+        db.session.add(march_plan)
         db.session.commit()
 
-        today = datetime(2019, 3, 1)
-        charge = Plan.query.filter_by(id=plan.id).first()
-        self.assertEqual(charge.total("LATE_FEE", today), 1300)
+        self.assertEqual(len(payment_plan.plans), 5)
 
-    def test_simulate_lending_payment(self):
+        # try query all amount from january
+        current_due_date = datetime(2019, 1, 25)
+        next_due_date = current_due_date + relativedelta.relativedelta(months=1)
+        total_payment = Plan.query.with_entities(
+            func.sum(Plan.amount).label("total_amount")
+        ).filter(
+            Plan.due_date < next_due_date
+        ).first()[0]
+        self.assertEqual(total_payment, 12000)
+
+    def test_payment_plan_february(self):
         # create dummy wallet
         wallet = Wallet(
         )
@@ -963,64 +963,61 @@ class RepaymentCase(BaseTestCase):
         # add balance here
         wallet.add_balance(1000)
 
-        # create loan product
-        product = Product(
-            name="Modana Cicil",
-            description="Quick Payday loan"
-        )
-        db.session.add(product)
-        db.session.commit()
-
-        # create loan charge
-        due_date = datetime(2019, 2, 25)
-        plan = Plan(
+        # create payment plan
+        payment_plan = PaymentPlan(
             destination="some-bank-account-number",
-            name="Modana Cicil Schedule Payment",
+            wallet_id=wallet.id
+        )
+        db.session.add(payment_plan)
+        db.session.commit()
+
+        # create plan
+        due_date = datetime(2019, 2, 28)
+        february_plan = Plan(
+            payment_plan_id=payment_plan.id,
+            amount=10000,
+            due_date=due_date
+        )
+        db.session.add(february_plan)
+
+        # create late plan
+        due_date = datetime(2019, 3, 1)
+        february_late_plan = Plan(
+            payment_plan_id=payment_plan.id,
             amount=1000,
-            mode=True, # adjustable
-            types=3, # monthly
             due_date=due_date
         )
-        db.session.add(plan)
-        db.session.commit()
+        db.session.add(february_late_plan)
 
-        today = datetime(2019, 3, 1)
-        plan = Plan.query.filter_by(id=plan.id).first()
-        self.assertEqual(plan.total("LATE_FEE", today), 1000)
-
-    def test_simulate_bill_payment(self):
-        # create dummy wallet
-        wallet = Wallet(
-        )
-        db.session.add(wallet)
-        db.session.commit()
-        # add balance here
-        wallet.add_balance(1000000)
-
-        # create loan product
-        product = Product(
-            name="Modana Pulsa",
-            description="Bill Payment"
-        )
-        db.session.add(product)
-        db.session.commit()
-
-        # create loan charge
-        due_date = datetime(2019, 2, 25)
-        plan = Plan(
-            destination="some-wallet-number",
-            name="Modana Pulsa Schedule Payment",
-            amount=100000,
-            mode=False, # adjustable
-            types=3, # monthly
+        # create late plan
+        due_date = datetime(2019, 3, 2)
+        february_late_plan2 = Plan(
+            payment_plan_id=payment_plan.id,
+            amount=1000,
             due_date=due_date
         )
-        db.session.add(plan)
+        db.session.add(february_late_plan2)
+
+        # create plan
+        due_date = datetime(2019, 3, 28)
+        march_plan = Plan(
+            payment_plan_id=payment_plan.id,
+            amount=10000,
+            due_date=due_date
+        )
+        db.session.add(march_plan)
         db.session.commit()
 
-        today = datetime(2019, 3, 1)
-        plan = Plan.query.filter_by(id=plan.id).first()
-        self.assertEqual(plan.amount, 100000)
+        self.assertEqual(len(payment_plan.plans), 4)
 
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
+        # try query all amount from january
+        current_due_date = datetime(2019, 2, 28)
+        next_due_date = current_due_date + relativedelta.relativedelta(months=1)
+        total_payment = Plan.query.with_entities(
+            func.sum(Plan.amount).label("total_amount")
+        ).filter(
+            Plan.due_date < next_due_date
+        ).first()[0]
+        self.assertEqual(total_payment, 12000)
+
+        print(wallet.payment_plans)

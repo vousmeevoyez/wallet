@@ -66,7 +66,7 @@ class TransferServices(WalletCore):
         credit_trx = TransactionCore().process_transaction(
             source=self.source,
             destination=self.destination,
-            amount=-amount,
+            amount=amount,
             payment_type=True,
             transfer_types="RECEIVE_TRANSFER",
             transfer_notes=transfer_notes
