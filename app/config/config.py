@@ -208,6 +208,10 @@ class Config:
             "TITLE"   : "PAYMENT_PLAN_NOT_FOUND",
             "MESSAGE" : "Payment Plan not Found"
         },
+        "PLAN_NOT_FOUND" : {
+            "TITLE"   : "PLAN_NOT_FOUND",
+            "MESSAGE" : "Plan not Found"
+        },
         "INVALID_CREDENTIALS" : {
             "TITLE"   : "INVALID_CREDENTIALS",
             "MESSAGE" : "Incorrect Username / Password"

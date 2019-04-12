@@ -59,6 +59,19 @@ class TestWalletServices(BaseTestCase):
         with self.assertRaises(UnprocessableEntity):
             result = WalletServices(self.wallet_id).remove()
 
+    def test_wallet_update_pin(self):
+        """ test checking wallet balance"""
+        params = {
+            "old_pin" : "123456",
+            "pin" : "111111",
+            "confirm_pin" : "111111"
+        }
+        result = WalletServices(self.wallet_id, "123456").update_pin(params)
+        self.assertEqual(result[1], 204)
+
+        result = WalletServices(self.wallet_id, "111111").check()
+        self.assertEqual(result[0]['data']["message"], "PIN VERIFIED")
+
     def test_wallet_check_pin(self):
         """ test checking wallet balance"""
         result = WalletServices(self.wallet_id, "123456").check()

@@ -121,11 +121,9 @@ class BankTask(celery.Task):
                 #self.retry(countdown=backoff(self.request.retries), exc=error)
                 self.retry(countdown=backoff(self.request.retries))
             except MaxRetriesExceededError:
-                print("should refund here")
                 # creat transaction refund here
                 transaction_id = str(payment.transaction.id)
                 result = TransactionServices(transaction_id=transaction_id).refund()
-                print(result)
         else:
             # get reference number from transfer response
             transfer_info = result["data"]["transfer_info"]

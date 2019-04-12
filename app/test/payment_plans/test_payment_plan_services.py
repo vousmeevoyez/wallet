@@ -163,3 +163,38 @@ class TestPaymentPlan(BaseTestCase):
         payment_plan_id = result[0]['data']['payment_plan_id']
         result = PaymentPlanServices(payment_plan_id=payment_plan_id).remove()
         self.assertEqual(result[1], 204)
+
+    def test_update(self):
+        """ test method for updating payment plan """
+        plans = []
+        plan = Plan(
+            amount=100,
+            due_date=datetime(2019, 1, 1)
+        )
+
+        plan2 = Plan(
+            amount=100,
+            due_date=datetime(2019, 2, 1)
+        )
+        plans.append(plan)
+        plans.append(plan2)
+
+        payment_plan = PaymentPlan(
+            destination="some-bank-account-number",
+            plans=plans
+        )
+
+        result = PaymentPlanServices(str(self.wallet.id)).add(payment_plan)
+        self.assertEqual(result[1], 201)
+        self.assertTrue(result[0]['data']['payment_plan_id'])
+        payment_plan_id = result[0]['data']['payment_plan_id']
+
+        params = {
+            "destination" : "123123123123",
+            "status" : False
+        }
+        result = PaymentPlanServices(
+            payment_plan_id=payment_plan_id,
+            wallet_id=str(self.wallet.id)
+        ).update(params)
+        self.assertEqual(result[1], 204)

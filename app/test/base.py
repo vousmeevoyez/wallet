@@ -496,12 +496,11 @@ class BaseTestCase(TestCase):
 
     """
         PAYMENT PLAN 
-    
     """
-    def create_payment_plan(self, params, api_key):
+    def create_payment_plan(self, params, access_token):
         """ Api Call for creating payment plan """
         headers = {
-            'X-Api-Key': 'Bearer {}'.format(api_key)
+            'Authorization': 'Bearer {}'.format(access_token)
         }
         return self.client.post(
             BASE_URL + "/payment_plans/",
@@ -511,10 +510,10 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def get_payment_plan(self, payment_plan_id, api_key):
+    def get_payment_plan(self, payment_plan_id, access_token):
         """ Api Call for getting payment plan """
         headers = {
-            'X-Api-Key': 'Bearer {}'.format(api_key)
+            'Authorization': 'Bearer {}'.format(access_token)
         }
         return self.client.get(
             BASE_URL + "/payment_plans/" + payment_plan_id,
@@ -522,10 +521,10 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def get_payment_plans(self, api_key):
+    def get_payment_plans(self, access_token):
         """ Api Call for getting all payment plan """
         headers = {
-            'X-Api-Key': 'Bearer {}'.format(api_key)
+            'Authorization': 'Bearer {}'.format(access_token)
         }
         return self.client.get(
             BASE_URL + "/payment_plans/",
@@ -533,10 +532,10 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def update_payment_plan(self, payment_plan_id, params, api_key):
+    def update_payment_plan(self, payment_plan_id, params, access_token):
         """ Api Call for update payment plan """
         headers = {
-            'X-Api-Key': 'Bearer {}'.format(api_key)
+            'Authorization': 'Bearer {}'.format(access_token)
         }
         return self.client.put(
             BASE_URL + "/payment_plans/" + payment_plan_id,
@@ -548,13 +547,88 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def remove_payment_plan(self, payment_plan_id, api_key):
+    def remove_payment_plan(self, payment_plan_id, access_token):
         """ Api Call for remove payment plan """
         headers = {
-            'X-Api-Key': 'Bearer {}'.format(api_key)
+            'Authorization': 'Bearer {}'.format(access_token)
         }
         return self.client.delete(
             BASE_URL + "/payment_plans/" + payment_plan_id,
+            headers=headers
+        )
+    #end def
+
+    """
+        PLAN 
+    """
+    def create_plan(self, params, access_token):
+        """ Api Call for creating plan """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.post(
+            BASE_URL + "/plans/",
+            data=json.dumps(params),
+            content_type="application/json",
+            headers=headers
+        )
+    #end def
+
+    def get_plan(self, plan_id, access_token):
+        """ Api Call for getting payment plan """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.get(
+            BASE_URL + "/plans/" + plan_id,
+            headers=headers
+        )
+    #end def
+
+    def get_plans(self, access_token):
+        """ Api Call for getting all payment plan """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.get(
+            BASE_URL + "/plans/",
+            headers=headers
+        )
+    #end def
+
+    def update_plan(self, plan_id, params, access_token):
+        """ Api Call for update payment plan """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.put(
+            BASE_URL + "/plans/" + plan_id,
+            data=json.dumps(params),
+            content_type="application/json",
+            headers=headers
+        )
+    #end def
+
+    def update_plan_status(self, plan_id, params, access_token):
+        """ Api Call for update payment plan """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.patch(
+            BASE_URL + "/plans/" + plan_id,
+            data=json.dumps(params),
+            content_type="application/json",
+            headers=headers
+        )
+    #end def
+
+    def remove_plan(self, plan_id, access_token):
+        """ Api Call for remove plan """
+        headers = {
+            'Authorization': 'Bearer {}'.format(access_token)
+        }
+        return self.client.delete(
+            BASE_URL + "/plans/" + plan_id,
             headers=headers
         )
     #end def

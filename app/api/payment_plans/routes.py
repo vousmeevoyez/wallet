@@ -35,6 +35,7 @@ class PaymentPlanRoutes(BaseRoutes):
         Payment Plan
         /payment_plans
     """
+    @token_required
     def post(self):
         """ Endpoint for creating payment plan """
         request_data = PaymentPlanRequestSchema.parser.parse_args(strict=True)
@@ -45,11 +46,11 @@ class PaymentPlanRoutes(BaseRoutes):
                              self.error_response["INVALID_PARAMETER"]["MESSAGE"],
                              error.messages)
         # end try
-        print(payment_plan)
         response = PaymentPlanServices(request_data["wallet_id"]).add(payment_plan.data)
         return response
     #end def
 
+    @token_required
     def get(self):
         """ Endpoint for showing all payment plan """
         response = PaymentPlanServices.show()
@@ -63,6 +64,7 @@ class PaymentPlanInfoRoutes(BaseRoutes):
         Payment Plan
         /payment_plans
     """
+    @token_required
     def put(self, payment_plan_id):
         """ Endpoint for updating payment plan """
         request_data = PaymentPlanRequestSchema.parser.parse_args(strict=True)
@@ -73,16 +75,21 @@ class PaymentPlanInfoRoutes(BaseRoutes):
                              self.error_response["INVALID_PARAMETER"]["MESSAGE"],
                              error.messages)
         # end try
-        response = PaymentPlanServices(payment_plan_id=payment_plan_id).update(request_data)
+        response = PaymentPlanServices(
+            payment_plan_id=payment_plan_id,
+            wallet_id=request_data["wallet_id"]
+        ).update(request_data)
         return response
     #end def
 
+    @token_required
     def get(self, payment_plan_id):
         """ Endpoint for showing all payment plan """
         response = PaymentPlanServices(payment_plan_id=payment_plan_id).info()
         return response
     #end def
 
+    @token_required
     def delete(self, payment_plan_id):
         """ Endpoint for removing payment plan """
         response = PaymentPlanServices(payment_plan_id=payment_plan_id).remove()

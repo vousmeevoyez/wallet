@@ -96,8 +96,10 @@ class PaymentPlanServices:
     def update(self, params):
         """ update payment plan """
         self.payment_plan.destination = params["destination"]
-        self.payment_plan.source = params["source"]
-        self.payment_plan.status = params["status"]
+        self.payment_plan.wallet_id = self.wallet.id
+
+        status = bool(params["status"] == "ACTIVE")
+        self.payment_plan.status = status
 
         db.session.commit()
         return no_content()

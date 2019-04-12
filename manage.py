@@ -122,13 +122,27 @@ def _create_admin(role_id):
             username="MODANAADMIN",
             name="Modana Admin",
             phone_ext="62",
-            phone_number="81212341234",
+            phone_number="6666666667",
             email="admin@modana.id",
             role_id=role_id
         )
         admin.set_password("password")
         db.session.add(admin)
         db.session.commit()
+
+        # create admin account here
+        admin = User(
+            username="modana_lending",
+            name="Modana Lending",
+            phone_ext="62",
+            phone_number="6666666666",
+            email="lending@modana.id",
+            role_id=role_id
+        )
+        admin.set_password("tX7}@B^?N}}CakHrBeMW")
+        db.session.add(admin)
+        db.session.commit()
+
 
 def _import_bank_csv():
     # only imoprt the bank when there are none

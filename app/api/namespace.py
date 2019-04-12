@@ -39,3 +39,7 @@ class TransactionNamespace:
 class PaymentPlanNamespace:
     api = Namespace("payment_plans")
 #end class
+
+class PlanNamespace:
+    api = Namespace("plans")
+#end class

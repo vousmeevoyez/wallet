@@ -916,6 +916,36 @@ class TestPaymentPlanSchema(BaseTestCase):
         expected_error = {"destination" : ["Invalid destination account number, only number allowed"]}
         self.assertEqual(errors, expected_error)
 
+    def test_validate_payment_schema_status(self):
+        # no errors
+        data = {
+            "id" : "some-payment-plan-id",
+            "destination" : "123456789",
+            "wallet_id" : "some-wallet-id",
+            "status" : "ACTIVE",
+        }
+        errors = PaymentPlanSchema().validate(data)
+        self.assertEqual(errors, {})
+
+        data = {
+            "id" : "some-payment-plan-id",
+            "destination" : "123456789",
+            "wallet_id" : "some-wallet-id",
+            "status" : "ACTIVE",
+        }
+        errors = PaymentPlanSchema().validate(data)
+        print(errors)
+
+        data = {
+            "id" : "some-payment-plan-id",
+            "destination" : "123456789",
+            "wallet_id" : "some-wallet-id",
+            "status" : "wowo",
+        }
+        errors = PaymentPlanSchema().validate(data)
+        expected_error = {'status': ['Invalid status type']}
+        self.assertEqual(errors, expected_error)
+
     def test_nested_plan(self):
         """ test serializing nested plan """
         plans = [

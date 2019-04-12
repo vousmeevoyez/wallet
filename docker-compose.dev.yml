@@ -44,3 +44,12 @@ services:
                 - 5555:5555
                 depends_on:
                 - rabbitmq
+
+        grpc:
+                entrypoint: ./start.sh
+                image: modana-wallet-grpc
+                env_file: env/dev.env
+                ports:
+                - 5001:5001
+                depends_on:
+                - flask

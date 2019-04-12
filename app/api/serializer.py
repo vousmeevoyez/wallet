@@ -653,7 +653,7 @@ class PlanSchema(ma.Schema):
     id = fields.Str(missing=None)
     amount = fields.Float(validate=validate_amount)
     type = fields.Method("type_id_to_type")
-    status = fields.Method("bool_to_status")
+    status = fields.Method("bool_to_status", allow_none=True)
     due_date = fields.Str()
     created_at = fields.DateTime()
 
@@ -701,10 +701,20 @@ class PlanSchema(ma.Schema):
     @validates('type')
     def validate_type(self, type):
         """
-            function to validate payment type
+            function to validate plan type
         """
         if type not in ["MAIN", "ADDITIONAL"]:
             raise ValidationError('Invalid plan type')
+    #end def
+
+    @validates('status')
+    def validate_status(self, status):
+        """
+            function to validate plan status
+        """
+        if status is not None:
+            if status not in ["PENDING", "RETRYING", "SENDING", "PAID", "FAIL"]:
+                raise ValidationError('Invalid plan status')
     #end def
 
     @validates('due_date')
@@ -731,11 +741,14 @@ class PlanSchema(ma.Schema):
         """
         status = "PENDING"
         if obj.status == 1:
-            status = "RETRY"
+            status = "RETRYING"
         elif obj.status == 2:
-            status = "PROCESSED"
+            status = "SENDING"
         elif obj.status == 3:
+            status = "PAID"
+        elif obj.status == 4:
             status = "FAIL"
+        # end if
         return status
     # end def
 
@@ -759,7 +772,7 @@ class PaymentPlanSchema(ma.Schema):
         required=True, validate=cannot_be_blank
     )
     wallet_id = fields.Str(dump_only=True)
-    status = fields.Method("bool_to_status")
+    status = fields.Method("bool_to_status", allow_none=True)
     plans = fields.Nested(PlanSchema, many=True, allow_none=True)
     created_at = fields.DateTime()
 
@@ -776,9 +789,11 @@ class PaymentPlanSchema(ma.Schema):
         else:
             del data['id']
         # end if
+
         if data['plans'] is None:
             del data['plans']
         # end if
+
         return PaymentPlan(**data)
     # end def
 
@@ -807,6 +822,16 @@ class PaymentPlanSchema(ma.Schema):
         elif int(destination) < 1:
             raise ValidationError("destination can't be 0")
         #end if
+    #end def
+
+    @validates('status')
+    def validate_status(self, status):
+        """
+            function to validate payment plan status
+        """
+        if status is not None:
+            if status not in ["ACTIVE", "INACTIVE"]:
+                raise ValidationError('Invalid status type')
     #end def
 
     def bool_to_status(self, obj):

@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 from app.api.models import *
 from app.test.base import BaseTestCase
 
-class TestPaymentPlanRoutes(BaseTestCase):
+class TestPlanRoutes(BaseTestCase):
     """ Test Payment Plan Routes"""
 
     def setUp(self):
@@ -43,7 +43,7 @@ class TestPaymentPlanRoutes(BaseTestCase):
     """
         TEST BEGIN HERE 
     """
-    def test_create_payment_plan(self):
+    def test_create_plan(self):
         """ test routes function to create payment plan """
         params = {
             "id" : "some-payment-plan-id",
@@ -53,26 +53,22 @@ class TestPaymentPlanRoutes(BaseTestCase):
         result = self.create_payment_plan(params, self._token)
         response = result.get_json()
         self.assertTrue(response['data']['payment_plan_id'])
-    # end def
 
-    def test_get_payment_plans(self):
-        """ test routes function to get payment plans"""
+        payment_plan_id = response['data']['payment_plan_id']
+
         params = {
-            "id" : "some-payment-plan-id",
-            "destination" : "123456",
-            "wallet_id" : self._wallet,
+            "payment_plan_id" : payment_plan_id,
+            "amount" : "1000",
+            "type" : "MAIN",
+            "due_date" : "2020/12/12"
         }
-        result = self.create_payment_plan(params, self._token)
+        result = self.create_plan(params, self._token)
         response = result.get_json()
-        self.assertTrue(response['data']['payment_plan_id'])
-
-        result = self.get_payment_plans(self._token)
-        response = result.get_json()
-        self.assertTrue(len(response['data']) > 0)
+        self.assertTrue(response['data']['plan_id'])
     # end def
 
-    def test_get_payment_plan(self):
-        """ test routes function to get payment plan"""
+    def test_update_plan(self):
+        """ test routes function to update plan """
         params = {
             "id" : "some-payment-plan-id",
             "destination" : "123456",
@@ -84,39 +80,30 @@ class TestPaymentPlanRoutes(BaseTestCase):
 
         payment_plan_id = response['data']['payment_plan_id']
 
-        result = self.get_payment_plan(payment_plan_id, self._token)
-        response = result.get_json()
-        self.assertTrue(response['data'])
-    # end def
-
-    def test_remove_payment_plan(self):
-        """ test routes function to get payment plan"""
         params = {
-            "id" : "some-payment-plan-id",
-            "destination" : "123456",
-            "wallet_id" : self._wallet,
+            "payment_plan_id" : payment_plan_id,
+            "amount" : "1000",
+            "type" : "MAIN",
+            "due_date" : "2020/12/12"
         }
-        result = self.create_payment_plan(params, self._token)
+        result = self.create_plan(params, self._token)
         response = result.get_json()
-        self.assertTrue(response['data']['payment_plan_id'])
+        self.assertTrue(response['data']['plan_id'])
 
-        payment_plan_id = response['data']['payment_plan_id']
+        plan_id = response['data']['plan_id']
 
-        result = self.remove_payment_plan(payment_plan_id, self._token)
+        params = {
+            "payment_plan_id" : payment_plan_id,
+            "amount" : "1000",
+            "type" : "MAIN",
+            "due_date" : "2020/12/12"
+        }
+        result = self.update_plan(plan_id, params, self._token)
         self.assertEqual(result.status_code, 204)
-
-        params = {
-            "id" : "some-payment-plan-id",
-            "destination" : "123456",
-            "wallet_id" : self._wallet,
-        }
-        result = self.create_payment_plan(params, self._token)
-        response = result.get_json()
-        self.assertTrue(response['data']['payment_plan_id'])
     # end def
 
-    def test_update_payment_plan(self):
-        """ test routes function to update payment plan"""
+    def test_update_plan_status(self):
+        """ test routes function to update plan """
         params = {
             "id" : "some-payment-plan-id",
             "destination" : "123456",
@@ -129,15 +116,20 @@ class TestPaymentPlanRoutes(BaseTestCase):
         payment_plan_id = response['data']['payment_plan_id']
 
         params = {
-            "destination" : "654321",
-            "wallet_id" : self._wallet,
-            "status" : "DEACTIVE",
+            "payment_plan_id" : payment_plan_id,
+            "amount" : "1000",
+            "type" : "MAIN",
+            "due_date" : "2020/12/12"
         }
-        result = self.update_payment_plan(payment_plan_id, params, self._token)
-        self.assertEqual(result.status_code, 204)
-
-        result = self.get_payment_plan(payment_plan_id, self._token)
+        result = self.create_plan(params, self._token)
         response = result.get_json()
-        print(response)
+        self.assertTrue(response['data']['plan_id'])
+
+        plan_id = response['data']['plan_id']
+
+        params = {
+            "status" : "PAID",
+        }
+        result = self.update_plan_status(plan_id, params, self._token)
+        self.assertEqual(result.status_code, 204)
     # end def
-# end class

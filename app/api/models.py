@@ -768,7 +768,7 @@ class PaymentPlan(db.Model):
     wallet      = db.relationship("Wallet", back_populates="payment_plans") # many to one
     status      = db.Column(db.Boolean, default=True) # ACTIVE | STATUS
     created_at  = db.Column(db.DateTime, default=now)
-    plans       = db.relationship("Plan", back_populates="payment_plan") # one to many
+    plans       = db.relationship("Plan", back_populates="payment_plan", passive_deletes=True) # one to many
 
     def __repr__(self):
         return '<PaymentPlan {} {} {} {}>'.format(self.destination, self.wallet,
@@ -799,7 +799,7 @@ class Plan(db.Model):
     type   = db.Column(db.Integer, default=0)# MAIN | LATE | DLL
     status = db.Column(db.Integer, default=0)# PENDING| RETRY | SENDING | FAIL
     due_date = db.Column(db.DateTime)
-    payment_plan_id = db.Column(db.String(255), db.ForeignKey('payment_plan.id'))
+    payment_plan_id = db.Column(db.String(255), db.ForeignKey('payment_plan.id', ondelete='CASCADE'))
     payment_plan = db.relationship("PaymentPlan", back_populates="plans") # many to one
     created_at = db.Column(db.DateTime, default=now)
 

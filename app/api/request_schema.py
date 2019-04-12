@@ -113,15 +113,23 @@ class PaymentPlanRequestSchema:
     parser.add_argument("destination", type=str, required=True)
     parser.add_argument("wallet_id", type=str, required=True)
     parser.add_argument("plans", type=dict, action='append')
+    parser.add_argument("status", type=str)
 #end class
 
 class PlanRequestSchema:
     """Define all mandatory argument for creating Payment Plan """
     parser = reqparse.RequestParser()
     parser.add_argument("id", type=str)
-    parser.add_argument("amount", type=int)
+    parser.add_argument("payment_plan_id", type=str, required=True)
+    parser.add_argument("amount", type=int, required=True)
     parser.add_argument("type", type=str, required=True)
     parser.add_argument("due_date", type=str, required=True)
+#end class
+
+class UpdatePlanRequestSchema:
+    """Define all mandatory argument for updating Payment Plan """
+    parser = reqparse.RequestParser()
+    parser.add_argument("status", type=str, required=True)
 #end class
 
 class BNIUtilityRequestSchema:

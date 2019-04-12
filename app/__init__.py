@@ -13,7 +13,7 @@ from app.api import sentry
 def register_blueprint(api):
     """ regist all module here"""
     for module in ("auth", "wallets", "users", "virtual_accounts",
-                   "payment_plans", "callback", "banks", "logs", "utility", "transactions"):
+                   "payment_plans", "plans", "callback", "banks", "logs", "utility", "transactions"):
         namespace = import_module('app.api.{}'.format(module))
         api.add_namespace(namespace.api, path="/{}".format(module))
 

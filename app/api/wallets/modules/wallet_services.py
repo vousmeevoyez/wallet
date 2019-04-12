@@ -111,7 +111,6 @@ class WalletServices(WalletCore):
             args :
                 params --
         """
-        old_pin     = params["old_pin"]
         pin         = params["pin"]
         confirm_pin = params["confirm_pin"]
 
@@ -128,7 +127,7 @@ class WalletServices(WalletCore):
         #end if
 
         # update the new pin here
-        self.wallet.set_pin(pin)
+        self.source.set_pin(pin)
         db.session.commit()
 
         return no_content()
