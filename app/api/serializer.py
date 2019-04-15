@@ -360,7 +360,7 @@ class UserSchema(ma.Schema):
             args:
                 password -- password
         """
-        if re.match(r'[A-Za-z0-9@#$%^&+=]{6,}', password) is None:
+        if re.match(r'^.{6,}', password) is None:
             raise ValidationError("Invalid Password, Minimum 6 Character")
     #end def
 

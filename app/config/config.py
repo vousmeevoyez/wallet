@@ -30,6 +30,7 @@ class Config:
 
     SENTRY_CONFIG = {}
 
+    CELERY_TIMEZONE = 'UTC'
     CELERY_BROKER_URL = os.getenv("BROKER_URL") or \
     'amqp://guest:guest@localhost:5672'
     #CELERY_QUEUES = (
