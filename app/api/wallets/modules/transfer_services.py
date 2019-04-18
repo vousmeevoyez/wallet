@@ -80,7 +80,7 @@ class TransferServices(WalletCore):
         return accepted({"id" : str(debit_trx.id)})
     #end def
 
-    def external_transfer(self, params):
+    def external_transfer(self, params, flag="TRANSFER_OUT"):
         """ method to transfer money externally"""
         bank_account_id = params["destination"]
         amount = params["amount"]
@@ -109,7 +109,7 @@ class TransferServices(WalletCore):
             destination=bank_account.account_no,
             amount=-amount,
             payment_type=False,
-            transfer_types="TRANSFER_OUT",
+            transfer_types=flag,
             transfer_notes=transfer_notes
         )
 

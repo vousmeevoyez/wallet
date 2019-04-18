@@ -30,12 +30,22 @@ class Config:
 
     SENTRY_CONFIG = {}
 
-    CELERY_TIMEZONE = 'UTC'
     CELERY_BROKER_URL = os.getenv("BROKER_URL") or \
     'amqp://guest:guest@localhost:5672'
     #CELERY_QUEUES = (
     #    Queue('bank', Exchange('bank'), routing_key='bank')
     #)
+    CELERY_TIMEZONE = "Asia/Jakarta"
+    CELERYBEAT_SCHEDULE = {}
+    CELERY_IMPORTS = (
+        "task.bank.tasks", "task.transaction.tasks", "task.payment.tasks"
+    )
+
+    BACKGROUND_PAYMENT_CONFIG = {
+        #"COUNTDOWN"  : 60 * 60,
+        "COUNTDOWN"  : 60 * 1,
+        "MAX_RETRIES": 24
+    }
 
     WORKER_CONFIG = {
         "MAX_RETRIES" : 5,
@@ -323,6 +333,10 @@ class Config:
         "DUPLICATE_PAYMENT" : {
             "TITLE"   : "DUPLICATE_PAYMENT",
             "MESSAGE" : "Similiar payment already exist"
+        },
+        "DUPLICATE_PLAN_DUE_DATE" : {
+            "TITLE"   : "DUPLICATE_PLAN_DUE_DATE",
+            "MESSAGE" : "Similiar plan for that due date already exist"
         },
         "TRANSFER_FAILED" : {
             "TITLE"   : "TRANSFER_FAILED",

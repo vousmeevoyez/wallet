@@ -85,6 +85,12 @@ class BankAccountServices:
         return response
     #end def
 
+    def info(self):
+        """ method to show user bank accounts"""
+        response = BankAccountSchema().dump(self.bank_account)
+        return response
+    #end def
+
     def update(self, params):
         """ update user bank account information"""
         self.bank_account.label = params["label"]

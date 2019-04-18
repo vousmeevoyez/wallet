@@ -6,7 +6,6 @@
 #pylint: disable=invalid-name
 #pylint: disable=no-self-use
 #pylint: disable=too-few-public-methods
-
 from flask_restplus import Resource
 from marshmallow import ValidationError
 

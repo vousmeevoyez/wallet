@@ -43,3 +43,7 @@ class PaymentPlanNamespace:
 class PlanNamespace:
     api = Namespace("plans")
 #end class
+
+class SchedulerNamespace:
+    api = Namespace("scheduler")
+#end class

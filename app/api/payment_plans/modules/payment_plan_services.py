@@ -6,6 +6,12 @@
 from app.api  import db
 # models
 from app.api.models import *
+# bank account
+from app.api.users.modules.bank_account_services import BankAccountServices
+# scheduler
+from app.api import scheduler
+# task
+from task.payment.tasks import PaymentTask
 # serializer
 from app.api.serializer import PaymentPlanSchema
 # http response
@@ -60,9 +66,31 @@ class PaymentPlanServices:
             payment_plan.wallet_id = self.wallet.id
             db.session.add(payment_plan)
 
+            # register the destination as bank account if not created
+            # defaultly register as BNI VA
+            repayment_va_account = BankAccount.query.filter_by(account_no=payment_plan.destination).first()
+            if repayment_va_account is None:
+                repayment_va_account = BankAccount(
+                    label="VA Repayment Account",
+                    name=self.wallet.user.name,
+                    account_no=payment_plan.destination
+                )
+                response = BankAccountServices(
+                    str(self.wallet.user.id), "009"
+                ).add(repayment_va_account)
+            # end if
+
             for plan in plans:
                 plan.payment_plan_id = payment_plan.id
                 db.session.add(plan)
+
+                # set schedule for plan
+                job = scheduler.add_job(
+                    PaymentTask.background_transfer.delay,
+                    trigger='date',
+                    next_run_time=plan.due_date,
+                    args=[plan.id]
+                )
             # end for
             db.session.commit()
         except IntegrityError as error:

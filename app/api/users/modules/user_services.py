@@ -68,22 +68,6 @@ class UserServices:
 
         wallet_id = result[0]["data"]["wallet_id"]
 
-        # create virtual account here
-        try:
-            virtual_account = VirtualAccount(name=user.name)
-            va_payload = {
-                "bank_name" : "BNI",
-                "type"      : "CREDIT",
-                "wallet_id" : wallet_id,
-                "amount"    : 0
-            }
-            result = VirtualAccountServices().add(virtual_account, va_payload)
-        except UnprocessableEntity as error:
-            #raise CommitError(error.msg, None, error.title, None)
-            pass
-
-        virtual_account = result[0]["data"]["virtual_account"]
-
         response = {
             "user_id"   : str(user.id),
             "wallet_id" : wallet_id

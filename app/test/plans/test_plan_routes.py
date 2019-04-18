@@ -60,7 +60,7 @@ class TestPlanRoutes(BaseTestCase):
             "payment_plan_id" : payment_plan_id,
             "amount" : "1000",
             "type" : "MAIN",
-            "due_date" : "2020/12/12"
+            "due_date" : "2020/12/12 00:00"
         }
         result = self.create_plan(params, self._token)
         response = result.get_json()
@@ -84,7 +84,7 @@ class TestPlanRoutes(BaseTestCase):
             "payment_plan_id" : payment_plan_id,
             "amount" : "1000",
             "type" : "MAIN",
-            "due_date" : "2020/12/12"
+            "due_date" : "2020/12/12 00:00"
         }
         result = self.create_plan(params, self._token)
         response = result.get_json()
@@ -96,7 +96,7 @@ class TestPlanRoutes(BaseTestCase):
             "payment_plan_id" : payment_plan_id,
             "amount" : "1000",
             "type" : "MAIN",
-            "due_date" : "2020/12/12"
+            "due_date" : "2020/12/12 00:00"
         }
         result = self.update_plan(plan_id, params, self._token)
         self.assertEqual(result.status_code, 204)
@@ -119,7 +119,7 @@ class TestPlanRoutes(BaseTestCase):
             "payment_plan_id" : payment_plan_id,
             "amount" : "1000",
             "type" : "MAIN",
-            "due_date" : "2020/12/12"
+            "due_date" : "2020/12/12 00:00"
         }
         result = self.create_plan(params, self._token)
         response = result.get_json()

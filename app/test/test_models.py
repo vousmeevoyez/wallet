@@ -972,7 +972,7 @@ class PaymentPlanCase(BaseTestCase):
         db.session.commit()
 
         # create plan
-        due_date = datetime(2019, 2, 28)
+        due_date = datetime(2019, 3, 28)
         february_plan = Plan(
             payment_plan_id=payment_plan.id,
             amount=10000,
@@ -981,7 +981,7 @@ class PaymentPlanCase(BaseTestCase):
         db.session.add(february_plan)
 
         # create late plan
-        due_date = datetime(2019, 3, 1)
+        due_date = datetime(2019, 3, 29)
         february_late_plan = Plan(
             payment_plan_id=payment_plan.id,
             amount=1000,
@@ -990,7 +990,7 @@ class PaymentPlanCase(BaseTestCase):
         db.session.add(february_late_plan)
 
         # create late plan
-        due_date = datetime(2019, 3, 2)
+        due_date = datetime(2019, 4, 2)
         february_late_plan2 = Plan(
             payment_plan_id=payment_plan.id,
             amount=1000,
@@ -999,7 +999,7 @@ class PaymentPlanCase(BaseTestCase):
         db.session.add(february_late_plan2)
 
         # create plan
-        due_date = datetime(2019, 3, 28)
+        due_date = datetime(2019, 5, 28)
         march_plan = Plan(
             payment_plan_id=payment_plan.id,
             amount=10000,
@@ -1011,7 +1011,7 @@ class PaymentPlanCase(BaseTestCase):
         self.assertEqual(len(payment_plan.plans), 4)
 
         # try query all amount from january
-        current_due_date = datetime(2019, 2, 28)
+        current_due_date = datetime(2019, 3, 28)
         next_due_date = current_due_date + relativedelta.relativedelta(months=1)
         total_payment = Plan.query.with_entities(
             func.sum(Plan.amount).label("total_amount")
@@ -1019,5 +1019,3 @@ class PaymentPlanCase(BaseTestCase):
             Plan.due_date < next_due_date
         ).first()[0]
         self.assertEqual(total_payment, 12000)
-
-        print(wallet.payment_plans)

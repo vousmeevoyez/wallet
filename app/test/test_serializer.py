@@ -953,19 +953,19 @@ class TestPaymentPlanSchema(BaseTestCase):
                 "id" : "some-payment-plan-id",
                 "amount" : 10000,
                 "type" : "MAIN",
-                "due_date" : "2025/11/11",
+                "due_date" : "2025/11/11 00:00",
             },
             {
                 "id" : "some-payment-plan-id",
                 "amount" : 10000,
                 "type" : "MAIN",
-                "due_date" : "2025/11/11",
+                "due_date" : "2025/11/11 00:00",
             },
             {
                 "id" : "some-payment-plan-id",
                 "amount" : 10000,
                 "type" : "MAIN",
-                "due_date" : "2025/11/11",
+                "due_date" : "2025/11/11 00:00",
             }
         ]
         data = {
@@ -985,7 +985,7 @@ class TestPlanSchema(BaseTestCase):
             "id" : "some-payment-plan-id",
             "amount" : 10000,
             "type" : "MAIN",
-            "due_date" : "2025/11/11",
+            "due_date" : "2025/11/11 00:00",
         }
         errors = PlanSchema().validate(data)
         self.assertEqual(errors, {})
@@ -994,7 +994,7 @@ class TestPlanSchema(BaseTestCase):
             "id" : "asdas",
             "amount" : 10000,
             "type" : "MAIN",
-            "due_date" : "2025/11/11",
+            "due_date" : "2025/11/11 00:00",
         }
         errors = PlanSchema().validate(data)
         expected_error = {'id': ['Invalid Identifier']}
@@ -1004,7 +1004,7 @@ class TestPlanSchema(BaseTestCase):
             "id" : "!@*(!@*(!*(@!(*@",
             "amount" : 10000,
             "type" : "MAIN",
-            "due_date" : "2025/11/11",
+            "due_date" : "2025/11/11 00:00",
         }
         errors = PlanSchema().validate(data)
         expected_error = {'id': ['Invalid Identifier']}
@@ -1019,7 +1019,7 @@ class TestPlanSchema(BaseTestCase):
             "id" : "some-plan-id",
             "amount" : 10000,
             "type" : "MAIN",
-            "due_date" : "2025/11/11",
+            "due_date" : "2025/11/11 00:00",
         }
         with self.assertRaises(ValidationError):
             result = PlanSchema(strict=True).load(data)
@@ -1029,7 +1029,7 @@ class TestPlanSchema(BaseTestCase):
             "id" : "some-payment-plan-id",
             "amount" : -10000,
             "type" : "MAIN",
-            "due_date" : "2025/11/11",
+            "due_date" : "2025/11/11 00:00",
         }
         errors = PlanSchema().validate(data)
         expected_error = {'amount': ['Invalid Amount, cannot be less than 0']}
@@ -1040,7 +1040,7 @@ class TestPlanSchema(BaseTestCase):
             "id" : "some-payment-plan-id",
             "amount" : 10000,
             "type" : "SECONDARY",
-            "due_date" : "2025/11/11",
+            "due_date" : "2025/11/11 00:00",
         }
         errors = PlanSchema().validate(data)
         expected_error = {'type': ['Invalid plan type']}
@@ -1051,17 +1051,17 @@ class TestPlanSchema(BaseTestCase):
             "id" : "some-payment-plan-id",
             "amount" : 10000,
             "type" : "MAIN",
-            "due_date" : "2025-02-31",
+            "due_date" : "2025-02-31 00:00",
         }
         errors = PlanSchema().validate(data)
-        expected_error = {'due_date': ["time data '2025-02-31' does not match format '%Y/%m/%d'"]}
+        expected_error = {'due_date': ["time data '2025-02-31 00:00' does not match format '%Y/%m/%d %H:%M'"]}
         self.assertEqual(errors, expected_error)
 
         data = {
             "id" : "some-payment-plan-id",
             "amount" : 10000,
             "type" : "MAIN",
-            "due_date" : "2018/02/31",
+            "due_date" : "2018/02/31 00:00",
         }
         errors = PlanSchema().validate(data)
         expected_error = {'due_date': ['day is out of range for month']}
@@ -1071,7 +1071,7 @@ class TestPlanSchema(BaseTestCase):
             "id" : "some-payment-plan-id",
             "amount" : 10000,
             "type" : "MAIN",
-            "due_date" : "2018/02/26",
+            "due_date" : "2018/02/26 00:00",
         }
         errors = PlanSchema().validate(data)
         expected_error = {'due_date': ['Due date already expired']}

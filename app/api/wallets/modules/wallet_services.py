@@ -24,6 +24,7 @@ from app.api.serializer import TransactionSchema
 from app.api.serializer import VirtualAccountSchema
 # core
 from app.api.wallets.modules.wallet_core import WalletCore
+from app.api.virtual_accounts.modules.va_services import VirtualAccountServices
 # http error
 from app.api.http_response import *
 # exception
@@ -51,6 +52,21 @@ class WalletServices(WalletCore):
             raise UnprocessableEntity(self.error_response["DUPLICATE_WALLET"]["TITLE"],
                                       self.error_response["DUPLICATE_WALLET"]["MESSAGE"])
         #end try
+
+        # automatically create virtual account for additional wallet here
+        try:
+            virtual_account = VirtualAccount(name=wallet.user.name)
+            va_payload = {
+                "bank_name" : "BNI",
+                "type"      : "CREDIT",
+                "wallet_id" : str(wallet.id),
+                "amount"    : 0
+            }
+            result = VirtualAccountServices().add(virtual_account, va_payload)
+        except UnprocessableEntity as error:
+            #raise CommitError(error.msg, None, error.title, None)
+            pass
+
         response = {
             "wallet_id" : str(wallet.id)
         }

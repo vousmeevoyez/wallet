@@ -650,6 +650,9 @@ class WalletTransactionSchema(ma.Schema):
 
 class PlanSchema(ma.Schema):
     """ this is schema for plan """
+
+    _time_format = "%Y/%m/%d %H:%M"
+
     id = fields.Str(missing=None)
     amount = fields.Float(validate=validate_amount)
     type = fields.Method("type_id_to_type")
@@ -672,7 +675,7 @@ class PlanSchema(ma.Schema):
         # end if
         
         # convert datetime to utc
-        due_date = datetime.strptime(data['due_date'], "%Y/%m/%d")
+        due_date = datetime.strptime(data['due_date'], self._time_format)
         data['due_date'] = due_date
 
         # convert type to value
@@ -724,7 +727,7 @@ class PlanSchema(ma.Schema):
         """
         today = datetime.now()
         try:
-            due_date = datetime.strptime(due_date, "%Y/%m/%d")
+            due_date = datetime.strptime(due_date, self._time_format)
         except ValueError as error:
             raise ValidationError(str(error))
         else:
@@ -741,13 +744,17 @@ class PlanSchema(ma.Schema):
         """
         status = "PENDING"
         if obj.status == 1:
-            status = "RETRYING"
+            status = "STARTING"
         elif obj.status == 2:
-            status = "SENDING"
+            status = "RETRYING"
         elif obj.status == 3:
-            status = "PAID"
+            status = "SENDING"
         elif obj.status == 4:
-            status = "FAIL"
+            status = "PAID"
+        elif obj.status == 5:
+            status = "FAILED"
+        elif obj.status == 6:
+            status = "STOPPED"
         # end if
         return status
     # end def

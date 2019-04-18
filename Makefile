@@ -24,7 +24,7 @@ worker:
 	celery worker -A task.worker.celery --loglevel=info --concurrency=2
 
 scheduler:
-	celery beat -A schedule.worker.celery --loglevel=info
+	celery beat -A task.worker.celery --loglevel=info
 
 flower:
 	flower -A task.worker.celery --port=5555
