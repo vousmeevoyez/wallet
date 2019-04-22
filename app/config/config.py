@@ -35,16 +35,17 @@ class Config:
     #CELERY_QUEUES = (
     #    Queue('bank', Exchange('bank'), routing_key='bank')
     #)
-    CELERY_TIMEZONE = "Asia/Jakarta"
-    CELERYBEAT_SCHEDULE = {}
     CELERY_IMPORTS = (
         "task.bank.tasks", "task.transaction.tasks", "task.payment.tasks"
     )
 
+    # APSCHEDULER JOBSTORE
+    APSCHEDULER_JOBSTORE_URI = "sqlite:///jobs.sqlite"
+
     BACKGROUND_PAYMENT_CONFIG = {
-        #"COUNTDOWN"  : 60 * 60,
-        "COUNTDOWN"  : 60 * 1,
-        "MAX_RETRIES": 24
+        "DAY" : os.getenv("PAYMENT_IN_DAY") or 1440, # minutes
+        "COUNTDOWN"  : os.getenv("PAYMENT_COUNTDOWN") or 60, # minutes
+        "EXPIRES" : os.getenv("PAYMENT_EXPIRES") or 1728000 # SECONDS
     }
 
     WORKER_CONFIG = {

@@ -10,11 +10,7 @@ from app.api        import db
 # configuration
 from app.config import config
 # models
-from app.api.models import User
-from app.api.models import Role
-from app.api.models import VaType
-from app.api.models import PaymentChannel
-from app.api.models import Bank
+from app.api.models import *
 
 TEST_CONFIG = config.TestingConfig
 BASE_URL = "/api/v1"
@@ -416,6 +412,22 @@ class BaseTestCase(TestCase):
         )
     #end def
 
+    def bank_transfer2(self, source, destination, params, api_key):
+        """ Api Call for transfer between wallet """
+        headers = {
+            'X-Api-Key': '{}'.format(api_key)
+        }
+        return self.client.post(
+            BASE_URL + "/wallets/" + "{}/transfer/bank2/{}".format(source, destination),
+            data=dict(
+                amount=params["amount"],
+                pin=params["pin"],
+                notes=params["notes"]
+            ),
+            headers=headers
+        )
+    #end def
+
     def forgot_pin(self, source, access_token):
         """ Api Call for forgot wallet pin"""
         headers = {
@@ -497,10 +509,10 @@ class BaseTestCase(TestCase):
     """
         PAYMENT PLAN 
     """
-    def create_payment_plan(self, params, access_token):
+    def create_payment_plan(self, params, api_key):
         """ Api Call for creating payment plan """
         headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
+            'X-Api-Key': '{}'.format(api_key)
         }
         return self.client.post(
             BASE_URL + "/payment_plans/",
@@ -510,10 +522,10 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def get_payment_plan(self, payment_plan_id, access_token):
+    def get_payment_plan(self, payment_plan_id, api_key):
         """ Api Call for getting payment plan """
         headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
+            'X-Api-Key': '{}'.format(api_key)
         }
         return self.client.get(
             BASE_URL + "/payment_plans/" + payment_plan_id,
@@ -521,10 +533,10 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def get_payment_plans(self, access_token):
+    def get_payment_plans(self, api_key):
         """ Api Call for getting all payment plan """
         headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
+            'X-Api-Key': '{}'.format(api_key)
         }
         return self.client.get(
             BASE_URL + "/payment_plans/",
@@ -532,10 +544,10 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def update_payment_plan(self, payment_plan_id, params, access_token):
+    def update_payment_plan(self, payment_plan_id, params, api_key):
         """ Api Call for update payment plan """
         headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
+            'X-Api-Key': '{}'.format(api_key)
         }
         return self.client.put(
             BASE_URL + "/payment_plans/" + payment_plan_id,
@@ -547,10 +559,10 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def remove_payment_plan(self, payment_plan_id, access_token):
+    def remove_payment_plan(self, payment_plan_id, api_key):
         """ Api Call for remove payment plan """
         headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
+            'X-Api-Key': '{}'.format(api_key)
         }
         return self.client.delete(
             BASE_URL + "/payment_plans/" + payment_plan_id,
@@ -561,10 +573,10 @@ class BaseTestCase(TestCase):
     """
         PLAN 
     """
-    def create_plan(self, params, access_token):
+    def create_plan(self, params, api_key):
         """ Api Call for creating plan """
         headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
+            'X-Api-Key': '{}'.format(api_key)
         }
         return self.client.post(
             BASE_URL + "/plans/",
@@ -574,10 +586,10 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def get_plan(self, plan_id, access_token):
+    def get_plan(self, plan_id, api_key):
         """ Api Call for getting payment plan """
         headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
+            'X-Api-Key': '{}'.format(api_key)
         }
         return self.client.get(
             BASE_URL + "/plans/" + plan_id,
@@ -585,10 +597,10 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def get_plans(self, access_token):
+    def get_plans(self, api_key):
         """ Api Call for getting all payment plan """
         headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
+            'X-Api-Key': '{}'.format(api_key)
         }
         return self.client.get(
             BASE_URL + "/plans/",
@@ -596,10 +608,10 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def update_plan(self, plan_id, params, access_token):
+    def update_plan(self, plan_id, params, api_key):
         """ Api Call for update payment plan """
         headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
+            'X-Api-Key': '{}'.format(api_key)
         }
         return self.client.put(
             BASE_URL + "/plans/" + plan_id,
@@ -609,10 +621,10 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def update_plan_status(self, plan_id, params, access_token):
+    def update_plan_status(self, plan_id, params, api_key):
         """ Api Call for update payment plan """
         headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
+            'X-Api-Key': '{}'.format(api_key)
         }
         return self.client.patch(
             BASE_URL + "/plans/" + plan_id,
@@ -622,10 +634,10 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def remove_plan(self, plan_id, access_token):
+    def remove_plan(self, plan_id, api_key):
         """ Api Call for remove plan """
         headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
+            'X-Api-Key': '{}'.format(api_key)
         }
         return self.client.delete(
             BASE_URL + "/plans/" + plan_id,

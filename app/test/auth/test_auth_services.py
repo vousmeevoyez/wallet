@@ -2,6 +2,7 @@
     Test Authentication Services
 """
 
+import uuid
 from unittest.mock import patch
 from unittest.mock import Mock
 
@@ -126,3 +127,11 @@ class TestAuthServices(BaseTestCase):
         result = AuthServices().logout_refresh_token(refresh_token)
 
         self.assertTrue(result[1], 204) # no content
+
+    def test_check_key(self):
+        """ test check api key"""
+        result = AuthServices.check_key("8c574c41-3e01-4763-89af-fd370989da33")
+        self.assertTrue(isinstance(result, object))
+
+        with self.assertRaises(Unauthorized):
+            result = AuthServices.check_key(str(uuid.uuid4()))

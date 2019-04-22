@@ -63,12 +63,17 @@ class TransferServices(WalletCore):
             transfer_notes=transfer_notes
         )
 
+        destination_transfer_types = "RECEIVE_TRANSFER"
+        if transfer_types == "PAYROLL":
+            destination_transfer_types = "RECEIVE_PAYROLL"
+        # end if
+
         credit_trx = TransactionCore().process_transaction(
             source=self.source,
             destination=self.destination,
             amount=amount,
             payment_type=True,
-            transfer_types="RECEIVE_TRANSFER",
+            transfer_types=destination_transfer_types,
             transfer_notes=transfer_notes
         )
 
@@ -152,6 +157,24 @@ class TransferServices(WalletCore):
         user_info = UserSchema(
             only=('name', 'msisdn','wallets.id', 'wallets.status')
         ).dump(user).data
+        return ok(user_info)
+    #end def
+
+    ################################## PATCH ############################################
+    def checkout2(self, phone_ext, phone_number):
+        """
+            Checkout Transfer
+            exchange phone number and return wallet available for that users
+        """
+        user = User.query.filter_by(phone_ext=phone_ext,
+                                    phone_number=phone_number).first()
+        if user is None:
+            raise RequestNotFound(self.error_response["USER_NOT_FOUND"]["TITLE"],
+                                  self.error_response["USER_NOT_FOUND"]["MESSAGE"])
+        #end if
+
+        # serialize
+        user_info = UserSchema().dump(user).data
         return ok(user_info)
     #end def
 #end class

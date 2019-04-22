@@ -30,7 +30,7 @@ class TestBankWorker(BaseTestCase):
         monthly_plan = Plan(
             payment_plan_id=payment_plan.id,
             amount=10000,
-            due_date=datetime.now()
+            due_date=datetime.utcnow()
         )
         db.session.add(monthly_plan)
         db.session.commit()

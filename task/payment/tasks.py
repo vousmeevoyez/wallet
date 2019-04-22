@@ -26,6 +26,9 @@ WORKER_CONFIG = config.Config.WORKER_CONFIG
 
 now = datetime.utcnow()
 
+max_retries = int(BACKGROUND_PAYMENT_CONFIG["DAY"]) \
+               / int(BACKGROUND_PAYMENT_CONFIG["COUNTDOWN"])
+
 class PaymentTask(celery.Task):
     """Abstract base class for all tasks in my app."""
 
@@ -42,7 +45,7 @@ class PaymentTask(celery.Task):
         super(PaymentTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
     @celery.task(bind=True,
-                 max_retries=BACKGROUND_PAYMENT_CONFIG["MAX_RETRIES"],
+                 max_retries=max_retries,
                  task_soft_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
                  task_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
                  acks_late=WORKER_CONFIG["ACKS_LATE"],
@@ -53,7 +56,8 @@ class PaymentTask(celery.Task):
         # extract all info needed from plan_id
         plan = Plan.query.filter_by(id=plan_id).first()
         # aggregate amount
-        total_amount = plan.payment_plan.total(datetime.now())
+        total_amount, plans = PaymentPlan.total(plan)
+        print(total_amount)
         # payment amoun
         destination = plan.payment_plan.destination
         # exchange bank account number with bank account id
@@ -62,8 +66,10 @@ class PaymentTask(celery.Task):
         source = str(plan.payment_plan.wallet_id)
 
         # update plan to STARTED
-        plan.status = 1
-        db.session.commit()
+        for plan in plans:
+            plan.status = 1
+            db.session.commit()
+        # end for
 
         try:
             response = TransferServices(source).external_transfer({
@@ -72,17 +78,21 @@ class PaymentTask(celery.Task):
                 "notes" : None,
             }, flag="AUTO_DEBIT")
         except UnprocessableEntity as error:
-            print(error)
             try:
                 # update plan to RETRYING
-                plan.status = 2
-                db.session.commit()
+                for plan in plans:
+                    plan.status = 2
+                    db.session.commit()
+                # end for
 
-                self.retry(countdown=BACKGROUND_PAYMENT_CONFIG["COUNTDOWN"])
+                self.retry(countdown=int(BACKGROUND_PAYMENT_CONFIG["COUNTDOWN"]), expires=int(BACKGROUND_PAYMENT_CONFIG["EXPIRES"]))
             except MaxRetriesExceededError:
                 # update plan to FAILED
-                plan.status = 4
-                db.session.commit()
+                for plan in plans:
+                    plan.status = 4
+                    db.session.commit()
+                # end for
+
                 # should send queue to try again tomorrow
                 print("Max Retry Reached")
                 # set schedule for plan
@@ -97,7 +107,9 @@ class PaymentTask(celery.Task):
             # end try
         else:
             # update plan to SENDING
-            plan.status = 3
-            db.session.commit()
+            for plan in plans:
+                plan.status = 3
+                db.session.commit()
+            # end for
         # end try
     #end def

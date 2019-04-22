@@ -16,9 +16,12 @@ class TestPlanRoutes(BaseTestCase):
 
         result = self.get_access_token("MODANAADMIN", "password")
         response = result.get_json()
-        access_token = response["data"]["access_token"]
 
+        access_token = response["data"]["access_token"]
         self._token = access_token
+
+        # api key
+        self._api_key = "8c574c41-3e01-4763-89af-fd370989da33"
 
         user, wallet = self._create_dummy_user()
         self._wallet = wallet
@@ -50,7 +53,7 @@ class TestPlanRoutes(BaseTestCase):
             "destination" : "123456",
             "wallet_id" : self._wallet,
         }
-        result = self.create_payment_plan(params, self._token)
+        result = self.create_payment_plan(params, self._api_key)
         response = result.get_json()
         self.assertTrue(response['data']['payment_plan_id'])
 
@@ -60,9 +63,9 @@ class TestPlanRoutes(BaseTestCase):
             "payment_plan_id" : payment_plan_id,
             "amount" : "1000",
             "type" : "MAIN",
-            "due_date" : "2020/12/12 00:00"
+            "due_date" : "2020-12-12"
         }
-        result = self.create_plan(params, self._token)
+        result = self.create_plan(params, self._api_key)
         response = result.get_json()
         self.assertTrue(response['data']['plan_id'])
     # end def
@@ -74,7 +77,7 @@ class TestPlanRoutes(BaseTestCase):
             "destination" : "123456",
             "wallet_id" : self._wallet,
         }
-        result = self.create_payment_plan(params, self._token)
+        result = self.create_payment_plan(params, self._api_key)
         response = result.get_json()
         self.assertTrue(response['data']['payment_plan_id'])
 
@@ -84,9 +87,9 @@ class TestPlanRoutes(BaseTestCase):
             "payment_plan_id" : payment_plan_id,
             "amount" : "1000",
             "type" : "MAIN",
-            "due_date" : "2020/12/12 00:00"
+            "due_date" : "2020-12-12"
         }
-        result = self.create_plan(params, self._token)
+        result = self.create_plan(params, self._api_key)
         response = result.get_json()
         self.assertTrue(response['data']['plan_id'])
 
@@ -96,9 +99,9 @@ class TestPlanRoutes(BaseTestCase):
             "payment_plan_id" : payment_plan_id,
             "amount" : "1000",
             "type" : "MAIN",
-            "due_date" : "2020/12/12 00:00"
+            "due_date" : "2020-12-12"
         }
-        result = self.update_plan(plan_id, params, self._token)
+        result = self.update_plan(plan_id, params, self._api_key)
         self.assertEqual(result.status_code, 204)
     # end def
 
@@ -109,7 +112,7 @@ class TestPlanRoutes(BaseTestCase):
             "destination" : "123456",
             "wallet_id" : self._wallet,
         }
-        result = self.create_payment_plan(params, self._token)
+        result = self.create_payment_plan(params, self._api_key)
         response = result.get_json()
         self.assertTrue(response['data']['payment_plan_id'])
 
@@ -119,9 +122,9 @@ class TestPlanRoutes(BaseTestCase):
             "payment_plan_id" : payment_plan_id,
             "amount" : "1000",
             "type" : "MAIN",
-            "due_date" : "2020/12/12 00:00"
+            "due_date" : "2020-12-12"
         }
-        result = self.create_plan(params, self._token)
+        result = self.create_plan(params, self._api_key)
         response = result.get_json()
         self.assertTrue(response['data']['plan_id'])
 
@@ -130,6 +133,22 @@ class TestPlanRoutes(BaseTestCase):
         params = {
             "status" : "PAID",
         }
-        result = self.update_plan_status(plan_id, params, self._token)
+        result = self.update_plan_status(plan_id, params, self._api_key)
         self.assertEqual(result.status_code, 204)
+
+        params = {
+            "status" : "FAILED",
+        }
+        result = self.update_plan_status(plan_id, params, self._api_key)
+        self.assertEqual(result.status_code, 204)
+
+        params = {
+            "status" : "STOPPED",
+        }
+        result = self.update_plan_status(plan_id, params, self._api_key)
+        self.assertEqual(result.status_code, 204)
+
+        result = self.get_plan(plan_id, self._api_key)
+        response = result.get_json()
+        self.assertEqual(response["data"]["status"], params["status"])
     # end def

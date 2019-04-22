@@ -58,6 +58,10 @@ class PaymentPlanServices:
             add new payment_plan
             add plan
         """
+        response = {
+            "payment_plan_id" : None,
+            "bank_account_id" : None
+        }
         try:
             # extract plans
             plans = payment_plan.plans
@@ -75,22 +79,26 @@ class PaymentPlanServices:
                     name=self.wallet.user.name,
                     account_no=payment_plan.destination
                 )
-                response = BankAccountServices(
+                result = BankAccountServices(
                     str(self.wallet.user.id), "009"
-                ).add(repayment_va_account)
+                ).add(repayment_va_account)[0]
+                response["bank_account_id"] = result["data"]["bank_account_id"]
             # end if
 
             for plan in plans:
                 plan.payment_plan_id = payment_plan.id
                 db.session.add(plan)
 
-                # set schedule for plan
-                job = scheduler.add_job(
-                    PaymentTask.background_transfer.delay,
-                    trigger='date',
-                    next_run_time=plan.due_date,
-                    args=[plan.id]
-                )
+                # only put MAIN schedule plan for schedule job
+                if plan.type == 0:
+                    # set schedule for plan
+                    job = scheduler.add_job(
+                        PaymentTask.background_transfer.delay,
+                        trigger='date',
+                        next_run_time=plan.due_date,
+                        args=[plan.id]
+                    )
+                # end if
             # end for
             db.session.commit()
         except IntegrityError as error:
@@ -101,9 +109,7 @@ class PaymentPlanServices:
                 self.error_response["DUPLICATE_PAYMENT_PLAN"]["MESSAGE"]
             )
         # end try
-        response = {
-            "payment_plan_id" : payment_plan.id
-        }
+        response["payment_plan_id"] = payment_plan.id
         return created(response)
         #end try
 

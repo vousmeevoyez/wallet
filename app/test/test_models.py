@@ -1019,3 +1019,80 @@ class PaymentPlanCase(BaseTestCase):
             Plan.due_date < next_due_date
         ).first()[0]
         self.assertEqual(total_payment, 12000)
+
+    def test_payment_modana_cicil_february(self):
+        # create dummy wallet
+        wallet = Wallet(
+        )
+        db.session.add(wallet)
+        db.session.commit()
+        # add balance here
+        wallet.add_balance(1000)
+
+        # create payment plan
+        quick_loan_payment_plan = PaymentPlan(
+            destination="some-bank-account-number",
+            wallet_id=wallet.id
+        )
+        db.session.add(quick_loan_payment_plan)
+        db.session.commit()
+
+        # create plan
+        due_date = datetime(2019, 3, 28)
+        february_plan = Plan(
+            payment_plan_id=quick_loan_payment_plan.id,
+            amount=10000,
+            due_date=due_date
+        )
+        db.session.add(february_plan)
+
+        # create late plan
+        due_date = datetime(2019, 3, 29)
+        february_late_plan = Plan(
+            payment_plan_id=quick_loan_payment_plan.id,
+            amount=1000,
+            due_date=due_date
+        )
+        db.session.add(february_late_plan)
+
+        # try query all amount from january
+        current_due_date = datetime(2019, 3, 28)
+        next_due_date = current_due_date + relativedelta.relativedelta(months=1)
+        total_payment = Plan.query.with_entities(
+            func.sum(Plan.amount).label("total_amount")
+        ).filter(
+            Plan.payment_plan_id == february_plan.payment_plan_id,
+            Plan.due_date < next_due_date
+        ).first()[0]
+        self.assertEqual(total_payment, 11000)
+
+        # create payment plan
+        loan_payment_plan = PaymentPlan(
+            destination="some-bank-account-number",
+            wallet_id=wallet.id
+        )
+        db.session.add(loan_payment_plan)
+
+        # create plan
+        due_date = datetime(2019, 3, 28)
+        february_plan = Plan(
+            payment_plan_id=loan_payment_plan.id,
+            amount=5000,
+            due_date=due_date
+        )
+        db.session.add(february_plan)
+
+        # create late plan
+        due_date = datetime(2019, 3, 29)
+        february_late_plan2 = Plan(
+            payment_plan_id=loan_payment_plan.id,
+            amount=500,
+            due_date=due_date
+        )
+        db.session.add(february_late_plan2)
+        db.session.commit()
+
+        # try query all amount from january
+        total, result = PaymentPlan.total(february_late_plan2)
+        print(total)
+        print(result)

@@ -10,6 +10,7 @@ from app.api import db
 from app.api.models import User
 from app.api.models import BlacklistToken
 from app.api.models import Wallet
+from app.api.models import ApiKey
 # exceptions
 from app.api.error.authentication import RevokedTokenError
 from app.api.error.authentication import SignatureExpiredError
@@ -154,4 +155,13 @@ class AuthServices:
         #end try
         return no_content()
     #end def
+
+    ################ PATCH ########################
+    @staticmethod
+    def check_key(api_key):
+        api_key = ApiKey.query.filter_by(id=validate_uuid(api_key)).first()
+        if api_key is None:
+            raise Unauthorized("INVALID_API_KEY", "Invalid Api Key")
+        return api_key
+    # end def
 #end class

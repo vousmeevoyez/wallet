@@ -11,6 +11,8 @@ services:
                 depends_on:
                 - postgres
                 - rabbitmq
+                volumes:
+                - "./:/app"
                 
         postgres:
                 env_file: env/dev.env

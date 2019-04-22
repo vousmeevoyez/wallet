@@ -17,9 +17,7 @@ from app.api.request_schema import *
 # wallet modules
 from app.api.payment_plans.modules.payment_plan_services import PaymentPlanServices
 # authentication
-from app.api.auth.decorator import token_required
-from app.api.auth.decorator import get_token_payload
-from app.api.auth.decorator import admin_required
+from app.api.auth.decorator import api_key_required
 # exceptions
 from app.api.error.http import *
 # configuration
@@ -34,7 +32,7 @@ class PaymentPlanRoutes(BaseRoutes):
         Payment Plan
         /payment_plans
     """
-    @token_required
+    @api_key_required
     def post(self):
         """ Endpoint for creating payment plan """
         request_data = PaymentPlanRequestSchema.parser.parse_args(strict=True)
@@ -49,7 +47,7 @@ class PaymentPlanRoutes(BaseRoutes):
         return response
     #end def
 
-    @token_required
+    @api_key_required
     def get(self):
         """ Endpoint for showing all payment plan """
         response = PaymentPlanServices.show()
@@ -63,7 +61,7 @@ class PaymentPlanInfoRoutes(BaseRoutes):
         Payment Plan
         /payment_plans
     """
-    @token_required
+    @api_key_required
     def put(self, payment_plan_id):
         """ Endpoint for updating payment plan """
         request_data = PaymentPlanRequestSchema.parser.parse_args(strict=True)
@@ -81,14 +79,14 @@ class PaymentPlanInfoRoutes(BaseRoutes):
         return response
     #end def
 
-    @token_required
+    @api_key_required
     def get(self, payment_plan_id):
         """ Endpoint for showing all payment plan """
         response = PaymentPlanServices(payment_plan_id=payment_plan_id).info()
         return response
     #end def
 
-    @token_required
+    @api_key_required
     def delete(self, payment_plan_id):
         """ Endpoint for removing payment plan """
         response = PaymentPlanServices(payment_plan_id=payment_plan_id).remove()

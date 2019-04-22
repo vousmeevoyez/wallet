@@ -103,16 +103,12 @@ class PlanServices:
     def update_status(self, params):
         """ update plan status """
         status = None
-        if params["status"] == "PENDING":
-            status = 0
-        elif params["status"] == "RETRYING":
-            status = 1
-        elif params["status"] == "SENDING":
-            status = 2
-        elif params["status"] == "PAID":
-            status = 3
-        elif params["status"] == "FAIL":
+        if params["status"] == "FAILED":
             status = 4
+        elif params["status"] == "PAID":
+            status = 5
+        elif params["status"] == "STOPPED":
+            status = 6
         # end if
 
         self.plan.status = status

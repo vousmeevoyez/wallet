@@ -26,6 +26,7 @@ from app.api.transactions.modules.transaction_services import TransactionService
 from app.api.auth.decorator import token_required
 from app.api.auth.decorator import get_token_payload
 from app.api.auth.decorator import admin_required
+from app.api.auth.decorator import api_key_required
 # utility
 from app.api.utility.utils import QR
 from app.api.utility.modules.cipher import DecryptError
@@ -344,8 +345,37 @@ class WalletCheckoutRoutes(BaseRoutes):
                              self.error_response["INVALID_PARAMETER"]["MESSAGE"],
                              error.messages)
         #end if
-        response = TransferServices.checkout(request_data["phone_ext"],
-                                             request_data["phone_number"])
+        response = TransferServices().checkout(request_data["phone_ext"], request_data["phone_number"])
+        return response
+    #end def
+#end class
+
+################################## PATCH ############################################
+@api.route('/transfer/checkout2')
+class WalletCheckout2Routes(BaseRoutes):
+    """
+        Wallet Checkout Routes
+        api/v1/<source>/transfer/checkout
+    """
+    @api_key_required
+    def post(self):
+        """
+            handle POST method from
+            api/v1/<source>/transfer/checkout
+            checkout user wallets using phone number
+        """
+        # parse request data
+        request_data = TransferCheckoutRequestSchema.parser.parse_args(strict=True)
+        try:
+            excluded = "username", "name", "pin", "password", "role", "email"
+            transfer = UserSchema(strict=True).validate(request_data,
+                                                        partial=(excluded))
+        except ValidationError as error:
+            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
+                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
+        #end if
+        response = TransferServices().checkout2(request_data["phone_ext"], request_data["phone_number"])
         return response
     #end def
 #end class
@@ -414,3 +444,38 @@ class WalletBankTransferRoutes(BaseRoutes):
         return response
     #end def
 #end class
+
+################################## PATCH ############################################
+@api.route('/<string:source_wallet_id>/transfer/bank2/<string:bank_account_id>')
+class WalletBankTransfer2Routes(BaseRoutes):
+    """
+        Wallet Bank Transfer Routes
+        api/v1/source/transfer/bank/<bank_account_id>
+    """
+    @api_key_required
+    def post(self, source_wallet_id, bank_account_id):
+        """
+            handle POST method from
+            api/v1/<source>/transfer/bank/<bank_account_id>
+            send money to bank account
+        """
+        # parse request data
+        request_data = TransferRequestSchema.parser.parse_args(strict=True)
+        try:
+            excluded = ("id", "wallet_id", "balance", "transaction_type",
+                        "payment_details", "created_at")
+            transfer = TransactionSchema(strict=True).validate(request_data,
+                                                               partial=excluded)
+        except ValidationError as error:
+            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
+                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
+        #end if
+
+        request_data["destination"] = bank_account_id
+        response = TransferServices(source_wallet_id,
+                                    request_data["pin"]).external_transfer(request_data)
+        return response
+    #end def
+#end class
+

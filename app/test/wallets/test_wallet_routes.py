@@ -648,3 +648,36 @@ class TestWalletRoutes(BaseTestCase):
         result = self.bank_transfer(self._wallet1, str(uuid.uuid4()), params,
                                     self._token)
         self.assertEqual(result.status_code, 404)
+
+    ############ PATCH #################
+    def test_bank_transfer2(self):
+        """ CASE 1 Bank Transfer : successfully bank transfer """
+        # inject balance
+        wallet = Wallet.query.get(self._wallet1)
+        wallet.balance = 99999999
+        db.session.commit()
+
+        # add account bank information
+        params = {
+            "account_no": "3333333333",
+            "name"      : "Bpk KEN AROK",
+            "label"     : "Irene Bank Account",
+            "bank_code" : "014"
+        }
+        result = self.create_user_bank_account(self._user1, params, self._token)
+        response = result.get_json()["data"]
+
+        bank_account_id = response["bank_account_id"]
+
+        params = {
+            "amount" : "15",
+            "notes" : "some notes",
+            "pin" : "123456"
+        }
+
+        # api key
+        _api_key = "8c574c41-3e01-4763-89af-fd370989da33"
+
+        result = self.bank_transfer2(self._wallet1, bank_account_id, params,
+                                    _api_key)
+        self.assertEqual(result.status_code, 202)

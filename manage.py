@@ -60,6 +60,8 @@ def init():
     _create_transaction_note()
     # create payment_channel
     _create_payment_channel()
+    # create api key
+    _create_api_key()
 
 def make_shell_context():
     """ create shell context here"""
@@ -127,19 +129,6 @@ def _create_admin(role_id):
             role_id=role_id
         )
         admin.set_password("password")
-        db.session.add(admin)
-        db.session.commit()
-
-        # create admin account here
-        admin = User(
-            username="modana_lending",
-            name="Modana Lending",
-            phone_ext="62",
-            phone_number="6666666666",
-            email="lending@modana.id",
-            role_id=role_id
-        )
-        admin.set_password("tX7}@B^?N}}CakHrBeMW")
         db.session.add(admin)
         db.session.commit()
 
@@ -237,6 +226,16 @@ def _create_payment_channel():
         db.session.add(payment_channel)
         db.session.commit()
 
+def _create_api_key():
+    # only create api key if there are none
+    api_key = ApiKey.query.count()
+    if api_key == 0:
+        api_key = ApiKey(
+            id="8c574c41-3e01-4763-89af-fd370989da33",
+            name="modana_dev"
+        )
+        db.session.add(api_key)
+        db.session.commit()
 
 if __name__ == "__main__":
     manager.run()

@@ -117,3 +117,38 @@ def get_current_token():
     #end def
     return token
 #end def
+
+################ PATCH ########################
+def _parse_key():
+    """ parse api key from header """
+    parser = reqparse.RequestParser()
+    parser.add_argument('X-Api-Key', location='headers', required=True)
+    header = parser.parse_args()
+
+    # accessing token from header
+    api_key_header = header["X-Api-Key"]
+    if api_key_header == "":
+        raise ParseError("Empty Api Key Header")
+    #end if
+    return api_key_header
+#end def
+
+################ PATCH ########################
+def api_key_required(fn):
+    """
+        protect routes with api key
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+
+        try:
+            result = _parse_key()
+        except ParseError as error:
+            raise BadRequest(ERROR_CONFIG["BAD_AUTH_HEADER"], error.message)
+        else:
+            result = AuthServices.check_key(result)
+        # end try
+
+        return fn(*args, **kwargs)
+    return wrapper
+#end def

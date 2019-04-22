@@ -3,6 +3,7 @@
 """
 #pylint: disable=import-error
 #pylint: disable=unused-import
+import uuid
 from unittest import mock
 from unittest.mock import patch, Mock
 
@@ -16,6 +17,7 @@ from app.api.auth.modules.auth_services   import AuthServices
 # import all decorator
 from app.api.auth.decorator import *
 from app.api.auth.decorator import _parse_token
+from app.api.auth.decorator import _parse_key
 
 from app.api.error.authentication import RevokedTokenError
 from app.api.error.authentication import SignatureExpiredError
@@ -164,3 +166,43 @@ class TestAuthDecorator(BaseTestCase):
 
         result = get_current_token()
         self.assertEqual(result, token)
+
+    @mock.patch("flask_restplus.reqparse.RequestParser.parse_args")
+    def test_parse_key(self, parse_args_mock):
+        """ test get token """
+        # empty api key
+        parse_args_mock.return_value = {
+            "X-Api-Key" : ""
+        }
+
+        with self.assertRaises(ParseError):
+            result = _parse_key()
+
+    @mock.patch("flask_restplus.reqparse.RequestParser.parse_args")
+    def test_api_key_required_failed(self, parse_args_mock):
+        """ test api keye required decorator """
+        func = Mock()
+
+        decorated_func = api_key_required(func)
+
+        parse_args_mock.return_value = {
+            "X-Api-Key" : ""
+        }
+
+        with self.assertRaises(BadRequest):
+            result = decorated_func()
+        # end with
+
+        func = Mock()
+
+        decorated_func = api_key_required(func)
+
+        # using invalid api key
+        fake_api_key = str(uuid.uuid4())
+
+        parse_args_mock.return_value = {
+            "X-Api-Key" : "{}".format(fake_api_key)
+        }
+
+        with self.assertRaises(Unauthorized):
+            result = decorated_func()

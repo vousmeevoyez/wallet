@@ -130,6 +130,18 @@ class TestUserRoutes(BaseTestCase):
                                                self._token)
         self.assertEqual(result.status_code, 400) # ok
 
+        params = {
+            "account_no": "123132123132131",
+            "name"      : "aaaaaaaaaaaaaa aaaaaaaaaa aaaaaaaaaaaa\
+            aaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "label"     : "Irene Bank Account",
+            "bank_code" : "014"
+        }
+
+        result = self.create_user_bank_account(str(self.user.id), params,
+                                               self._token)
+        self.assertEqual(result.status_code, 400) # ok
+
     def test_get_user_bank_account(self):
         """ test routes that return bank account information"""
         params = {

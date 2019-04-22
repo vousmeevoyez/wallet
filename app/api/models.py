@@ -351,7 +351,7 @@ class BankAccount(db.Model):
     id         = db.Column(UUID(as_uuid=True), unique=True,
                                 primary_key=True, default=uid)
     label      = db.Column(db.String(30)) # account label
-    name       = db.Column(db.String(50)) # bank account name
+    name       = db.Column(db.String(144)) # bank account name
     account_no = db.Column(db.String(30)) # bank account no
     created_at = db.Column(db.DateTime, default=now) # UTC
     status     = db.Column(db.Boolean, default=True) # active / inactive
@@ -775,16 +775,23 @@ class PaymentPlan(db.Model):
                                                   self.status, self.plans)
     #end def
 
-    def total(self, current_due_date):
+    @staticmethod
+    def total(plan):
         """  calculate total payment plan amount for that specific amount until
         the due_date """
-        next_due_date = current_due_date + relativedelta.relativedelta(months=1)
-        total_payment = Plan.query.with_entities(
-            func.sum(Plan.amount).label("total_amount")
-        ).filter(
+        next_due_date = plan.due_date + relativedelta.relativedelta(months=1)
+        plans = Plan.query.filter(
+            Plan.payment_plan_id == plan.payment_plan_id,
+            Plan.status != 3,
+            Plan.due_date >= plan.due_date,
             Plan.due_date < next_due_date
-        ).first()[0]
-        return total_payment
+        ).all()
+        # calculate total payment here
+        total_payment = 0
+        for plan in plans:
+            total_payment = total_payment + plan.amount
+        # end for
+        return total_payment, plans
     #end def
 # end class
 
@@ -808,4 +815,18 @@ class Plan(db.Model):
             self.amount, self.type,
             self.status, self.due_date
         )
+    #end def
+
+class ApiKey(db.Model):
+    """
+        Class model for Api Key
+    """
+    id = db.Column(UUID(as_uuid=True), unique=True,
+                   primary_key=True, default=uid)
+    name = db.Column(db.String(255)) # amount
+    status = db.Column(db.Integer, default=0)# PENDING| RETRY | SENDING | FAIL
+    created_at = db.Column(db.DateTime, default=now)
+
+    def __repr__(self):
+        return '<ApiKey {} {} {}>'.format(self.id, self.name, self.status)
     #end def

@@ -150,7 +150,8 @@ class BankAccountSchema(ma.Schema):
 class VirtualAccountSchema(ma.Schema):
     """ This is class for Virtual Account Schema"""
     account_no = fields.Str()
-    trx_id     = fields.Int(load_only=True)
+    #trx_id     = fields.Int(load_only=True)
+    trx_id     = fields.Str()
     va_type    = fields.Method("va_type_to_string")
     name       = fields.Str(required=True, validate=cannot_be_blank)
     bank_name  = fields.Method("bank_id_to_name")
@@ -651,8 +652,6 @@ class WalletTransactionSchema(ma.Schema):
 class PlanSchema(ma.Schema):
     """ this is schema for plan """
 
-    _time_format = "%Y/%m/%d %H:%M"
-
     id = fields.Str(missing=None)
     amount = fields.Float(validate=validate_amount)
     type = fields.Method("type_id_to_type")
@@ -675,7 +674,7 @@ class PlanSchema(ma.Schema):
         # end if
         
         # convert datetime to utc
-        due_date = datetime.strptime(data['due_date'], self._time_format)
+        due_date = datetime.fromisoformat(data['due_date'])
         data['due_date'] = due_date
 
         # convert type to value
@@ -716,7 +715,7 @@ class PlanSchema(ma.Schema):
             function to validate plan status
         """
         if status is not None:
-            if status not in ["PENDING", "RETRYING", "SENDING", "PAID", "FAIL"]:
+            if status not in ["PENDING", "RETRYING", "SENDING", "PAID", "FAILED", "STOPPED"]:
                 raise ValidationError('Invalid plan status')
     #end def
 
@@ -725,9 +724,9 @@ class PlanSchema(ma.Schema):
         """
             function to validate start_date
         """
-        today = datetime.now()
+        today = datetime.utcnow()
         try:
-            due_date = datetime.strptime(due_date, self._time_format)
+            due_date = datetime.fromisoformat(due_date)
         except ValueError as error:
             raise ValidationError(str(error))
         else:
@@ -750,9 +749,9 @@ class PlanSchema(ma.Schema):
         elif obj.status == 3:
             status = "SENDING"
         elif obj.status == 4:
-            status = "PAID"
-        elif obj.status == 5:
             status = "FAILED"
+        elif obj.status == 5:
+            status = "PAID"
         elif obj.status == 6:
             status = "STOPPED"
         # end if
