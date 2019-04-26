@@ -401,7 +401,7 @@ class TransactionSchema(ma.Schema):
     balance          = fields.Float()
     amount           = fields.Float(validate=validate_amount)
     transaction_type = fields.Method("transaction_type_to_string")
-    notes            = fields.Str(allow_none=True, attribute="transaction_note")
+    notes            = fields.Str(allow_none=True)
     instructions     = fields.List(fields.Nested("TransactionSchema"),
                                    allow_none=True)
     payment_details  = fields.Method("payment_id_to_details")
@@ -765,7 +765,7 @@ class PlanSchema(ma.Schema):
                 obj - product object
         """
         status = "MAIN"
-        if obj.status == 1:
+        if obj.type == 1:
             status = "ADDITIONAL"
         return status
     # end def
@@ -778,6 +778,7 @@ class PaymentPlanSchema(ma.Schema):
         required=True, validate=cannot_be_blank
     )
     wallet_id = fields.Str(dump_only=True)
+    method = fields.Method("method_to_string", allow_none=True)
     status = fields.Method("bool_to_status", allow_none=True)
     plans = fields.Nested(PlanSchema, many=True, allow_none=True)
     created_at = fields.DateTime()
@@ -798,6 +799,15 @@ class PaymentPlanSchema(ma.Schema):
 
         if data['plans'] is None:
             del data['plans']
+        # end if
+
+        # convert repayment method
+        if data['method'] is None:
+            del data['method']
+        elif data['method'] == "AUTO_DEBIT":
+            data['method'] = 1
+        elif data['method'] == "AUTO_PAY":
+            data['method'] = 2
         # end if
 
         return PaymentPlan(**data)
@@ -830,6 +840,16 @@ class PaymentPlanSchema(ma.Schema):
         #end if
     #end def
 
+    @validates('method')
+    def validate_method(self, method):
+        """
+            function to validate payment plan repayment method
+        """
+        if method is not None:
+            if method not in ["AUTO", "AUTO_PAY", "AUTO_DEBIT"]:
+                raise ValidationError('Invalid repayment method')
+    #end def
+
     @validates('status')
     def validate_status(self, status):
         """
@@ -852,4 +872,14 @@ class PaymentPlanSchema(ma.Schema):
         # end if
         return status
     # end def
+
+    def method_to_string(self, obj):
+    # convert repayment method
+        string = "AUTO"
+        if obj.method == 1:
+            string = "AUTO_DEBIT"
+        elif obj.method == 2:
+            string = "AUTO_PAY"
+        # end if
+        return string
 # end class

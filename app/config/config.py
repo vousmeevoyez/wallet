@@ -3,8 +3,6 @@
     _______________
     This is module for storing all configuration for various environments
 """
-from kombu import Connection, Exchange, Queue
-
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -32,19 +30,31 @@ class Config:
 
     CELERY_BROKER_URL = os.getenv("BROKER_URL") or \
     'amqp://guest:guest@localhost:5672'
-    #CELERY_QUEUES = (
-    #    Queue('bank', Exchange('bank'), routing_key='bank')
-    #)
     CELERY_IMPORTS = (
         "task.bank.tasks", "task.transaction.tasks", "task.payment.tasks"
     )
+    CELERY_TASK_DEFAULT_QUEUE = "default"
+    CELERY_QUEUES = {
+        "default" : {
+            "exchange" : "default",
+            "binding_key" : "default"
+        },
+        "bank" : {
+            "exchange" : "bank",
+            "binding_key" : "bank"
+        },
+        "transaction" : {
+            "exchange" : "transaction",
+            "binding_key" : "transaction"
+        }
+    }
 
     # APSCHEDULER JOBSTORE
     APSCHEDULER_JOBSTORE_URI = "sqlite:///jobs.sqlite"
 
     BACKGROUND_PAYMENT_CONFIG = {
-        "DAY" : os.getenv("PAYMENT_IN_DAY") or 1440, # minutes
-        "COUNTDOWN"  : os.getenv("PAYMENT_COUNTDOWN") or 60, # minutes
+        "DAY" : os.getenv("PAYMENT_IN_DAY") or 60, # minutes
+        "COUNTDOWN"  : os.getenv("PAYMENT_COUNTDOWN") or 1, # minutes
         "EXPIRES" : os.getenv("PAYMENT_EXPIRES") or 1728000 # SECONDS
     }
 
@@ -420,6 +430,12 @@ class TestingConfig(Config):
 
     PRESERVE_CONTEXT_ON_EXCEPTION = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    BACKGROUND_PAYMENT_CONFIG = {
+        "DAY" : os.getenv("PAYMENT_IN_DAY") or 10, # minutes
+        "COUNTDOWN"  : os.getenv("PAYMENT_COUNTDOWN") or 1, # minutes
+        "EXPIRES" : os.getenv("PAYMENT_EXPIRES") or 1728000 # SECONDS
+    }
 #end class
 
 

@@ -31,7 +31,15 @@ services:
         celery:
                 env_file: env/prod.env
                 image: modana-wallet-services
-                entrypoint: make worker
+                entrypoint: make bank-worker
+                depends_on:
+                - rabbitmq
+                - postgres
+
+        celery2:
+                env_file: env/prod.env
+                image: modana-wallet-services
+                entrypoint: make transaction-worker
                 depends_on:
                 - rabbitmq
                 - postgres

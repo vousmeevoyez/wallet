@@ -78,7 +78,7 @@ class VirtualAccountServices:
         #end try
 
         # create va in the background here
-        task_result = BankTask().create_va.delay(virtual_account.id)
+        task_result = BankTask().create_va.apply_async(args=[virtual_account.id], queue="bank")
 
         response = {
             "virtual_account" : virtual_account_number,
@@ -122,7 +122,7 @@ class VirtualAccountServices:
         # commit everything
         db.session.commit()
 
-        task_result = BankTask().create_va.delay(self.virtual_account.id)
+        task_result = BankTask().create_va.apply_async(args=[self.virtual_account.id], queue="bank")
 
         response = {
             "virtual_account" : str(self.virtual_account.account_no),

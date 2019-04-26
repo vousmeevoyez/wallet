@@ -766,6 +766,7 @@ class PaymentPlan(db.Model):
     destination = db.Column(db.String(120)) # Wallet ID | Bank Account
     wallet_id   = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
     wallet      = db.relationship("Wallet", back_populates="payment_plans") # many to one
+    method      = db.Column(db.Integer, default=0) # AUTO | AUTO_DEBIT | AUTO_PAY
     status      = db.Column(db.Boolean, default=True) # ACTIVE | STATUS
     created_at  = db.Column(db.DateTime, default=now)
     plans       = db.relationship("Plan", back_populates="payment_plan", passive_deletes=True) # one to many
@@ -776,13 +777,26 @@ class PaymentPlan(db.Model):
     #end def
 
     @staticmethod
+    def check_payment(wallet):
+        """ look up using wallet and check if there's any payment plan or not """
+        plan = Plan.query.join(
+            PaymentPlan,
+            PaymentPlan.wallet_id == wallet.id,
+        ).filter(
+            PaymentPlan.method != 1,
+            Plan.status.in_([0,1,2])
+        ).first()
+        return plan
+    #end def
+
+    @staticmethod
     def total(plan):
         """  calculate total payment plan amount for that specific amount until
         the due_date """
         next_due_date = plan.due_date + relativedelta.relativedelta(months=1)
         plans = Plan.query.filter(
             Plan.payment_plan_id == plan.payment_plan_id,
-            Plan.status != 3,
+            Plan.status.in_([0,1,2]), # only calculate if its pending|retry|started
             Plan.due_date >= plan.due_date,
             Plan.due_date < next_due_date
         ).all()
@@ -811,8 +825,8 @@ class Plan(db.Model):
     created_at = db.Column(db.DateTime, default=now)
 
     def __repr__(self):
-        return '<Plan {} {} {} {}>'.format(
-            self.amount, self.type,
+        return '<Plan {} {} {} {} {}>'.format(
+            self.payment_plan, self.amount, self.type,
             self.status, self.due_date
         )
     #end def

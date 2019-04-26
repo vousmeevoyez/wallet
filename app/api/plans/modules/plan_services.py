@@ -2,6 +2,7 @@
     Plan Services
     _______________
 """
+from app.api import scheduler
 # database
 from app.api  import db
 # models
@@ -17,6 +18,8 @@ from app.api.error.http import *
 from sqlalchemy.exc import IntegrityError
 # configuration
 from app.config import config
+# task
+from task.payment.tasks import PaymentTask
 
 class PlanServices:
     """ Plan Services Class"""
@@ -59,9 +62,21 @@ class PlanServices:
         try:
             # extract plans
             plan.payment_plan_id = self.payment_plan.id
-
             db.session.add(plan)
             db.session.commit()
+
+            # only set scheduled job if method is not equal AUTO_PAY
+            if self.payment_plan.method != 2:
+                # only set for MAIN plan
+                if plan.type == 0:
+                    job = scheduler.add_job(
+                        PaymentTask.background_transfer.delay,
+                        trigger='date',
+                        next_run_time=plan.due_date,
+                        args=[plan.id]
+                    )
+                # end if
+            # end if
         except IntegrityError as error:
             #print(err.orig)
             db.session.rollback()

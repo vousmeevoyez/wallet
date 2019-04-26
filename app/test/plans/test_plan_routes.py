@@ -68,6 +68,18 @@ class TestPlanRoutes(BaseTestCase):
         result = self.create_plan(params, self._api_key)
         response = result.get_json()
         self.assertTrue(response['data']['plan_id'])
+
+        params = {
+            "payment_plan_id" : payment_plan_id,
+            "amount" : "1000",
+            "type" : "ADDITIONAL",
+            "due_date" : "2020-12-12"
+        }
+        result = self.create_plan(params, self._api_key)
+        response = result.get_json()
+        self.assertTrue(response['data']['plan_id'])
+
+        result = self.get_plans(self._api_key)
     # end def
 
     def test_update_plan(self):

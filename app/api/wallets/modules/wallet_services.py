@@ -12,7 +12,6 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api import db
 # helper
-from app.api.utility.utils import validate_uuid
 from app.api.utility.utils import Sms
 from app.api.utility.utils import QR
 # models

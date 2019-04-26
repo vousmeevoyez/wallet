@@ -20,11 +20,11 @@ shell:
 coverage:
 	coverage run --source app/api -m unittest discover -s app/test/
 
-worker:
-	celery worker -A task.worker.celery --loglevel=info --concurrency=2
+bank-worker:
+	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q bank -n bankworker@%h
 
-scheduler:
-	celery beat -A task.worker.celery --loglevel=info
+transaction-worker:
+	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q transaction -n transactionworker@h
 
 flower:
 	flower -A task.worker.celery --port=5555

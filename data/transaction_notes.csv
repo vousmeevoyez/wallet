@@ -9,3 +9,4 @@ TRANSFER_FEE;Transfer Fee {}
 PAYROLL;Disburse Payroll {}
 REFUND;Transaction Refund {}
 AUTO_DEBIT;Auto Debit Payment {}
+AUTO_PAY;Auto Payment {}

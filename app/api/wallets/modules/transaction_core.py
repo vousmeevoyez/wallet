@@ -8,15 +8,11 @@
 #pylint: disable=bad-whitespace
 #pylint: disable=invalid-name
 from sqlalchemy.exc import IntegrityError
-
 from app.api import db
 #models
 from app.api.models import *
 # exceptions
 from app.api.error.http import *
-#ttp errors
-from app.api.http_response import accepted
-from app.api.http_response import no_content
 # configuration
 from app.config import config
 # utility
@@ -68,7 +64,7 @@ class TransactionCore:
             raise TransactionError(error)
         #end try
         # should send queue here
-        result = TransactionTask().transfer.delay(payment_id)
+        result = TransactionTask().transfer.apply_async(args=[payment_id], queue="transaction")
         # send notification here
         notif_status = Notif().send({
             "wallet_id"        : str(wallet.id),
@@ -109,7 +105,7 @@ class TransactionCore:
             raise TransactionError(error)
         #end try
         # send queue here
-        result = TransactionTask().transfer.delay(payment_id)
+        result = TransactionTask().transfer.apply_async(args=[payment_id], queue="transaction")
         # send notification here
         notif_status = Notif().send({
             "wallet_id"        : str(wallet.id),

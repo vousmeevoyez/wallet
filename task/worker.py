@@ -4,5 +4,5 @@
 import os
 from app.api import create_app, celery
 
-app = create_app(os.getenv("ENVIRONMENT") or 'test')
+app = create_app(os.getenv("ENVIRONMENT") or 'dev')
 app.app_context().push()

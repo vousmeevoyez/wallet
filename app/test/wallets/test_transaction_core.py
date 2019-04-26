@@ -2,6 +2,7 @@
     Test Transfer Services
 """
 import uuid
+from datetime import datetime, timedelta
 from unittest.mock import patch, Mock
 from app.api import db
 
@@ -129,7 +130,7 @@ class TestTransactionCore(BaseTestCase):
         transaction_id = TransactionCore.credit_transaction(wallet,
                                                              credit_payment.id,
                                                              trx_amount,
-                                                             "TRANSFER_IN")
+                                                             "RECEIVE_PAYROLL")
         self.assertTrue(transaction_id, str)
 
     def test_create_payment_success(self):

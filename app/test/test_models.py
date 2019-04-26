@@ -1092,7 +1092,71 @@ class PaymentPlanCase(BaseTestCase):
         db.session.add(february_late_plan2)
         db.session.commit()
 
-        # try query all amount from january
-        total, result = PaymentPlan.total(february_late_plan2)
-        print(total)
-        print(result)
+    def test_payment_plan_total(self):
+        # need to make sure if payment plan is FAIL STOP PAID not calculate
+        # total
+
+        # create dummy wallet
+        wallet = Wallet(
+        )
+        db.session.add(wallet)
+        db.session.commit()
+        # add balance here
+        wallet.add_balance(1000)
+
+        # create payment plan
+        quick_loan_payment_plan = PaymentPlan(
+            destination="some-bank-account-number",
+            wallet_id=wallet.id
+        )
+        db.session.add(quick_loan_payment_plan)
+        db.session.commit()
+
+        # create plan
+        due_date = datetime.utcnow()
+        february_plan = Plan(
+            payment_plan_id=quick_loan_payment_plan.id,
+            amount=10000,
+            due_date=due_date
+        )
+        db.session.add(february_plan)
+
+        # create late plan
+        due_date = datetime.utcnow() + timedelta(days=1)
+        february_late_plan = Plan(
+            payment_plan_id=quick_loan_payment_plan.id,
+            amount=1000,
+            due_date=due_date
+        )
+        db.session.add(february_late_plan)
+        db.session.commit()
+
+        total, result = PaymentPlan.total(february_plan)
+        self.assertEqual(total, 11000)
+
+        # create plan
+        due_date = datetime.utcnow() + timedelta(days=1, weeks=4)
+        march_plan = Plan(
+            payment_plan_id=quick_loan_payment_plan.id,
+            amount=10000,
+            status=3,# paid
+            due_date=due_date
+        )
+        db.session.add(march_plan)
+
+        # create late plan
+        due_date = datetime.utcnow() + timedelta(days=2, weeks=4)
+        march_late_plan = Plan(
+            payment_plan_id=quick_loan_payment_plan.id,
+            amount=1000,
+            status=3, # paidm
+            due_date=due_date
+        )
+        db.session.add(march_late_plan)
+        db.session.commit()
+
+        total, plans = PaymentPlan.total(march_plan)
+        self.assertEqual(total, 0)
+
+        plan = PaymentPlan.check_payment(wallet)
+        print(plan)

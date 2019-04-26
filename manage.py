@@ -11,7 +11,7 @@ from flask_migrate  import Migrate, MigrateCommand
 from flask_script   import Manager, Shell
 
 from app        import blueprint
-from app.api    import create_app, db 
+from app.api    import create_app, db
 
 #import model here
 from app.api        import models

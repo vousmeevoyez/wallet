@@ -3,15 +3,12 @@
     _______________
 """
 # database
-from app.api  import db
+from app.api import db
 # models
 from app.api.models import *
 # bank account
 from app.api.users.modules.bank_account_services import BankAccountServices
-# scheduler
-from app.api import scheduler
-# task
-from task.payment.tasks import PaymentTask
+from app.api.plans.modules.plan_services import PlanServices
 # serializer
 from app.api.serializer import PaymentPlanSchema
 # http response
@@ -69,6 +66,7 @@ class PaymentPlanServices:
             # set wallet id
             payment_plan.wallet_id = self.wallet.id
             db.session.add(payment_plan)
+            db.session.commit()
 
             # register the destination as bank account if not created
             # defaultly register as BNI VA
@@ -85,22 +83,10 @@ class PaymentPlanServices:
                 response["bank_account_id"] = result["data"]["bank_account_id"]
             # end if
 
+            # adding plan
             for plan in plans:
-                plan.payment_plan_id = payment_plan.id
-                db.session.add(plan)
-
-                # only put MAIN schedule plan for schedule job
-                if plan.type == 0:
-                    # set schedule for plan
-                    job = scheduler.add_job(
-                        PaymentTask.background_transfer.delay,
-                        trigger='date',
-                        next_run_time=plan.due_date,
-                        args=[plan.id]
-                    )
-                # end if
+                result = PlanServices(payment_plan.id).add(plan)
             # end for
-            db.session.commit()
         except IntegrityError as error:
             #print(err.orig)
             db.session.rollback()

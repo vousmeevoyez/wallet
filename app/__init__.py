@@ -10,12 +10,13 @@ from flask import Blueprint
 
 from app.api import sentry
 
-def register_blueprint(api):
+def register_blueprint(core):
     """ regist all module here"""
     for module in ("auth", "wallets", "users", "virtual_accounts",
-                   "payment_plans", "plans", "callback", "banks", "logs", "utility", "transactions","schedulers"):
+                   "payment_plans", "plans", "callback", "banks", "logs",
+                   "utility", "transactions", "schedulers"):
         namespace = import_module('app.api.{}'.format(module))
-        api.add_namespace(namespace.api, path="/{}".format(module))
+        core.add_namespace(namespace.api, path="/{}".format(module))
 
 class CustomApi(Api):
     """ Custom API Classs """
@@ -44,7 +45,7 @@ class CustomApi(Api):
                 }
 
         if to_dict:
-            data = to_dict()    
+            data = to_dict()
 
         return self.make_response(data, code)
 

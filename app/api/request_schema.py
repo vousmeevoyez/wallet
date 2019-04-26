@@ -112,6 +112,7 @@ class PaymentPlanRequestSchema:
     parser.add_argument("id", type=str)
     parser.add_argument("destination", type=str, required=True)
     parser.add_argument("wallet_id", type=str, required=True)
+    parser.add_argument("method", type=str)
     parser.add_argument("plans", type=dict, action='append')
     parser.add_argument("status", type=str)
 #end class

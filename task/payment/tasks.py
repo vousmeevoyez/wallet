@@ -21,10 +21,7 @@ from app.api.error.http import *
 from app.config import config
 
 BACKGROUND_PAYMENT_CONFIG = config.Config.BACKGROUND_PAYMENT_CONFIG
-PAYMENT_STATUS_CONFIG = config.Config.PAYMENT_STATUS_CONFIG
 WORKER_CONFIG = config.Config.WORKER_CONFIG
-
-now = datetime.utcnow()
 
 max_retries = int(BACKGROUND_PAYMENT_CONFIG["DAY"]) \
                / int(BACKGROUND_PAYMENT_CONFIG["COUNTDOWN"])
@@ -54,11 +51,17 @@ class PaymentTask(celery.Task):
         """ create task in background to move money between wallet """
         # fetch payment record that going to be processed
         # extract all info needed from plan_id
-        plan = Plan.query.filter_by(id=plan_id).first()
+        plan = Plan.query.filter(Plan.id == plan_id, Plan.status.in_([0, 1, 2])).first()
+        if plan is None:
+            # it means the record already paid need to revoke
+            print("revoke task....")
+            celery.control.revoke(self.request.id)
+            return False
+        # end if
+
         # aggregate amount
         total_amount, plans = PaymentPlan.total(plan)
-        print(total_amount)
-        # payment amoun
+        # bank account
         destination = plan.payment_plan.destination
         # exchange bank account number with bank account id
         bank_account = \
@@ -97,7 +100,7 @@ class PaymentTask(celery.Task):
                 print("Max Retry Reached")
                 # set schedule for plan
                 # the next due date should be current time + 3 seconds
-                next_due_date = datetime.now() + timedelta(seconds=5)
+                next_due_date = datetime.utcnow() + timedelta(seconds=5)
                 job = scheduler.add_job(
                     PaymentTask.background_transfer.delay,
                     trigger='date',
@@ -112,4 +115,4 @@ class PaymentTask(celery.Task):
                 db.session.commit()
             # end for
         # end try
-    #end def
+        #end def

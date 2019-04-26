@@ -8,10 +8,12 @@
 #pylint: disable=import-error
 #pylint: disable=bad-whitespace
 #pylint: disable=invalid-name
+from datetime import datetime
 from sqlalchemy.exc import IntegrityError
-
+# core
+from app.api import scheduler
 from app.api import db
-#models
+# models
 from app.api.models import *
 # core
 from app.api.wallets.modules.wallet_core import WalletCore
@@ -40,8 +42,56 @@ class TransferServices(WalletCore):
         if bank_account:
             if bank_account.bank.code != "009":
                 transfer_fee = self.wallet_config["TRANSFER_FEE"][method]
-
+            # end if
+        # end if
         return transfer_fee
+
+    def auto_pay(self, wallet, payroll_amount):
+        """ special function to deduct payroll automatically """
+        response = None
+
+        plan = PaymentPlan.check_payment(wallet)
+        if plan is not None:
+            # make sure today is the due date to able deduct it
+            due_date = plan.due_date
+            payroll_date = datetime.utcnow()
+            differences = payroll_date - due_date
+
+            total_amount, plans = PaymentPlan.total(plan)
+            # if there's no day differences and payroll is bigger than payment
+            # amount
+            if differences.days == 0 and payroll_amount >= total_amount:
+                # bank account
+                destination = plan.payment_plan.destination
+                # exchange bank account number with bank account id
+                bank_account = \
+                BankAccount.query.filter_by(account_no=destination).first()
+                source = str(plan.payment_plan.wallet_id)
+
+                response = TransferServices(source).external_transfer({
+                    "destination" : str(bank_account.id),
+                    "amount" : total_amount,
+                    "notes" : None,
+                }, flag="AUTO_PAY")
+
+                # update plan to SENDING
+                for plan in plans:
+                    plan.status = 3
+                    db.session.commit()
+                # end for
+            else:
+                from task.payment.tasks import PaymentTask
+                # should switch to AUTO_DEBIT
+                job = scheduler.add_job(
+                    PaymentTask.background_transfer.delay,
+                    trigger='date',
+                    next_run_time=plan.due_date,
+                    args=[plan.id]
+                )
+            # end if
+        # end if
+        return response
+    # end def
 
     def internal_transfer(self, params):
         """ method to transfer money internally"""
@@ -66,6 +116,8 @@ class TransferServices(WalletCore):
         destination_transfer_types = "RECEIVE_TRANSFER"
         if transfer_types == "PAYROLL":
             destination_transfer_types = "RECEIVE_PAYROLL"
+            # should auto pay here
+            result = self.auto_pay(self.destination, amount)
         # end if
 
         credit_trx = TransactionCore().process_transaction(
@@ -135,8 +187,9 @@ class TransferServices(WalletCore):
         # end if
 
         # send queue here
-        result = BankTask().bank_transfer.delay(
-            bank_transfer_trx.payment.id
+        result = BankTask().bank_transfer.appy_async(
+            args=[bank_transfer_trx.payment.id],
+            queue="bank"
         )
         return accepted({"id": str(bank_transfer_trx.id)})
     #end def
