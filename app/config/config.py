@@ -39,6 +39,10 @@ class Config:
             "exchange" : "default",
             "binding_key" : "default"
         },
+        "payment" : {
+            "exchange" : "payment",
+            "binding_key" : "payment"
+        },
         "bank" : {
             "exchange" : "bank",
             "binding_key" : "bank"

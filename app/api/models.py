@@ -826,7 +826,7 @@ class Plan(db.Model):
 
     def __repr__(self):
         return '<Plan {} {} {} {} {}>'.format(
-            self.payment_plan, self.amount, self.type,
+            self.payment_plan.wallet, self.amount, self.type,
             self.status, self.due_date
         )
     #end def

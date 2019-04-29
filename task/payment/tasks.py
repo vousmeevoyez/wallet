@@ -47,7 +47,7 @@ class PaymentTask(celery.Task):
                  task_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
                  acks_late=WORKER_CONFIG["ACKS_LATE"],
                 )
-    def background_transfer(self, plan_id):
+    def background_transfer(self, plan_id, flag="AUTO_DEBIT"):
         """ create task in background to move money between wallet """
         # fetch payment record that going to be processed
         # extract all info needed from plan_id
@@ -79,7 +79,7 @@ class PaymentTask(celery.Task):
                 "destination" : str(bank_account.id),
                 "amount" : total_amount,
                 "notes" : None,
-            }, flag="AUTO_DEBIT")
+            }, flag=flag)
         except UnprocessableEntity as error:
             try:
                 # update plan to RETRYING

@@ -2,6 +2,7 @@
     Plan Services
     _______________
 """
+from datetime import timedelta
 from app.api import scheduler
 # database
 from app.api  import db
@@ -69,11 +70,17 @@ class PlanServices:
             if self.payment_plan.method != 2:
                 # only set for MAIN plan
                 if plan.type == 0:
+                    due_date = plan.due_date
+                    # always set this to H+1 AUTO mode
+                    if self.payment_plan.method == 0:
+                        due_date = plan.due_date + timedelta(days=1)
                     job = scheduler.add_job(
-                        PaymentTask.background_transfer.delay,
+                        lambda:
+                        PaymentTask.background_transfer.apply_async(
+                            args=[plan.id], queue="payment"
+                        ),
                         trigger='date',
-                        next_run_time=plan.due_date,
-                        args=[plan.id]
+                        next_run_time=due_date,
                     )
                 # end if
             # end if

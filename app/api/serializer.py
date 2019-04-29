@@ -729,9 +729,9 @@ class PlanSchema(ma.Schema):
             due_date = datetime.fromisoformat(due_date)
         except ValueError as error:
             raise ValidationError(str(error))
-        else:
-            if due_date < today:
-                raise ValidationError("Due date already expired")
+        #else:
+        #    if due_date < today:
+        #        raise ValidationError("Due date already expired")
         #end try
     #end def
 
@@ -802,12 +802,14 @@ class PaymentPlanSchema(ma.Schema):
         # end if
 
         # convert repayment method
-        if data['method'] is None:
-            del data['method']
-        elif data['method'] == "AUTO_DEBIT":
-            data['method'] = 1
-        elif data['method'] == "AUTO_PAY":
-            data['method'] = 2
+        if data["method"] is None:
+            del data["method"]
+        elif data["method"] == "AUTO":
+            data["method"] = 0
+        elif data["method"] == "AUTO_DEBIT":
+            data["method"] = 1
+        elif data["method"] == "AUTO_PAY":
+            data["method"] = 2
         # end if
 
         return PaymentPlan(**data)

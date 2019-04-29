@@ -20,6 +20,9 @@ shell:
 coverage:
 	coverage run --source app/api -m unittest discover -s app/test/
 
+payment-worker:
+	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q payment -n paymentworker@%h
+
 bank-worker:
 	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q bank -n bankworker@%h
 

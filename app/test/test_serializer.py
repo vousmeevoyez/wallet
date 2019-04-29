@@ -969,10 +969,11 @@ class TestPaymentPlanSchema(BaseTestCase):
             }
         ]
         data = {
-            "id" : "some-payment-plan-id",
+            "id"          : "some-payment-plan-id",
+            "method"      : "AUTO",
             "destination" : "123456",
-            "wallet_id" : "some-wallet-id",
-            "plans" : plans
+            "wallet_id"   : "some-wallet-id",
+            "plans"       : plans
         }
         payment_plan = PaymentPlanSchema(strict=True).load(data)
         print(payment_plan.data)

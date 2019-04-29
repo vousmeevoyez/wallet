@@ -8,7 +8,7 @@
 #pylint: disable=import-error
 #pylint: disable=bad-whitespace
 #pylint: disable=invalid-name
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 # core
 from app.api import scheduler
@@ -48,46 +48,55 @@ class TransferServices(WalletCore):
 
     def auto_pay(self, wallet, payroll_amount):
         """ special function to deduct payroll automatically """
-        response = None
+        # prevent circular import!
+        from task.payment.tasks import PaymentTask
+
+        response = {}
 
         plan = PaymentPlan.check_payment(wallet)
+
         if plan is not None:
             # make sure today is the due date to able deduct it
             due_date = plan.due_date
             payroll_date = datetime.utcnow()
             differences = payroll_date - due_date
 
+            print("payroll_date : {}".format(payroll_date))
+            print("due_date : {}".format(due_date))
+            print("differences : {}".format(differences.days))
+
             total_amount, plans = PaymentPlan.total(plan)
             # if there's no day differences and payroll is bigger than payment
-            # amount
             if differences.days == 0 and payroll_amount >= total_amount:
                 # bank account
-                destination = plan.payment_plan.destination
-                # exchange bank account number with bank account id
-                bank_account = \
-                BankAccount.query.filter_by(account_no=destination).first()
-                source = str(plan.payment_plan.wallet_id)
-
-                response = TransferServices(source).external_transfer({
-                    "destination" : str(bank_account.id),
-                    "amount" : total_amount,
-                    "notes" : None,
-                }, flag="AUTO_PAY")
-
-                # update plan to SENDING
-                for plan in plans:
-                    plan.status = 3
-                    db.session.commit()
-                # end for
+                PaymentTask.background_transfer.apply_async(args=[plan.id,
+                                                                  "AUTO_PAY"],
+                                                            queue="payment")
+                response["data"] = {"message" : "AUTO_PAY"}
             else:
-                from task.payment.tasks import PaymentTask
                 # should switch to AUTO_DEBIT
-                job = scheduler.add_job(
-                    PaymentTask.background_transfer.delay,
-                    trigger='date',
-                    next_run_time=plan.due_date,
-                    args=[plan.id]
-                )
+                # if its early payroll should trigger auto debit on due date
+                if differences.days < 0:
+                    due_date = plan.due_date
+                # if its payroll == due date but insufficient payroll, should
+                # trigger auto debit on the next minutese
+                elif differences.days == 0:
+                    due_date = payroll_date + timedelta(minutes=1)
+                elif differences.days > 0:
+                    due_date = None
+                # end if
+
+                if due_date is not None:
+                    job = scheduler.add_job(
+                        lambda:
+                        PaymentTask.background_transfer.apply_async(
+                            args=[plan.id], queue="payment"
+                        ),
+                        trigger='date',
+                        next_run_time=due_date
+                    )
+                    response["data"] = {"message" : "AUTO_DEBIT"}
+                # end if
             # end if
         # end if
         return response
@@ -187,7 +196,7 @@ class TransferServices(WalletCore):
         # end if
 
         # send queue here
-        result = BankTask().bank_transfer.appy_async(
+        result = BankTask().bank_transfer.apply_async(
             args=[bank_transfer_trx.payment.id],
             queue="bank"
         )
