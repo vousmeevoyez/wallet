@@ -44,6 +44,14 @@ services:
                 - rabbitmq
                 - postgres
 
+        celery3:
+                env_file: env/prod.env
+                image: modana-wallet-services
+                entrypoint: make payment-worker
+                depends_on:
+                - rabbitmq
+                - postgres
+
         flower:
                 env_file: env/prod.env
                 image: mher/flower
