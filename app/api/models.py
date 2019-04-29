@@ -18,6 +18,7 @@ import random
 import uuid
 import jwt
 
+from sqlalchemy import desc
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -780,11 +781,13 @@ class PaymentPlan(db.Model):
     def check_payment(wallet):
         """ look up using wallet and check if there's any payment plan or not """
         plan = Plan.query.join(
-            PaymentPlan,
-            PaymentPlan.wallet_id == wallet.id,
+            PaymentPlan
         ).filter(
+            PaymentPlan.wallet_id == wallet.id,
             PaymentPlan.method != 1,
             Plan.status.in_([0,1,2])
+        ).order_by(
+            desc(Plan.due_date)
         ).first()
         return plan
     #end def

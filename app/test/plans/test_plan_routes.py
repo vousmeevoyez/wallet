@@ -1,8 +1,7 @@
 """
     Test Payment Plan Routes
 """
-import json
-
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 from app.api.models import *
@@ -46,10 +45,11 @@ class TestPlanRoutes(BaseTestCase):
     """
         TEST BEGIN HERE 
     """
-    def test_create_plan(self):
+    def test_create_plan_auto(self):
         """ test routes function to create payment plan """
         params = {
             "id" : "some-payment-plan-id",
+            "method" : "AUTO",
             "destination" : "123456",
             "wallet_id" : self._wallet,
         }
@@ -59,27 +59,105 @@ class TestPlanRoutes(BaseTestCase):
 
         payment_plan_id = response['data']['payment_plan_id']
 
+        due_date = datetime.utcnow()
         params = {
             "payment_plan_id" : payment_plan_id,
             "amount" : "1000",
             "type" : "MAIN",
-            "due_date" : "2020-12-12"
+            "due_date" : due_date.isoformat()
         }
         result = self.create_plan(params, self._api_key)
         response = result.get_json()
         self.assertTrue(response['data']['plan_id'])
 
+        due_date = datetime.utcnow() + timedelta(minutes=1)
         params = {
             "payment_plan_id" : payment_plan_id,
             "amount" : "1000",
             "type" : "ADDITIONAL",
-            "due_date" : "2020-12-12"
+            "due_date" : due_date.isoformat()
+        }
+        result = self.create_plan(params, self._api_key)
+        response = result.get_json()
+        plan_id = response['data']['plan_id']
+        self.assertTrue(response['data']['plan_id'])
+
+        result = self.get_plan(plan_id, self._api_key)
+        print(result.get_json())
+
+        params = {
+            "method" : "AUTO_PAY",
+            "destination" : "123456",
+            "wallet_id" : self._wallet,
+        }
+        result = self.create_payment_plan(params, self._api_key)
+        response = result.get_json()
+        self.assertTrue(response['data']['payment_plan_id'])
+
+        payment_plan_id = response['data']['payment_plan_id']
+
+        due_date = datetime.utcnow()
+        params = {
+            "payment_plan_id" : payment_plan_id,
+            "amount" : "1000",
+            "type" : "MAIN",
+            "due_date" : due_date.isoformat()
         }
         result = self.create_plan(params, self._api_key)
         response = result.get_json()
         self.assertTrue(response['data']['plan_id'])
 
-        result = self.get_plans(self._api_key)
+        due_date = datetime.utcnow() + timedelta(minutes=1)
+        params = {
+            "payment_plan_id" : payment_plan_id,
+            "amount" : "1000",
+            "type" : "ADDITIONAL",
+            "due_date" : due_date.isoformat()
+        }
+        result = self.create_plan(params, self._api_key)
+        response = result.get_json()
+        plan_id = response['data']['plan_id']
+        self.assertTrue(response['data']['plan_id'])
+
+        result = self.get_plan(plan_id, self._api_key)
+        print(result.get_json())
+
+        params = {
+            "method" : "AUTO_DEBIT",
+            "destination" : "123456",
+            "wallet_id" : self._wallet,
+        }
+        result = self.create_payment_plan(params, self._api_key)
+        response = result.get_json()
+        self.assertTrue(response['data']['payment_plan_id'])
+
+        payment_plan_id = response['data']['payment_plan_id']
+
+        due_date = datetime.utcnow()
+        params = {
+            "payment_plan_id" : payment_plan_id,
+            "amount" : "1000",
+            "type" : "MAIN",
+            "due_date" : due_date.isoformat()
+        }
+        result = self.create_plan(params, self._api_key)
+        response = result.get_json()
+        self.assertTrue(response['data']['plan_id'])
+
+        due_date = datetime.utcnow() + timedelta(minutes=1)
+        params = {
+            "payment_plan_id" : payment_plan_id,
+            "amount" : "1000",
+            "type" : "ADDITIONAL",
+            "due_date" : due_date.isoformat()
+        }
+        result = self.create_plan(params, self._api_key)
+        response = result.get_json()
+        plan_id = response['data']['plan_id']
+        self.assertTrue(response['data']['plan_id'])
+
+        result = self.get_plan(plan_id, self._api_key)
+        print(result.get_json())
     # end def
 
     def test_update_plan(self):

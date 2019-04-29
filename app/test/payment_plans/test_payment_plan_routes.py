@@ -1,8 +1,7 @@
 """
     Test Payment Plan Routes
 """
-import json
-
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 from app.api.models import *
@@ -48,17 +47,71 @@ class TestPaymentPlanRoutes(BaseTestCase):
     """
     def test_create_payment_plan(self):
         """ test routes function to create payment plan """
+        due_date = datetime.utcnow()
+        plans = [{
+            "amount" : "1000",
+            "type" : "MAIN",
+            "due_date" : due_date.isoformat()
+        }]
+
         params = {
-            "id" : "some-payment-plan-id",
             "destination" : "123456",
             "method" : "AUTO_PAY",
             "wallet_id" : self._wallet,
+            "plans" : plans
+        }
+        result = self.create_payment_plan(params, self._api_key)
+        response = result.get_json()
+        payment_plan_id = response['data']['payment_plan_id']
+        self.assertTrue(response['data']['payment_plan_id'])
+        result = self.get_payment_plan(payment_plan_id, self._api_key)
+        response = result.get_json()
+        print(response)
+
+        due_date = datetime.utcnow()
+        plans = [{
+            "amount" : "1000",
+            "type" : "MAIN",
+            "due_date" : due_date.isoformat()
+        }]
+
+        params = {
+            "destination" : "123456",
+            "method" : "AUTO_DEBIT",
+            "wallet_id" : self._wallet,
+            "plans" : plans
         }
         result = self.create_payment_plan(params, self._api_key)
         response = result.get_json()
         self.assertTrue(response['data']['payment_plan_id'])
+        payment_plan_id = response['data']['payment_plan_id']
+        result = self.get_payment_plan(payment_plan_id, self._api_key)
+        response = result.get_json()
+        print(response)
+
+        due_date = datetime.utcnow()
+        plans = [{
+            "amount" : "1000",
+            "type" : "MAIN",
+            "due_date" : due_date.isoformat()
+        }]
+
+        params = {
+            "destination" : "123456",
+            "method" : "AUTO",
+            "wallet_id" : self._wallet,
+            "plans" : plans
+        }
+        result = self.create_payment_plan(params, self._api_key)
+        response = result.get_json()
+        self.assertTrue(response['data']['payment_plan_id'])
+        payment_plan_id = response['data']['payment_plan_id']
+        result = self.get_payment_plan(payment_plan_id, self._api_key)
+        response = result.get_json()
+        print(response)
     # end def
 
+    '''
     def test_get_payment_plans(self):
         """ test routes function to get payment plans"""
         params = {
@@ -149,4 +202,5 @@ class TestPaymentPlanRoutes(BaseTestCase):
         result = self.get_payment_plan(payment_plan_id, self._api_key)
         response = result.get_json()
     # end def
+    '''
 # end class

@@ -74,6 +74,7 @@ class PlanServices:
                     # always set this to H+1 AUTO mode
                     if self.payment_plan.method == 0:
                         due_date = plan.due_date + timedelta(days=1)
+                    # end if
                     job = scheduler.add_job(
                         lambda:
                         PaymentTask.background_transfer.apply_async(

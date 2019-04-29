@@ -390,7 +390,8 @@ class BaseTestCase(TestCase):
             data=dict(
                 amount=params["amount"],
                 pin=params["pin"],
-                notes=params["notes"]
+                notes=params["notes"],
+                types=params["types"]
             ),
             headers=headers
         )

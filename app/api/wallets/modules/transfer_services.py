@@ -54,16 +54,17 @@ class TransferServices(WalletCore):
         response = {}
 
         plan = PaymentPlan.check_payment(wallet)
-
         if plan is not None:
             # make sure today is the due date to able deduct it
             due_date = plan.due_date
             payroll_date = datetime.utcnow()
             differences = payroll_date - due_date
 
+            print("-------------------------------------------------")
             print("payroll_date : {}".format(payroll_date))
             print("due_date : {}".format(due_date))
             print("differences : {}".format(differences.days))
+            print("-------------------------------------------------")
 
             total_amount, plans = PaymentPlan.total(plan)
             # if there's no day differences and payroll is bigger than payment
