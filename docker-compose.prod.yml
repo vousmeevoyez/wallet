@@ -69,5 +69,15 @@ services:
                 depends_on:
                 - flask
 
+        callback:
+                entrypoint: ./start.sh
+                image: modana-va-fake-grpc
+                environment: 
+                - GRPC_PORT=10000
+                ports:
+                - 10000:10000
+                depends_on:
+                - flask
+
 volumes:
         db_volume:

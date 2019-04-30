@@ -2,6 +2,8 @@
     This is Celery Task to help interacting with Bank API
     in the background
 """
+import grpc
+from flask import current_app
 from datetime import datetime, timedelta
 from celery.signals import task_postrun
 # core
@@ -19,6 +21,9 @@ from celery.exceptions import MaxRetriesExceededError
 from app.api.error.http import *
 # configuration
 from app.config import config
+# gRPC
+from task.payment.rpc import callback_pb2
+from task.payment.rpc import callback_pb2_grpc
 
 BACKGROUND_PAYMENT_CONFIG = config.Config.BACKGROUND_PAYMENT_CONFIG
 WORKER_CONFIG = config.Config.WORKER_CONFIG
@@ -114,5 +119,19 @@ class PaymentTask(celery.Task):
                 plan.status = 3
                 db.session.commit()
             # end for
+
+            # send fake callback via gRPC
+            channel = grpc.insecure_channel("callback:10000")
+            stub = callback_pb2_grpc.CallbackStub(channel)
+            request = callback_pb2.DepositCallbackRequest()
+            request.body.virtual_account = destination
+            request.body.payment_amount = str(total_amount)
+            try:
+                response = stub.DepositCallback(request)
+            except grpc.RpcError as error:
+                print(error.code())
+                print(error.details())
+            # end try
+            current_app.logger.info(response)
         # end try
         #end def
