@@ -368,6 +368,7 @@ class TestWalletRoutes(BaseTestCase):
 
         params = {
             "amount" : "15",
+            "types" : "PAYROLL",
             "notes" : "some notes",
             "pin" : "123456"
         }
@@ -387,6 +388,7 @@ class TestWalletRoutes(BaseTestCase):
 
         params = {
             "amount" : "15",
+            "types" : "PAYROLL",
             "notes" : "some notes",
             "pin" : "111111"
         }
@@ -440,6 +442,7 @@ class TestWalletRoutes(BaseTestCase):
 
         params = {
             "amount" : "15",
+            "types" : "PAYROLL",
             "notes" : "some notes",
             "pin" : "123456"
         }

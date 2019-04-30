@@ -73,7 +73,7 @@ class PlanServices:
                     due_date = plan.due_date
                     # always set this to H+1 AUTO mode
                     if self.payment_plan.method == 0:
-                        due_date = plan.due_date + timedelta(days=1)
+                        due_date = plan.due_date + timedelta(hours=23)
                     # end if
                     job = scheduler.add_job(
                         lambda:

@@ -10,6 +10,7 @@
 #pylint: disable=invalid-name
 from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
+from flask import current_app
 # core
 from app.api import scheduler
 from app.api import db
@@ -60,21 +61,21 @@ class TransferServices(WalletCore):
             payroll_date = datetime.utcnow()
             differences = payroll_date - due_date
 
-            print("-------------------------------------------------")
-            print("payroll_date : {}".format(payroll_date))
-            print("due_date : {}".format(due_date))
-            print("differences : {}".format(differences.days))
-            print("-------------------------------------------------")
-
             total_amount, plans = PaymentPlan.total(plan)
+
             # if there's no day differences and payroll is bigger than payment
             if differences.days == 0 and payroll_amount >= total_amount:
                 # bank account
+                current_app.logger.info("should trigger AUTO_PAY")
                 PaymentTask.background_transfer.apply_async(args=[plan.id,
                                                                   "AUTO_PAY"],
                                                             queue="payment")
                 response["data"] = {"message" : "AUTO_PAY"}
             else:
+                current_app.logger.info("payroll_date : {}".format(payroll_date))
+                current_app.logger.info("due_date : {}".format(due_date))
+                current_app.logger.info("differences : {}".format(differences.days))
+                current_app.logger.info("should trigger AUTO_DEBIT")
                 # should switch to AUTO_DEBIT
                 # if its early payroll should trigger auto debit on due date
                 if differences.days < 0:

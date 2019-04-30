@@ -785,6 +785,7 @@ class PaymentPlan(db.Model):
         ).filter(
             PaymentPlan.wallet_id == wallet.id,
             PaymentPlan.method != 1,
+            Plan.type == 0,
             Plan.status.in_([0,1,2])
         ).order_by(
             desc(Plan.due_date)

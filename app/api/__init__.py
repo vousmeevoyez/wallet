@@ -4,9 +4,6 @@
     Package Initialization
 """
 from flask  import Flask
-from flask  import request
-from flask  import current_app
-from flask  import jsonify
 
 from celery import Celery
 
