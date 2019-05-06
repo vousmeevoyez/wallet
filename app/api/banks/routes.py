@@ -1,14 +1,19 @@
 """
     Bank routes
+    _____________
+    Module that handler routes for bank
 """
+#pylint: disable=no-name-in-module
+#pylint: disable=no-self-use
 # core
-from flask_restplus     import Resource
+from flask_restplus import Resource
 # namespace
 from app.api.banks import api
-# serializer
-from app.api.serializer import BankSchema
 # request schema
-from app.api.request_schema import *
+from app.api.request_schema import BNIUtilityRequestSchema
+from app.api.request_schema import BNIUtilityDoPaymentRequestSchema
+from app.api.request_schema import BNIUtilityInterbankInquiryRequestSchema
+from app.api.request_schema import BNIUtilityInterbankPaymentRequestSchema
 # decorator
 from app.api.auth.decorator import admin_required
 # services

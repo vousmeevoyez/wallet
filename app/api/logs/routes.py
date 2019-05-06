@@ -20,4 +20,5 @@ class LogRoutes(Resource):
         """ Endpoint for return all external log """
         response = LogServices().show({})
         return response
+    # end def
 #end def

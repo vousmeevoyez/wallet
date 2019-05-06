@@ -2,21 +2,24 @@
     Plan Services
     _______________
 """
+#pylint: disable=import-error
+#pylint: disable=no-name-in-module
+# standard
 from datetime import timedelta
+# external
+from sqlalchemy.exc import IntegrityError
+# local
 from app.api import scheduler
 # database
 from app.api  import db
 # models
-from app.api.models import *
+from app.api.models import Plan, PaymentPlan
 # serializer
 from app.api.serializer import PlanSchema
 # http response
-from app.api.http_response import *
-# utility
-from app.api.utility.utils import validate_uuid
+from app.api.http_response import ok, no_content, created
 # exceptions
-from app.api.error.http import *
-from sqlalchemy.exc import IntegrityError
+from app.api.error.http import RequestNotFound, UnprocessableEntity
 # configuration
 from app.config import config
 # task
@@ -33,10 +36,8 @@ class PlanServices:
                 id=payment_plan_id,
             ).first()
             if payment_plan is None:
-                raise RequestNotFound(
-                    self.error_response["PAYMENT_PLAN_NOT_FOUND"]["TITLE"],
-                    self.error_response["PAYMENT_PLAN_NOT_FOUND"]["MESSAGE"]
-                )
+                raise RequestNotFound(self.error_response["PAYMENT_PLAN_NOT_FOUND"]["TITLE"],
+                                      self.error_response["PAYMENT_PLAN_NOT_FOUND"]["MESSAGE"])
             # end if
             self.payment_plan = payment_plan
         # end if
@@ -47,10 +48,8 @@ class PlanServices:
                 id=plan_id,
             ).first()
             if plan is None:
-                raise RequestNotFound(
-                    self.error_response["PLAN_NOT_FOUND"]["TITLE"],
-                    self.error_response["PLAN_NOT_FOUND"]["MESSAGE"]
-                )
+                raise RequestNotFound(self.error_response["PLAN_NOT_FOUND"]["TITLE"],
+                                      self.error_response["PLAN_NOT_FOUND"]["MESSAGE"])
             # end if
             self.plan = plan
         # end if
@@ -85,7 +84,7 @@ class PlanServices:
                     )
                 # end if
             # end if
-        except IntegrityError as error:
+        except IntegrityError:
             #print(err.orig)
             db.session.rollback()
             raise UnprocessableEntity(
@@ -145,7 +144,7 @@ class PlanServices:
         try:
             db.session.delete(self.plan)
             db.session.commit()
-        except IntegrityError as error:
+        except IntegrityError:
             db.session.rollback()
         #end try
         return no_content()

@@ -6,30 +6,32 @@
 # pylint: disable=bad-continuation
 # pylint: disable=too-few-public-methods
 # pylint: disable=no-self-use
+# pylint: disable=no-name-in-module
 
-# core
+# external
 from flask_restplus import Resource #pylint: disable=import-error
-# namespace
+# local
 from app.api.auth import api
 # services
-from app.api.auth.modules.auth_services   import AuthServices
+from app.api.auth.modules.auth_services import AuthServices
 # serializer
 from app.api.serializer import UserSchema
 # request schema
 from app.api.request_schema import AuthRequestSchema
-# http errors
-from app.api.error.http import *
-# custom decorator
+# decorator
 from app.api.auth.decorator import refresh_token_only
 from app.api.auth.decorator import token_required
 from app.api.auth.decorator import get_current_token
 from app.api.auth.decorator import get_token_payload
+# http error
+from app.api.error.http import BadRequest
 # configuration
 from app.config import config
 
 class BaseRoutes(Resource):
     """ base routes class"""
     error_response = config.Config.ERROR_CONFIG
+# end class
 
 @api.route("/token")
 class TokenRoutes(BaseRoutes):

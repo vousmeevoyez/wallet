@@ -1,22 +1,22 @@
 """
     Virtual Account Services
     ________________
-    This is module that serve everything related to Virtual Account
 """
 #pylint: disable=bad-whitespace
 #pylint: disable=no-self-use
+#pylint: disable=no-name-in-module
+#pylint: disable=import-error
+#pylint: disable=no-member
+from sqlalchemy.exc import IntegrityError
 # database
 from app.api import db
 # models
-from app.api.models import *
+from app.api.models import VirtualAccount, Bank, VaType
 # serializer
-from app.api.serializer import *
-# configuration
+from app.api.serializer import VirtualAccountSchema
+from app.api.http_response import created, no_content
+from app.api.error.http import RequestNotFound, UnprocessableEntity
 from app.config import config
-# exceptions
-from app.api.http_response import *
-from app.api.error.http import *
-from sqlalchemy.exc import IntegrityError
 # bank task
 from task.bank.tasks import BankTask
 
@@ -29,11 +29,13 @@ class VirtualAccountServices:
     def __init__(self, virtual_account_no=None):
         if virtual_account_no is not None:
             va_record = \
-            VirtualAccount.query.filter(VirtualAccount.account_no == virtual_account_no,
-                                        VirtualAccount.status != self.status_config["DEACTIVE"]).first()
+            VirtualAccount.query.filter(
+                VirtualAccount.account_no == virtual_account_no,
+                VirtualAccount.status != self.status_config["DEACTIVE"]
+            ).first()
             if va_record is None:
-                raise RequestNotFound(ERROR_CONFIG["VA_NOT_FOUND"]["TITLE"],
-                                      ERROR_CONFIG["VA_NOT_FOUND"]["MESSAGE"])
+                raise RequestNotFound(self.error_response["VA_NOT_FOUND"]["TITLE"],
+                                      self.error_response["VA_NOT_FOUND"]["MESSAGE"])
 
             self.virtual_account = va_record
 
@@ -71,7 +73,7 @@ class VirtualAccountServices:
         try:
             db.session.add(virtual_account)
             db.session.commit()
-        except IntegrityError as error:
+        except IntegrityError:
             db.session.rollback()
             raise UnprocessableEntity(self.error_response["DUPLICATE_VA"]["TITLE"],
                                       self.error_response["DUPLICATE_VA"]["MESSAGE"])

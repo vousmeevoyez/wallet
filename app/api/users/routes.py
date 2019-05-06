@@ -1,29 +1,28 @@
-""" 
+"""
     User Routes
     _______________
-    this is module that handle rquest from url and then forward it to services
 """
-from flask_restplus     import Resource
-# db
-from app.api      import db
+#pylint: disable=no-name-in-module
+#pylint: disable=import-error
+#pylint: disable=no-self-use
+
+from flask_restplus import Resource
+from marshmallow import ValidationError
 # namespace
 from app.api.users import api
 # serializer
-from app.api.serializer     import UserSchema
-from app.api.serializer     import BankAccountSchema
+from app.api.serializer     import UserSchema, BankAccountSchema
 # request schema
 from app.api.request_schema import BankAccountRequestSchema
 from app.api.request_schema import UserRequestSchema
 from app.api.request_schema import UserUpdateRequestSchema
 # decorator
-from app.api.auth.decorator import token_required
-from app.api.auth.decorator import admin_required
+from app.api.auth.decorator import token_required, admin_required
 # services
 from app.api.users.modules.bank_account_services import BankAccountServices
 from app.api.users.modules.user_services import UserServices
 #exceptions
-from app.api.error.http import *
-from marshmallow import ValidationError
+from app.api.error.http import BadRequest
 # config
 from app.config import config
 
@@ -131,7 +130,7 @@ class UserBankAccountRoutes(BaseRoutes):
 @api.route("/<string:user_id>/bank_account/<string:user_bank_account_id>")
 class UserBankAccountDetailsRoutes(BaseRoutes):
     """
-        User Bank Accounts 
+        User Bank Accounts
         /users/<user_id>/bank_account/<bank_account_id>
     """
     @token_required
@@ -149,8 +148,8 @@ class UserBankAccountDetailsRoutes(BaseRoutes):
 
         errors = BankAccountSchema().validate(request_data)
         if errors:
-            raise BadRequest(ERROR_CONFIG["INVALID_PARAMETER"]["TITLE"],
-                             ERROR_CONFIG["INVALID_PARAMETER"]["MESSAGE"],
+            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
+                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
                              errors)
         #end if
         response = BankAccountServices(user_id, request_data["bank_code"],

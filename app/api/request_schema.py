@@ -5,7 +5,6 @@
 #pylint: disable=bad-whitespace
 #pylint: disable=import-error
 
-from werkzeug.datastructures import ImmutableList
 from flask_restplus import reqparse
 
 class UserRequestSchema:

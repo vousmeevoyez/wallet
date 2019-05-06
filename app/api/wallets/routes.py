@@ -1,12 +1,12 @@
 """
     Wallet Routes
     _______________
-    this is module that handle rquest from url and then forward it to services
 """
 #pylint: disable=import-error
 #pylint: disable=invalid-name
 #pylint: disable=no-self-use
 #pylint: disable=too-few-public-methods
+#pylint: disable=no-name-in-module
 
 from flask_restplus import Resource
 from marshmallow import ValidationError
@@ -36,20 +36,18 @@ from app.api.error.http import *
 from app.config import config
 
 class BaseRoutes(Resource):
+    """ base route class """
     error_response = config.Config.ERROR_CONFIG
 
 @api.route('/')
 class WalletAddRoutes(BaseRoutes):
     """
-        Wallet add Routes
-        api/v1/wallet/<user_id>
+        Wallets
+        /wallets/
     """
     @token_required
     def post(self):
-        """
-            Handle POST request from
-            api/v1/wallet/<user_id>
-        """
+        """ endpoint for creating wallet """
         payload = get_token_payload()
         user = payload["user"]
 
@@ -67,10 +65,7 @@ class WalletAddRoutes(BaseRoutes):
 
     @token_required
     def get(self):
-        """
-            Handle GET request from
-            api/v1/wallet/<user_id>
-        """
+        """ endpoint for getting wallet information """
         payload = get_token_payload()
         user = payload["user"]
 
@@ -87,20 +82,13 @@ class WalletRoutes(BaseRoutes):
     """
     @token_required
     def get(self, wallet_id):
-        """
-            handle GET method from
-            api/v1/wallet/
-            return wallet information
-        """
+        """ endpoint for getting wallet information """
         response = WalletServices(wallet_id).info()
         return response
     #end def
 
     def delete(self, wallet_id):
-        """
-            handle DELETE method from
-            api/v1/wallet/
-        """
+        """ endpoint for removing wallet """
         response = WalletServices(wallet_id).remove()
         return response
     #end def
@@ -109,16 +97,12 @@ class WalletRoutes(BaseRoutes):
 @api.route('/<string:wallet_id>/qr/')
 class WalletQrRoutes(BaseRoutes):
     """
-        Wallet QR Routes
-        api/v1/<wallet_id>/qr
+        Wallet QR
+        /<wallet_id>/qr
     """
     @token_required
     def get(self, wallet_id):
-        """
-            handle GET method from
-            api/v1/<wallet_id>/qr
-            return wallet qr
-        """
+        """ endpoint for getting wallet qr codes """
         response = WalletServices(wallet_id).get_qr()
         return response
     #end def
@@ -127,16 +111,12 @@ class WalletQrRoutes(BaseRoutes):
 @api.route('/<string:wallet_id>/qr/checkout')
 class WalletQrTransferRoutes(BaseRoutes):
     """
-        Wallet QR Routes
-        api/v1/<wallet_id>/qr
+        Wallet QR Checkout
+        /<wallet_id>/qr/checkout
     """
     @token_required
     def post(self, wallet_id):
-        """
-            handle GET method from
-            api/v1/<wallet_id>/qr
-            return wallet qr
-        """
+        """ endpoint for checking out qr """
         # request data validator
         request_data = QRTransferRequestSchema.parser.parse_args(strict=True)
         # Decrypt QR Code here
@@ -154,16 +134,12 @@ class WalletQrTransferRoutes(BaseRoutes):
 @api.route('/<string:wallet_id>/balance/')
 class WalletBalanceRoutes(BaseRoutes):
     """
-        Wallet Balance Routes
-        api/v1/<wallet_id>/balance
+        Wallet Balance
+        /<wallet_id>/balance
     """
     @token_required
     def get(self, wallet_id):
-        """
-            handle GET method from
-            api/v1/<wallet_id>/balance
-            return wallet balance
-        """
+        """ endpoint for getting wallet balance """
         response = WalletServices(wallet_id).check_balance()
         return response
     #end def
@@ -172,16 +148,12 @@ class WalletBalanceRoutes(BaseRoutes):
 @api.route('/<string:wallet_id>/transactions')
 class WalletTransactionRoutes(BaseRoutes):
     """
-        Wallet Transaction Routes
-        api/v1/<wallet_id>/transactions
+        Wallet Transaction
+        /<wallet_id>/transactions
     """
     @token_required
     def get(self, wallet_id):
-        """
-            handle GET method from
-            api/v1/<wallet_id>/transactions
-            return wallet transaction list
-        """
+        """ endpoint for getting wallet transaction """
         request_data = WalletTransactionRequestSchema.parser.parse_args(strict=True)
         try:
             wallet = WalletTransactionSchema(strict=True).validate(request_data)
@@ -198,16 +170,12 @@ class WalletTransactionRoutes(BaseRoutes):
 @api.route('/<string:wallet_id>/transactions/<transaction_id>')
 class WalletTransactionDetailsRoutes(BaseRoutes):
     """
-        Wallet Transaction Details Routes
-        api/v1/<wallet_id>/transactions/<transaction_id>
+        Wallet Transaction Details
+        /<wallet_id>/transactions/<transaction_id>
     """
     @token_required
     def get(self, wallet_id, transaction_id):
-        """
-            handle GET method from
-            api/v1/<wallet_id>/transactions/<transaction_id>
-            return wallet transaction details
-        """
+        """ endpoint for getting transaction details """
         response = TransactionServices(wallet_id, transaction_id).history_details()
         return response
     #end def
@@ -216,16 +184,12 @@ class WalletTransactionDetailsRoutes(BaseRoutes):
 @api.route('/<string:wallet_id>/pin/')
 class WalletPinRoutes(BaseRoutes):
     """
-        Wallet pin routes
-        api/v1/<wallet_id>/pin/
+        Wallet pin
+        /<wallet_id>/pin/
     """
     @token_required
     def put(self, wallet_id):
-        """
-            handle Put method from
-            api/v1/<wallet_id>/pin/
-            update wallet pin
-        """
+        """ endpoint for updating wallet pin """
         request_data = WalletUpdatePinRequestSchema.parser.parse_args(strict=True)
         try:
             wallet = UpdatePinSchema(strict=True).validate(request_data)
@@ -239,11 +203,7 @@ class WalletPinRoutes(BaseRoutes):
 
     @token_required
     def post(self, wallet_id):
-        """
-            handle POST method from
-            api/v1/<wallet_id>/pin/
-            update wallet pin
-        """
+        """ endpoint for checking pin """
         request_data = PinOnlyRequestSchema.parser.parse_args(strict=True)
         try:
             excluded = ("id", "wallet_id", "balance", "transaction_type",
@@ -263,27 +223,19 @@ class WalletPinRoutes(BaseRoutes):
 @api.route('/<string:wallet_id>/forgot/')
 class WalletForgotPinRoutes(BaseRoutes):
     """
-        Wallet Forgot Pin ROutes
-        api/v1/<wallet_id>/forgot/
+        Wallet Forgot Pin
+        /<wallet_id>/forgot/
     """
     @token_required
     def get(self, wallet_id):
-        """
-            handle GET method from
-            api/v1/<wallet_id>/forgot/
-            send forgot pin otp via sms
-        """
+        """ forgot pin request """
         response = WalletServices(wallet_id).send_forgot_otp()
         return response
     #end def
 
     @token_required
     def post(self, wallet_id):
-        """
-            handle POST method from
-            api/v1/<wallet_id>/forgot/
-            verify forgot pin
-        """
+        """ verify forgot pin """
         request_data = ForgotPinRequestSchema.parser.parse_args(strict=True)
         # need to serialize here
         response = WalletServices(wallet_id).verify_forgot_otp(request_data)
@@ -294,16 +246,12 @@ class WalletForgotPinRoutes(BaseRoutes):
 @api.route('/<string:wallet_id>/withdraw/')
 class WalletWithdrawRoutes(BaseRoutes):
     """
-        Wallet Withdraw Routes
-        api/v1/<wallet_id>/withdraw/
+        Wallet Withdraw
+        /<wallet_id>/withdraw/
     """
     @token_required
     def post(self, wallet_id):
-        """
-            handle POST method from
-            api/v1/<wallet_id>/withdraw/
-            withdraw money
-        """
+        """ endpoint for withdraw request """
         request_data = WithdrawRequestSchema.parser.parse_args(strict=True)
         try:
             excluded = ("id", "wallet_id", "balance", "transaction_type",
@@ -324,16 +272,12 @@ class WalletWithdrawRoutes(BaseRoutes):
 @api.route('/<string:source_wallet_id>/transfer/checkout')
 class WalletCheckoutRoutes(BaseRoutes):
     """
-        Wallet Checkout Routes
-        api/v1/<source>/transfer/checkout
+        Wallet Checkout
+        /<source>/transfer/checkout
     """
     @token_required
     def post(self, source_wallet_id):
-        """
-            handle POST method from
-            api/v1/<source>/transfer/checkout
-            checkout user wallets using phone number
-        """
+        """ endpoint for checking out wallet before transfer """
         # parse request data
         request_data = TransferCheckoutRequestSchema.parser.parse_args(strict=True)
         try:
@@ -345,7 +289,8 @@ class WalletCheckoutRoutes(BaseRoutes):
                              self.error_response["INVALID_PARAMETER"]["MESSAGE"],
                              error.messages)
         #end if
-        response = TransferServices().checkout(request_data["phone_ext"], request_data["phone_number"])
+        response = TransferServices().checkout(
+            request_data["phone_ext"], request_data["phone_number"])
         return response
     #end def
 #end class
@@ -354,16 +299,12 @@ class WalletCheckoutRoutes(BaseRoutes):
 @api.route('/transfer/checkout2')
 class WalletCheckout2Routes(BaseRoutes):
     """
-        Wallet Checkout Routes
-        api/v1/<source>/transfer/checkout
+        Wallet Checkout
+        /<source>/transfer/checkout
     """
     @api_key_required
     def post(self):
-        """
-            handle POST method from
-            api/v1/<source>/transfer/checkout
-            checkout user wallets using phone number
-        """
+        """ endpoint for checking out wallet before transfer """
         # parse request data
         request_data = TransferCheckoutRequestSchema.parser.parse_args(strict=True)
         try:
@@ -375,7 +316,8 @@ class WalletCheckout2Routes(BaseRoutes):
                              self.error_response["INVALID_PARAMETER"]["MESSAGE"],
                              error.messages)
         #end if
-        response = TransferServices().checkout2(request_data["phone_ext"], request_data["phone_number"])
+        response = TransferServices().checkout2(
+            request_data["phone_ext"], request_data["phone_number"])
         return response
     #end def
 #end class
@@ -383,16 +325,12 @@ class WalletCheckout2Routes(BaseRoutes):
 @api.route('/<string:source_wallet_id>/transfer/<string:destination_wallet_id>')
 class WalletTransferRoutes(BaseRoutes):
     """
-        Wallet Transfer Routes
-        api/v1/<source>/transfer/<destination>
+        Wallet Transfer
+        /<source>/transfer/<destination>
     """
     @token_required
     def post(self, source_wallet_id, destination_wallet_id):
-        """
-            handle POST method from
-            api/v1/<source>/transfer/<destination>
-            send money between VA
-        """
+        """ endpoint for executing transfer between wallet """
         # parse request data
         request_data = TransferRequestSchema.parser.parse_args(strict=True)
         try:
@@ -416,15 +354,11 @@ class WalletTransferRoutes(BaseRoutes):
 class WalletBankTransferRoutes(BaseRoutes):
     """
         Wallet Bank Transfer Routes
-        api/v1/source/transfer/bank/<bank_account_id>
+        /source/transfer/bank/<bank_account_id>
     """
     @token_required
     def post(self, source_wallet_id, bank_account_id):
-        """
-            handle POST method from
-            api/v1/<source>/transfer/bank/<bank_account_id>
-            send money to bank account
-        """
+        """ endpoint for executing bank transfer """
         # parse request data
         request_data = TransferRequestSchema.parser.parse_args(strict=True)
         try:
@@ -450,15 +384,11 @@ class WalletBankTransferRoutes(BaseRoutes):
 class WalletBankTransfer2Routes(BaseRoutes):
     """
         Wallet Bank Transfer Routes
-        api/v1/source/transfer/bank/<bank_account_id>
+        /source/transfer/bank/<bank_account_id>
     """
     @api_key_required
     def post(self, source_wallet_id, bank_account_id):
-        """
-            handle POST method from
-            api/v1/<source>/transfer/bank/<bank_account_id>
-            send money to bank account
-        """
+        """ endpoint for executing bank transfer """
         # parse request data
         request_data = TransferRequestSchema.parser.parse_args(strict=True)
         try:
@@ -478,4 +408,3 @@ class WalletBankTransfer2Routes(BaseRoutes):
         return response
     #end def
 #end class
-

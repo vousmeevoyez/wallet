@@ -1,7 +1,6 @@
 """
     Auth Error
 """
-
 class AuthError(Exception):
     """ Base Class for Auth Error"""
 

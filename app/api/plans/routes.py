@@ -6,21 +6,22 @@
 #pylint: disable=invalid-name
 #pylint: disable=no-self-use
 #pylint: disable=too-few-public-methods
+#pylint: disable=no-name-in-module
 
 from flask_restplus import Resource
 from marshmallow import ValidationError
 
 from app.api.plans import api
 #serializer
-from app.api.serializer import *
+from app.api.serializer import PlanSchema
 # request schema
-from app.api.request_schema import *
+from app.api.request_schema import PlanRequestSchema, UpdatePlanRequestSchema
 # wallet modules
 from app.api.plans.modules.plan_services import PlanServices
 # authentication
 from app.api.auth.decorator import api_key_required
 # exceptions
-from app.api.error.http import *
+from app.api.error.http import BadRequest
 # configuration
 from app.config import config
 

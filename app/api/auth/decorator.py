@@ -3,17 +3,13 @@
     ________________
     this is module that contain various decorator to protect various endpoint
 """
-# core
+# standard
 from functools import wraps
-from flask import request
+# external
 from flask_restplus import reqparse
-# services
+# local
 from app.api.auth.modules.auth_services import AuthServices
-# models
-from app.api.models import User
-# error
-from app.api.error.http import *
-# configuration
+from app.api.error.http import BadRequest, InsufficientScope, MethodNotAllowed
 from app.config import config
 
 ERROR_CONFIG = config.Config.ERROR_CONFIG
@@ -40,7 +36,7 @@ def _parse_token():
         token = auth_header.split(" ")[1]
     except IndexError:
         raise ParseError("Invalid Auth Header")
-    #end def
+    #end try
     return token
 #end def
 
@@ -52,18 +48,16 @@ def get_token_payload():
         token = _parse_token()
     except ParseError as error:
         raise BadRequest(ERROR_CONFIG["BAD_AUTH_HEADER"], error.message)
-    #end def
+    #end try
 
     response = AuthServices().current_login_user(token)
     return response
 #end def
 
 # CUSTOM DECORATOR
-def admin_required(fn):
-    """
-        decorator to only allow admin access this function
-    """
-    @wraps(fn)
+def admin_required(func):
+    """ decorator to only allow admin access this function """
+    @wraps(func)
     def wrapper(*args, **kwargs):
 
         response = get_token_payload()
@@ -73,37 +67,35 @@ def admin_required(fn):
         if user.role.description != "ADMIN":
             raise InsufficientScope(ERROR_CONFIG["ADMIN_REQUIRED"]["TITLE"],
                                     ERROR_CONFIG["ADMIN_REQUIRED"]["MESSAGE"])
+        # end if
 
-        return fn(*args, **kwargs)
+        return func(*args, **kwargs)
         #end if
     return wrapper
 #end def
 
-def refresh_token_only(fn):
-    """
-        only allow refresh token for certain routes
-    """
-    @wraps(fn)
+def refresh_token_only(func):
+    """ only allow refresh token for certain routes """
+    @wraps(func)
     def wrapper(*args, **kwargs):
         response = get_token_payload()
 
         if response["token_type"] != "REFRESH":
             raise MethodNotAllowed("Refresh token only")
         else:
-            return fn(*args, **kwargs)
+            return func(*args, **kwargs)
+        # end if
+    # end def
     return wrapper
 #end def
 
-def token_required(fn):
-    """
-        protect routes with token
-    """
-    @wraps(fn)
+def token_required(func):
+    """ protect routes with token """
+    @wraps(func)
     def wrapper(*args, **kwargs):
-
         response = get_token_payload()
-
-        return fn(*args, **kwargs)
+        return func(*args, **kwargs)
+    # end def
     return wrapper
 #end def
 
@@ -114,7 +106,7 @@ def get_current_token():
         token = _parse_token()
     except ParseError as error:
         raise BadRequest(ERROR_CONFIG["BAD_AUTH_HEADER"], error.message)
-    #end def
+    #end try
     return token
 #end def
 
@@ -134,13 +126,10 @@ def _parse_key():
 #end def
 
 ################ PATCH ########################
-def api_key_required(fn):
-    """
-        protect routes with api key
-    """
-    @wraps(fn)
+def api_key_required(func):
+    """ protect routes with api key """
+    @wraps(func)
     def wrapper(*args, **kwargs):
-
         try:
             result = _parse_key()
         except ParseError as error:
@@ -148,7 +137,7 @@ def api_key_required(fn):
         else:
             result = AuthServices.check_key(result)
         # end try
-
-        return fn(*args, **kwargs)
+        return func(*args, **kwargs)
+    # end def
     return wrapper
 #end def

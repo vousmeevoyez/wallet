@@ -1,22 +1,25 @@
 """
     Transfer Core
     _________________
-    Core Transaction Services
 """
 #pylint: disable=no-self-use
 #pylint: disable=import-error
 #pylint: disable=bad-whitespace
 #pylint: disable=invalid-name
+#pylint: disable=no-name-in-module
+#pylint: disable=no-member
 from sqlalchemy.exc import IntegrityError
 from app.api import db
 #models
-from app.api.models import *
+from app.api.models import Transaction
+from app.api.models import TransactionType
+from app.api.models import Payment
+from app.api.models import TransactionNote
 # exceptions
-from app.api.error.http import *
+from app.api.error.http import UnprocessableEntity
 # configuration
 from app.config import config
 # utility
-from app.api.utility.utils import validate_uuid
 from app.api.utility.utils import Notif
 # task
 from task.transaction.tasks import TransactionTask
@@ -35,7 +38,7 @@ class TransactionCore:
     @staticmethod
     def debit_transaction(wallet, payment_id, amount, flag,
                           transfer_notes=None):
-
+        """ create debit transaction """
         amount = -amount
 
         # fetch transaction type from db
@@ -135,7 +138,9 @@ class TransactionCore:
     #end def
 
     def process_transaction(self, source, destination, amount, payment_type,
-                            transfer_types, transfer_notes=None, channel_id=None, reference_number=None):
+                            transfer_types, transfer_notes=None,
+                            channel_id=None, reference_number=None):
+        """ method that wrap debit & credit transaction process """
         # if destination is bank account
         if hasattr(source, "id"):
             source_account = source.id

@@ -4,6 +4,9 @@
     this is module to serialize and deserialize object
 """
 # pylint: disable=R0201
+# pylint: disable=import-error
+# pylint: disable=wildcard-import
+# pylint: disable=too-few-public-methods
 
 import re
 from datetime import datetime
@@ -83,7 +86,7 @@ class BankSchema(ma.Schema):
     """
         This is Class Schema for Bank Object
     """
-    id   = fields.Int(load_only=True)
+    id = fields.Int(load_only=True)
     name = fields.Str(required=True, validate=cannot_be_blank)
     code = fields.Str(required=True, validate=cannot_be_blank)
 
@@ -91,14 +94,14 @@ class BankAccountSchema(ma.Schema):
     """
         This is Class Schema for Bank Account Object
     """
-    id         = fields.Str()
-    name       = fields.Str(required=True, validate=(cannot_be_blank,
-                                                     validate_name))
+    id = fields.Str()
+    name = fields.Str(required=True, validate=(cannot_be_blank,
+                                               validate_name))
     account_no = fields.Str(required=True, validate=cannot_be_blank)
-    label      = fields.Str(required=True, validate=(cannot_be_blank,
-                                                     validate_label))
-    bank_code  = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
-    bank_name  = fields.Method("bank_id_to_name")
+    label = fields.Str(required=True,
+                       validate=(cannot_be_blank, validate_label))
+    bank_code = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
+    bank_name = fields.Method("bank_id_to_name")
 
     def bank_id_to_name(self, obj):
         """
@@ -142,6 +145,7 @@ class BankAccountSchema(ma.Schema):
 
     @post_load
     def make_object(self, request_data):
+        """ make bank account object """
         del request_data["bank_code"]
         return BankAccount(**request_data)
 
@@ -151,11 +155,11 @@ class VirtualAccountSchema(ma.Schema):
     """ This is class for Virtual Account Schema"""
     account_no = fields.Str()
     #trx_id     = fields.Int(load_only=True)
-    trx_id     = fields.Str()
-    va_type    = fields.Method("va_type_to_string")
-    name       = fields.Str(required=True, validate=cannot_be_blank)
-    bank_name  = fields.Method("bank_id_to_name")
-    status     = fields.Method("bool_to_status")
+    trx_id = fields.Str()
+    va_type = fields.Method("va_type_to_string")
+    name = fields.Str(required=True, validate=cannot_be_blank)
+    bank_name = fields.Method("bank_id_to_name")
+    status = fields.Method("bool_to_status")
 
     @post_load
     def make_va(self, data):
@@ -184,9 +188,9 @@ class VirtualAccountSchema(ma.Schema):
     #end def
 
     def bank_id_to_name(self, obj):
-        """ 
+        """
             function to convert bank id to bank name
-            args : 
+            args :
                 obj -- bank account object
         """
         return obj.bank.name
@@ -200,14 +204,14 @@ class VirtualAccountSchema(ma.Schema):
 
 class WalletSchema(ma.Schema):
     """ This is class that represent wallet schema"""
-    id         = fields.Str()
-    label      = fields.Str(required=True, validate=(cannot_be_blank, validate_label))
-    user_id    = fields.Int(load_only=True)
-    pin        = fields.Str(required=True, attribute="pin_hash",
-                            validate=(cannot_be_blank, validate_pin), load_only=True)
+    id = fields.Str()
+    label = fields.Str(required=True, validate=(cannot_be_blank, validate_label))
+    user_id = fields.Int(load_only=True)
+    pin = fields.Str(required=True, attribute="pin_hash",
+                     validate=(cannot_be_blank, validate_pin), load_only=True)
     created_at = fields.DateTime(load_only=True)
-    status     = fields.Method("bool_to_status")
-    balance    = fields.Float()
+    status = fields.Method("bool_to_status")
+    balance = fields.Float()
     virtual_accounts = fields.Nested(VirtualAccountSchema, many=True)
 
     def bool_to_status(self, obj):
@@ -226,27 +230,29 @@ class WalletSchema(ma.Schema):
 
     @post_load
     def make_wallet(self, data):
+        """ make wallet object """
         return Wallet(**data)
     #end def
 #end class
 
 class UserSchema(ma.Schema):
     """ this is class schema for user object"""
-    id          = fields.Str()
-    username    = fields.Str(required=True, validate=cannot_be_blank)
-    name        = fields.Str(required=True, validate=(cannot_be_blank,
-                                                      validate_name))
-    phone_ext   = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
-    phone_number= fields.Str(required=True, validate=cannot_be_blank, load_only=True)
-    msisdn      = fields.Method("phone_to_msisdn", dump_only=True)
-    email       = fields.Str(allow_none=True)
-    role        = fields.Method("role_id_to_role", validate=cannot_be_blank)
-    password    = fields.Str(required=True, attribute="password_hash", validate=cannot_be_blank, load_only=True)
-    pin         = fields.Str(required=True, validate=(cannot_be_blank,
-                                                      validate_pin), load_only=True)
-    created_at  = fields.DateTime()
-    status      = fields.Method("bool_to_status")
-    wallets     = fields.Nested(WalletSchema, many=True)
+    id = fields.Str()
+    username = fields.Str(required=True, validate=cannot_be_blank)
+    name = fields.Str(required=True, validate=(cannot_be_blank,
+                                               validate_name))
+    phone_ext = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
+    phone_number = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
+    msisdn = fields.Method("phone_to_msisdn", dump_only=True)
+    email = fields.Str(allow_none=True)
+    role = fields.Method("role_id_to_role", validate=cannot_be_blank)
+    password = fields.Str(required=True, attribute="password_hash",
+                          validate=cannot_be_blank, load_only=True)
+    pin = fields.Str(required=True, validate=(cannot_be_blank,
+                                              validate_pin), load_only=True)
+    created_at = fields.DateTime()
+    status = fields.Method("bool_to_status")
+    wallets = fields.Nested(WalletSchema, many=True)
 
     def phone_to_msisdn(self, obj):
         """
@@ -384,28 +390,28 @@ class UserSchema(ma.Schema):
 
 class UpdatePinSchema(ma.Schema):
     """ This is class that represent Update pin Schema"""
-    pin         = fields.Str(required=True, validate=(cannot_be_blank,
-                                                      validate_pin), load_only=True)
+    pin = fields.Str(required=True, validate=(cannot_be_blank, validate_pin),
+                     load_only=True)
     confirm_pin = fields.Str(required=True, validate=(cannot_be_blank,
                                                       validate_pin), load_only=True)
-    old_pin     = fields.Str(required=True, validate=(cannot_be_blank,
-                                                      validate_pin), load_only=True)
+    old_pin = fields.Str(required=True, validate=(cannot_be_blank,
+                                                  validate_pin), load_only=True)
 #end class
 
 class TransactionSchema(ma.Schema):
     """ This is class that represent Transaction Schema"""
-    id               = fields.Str()
-    pin              = fields.Str(load_only=True, validate=validate_pin)
-    wallet_id        = fields.Str()
-    types            = fields.Str(allow_none=True)
-    balance          = fields.Float()
-    amount           = fields.Float(validate=validate_amount)
+    id = fields.Str()
+    pin = fields.Str(load_only=True, validate=validate_pin)
+    wallet_id = fields.Str()
+    types = fields.Str(allow_none=True)
+    balance = fields.Float()
+    amount = fields.Float(validate=validate_amount)
     transaction_type = fields.Method("transaction_type_to_string")
-    notes            = fields.Str(allow_none=True)
-    instructions     = fields.List(fields.Nested("TransactionSchema"),
-                                   allow_none=True)
-    payment_details  = fields.Method("payment_id_to_details")
-    created_at       = fields.DateTime()
+    notes = fields.Str(allow_none=True)
+    instructions = fields.List(fields.Nested("TransactionSchema"),
+                               allow_none=True)
+    payment_details = fields.Method("payment_id_to_details")
+    created_at = fields.DateTime()
 
     @validates('types')
     def validate_transfer_types(self, types):
@@ -500,14 +506,14 @@ class TransactionSchema(ma.Schema):
 
 class CallbackSchema(ma.Schema):
     """ this is schema for callback object """
-    virtual_account           = fields.Int(required=True, validate=cannot_be_blank)
-    customer_name             = fields.Str(required=True, validate=cannot_be_blank)
-    trx_id                    = fields.Int(required=True, validate=cannot_be_blank)
-    trx_amount                = fields.Float(required=True)
-    payment_amount            = fields.Int(required=True, validate=cannot_be_blank)
+    virtual_account = fields.Int(required=True, validate=cannot_be_blank)
+    customer_name = fields.Str(required=True, validate=cannot_be_blank)
+    trx_id = fields.Int(required=True, validate=cannot_be_blank)
+    trx_amount = fields.Float(required=True)
+    payment_amount = fields.Int(required=True, validate=cannot_be_blank)
     cumulative_payment_amount = fields.Int(required=True, validate=cannot_be_blank)
-    payment_ntb               = fields.Int(required=True, validate=cannot_be_blank)
-    datetime_payment          = fields.Str(required=True, validate=cannot_be_blank)
+    payment_ntb = fields.Int(required=True, validate=cannot_be_blank)
+    datetime_payment = fields.Str(required=True, validate=cannot_be_blank)
 
     @validates('virtual_account')
     def validate_va_number(self, va_number):
@@ -571,13 +577,13 @@ class CallbackSchema(ma.Schema):
 
 class ExternalLogSchema(ma.Schema):
     """ this is schema for external log object """
-    id         = fields.Int(dump_only=True)
-    status     = fields.Method("bool_to_status", dump_only=True)
-    resource   = fields.Str(dump_only=True)
-    api_name   = fields.Str(dump_only=True)
-    request    = fields.Str(dump_only=True)
-    response   = fields.Str(dump_only=True)
-    api_type   = fields.Method("api_type_to_type", dump_only=True)
+    id = fields.Int(dump_only=True)
+    status = fields.Method("bool_to_status", dump_only=True)
+    resource = fields.Str(dump_only=True)
+    api_name = fields.Str(dump_only=True)
+    request = fields.Str(dump_only=True)
+    response = fields.Str(dump_only=True)
+    api_type = fields.Method("api_type_to_type", dump_only=True)
     created_at = fields.DateTime()
     response_time = fields.Float(dump_only=True)
 
@@ -672,7 +678,6 @@ class PlanSchema(ma.Schema):
         else:
             del data['id']
         # end if
-        
         # convert datetime to utc
         due_date = datetime.fromisoformat(data['due_date'])
         data['due_date'] = due_date
@@ -687,25 +692,25 @@ class PlanSchema(ma.Schema):
     # end def
 
     @validates('id')
-    def validate_id(self, id):
+    def validate_id(self, plan_id):
         """
             function to validate id
         """
         # only allow alphanumeric  6 and maximal is 32 digit
-        if id is not None:
+        if plan_id is not None:
             pattern = r"^[A-Za-z0-9 ,_.-]{6,32}$"
-            if re.search(pattern, id) is None:
+            if re.search(pattern, plan_id) is None:
                 raise ValidationError('Invalid Identifier')
             # end if
         # end if
     #end def
 
     @validates('type')
-    def validate_type(self, type):
+    def validate_type(self, plan_type):
         """
             function to validate plan type
         """
-        if type not in ["MAIN", "ADDITIONAL"]:
+        if plan_type not in ["MAIN", "ADDITIONAL"]:
             raise ValidationError('Invalid plan type')
     #end def
 
@@ -816,14 +821,14 @@ class PaymentPlanSchema(ma.Schema):
     # end def
 
     @validates('id')
-    def validate_id(self, id):
+    def validate_id(self, payment_plan_id):
         """
             function to validate id
         """
         # only allow alphanumeric  6 and maximal is 32 digit
-        if id is not None:
+        if payment_plan_id is not None:
             pattern = r"^[A-Za-z0-9 ,_.-]{6,32}$"
-            if re.search(pattern, id) is None:
+            if re.search(pattern, payment_plan_id) is None:
                 raise ValidationError('Invalid Identifier')
             # end if
     #end def
@@ -876,7 +881,7 @@ class PaymentPlanSchema(ma.Schema):
     # end def
 
     def method_to_string(self, obj):
-    # convert repayment method
+        """ convert payment method to string """
         string = "AUTO"
         if obj.method == 1:
             string = "AUTO_DEBIT"

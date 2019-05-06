@@ -25,7 +25,7 @@ def ok(data=None, message=None):
 
     if message is not None:
         response["message"] = message
-
+    # end if
     return (response, 200)
 #end def
 
@@ -37,10 +37,10 @@ def created(data=None, message=None):
 
     if data is not None:
         response["data"] = data
-
+    # end if
     if message is not None:
         response["message"] = message
-
+    # end if
     return (response, 201)
 #end def
 
@@ -52,9 +52,9 @@ def accepted(data=None, message=None):
 
     if data is not None:
         response["data"] = data
-
+    # end if
     if message is not None:
         response["message"] = message
-
+    # end if
     return (response, 202)
 #end def

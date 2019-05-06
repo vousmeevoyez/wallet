@@ -2,24 +2,26 @@
     Payment Plan Services
     _______________
 """
-# database
+#pylint: disable=no-name-in-module
+#pylint: disable=import-error
+from sqlalchemy.exc import IntegrityError
+
 from app.api import db
 # models
-from app.api.models import *
+from app.api.models import Wallet, BankAccount, PaymentPlan
 # bank account
 from app.api.users.modules.bank_account_services import BankAccountServices
 from app.api.plans.modules.plan_services import PlanServices
 # serializer
 from app.api.serializer import PaymentPlanSchema
 # http response
-from app.api.http_response import *
+from app.api.http_response import ok, no_content, created
 # utility
 from app.api.utility.utils import validate_uuid
-# exceptions
-from app.api.error.http import *
-from sqlalchemy.exc import IntegrityError
 # configuration
 from app.config import config
+# exceptions
+from app.api.error.http import RequestNotFound, UnprocessableEntity
 
 class PaymentPlanServices:
     """ Payment Plan Services Class"""
@@ -70,7 +72,8 @@ class PaymentPlanServices:
 
             # register the destination as bank account if not created
             # defaultly register as BNI VA
-            repayment_va_account = BankAccount.query.filter_by(account_no=payment_plan.destination).first()
+            repayment_va_account = BankAccount.query.filter_by(
+                account_no=payment_plan.destination).first()
             if repayment_va_account is None:
                 repayment_va_account = BankAccount(
                     label="VA Repayment Account",
@@ -87,8 +90,7 @@ class PaymentPlanServices:
             for plan in plans:
                 result = PlanServices(payment_plan.id).add(plan)
             # end for
-        except IntegrityError as error:
-            #print(err.orig)
+        except IntegrityError:
             db.session.rollback()
             raise UnprocessableEntity(
                 self.error_response["DUPLICATE_PAYMENT_PLAN"]["TITLE"],
@@ -130,7 +132,7 @@ class PaymentPlanServices:
         try:
             db.session.delete(self.payment_plan)
             db.session.commit()
-        except IntegrityError as error:
+        except IntegrityError:
             db.session.rollback()
         #end try
         return no_content()

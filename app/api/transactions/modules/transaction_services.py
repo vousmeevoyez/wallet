@@ -5,6 +5,9 @@
 """
 #pylint: disable=bad-whitespace
 #pylint: disable=no-self-use
+#pylint: disable=import-error
+#pylint: disable=no-name-in-module
+#pylint: disable=singleton-comparison
 from datetime import datetime, timedelta
 
 from sqlalchemy.exc import IntegrityError
@@ -13,7 +16,7 @@ from app.api import db
 # helper
 from app.api.utility.utils import validate_uuid
 # models
-from app.api.models import *
+from app.api.models import Wallet, Transaction, Payment
 # serializer
 from app.api.serializer import TransactionSchema
 # core
@@ -21,9 +24,9 @@ from app.api.wallets.modules.transaction_core import TransactionCore
 # config
 from app.config import config
 # http error
-from app.api.http_response import *
+from app.api.http_response import ok, accepted
 # exception
-from app.api.error.http import *
+from app.api.error.http import UnprocessableEntity, RequestNotFound
 
 class TransactionServices:
     """ Transaction Services Class"""
@@ -42,7 +45,9 @@ class TransactionServices:
         # end if
 
         if transaction_id is not None:
-            transaction_record = Transaction.query.filter_by(id=validate_uuid(transaction_id)).first()
+            transaction_record = Transaction.query.filter_by(
+                id=validate_uuid(transaction_id)
+            ).first()
             if transaction_record is None:
                 raise RequestNotFound(self.error_response["TRANSACTION_NOT_FOUND"]["TITLE"],
                                       self.error_response["TRANSACTION_NOT_FOUND"]["MESSAGE"])
@@ -113,14 +118,13 @@ class TransactionServices:
 
         # populates refund transaction
         refunds = []
-        
-        # append current object    
+        # append current object
         refunds.append(self.transaction)
         # if transaction link is existed append it too
         if self.transaction.transaction_link is not None:
             refunds.append(self.transaction.transaction_link)
         # end if
-        
+
         transactions = []
         for refund in refunds:
             # fetch all information needed

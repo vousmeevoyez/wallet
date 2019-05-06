@@ -3,9 +3,9 @@
     ________________
     This is module that to send notification
 """
+import json
 from datetime import datetime
 import requests
-import json
 
 # configuration
 from app.config import config
@@ -13,7 +13,9 @@ from app.config import config
 NOTIF_SERVICES_CONFIG = config.Config.NOTIF_SERVICES_CONFIG
 
 class ApiError(Exception):
+    """ notification api error class """
     def __init__(self, original):
+        super(ApiError).__init__()
         self.original = original
 
 class NotifServices:
@@ -63,10 +65,11 @@ class NotifServices:
         return transfer_types[types]
 
     @staticmethod
-    def _convert_date(datetime):
-        return datetime.strftime("%Y-%m-%d %H:%M:%S")
+    def _convert_date(date_time):
+        return date_time.strftime("%Y-%m-%d %H:%M:%S")
 
     def send(self, params):
+        """ execute send notifcation """
         return self._post({
             "wallet_id" : params["wallet_id"],
             "created_at": self._convert_date(datetime.utcnow()),

@@ -7,8 +7,8 @@ from flask  import Flask
 
 from celery import Celery
 
-from flask_sqlalchemy   import SQLAlchemy
-from flask_marshmallow  import Marshmallow
+from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
 
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -23,15 +23,16 @@ db = SQLAlchemy()
 ma = Marshmallow()
 sentry = sentry_sdk
 celery = Celery(__name__, broker=config.Config.CELERY_BROKER_URL)
+# start scheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
 
 def create_app(config_name):
     """
-    Create flask instance using application factory pattern
+        Create flask instance using application factory pattern
 
-    args :
-        config_name -- Configuration key used (DEV/PROD/TESTING)
+        args :
+            config_name -- Configuration key used (DEV/PROD/TESTING)
     """
     app = Flask(__name__)
     app.config.from_object(config.CONFIG_BY_NAME[config_name])

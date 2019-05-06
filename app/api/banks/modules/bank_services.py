@@ -3,26 +3,26 @@
     _______________
     this is module that serve request from bank resources
 """
-# database
-from app.api import db
+#pylint:disable=no-name-in-module
 # models
-from app.api.models     import Bank
+from app.api.models import Bank
 # serializer
 from app.api.serializer import BankSchema
 # configuration
-from app.config     import config
+from app.config import config
+# http error
+from app.api.error.http import UnprocessableEntity
 # BNI API
 from task.bank.BNI.helper import CoreBank
 # exceptions
-from app.api.error.http import *
-from task.bank.exceptions.general import *
-
+from task.bank.exceptions.general import ApiError
 
 class BankServices:
     """ Bank Services Class"""
     error_response = config.Config.ERROR_CONFIG
 
-    def get_banks(self):
+    @staticmethod
+    def get_banks():
         """ return all bank available"""
         response = {}
 
@@ -32,22 +32,27 @@ class BankServices:
         return response
     #end def
 
-    def _extract_error(self, obj, error_key=None):
+    @staticmethod
+    def _extract_error(obj, error_key=None):
         """ extract error from BNI Response format """
         error_message = ""
-        if type(obj) == dict:
+        if isinstance(obj, dict):
             for key, value in obj[error_key].items():
                 if key == "parameters":
                     for key, value in value.items():
                         if key == "errorMessage":
                             error_message = value
+                        # end if
+                    # end for
+                # end if
+            # end for
+        # end if
         else:
             error_message = obj.message
+        # end if
         return error_message
+    # end def
 
-    """
-        BNI
-    """
     def get_host_balance(self, account_no):
         """ check host balance """
         try:
@@ -58,6 +63,7 @@ class BankServices:
             message = self._extract_error(error.original_exception, "getBalanceResponse")
             raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
+        # end try
         return response
     #end def
 
@@ -72,6 +78,7 @@ class BankServices:
                                           "getInHouseInquiryResponse")
             raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
+        # end try
         return response
     #end def
 
@@ -86,6 +93,7 @@ class BankServices:
                                           "getPaymentStatusResponse")
             raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
+        # end try
         return response
     #end def
 
@@ -102,6 +110,7 @@ class BankServices:
                                           "holdAmountResponse")
             raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
+        # end try
         return response
     #end def
 
@@ -114,6 +123,7 @@ class BankServices:
                                           "doPaymentResponse")
             raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
+        # end try
         return response
     #end try
 
@@ -126,6 +136,7 @@ class BankServices:
                                           "getInterbankInquiryResponse")
             raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
+        # end try
         return response
     #end try
 
@@ -138,6 +149,7 @@ class BankServices:
                                           "getInterbankPaymentResponse")
             raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
+        # end try
         return response
     #end try
 #end class

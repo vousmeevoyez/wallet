@@ -1,6 +1,7 @@
 """
     AES Cipher MOdules
 """
+#pylint: disable=import-error
 from base64 import urlsafe_b64encode, urlsafe_b64decode
 import hashlib
 

@@ -6,29 +6,10 @@
 #pylint: disable=import-error
 #pylint: disable=bad-whitespace
 #pylint: disable=invalid-name
-from datetime import datetime
-from sqlalchemy.exc import IntegrityError
 # scheduler
 from app.api import scheduler
-# database
-from app.api import db
-#models
-from app.api.models import *
-# exceptions
-from app.api.error.http import *
 #http response
-from app.api.http_response import *
-# serializer
-from app.api.serializer import UserSchema
-# utility
-from app.api.utility.utils import validate_uuid
-# task
-from task.payment.tasks import PaymentTask
-
-def greet_user(text):
-    """ testing function to greet user at some time"""
-    print("{} at {}".format(text, datetime.now()))
-# end def
+from app.api.http_response import accepted
 
 class SchedulerServices:
     """ Scheduler Services"""

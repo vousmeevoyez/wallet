@@ -3,18 +3,18 @@
     ___________________
     This is flask application entry
 """
+# standard
 import csv
 import os
 import unittest
-
+# external
 from flask_migrate  import Migrate, MigrateCommand
 from flask_script   import Manager, Shell
-
-from app        import blueprint
-from app.api    import create_app, db
-
+# local
+from app import blueprint
+from app.api import create_app, db
 #import model here
-from app.api        import models
+from app.api import models
 from app.api.models import *
 
 app = create_app(os.getenv("ENVIRONMENT") or 'dev')

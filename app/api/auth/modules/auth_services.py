@@ -3,34 +3,36 @@
     _________________
     This services module to handle all incoming authenticaion
 """
+#pylint: disable=no-name-in-module
+#pylint: disable=import-error
+# sqlalchemy exceptions
+from sqlalchemy.exc import IntegrityError
 
-# database
 from app.api import db
 # models
 from app.api.models import User
 from app.api.models import BlacklistToken
-from app.api.models import Wallet
 from app.api.models import ApiKey
 # exceptions
 from app.api.error.authentication import RevokedTokenError
 from app.api.error.authentication import SignatureExpiredError
 from app.api.error.authentication import InvalidTokenError
 from app.api.error.authentication import EmptyPayloadError
-# sqlalchemy exceptions
-from sqlalchemy.exc import IntegrityError
 # http error
-from app.api.error.http import *
+from app.api.error.http import Unauthorized
+from app.api.error.http import UnprocessableEntity
+from app.api.error.http import RequestNotFound
 # utility
 from app.api.utility.utils import validate_uuid
 # http response
-from app.api.http_response import *
+from app.api.http_response import ok, no_content
 # configuration
 from app.config import config
 
 class AuthServices:
     """ Authentication Services Class"""
 
-    error_response  = config.Config.ERROR_CONFIG
+    error_response = config.Config.ERROR_CONFIG
     status_config = config.Config.STATUS_CONFIG
 
     @staticmethod
@@ -52,12 +54,10 @@ class AuthServices:
         except RevokedTokenError:
             raise Unauthorized(self.error_response["REVOKED_TOKEN"]["TITLE"],
                                self.error_response["REVOKED_TOKEN"]["MESSAGE"])
-        except SignatureExpiredError as error:
-            #print(error)
+        except SignatureExpiredError:
             raise Unauthorized(self.error_response["SIGNATURE_EXPIRED"]["TITLE"],
                                self.error_response["SIGNATURE_EXPIRED"]["MESSAGE"])
-        except InvalidTokenError as error:
-            #print(error)
+        except InvalidTokenError:
             raise Unauthorized(self.error_response["INVALID_TOKEN"]["TITLE"],
                                self.error_response["INVALID_TOKEN"]["MESSAGE"])
         except EmptyPayloadError:
@@ -65,7 +65,7 @@ class AuthServices:
                                self.error_response["EMPTY_PAYLOAD"]["MESSAGE"])
 
         # fetch user information
-        user = User.query.filter_by(id=validate_uuid(payload["sub"]), 
+        user = User.query.filter_by(id=validate_uuid(payload["sub"]),
                                     status=self.status_config["ACTIVE"]).first()
         if user is None:
             raise RequestNotFound(self.error_response["USER_NOT_FOUND"]["TITLE"],
@@ -122,7 +122,8 @@ class AuthServices:
         return ok(response)
     #end def
 
-    def logout_access_token(self, token):
+    @staticmethod
+    def logout_access_token(token):
         """
             Function to logout access token and blacklist the token
             args:
@@ -132,14 +133,15 @@ class AuthServices:
         try:
             db.session.add(blacklist_token)
             db.session.commit()
-        except IntegrityError as error:
+        except IntegrityError:
             raise UnprocessableEntity("REVOKE_FAILED", "Revoke Access Token \
                                       failed")
         #end try
         return no_content()
     #end def
 
-    def logout_refresh_token(self, token):
+    @staticmethod
+    def logout_refresh_token(token):
         """
             Function to logout refresh token and blacklist the token
             args:
@@ -149,7 +151,7 @@ class AuthServices:
         try:
             db.session.add(blacklist_token)
             db.session.commit()
-        except IntegrityError as error:
+        except IntegrityError:
             raise UnprocessableEntity("REVOKE_FAILED", "Revoke Refresh Token \
                                       failed")
         #end try
@@ -159,6 +161,7 @@ class AuthServices:
     ################ PATCH ########################
     @staticmethod
     def check_key(api_key):
+        """ look up api key in db """
         api_key = ApiKey.query.filter_by(id=validate_uuid(api_key)).first()
         if api_key is None:
             raise Unauthorized("INVALID_API_KEY", "Invalid Api Key")

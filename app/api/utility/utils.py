@@ -1,6 +1,10 @@
-""" 
+"""
     UTILITY FUNCTION
 """
+#pylint: disable=no-name-in-module
+#pylint: disable=invalid-name
+#pylint: disable=no-self-use
+#pylint: disable=too-few-public-methods
 import json
 
 from uuid import UUID
@@ -11,15 +15,16 @@ from app.api.utility.modules.cipher import AESCipher
 from app.api.utility.modules.sms_services import SmsServices
 from app.api.utility.modules.notif_services import NotifServices
 
-from app.api.error.http import *
+from app.api.error.http import BadRequest
 
 ERROR_CONFIG = config.Config.ERROR_CONFIG
 WALLET_CONFIG = config.Config.WALLET_CONFIG
-SMS_SERVICES_CONFIG = config.Config.SMS_SERVICES_CONFIG
-SMS_SERVICES_TEMPLATES = config.Config.SMS_SERVICES_TEMPLATES
 
 class Sms:
     """ Class for helping sending SMS """
+
+    sms_services_config = config.Config.SMS_SERVICES_CONFIG
+    sms_services_templates = config.Config.SMS_SERVICES_TEMPLATES
 
     def __init__(self):
         self.services = SmsServices()
@@ -28,8 +33,8 @@ class Sms:
     def send(self, to, sms_type, content):
         """ build a sms template and send it using sms services """
         message = {
-            "from" : SMS_SERVICES_CONFIG["FROM"],
-            "text" : SMS_SERVICES_TEMPLATES[sms_type].format(str(content))
+            "from" : self.sms_services_config["FROM"],
+            "text" : self.sms_services_templates[sms_type].format(str(content))
         }
         result = self.services.send_sms(to, message)
         return result
@@ -55,10 +60,11 @@ class QR:
 
 class Notif:
     """ class for helping send notification"""
-
     def send(self, data):
+        """ send notification """
         return NotifServices().send(data)
-
+    # end def
+# end class
 
 def validate_uuid(string):
     """ validate uuid"""

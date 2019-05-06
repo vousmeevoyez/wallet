@@ -1,3 +1,8 @@
+""""
+    Namespace
+"""
+#pylint:disable=missing-docstring
+#pylint:disable=too-few-public-methods
 from flask_restplus import Namespace
 
 class UtilityNamespace:

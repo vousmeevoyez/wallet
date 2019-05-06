@@ -1,9 +1,11 @@
 """
     User Bank Account Services
     ___________________________
-    this is module that handle bank account process for user
 """
 #pylint: disable=no-self-use
+#pylint: disable=no-name-in-module
+#pylint: disable=import-error
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 # database
 from app.api import db
 # models
@@ -13,15 +15,12 @@ from app.api.models import BankAccount
 # serializer
 from app.api.serializer import BankAccountSchema
 # http response
-from app.api.http_response import created
-from app.api.http_response import no_content
+from app.api.http_response import created, no_content
+from app.api.utility.utils import validate_uuid
 # exception
-from app.api.error.http import *
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
+from app.api.error.http import RequestNotFound, UnprocessableEntity
 # configuration
 from app.config import config
-
-from app.api.utility.utils import validate_uuid
 
 class BankAccountServices:
     """ Bank Account Services Class"""
@@ -48,8 +47,10 @@ class BankAccountServices:
 
         bank_account_record = None
         if bank_account_id is not None:
-            bank_account_record = BankAccount.query.filter_by(user_id=validate_uuid(user_id),
-                                                              id=validate_uuid(bank_account_id)).first()
+            bank_account_record = BankAccount.query.filter_by(
+                user_id=validate_uuid(user_id),
+                id=validate_uuid(bank_account_id)
+            ).first()
             if bank_account_record is None:
                 raise RequestNotFound(self.error_response["BANK_ACC_NOT_FOUND"]["TITLE"],
                                       self.error_response["BANK_ACC_NOT_FOUND"]["MESSAGE"])

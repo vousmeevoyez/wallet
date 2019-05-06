@@ -20,9 +20,6 @@ services:
                         context: dockerfiles/postgres/
                 ports:
                 - 5432:5432
-
-        redis:
-                image : redis:alpine
         
         rabbitmq:
                 env_file: env/dev.env

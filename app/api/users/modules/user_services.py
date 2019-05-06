@@ -1,25 +1,25 @@
 """
     User Services
     _______________
-    this is module that serve request from user routes
 """
+#pylint: disable=no-name-in-module
+#pylint: disable=import-error
+from sqlalchemy.exc import IntegrityError
+
 # database
 from app.api  import db
 # models
-from app.api.models import *
+from app.api.models import User, Wallet
 # serializer
 from app.api.serializer import UserSchema
-from app.api.serializer import WalletSchema
 # services
 from app.api.wallets.modules.wallet_services import WalletServices
-from app.api.virtual_accounts.modules.va_services import VirtualAccountServices
 # http response
-from app.api.http_response import *
+from app.api.http_response import ok, created, no_content
 # utility
 from app.api.utility.utils import validate_uuid
 # exceptions
-from app.api.error.http import *
-from sqlalchemy.exc import IntegrityError
+from app.api.error.http import RequestNotFound, UnprocessableEntity
 # configuration
 from app.config import config
 
@@ -32,7 +32,7 @@ class UserServices:
         if user_id is not None:
         # look up user only if user_id is set
             user = User.query.filter_by(
-                id=validate_uuid(user_id), 
+                id=validate_uuid(user_id),
                 status=self.status_config["ACTIVE"]
             ).first()
             if user is None:

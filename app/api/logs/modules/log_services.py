@@ -3,8 +3,8 @@
     _________________
     This services module to handle all incoming and outgoing log
 """
-from app.api            import db
-from app.api.models     import ExternalLog
+from app.api import db
+from app.api.models import ExternalLog
 from app.api.serializer import ExternalLogSchema
 
 class LogServices:
