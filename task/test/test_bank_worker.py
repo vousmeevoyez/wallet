@@ -82,6 +82,7 @@ class TestBankWorker(BaseTestCase):
         db.session.commit()
 
         result = BankTask().bank_transfer.delay(payment.id)
+        print(result.get())
         self.assertEqual(len(Transaction.query.all()), 1)
 
     @patch('task.bank.tasks.CoreBank')

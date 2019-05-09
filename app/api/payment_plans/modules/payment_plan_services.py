@@ -84,6 +84,8 @@ class PaymentPlanServices:
                     str(self.wallet.user.id), "009"
                 ).add(repayment_va_account)[0]
                 response["bank_account_id"] = result["data"]["bank_account_id"]
+            else:
+                response["bank_account_id"] = str(repayment_va_account.id)
             # end if
 
             # adding plan

@@ -3,11 +3,15 @@
     in the background
 """
 import random
+
+import grpc
+from flask import current_app
+from sqlalchemy.exc import OperationalError, IntegrityError
+from celery.exceptions import MaxRetriesExceededError, Reject, Retry
+
+from app.api import celery
 from app.api import sentry
 from app.api import db
-
-from sqlalchemy.exc import OperationalError, IntegrityError
-from app.api import celery
 
 from app.api.models import *
 
@@ -17,10 +21,11 @@ from task.bank.BNI.helper import CoreBank
 # services
 from app.api.transactions.modules.transaction_services import \
 TransactionServices
-
 # exceptions
 from task.bank.exceptions.general import *
-from celery.exceptions import MaxRetriesExceededError, Reject, Retry
+# gRPC
+from task.bank.rpc import callback_pb2
+from task.bank.rpc import callback_pb2_grpc
 
 from app.config import config
 
@@ -133,4 +138,18 @@ class BankTask(celery.Task):
             response_reference = transfer_info.get("bank_ref", "NA")
             payment.ref_number = request_reference + "-" + response_reference
             db.session.commit()
+        finally:
+            # send fake callback via gRPC
+            channel = grpc.insecure_channel("callback:10000")
+            stub = callback_pb2_grpc.CallbackStub(channel)
+            request = callback_pb2.DepositCallbackRequest()
+            request.body.virtual_account = bank_account_no
+            request.body.payment_amount = str(amount)
+            try:
+                response = stub.DepositCallback(request)
+            except grpc.RpcError as error:
+                print(error.code())
+                print(error.details())
+            # end try
+            current_app.logger.info(response)
         # end try
