@@ -63,7 +63,7 @@ class Config:
     }
 
     WORKER_CONFIG = {
-        "MAX_RETRIES" : 5,
+        "MAX_RETRIES" : int(os.getenv("WORKER_MAX_RETRY")) or 5,
         "HARD_LIMIT"  : 15,
         "SOFT_LIMIT"  : 10,
         "ACKS_LATE"   : True # prevent executing task twice
