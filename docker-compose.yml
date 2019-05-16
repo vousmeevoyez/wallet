@@ -1,9 +1,84 @@
-# Docker Compose Base
+# Docker Compose Production Environments 
 version : '3'
 services:
 
-        services:
+        flask:
+                env_file: env/${ENV}.env
                 build:
                         context: .
                         dockerfile: dockerfiles/flask/Dockerfile
                 image: modana-wallet-services
+                entrypoint: ./scripts/build-prod.sh
+                depends_on:
+                - postgres
+                - rabbitmq
+                restart: always
+                ports:
+                - ${APP_PORT}:6000
+
+        postgres:
+                env_file: env/${ENV}.env
+                build:
+                        context: dockerfiles/postgres/
+                volumes:
+                - "db_volume:/var/lib/postgresql/data"
+                restart: always
+
+        rabbitmq:
+                env_file: env/${ENV}.env
+                build:
+                        context: dockerfiles/rabbitmq/
+
+        celery:
+                env_file: env/${ENV}.env
+                image: modana-wallet-services
+                entrypoint: make bank-worker
+                depends_on:
+                - rabbitmq
+                - postgres
+
+        celery2:
+                env_file: env/${ENV}.env
+                image: modana-wallet-services
+                entrypoint: make transaction-worker
+                depends_on:
+                - rabbitmq
+                - postgres
+
+        celery3:
+                env_file: env/${ENV}.env
+                image: modana-wallet-services
+                entrypoint: make payment-worker
+                depends_on:
+                - rabbitmq
+                - postgres
+
+        flower:
+                env_file: env/${ENV}.env
+                image: mher/flower
+                depends_on:
+                - rabbitmq
+                ports:
+                - 6555:5555
+
+        grpc:
+                env_file: env/${ENV}.env
+                image: modana-wallet-grpc
+                entrypoint: ./start.sh
+                depends_on:
+                - flask
+                ports:
+                - 6001:6001
+
+        callback:
+                image: modana-va-fake-grpc
+                entrypoint: ./start.sh
+                environment: 
+                - GRPC_PORT=10000
+                depends_on:
+                - flask
+                ports:
+                - 10000:10000
+
+volumes:
+        db_volume:
