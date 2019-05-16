@@ -23,7 +23,7 @@ import jwt
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 
-from sqlalchemy import desc
+from sqlalchemy import asc
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.api import db
@@ -812,7 +812,7 @@ class PaymentPlan(db.Model):
             Plan.type == 0,
             Plan.status.in_([0, 1, 2])
         ).order_by(
-            desc(Plan.due_date)
+            asc(Plan.due_date)
         ).first()
         return plan
     #end def

@@ -71,6 +71,10 @@ class TransferServices(WalletCore):
                                                                   "AUTO_PAY"],
                                                             queue="payment")
                 response["data"] = {"message" : "AUTO_PAY"}
+                current_app.logger.info("payroll_date : {}".format(payroll_date))
+                current_app.logger.info("due_date : {}".format(due_date))
+                current_app.logger.info("differences : {}".format(differences.days))
+                current_app.logger.info("should trigger AUTO_PAY")
             else:
                 current_app.logger.info("payroll_date : {}".format(payroll_date))
                 current_app.logger.info("due_date : {}".format(due_date))

@@ -872,7 +872,6 @@ class IncorrectWalletPinCase(BaseTestCase):
         # check and make sure there's incorrect pin record
         result =\
         IncorrectPin.query.filter(IncorrectPin.wallet_id==wallet.id).first()
-        print(result)
 
 class PaymentPlanCase(BaseTestCase):
     """ Payment Plan Case """
@@ -1157,6 +1156,50 @@ class PaymentPlanCase(BaseTestCase):
 
         total, plans = PaymentPlan.total(march_plan)
         self.assertEqual(total, 0)
+
+        plan = PaymentPlan.check_payment(wallet)
+
+    def test_payment_plan_total_duplicate(self):
+        # need to make sure if payment plan is FAIL STOP PAID not calculate
+        # total
+
+        # create dummy wallet
+        wallet = Wallet(
+        )
+        db.session.add(wallet)
+        db.session.commit()
+        # add balance here
+        wallet.add_balance(1000)
+
+        # create payment plan
+        quick_loan_payment_plan = PaymentPlan(
+            destination="some-bank-account-number",
+            wallet_id=wallet.id
+        )
+        db.session.add(quick_loan_payment_plan)
+        db.session.commit()
+
+        # create plan
+        due_date = datetime.utcnow() + timedelta(days=10)
+        february_plan = Plan(
+            payment_plan_id=quick_loan_payment_plan.id,
+            amount=10000,
+            due_date=due_date
+        )
+        db.session.add(february_plan)
+
+        # create plan
+        due_date = datetime.utcnow()
+        february_plan = Plan(
+            payment_plan_id=quick_loan_payment_plan.id,
+            amount=10000,
+            due_date=due_date
+        )
+        db.session.add(february_plan)
+        db.session.commit()
+
+        #total, result = PaymentPlan.total(february_plan)
+        #self.assertEqual(total, 11000)
 
         plan = PaymentPlan.check_payment(wallet)
         print(plan)

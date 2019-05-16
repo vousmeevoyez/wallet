@@ -4,7 +4,11 @@ set -e
 echo "Start docker in which environment? [dev/prod]:"
 read stage
 if [ "$stage" == "dev" ]; then
-	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+	export ENV="dev"
+	export APP_PORT=5000
+	docker-compose up --build
 else
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+	export ENV="prod"
+	export APP_PORT=5000
+	docker-compose up -d --build
 fi

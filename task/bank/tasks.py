@@ -57,7 +57,7 @@ class BankTask(celery.Task):
         BNI VIRTUAL ACCOUNT TASK 
     """
     @celery.task(bind=True,
-                 max_retries=WORKER_CONFIG["MAX_RETRIES"],
+                 max_retries=int(WORKER_CONFIG["MAX_RETRIES"]),
                  task_soft_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
                  task_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
                  acks_late=WORKER_CONFIG["ACKS_LATE"],
@@ -95,7 +95,7 @@ class BankTask(celery.Task):
         BNI CORE BANK
     """
     @celery.task(bind=True,
-                 max_retries=WORKER_CONFIG["MAX_RETRIES"],
+                 max_retries=int(WORKER_CONFIG["MAX_RETRIES"]),
                  task_soft_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
                  task_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
                  acks_late=WORKER_CONFIG["ACKS_LATE"],
