@@ -76,28 +76,6 @@ class TestWalletRoutes(BaseTestCase):
         result = self.create_wallet(params, self._token)
         self.assertEqual(result.status_code, 201)
 
-    def test_create_wallet_duplicate(self):
-        """ CREATE_WALLET CASE 2 : Failed created wallet because some entry not unique """
-        params = {
-            "label" : "wallet label",
-            "pin" : "123456"
-        }
-
-        result = self.create_wallet(params, self._token)
-        self.assertEqual(result.status_code, 201)
-
-        params = {
-            "label" : "wallet label",
-            "pin" : "123456"
-        }
-
-        result = self.create_wallet(params, self._token)
-        response = result.get_json()
-
-        self.assertEqual(result.status_code, 422)
-        self.assertEqual(response["error"], "DUPLICATE_WALLET")
-        self.assertTrue(response["message"])
-
     def test_create_wallet_serialize_error(self):
         """ CREATE_WALLET CASE 3 : Failed created wallet because some invalid payload """
         params = {

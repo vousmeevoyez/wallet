@@ -1,8 +1,8 @@
-"""new init tables
+"""init db
 
-Revision ID: 36f929e28d48
+Revision ID: d406e6513d6c
 Revises: 
-Create Date: 2019-04-21 13:59:53.765661
+Create Date: 2019-05-17 14:41:31.813396
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '36f929e28d48'
+revision = 'd406e6513d6c'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -156,8 +156,7 @@ def upgrade():
     sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('id'),
-    sa.UniqueConstraint('label')
+    sa.UniqueConstraint('id')
     )
     op.create_table('forgot_pin',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -192,6 +191,7 @@ def upgrade():
     sa.Column('id', sa.String(length=255), nullable=False),
     sa.Column('destination', sa.String(length=120), nullable=True),
     sa.Column('wallet_id', postgresql.UUID(as_uuid=True), nullable=True),
+    sa.Column('method', sa.Integer(), nullable=True),
     sa.Column('status', sa.Boolean(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['wallet_id'], ['wallet.id'], ),

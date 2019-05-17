@@ -173,7 +173,7 @@ class Wallet(db.Model):
     id = db.Column(UUID(as_uuid=True), unique=True,
                    primary_key=True, default=uid)
     created_at = db.Column(db.DateTime, default=now) # UTC
-    label = db.Column(db.String(100), unique=True)
+    label = db.Column(db.String(100))
     pin_hash = db.Column(db.String(128))
     status = db.Column(db.Integer, default=1) # active
     balance = db.Column(db.Float, default=0)

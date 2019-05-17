@@ -71,7 +71,7 @@ class Config:
 
     # JSON WEB TOKEN CONFIG
     JWT_CONFIG = {
-        "SECRET"         : "wiqeuyashdkjlakssahn",
+        "SECRET"         : os.getenv("JWT_SECRET") or "wiqeuyashdkjlakssahn",
         "ALGORITHM"      : "HS256",
         "ACCESS_EXPIRE"  : 30, # minutes,
         "REFRESH_EXPIRE" : 30, # day,

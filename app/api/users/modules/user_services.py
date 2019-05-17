@@ -61,7 +61,7 @@ class UserServices:
 
         # create wallet object first
         try:
-            wallet = Wallet()
+            wallet = Wallet(label="PERSONAL")
             result = WalletServices().add(user, wallet, pin)
         except UnprocessableEntity as error:
             pass
