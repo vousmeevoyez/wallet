@@ -45,5 +45,4 @@ def create_app(config_name):
         sentry_sdk.init(
             integrations=[FlaskIntegration()]
         )
-    
     return app

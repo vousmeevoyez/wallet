@@ -131,8 +131,6 @@ class TransferServices(WalletCore):
         destination_transfer_types = "RECEIVE_TRANSFER"
         if transfer_types == "PAYROLL":
             destination_transfer_types = "RECEIVE_PAYROLL"
-            # should auto pay here
-            result = self.auto_pay(self.destination, amount)
         # end if
 
         credit_trx = TransactionCore().process_transaction(
@@ -143,6 +141,10 @@ class TransferServices(WalletCore):
             transfer_types=destination_transfer_types,
             transfer_notes=transfer_notes
         )
+
+        if destination_transfer_types == "RECEIVE_PAYROLL":
+            result = self.auto_pay(self.destination, amount)
+        # end if
 
         # link debit and credit
         debit_trx.transaction_link_id = credit_trx.id
