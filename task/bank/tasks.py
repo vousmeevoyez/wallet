@@ -122,13 +122,13 @@ class BankTask(celery.Task):
             result = CoreBank().transfer(transfer_payload)
         except ApiError as error:
             # handle celery exception here
-            try:
-                #self.retry(countdown=backoff(self.request.retries), exc=error)
-                self.retry(countdown=backoff(self.request.retries))
-            except MaxRetriesExceededError:
-                # creat transaction refund here
-                transaction_id = str(payment.transaction.id)
-                result = TransactionServices(transaction_id=transaction_id).refund()
+            #try:
+            self.retry(countdown=backoff(self.request.retries), exc=error)
+            #    self.retry(countdown=backoff(self.request.retries))
+            #except MaxRetriesExceededError:
+            #    # creat transaction refund here
+            #    transaction_id = str(payment.transaction.id)
+            #    result = TransactionServices(transaction_id=transaction_id).refund()
         else:
             # get reference number from transfer response
             transfer_info = result["data"]["transfer_info"]
