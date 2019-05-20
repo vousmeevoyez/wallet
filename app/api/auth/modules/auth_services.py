@@ -29,40 +29,70 @@ from app.api.http_response import ok, no_content
 # configuration
 from app.config import config
 
+class Token:
+    """ Handle everything related to Token """
+
+    def __init__(self, token):
+        self.token = token
+    # end def
+
+    @staticmethod
+    def create(user, token_type):
+        """
+            create token
+        """
+        token = User.encode_token(token_type, user.id)
+        return token.decode()
+    #end def
+
+    def decode(self):
+        """
+            decode token
+        """
+        try:
+            payload = User.decode_token(self.token)
+        except RevokedTokenError:
+            return "REVOKED_TOKEN"
+        except SignatureExpiredError:
+            return "SIGNATURE_EXPIRED"
+        except InvalidTokenError:
+            return "INVALID_TOKEN"
+        except EmptyPayloadError:
+            return "EMPTY_PAYLOAD"
+        # end try
+        return payload
+    # end def
+
+    def blacklist(self):
+        """
+            blacklist a token
+        """
+        blacklist_token = BlacklistToken(token=self.token)
+        try:
+            db.session.add(blacklist_token)
+            db.session.commit()
+        except IntegrityError:
+            return False
+        #end try
+        return True
+    # end def
+# end class
+
 class AuthServices:
     """ Authentication Services Class"""
 
     error_response = config.Config.ERROR_CONFIG
     status_config = config.Config.STATUS_CONFIG
 
-    @staticmethod
-    def _create_token(user, token_type):
-        """ get user object and then create access token"""
-        token = User.encode_token(token_type, user.id)
-        return token.decode()
-    #end def
-
     def current_login_user(self, token):
         """
             function to check who is currently login by decode their token
             used in decorator
-            args:
-                token -- jwt token
         """
-        try:
-            payload = User.decode_token(token)
-        except RevokedTokenError:
-            raise Unauthorized(self.error_response["REVOKED_TOKEN"]["TITLE"],
-                               self.error_response["REVOKED_TOKEN"]["MESSAGE"])
-        except SignatureExpiredError:
-            raise Unauthorized(self.error_response["SIGNATURE_EXPIRED"]["TITLE"],
-                               self.error_response["SIGNATURE_EXPIRED"]["MESSAGE"])
-        except InvalidTokenError:
-            raise Unauthorized(self.error_response["INVALID_TOKEN"]["TITLE"],
-                               self.error_response["INVALID_TOKEN"]["MESSAGE"])
-        except EmptyPayloadError:
-            raise Unauthorized(self.error_response["EMPTY_PAYLOAD"]["TITLE"],
-                               self.error_response["EMPTY_PAYLOAD"]["MESSAGE"])
+        payload = Token(token).decode()
+        if isinstance(payload, str):
+            raise Unauthorized(self.error_response[payload]["TITLE"],
+                               self.error_response[payload]["MESSAGE"])
 
         # fetch user information
         user = User.query.filter_by(id=validate_uuid(payload["sub"]),
@@ -70,6 +100,7 @@ class AuthServices:
         if user is None:
             raise RequestNotFound(self.error_response["USER_NOT_FOUND"]["TITLE"],
                                   self.error_response["USER_NOT_FOUND"]["MESSAGE"])
+        # end if
 
         response = {
             "token_type": payload["type"],
@@ -80,9 +111,7 @@ class AuthServices:
 
     def create_token(self, params):
         """
-            Function to create jwt token
-            args:
-                params -- dict (username, password)
+            Function to create token
         """
         username = params["username"]
         password = params["password"]
@@ -99,8 +128,8 @@ class AuthServices:
         #end if
 
         # generate token here
-        access_token = self._create_token(user, "ACCESS")
-        refresh_token = self._create_token(user, "REFRESH")
+        access_token = Token.create(user, "ACCESS")
+        refresh_token = Token.create(user, "REFRESH")
 
         response = {
             "access_token" : access_token,
@@ -112,48 +141,21 @@ class AuthServices:
     def refresh_token(self, current_user):
         """
             Function to create refresh token
-            args:
-                current_user -- user object
         """
-        access_token = self._create_token(current_user, "REFRESH")
+        access_token = Token.create(current_user, "REFRESH")
         response = {
             "access_token" : access_token,
         }
         return ok(response)
     #end def
 
-    @staticmethod
-    def logout_access_token(token):
+    def logout(self, token):
         """
             Function to logout access token and blacklist the token
-            args:
-                token -- access token
         """
-        blacklist_token = BlacklistToken(token=token)
-        try:
-            db.session.add(blacklist_token)
-            db.session.commit()
-        except IntegrityError:
-            raise UnprocessableEntity("REVOKE_FAILED", "Revoke Access Token \
-                                      failed")
-        #end try
-        return no_content()
-    #end def
-
-    @staticmethod
-    def logout_refresh_token(token):
-        """
-            Function to logout refresh token and blacklist the token
-            args:
-                token -- refresh token
-        """
-        blacklist_token = BlacklistToken(token=token)
-        try:
-            db.session.add(blacklist_token)
-            db.session.commit()
-        except IntegrityError:
-            raise UnprocessableEntity("REVOKE_FAILED", "Revoke Refresh Token \
-                                      failed")
+        result = Token(token).blacklist()
+        if result is False:
+            raise UnprocessableEntity("REVOKE_FAILED", "Revoke Token failed")
         #end try
         return no_content()
     #end def

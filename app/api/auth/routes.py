@@ -81,23 +81,7 @@ class TokenRevokeRoutes(BaseRoutes):
         """ Endpoint for revoking access token """
         # fetch token from header
         token = get_current_token()
-        response = AuthServices().logout_access_token(token)
-        return response
-    #end def
-#end class
-
-@api.route("/refresh/revoke")
-class RefreshTokenRevokeRoutes(BaseRoutes):
-    """
-        Refresh Token
-        /auth/token/revoke
-    """
-    @refresh_token_only
-    def post(self):
-        """ Endpoint for revoking refresh token """
-        # fetch token from header
-        token = get_current_token()
-        response = AuthServices().logout_refresh_token(token)
+        response = AuthServices().logout(token)
         return response
     #end def
 #end class

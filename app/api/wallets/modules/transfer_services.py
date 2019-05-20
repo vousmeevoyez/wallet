@@ -128,10 +128,7 @@ class TransferServices(WalletCore):
             transfer_notes=transfer_notes
         )
 
-        destination_transfer_types = "RECEIVE_TRANSFER"
-        if transfer_types == "PAYROLL":
-            destination_transfer_types = "RECEIVE_PAYROLL"
-        # end if
+        destination_transfer_types = "RECEIVE_" + transfer_types
 
         credit_trx = TransactionCore().process_transaction(
             source=self.source,
