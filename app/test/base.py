@@ -104,27 +104,16 @@ class BaseTestCase(TestCase):
         )
     #end def
 
-    def revoke_access_token(self, access_token):
+    def revoke_token(self, token):
         """ api call to revoke access token"""
         headers = {
-            'Authorization': 'Bearer {}'.format(access_token)
+            'Authorization': 'Bearer {}'.format(token)
         }
         return self.client.post(
             BASE_URL + "/auth/" + "token/revoke",
             headers=headers
         )
     #end def
-
-    def revoke_refresh_token(self, refresh_token):
-        """ api call to revoke refresh token """
-        headers = {
-            'Authorization': 'Bearer {}'.format(refresh_token)
-        }
-        return self.client.post(
-            BASE_URL + "/auth/" + "refresh/revoke",
-            headers=headers
-        )
-        #end def
 
     """ CALLBACK """
     def withdraw_callback(self, params):

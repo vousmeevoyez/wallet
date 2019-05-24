@@ -33,7 +33,7 @@ class WithdrawCallback(BaseRoutes):
     """
         Callback
         /bni/va/withdraw
-    """    
+    """
     def post(self):
         """ Endpoint for receiving Withdraw Notification from BNI """
 
@@ -67,8 +67,9 @@ class WithdrawCallback(BaseRoutes):
 
         # add payment channel key here to know where the request coming from
         request_data["payment_channel_key"] = "BNI_VA"
-        response = CallbackServices(request_data["virtual_account"],
-                                    request_data["trx_id"]).process_callback(request_data)
+        response = CallbackServices(
+            request_data["virtual_account"], request_data["trx_id"], "OUT"
+        ).process_callback(request_data)
         # save response
         external_log.save_response(response)
         db.session.commit()
@@ -82,7 +83,7 @@ class DepositCallback(BaseRoutes):
     """
         Callback
         /bni/va/deposit
-    """  
+    """
     def post(self):
         """ Endpoint for receiving deposit Notification from BNI """
 
@@ -114,8 +115,9 @@ class DepositCallback(BaseRoutes):
 
         # add payment channel key here to know where the request coming from
         request_data["payment_channel_key"] = "BNI_VA"
-        response = CallbackServices(request_data["virtual_account"],
-                                    request_data["trx_id"]).process_callback(request_data)
+        response = CallbackServices(
+            request_data["virtual_account"], request_data["trx_id"], "IN"
+        ).process_callback(request_data)
         # save response
         external_log.save_response(response)
         db.session.commit()
