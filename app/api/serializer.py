@@ -73,13 +73,14 @@ def validate_label(label):
             label -- bank account label
     """
     # onyl allow alphabet character and space
-    pattern = r"^[a-zA-Z ]+$"
-    if len(label) < 2:
-        raise ValidationError('Invalid label, minimum is 2 character')
-    if len(label) > 30:
-        raise ValidationError('Invalid label, max is 30 character')
-    if  re.match(pattern, label) is None:
-        raise ValidationError('Invalid label, only alphabet allowed')
+    if label is not None:
+        pattern = r"^[a-zA-Z ]+$"
+        if len(label) < 2:
+            raise ValidationError('Invalid label, minimum is 2 character')
+        if len(label) > 30:
+            raise ValidationError('Invalid label, max is 30 character')
+        if  re.match(pattern, label) is None:
+            raise ValidationError('Invalid label, only alphabet allowed')
     #end def
 
 class BankSchema(ma.Schema):
@@ -250,6 +251,7 @@ class UserSchema(ma.Schema):
                           validate=cannot_be_blank, load_only=True)
     pin = fields.Str(required=True, validate=(cannot_be_blank,
                                               validate_pin), load_only=True)
+    label = fields.Str(allow_none=True, validate=validate_label)
     created_at = fields.DateTime()
     status = fields.Method("bool_to_status")
     wallets = fields.Nested(WalletSchema, many=True)
@@ -292,9 +294,11 @@ class UserSchema(ma.Schema):
         role = Role.query.filter_by(description=data["role"]).first()
         del data["role"]
         data["role_id"] = role.id
-        # remove pin and password
+
+        # trim unnecessary info
         del data["pin"]
         del data["password_hash"]
+        del data["label"]
 
         return User(**data)
     #end def

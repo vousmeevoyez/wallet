@@ -4,9 +4,9 @@
     this module that receive http request from callback url
 """
 from marshmallow import ValidationError
-from flask_restplus import Resource
 from flask import request
 # api
+from app.api.core import Routes
 from app.api import db
 from app.api.callback  import api
 # models
@@ -23,13 +23,13 @@ from app.config import config
 from task.bank.BNI.utility.remote_call import decrypt
 from task.bank.BNI.utility.remote_call import DecryptError
 
-class BaseRoutes(Resource):
+class CustomRoutes(Routes):
     bni_ecollection_config = config.Config.BNI_ECOLLECTION_CONFIG
     logging_config = config.Config.LOGGING_CONFIG
     error_response = config.Config.ERROR_CONFIG
 
 @api.route('/bni/va/withdraw')
-class WithdrawCallback(BaseRoutes):
+class WithdrawCallback(CustomRoutes):
     """
         Callback
         /bni/va/withdraw
@@ -79,7 +79,7 @@ class WithdrawCallback(BaseRoutes):
 #end class
 
 @api.route('/bni/va/deposit')
-class DepositCallback(BaseRoutes):
+class DepositCallback(CustomRoutes):
     """
         Callback
         /bni/va/deposit

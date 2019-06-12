@@ -59,42 +59,7 @@ class TestTransactionServices(BaseTestCase):
         self.destination = destination_wallet
         self.bank_account = bank_account
         self.bank_account2 = bank_account2
-
-    def _create_deposit(self):
-        wallet = self.source
-
-        bank = Bank(
-              key="BNI",
-              code="009"
-        )
-        db.session.add(bank)
-        db.session.commit()
-
-        va_type = VaType.query.filter_by(key="CREDIT").first()
-
-        va = VirtualAccount(wallet_id=wallet.id, va_type_id=va_type.id, bank_id=bank.id)
-
-        va_id = va.generate_va_number()
-        trx_id = va.generate_trx_id()
-        db.session.add(va)
-        db.session.commit()
-
-        params = {
-            "payment_amount" : 10000,
-            "payment_ntb" : "123456",
-            "payment_channel_key" : "BNI_VA"
-        }
-        result = CallbackServices(va.account_no, trx_id).deposit(params)
-        self.assertEqual(result['status'], '000')
-
-        transaction = Transaction.query.join(
-            TransactionType, Transaction.transaction_type_id ==
-            TransactionType.id
-        ).filter(
-            Transaction.wallet_id == wallet.id,
-            TransactionType.key == "TOP_UP",
-        ).first()
-        return transaction.id
+    # end def
 
     def test_refund_transfer(self):
         """ test function to create transaction refund on transfer between user """

@@ -12,19 +12,16 @@ from app.api import db
 
 class TestWalletRoutes(BaseTestCase):
     """ Test Class for Wallet Routes"""
+
     def setUp(self):
         super().setUp()
 
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
+        user1, wallet1 = self.create_dummy_user(self.access_token)
 
-        access_token = response["data"]["access_token"]
-
-        self._token = access_token
-        user1, wallet1 = self._create_dummy_user()
-        user2, wallet2 = self._create_dummy_user2()
         self._user1 = user1
         self._wallet1 = wallet1
+
+        user2, wallet2 = self.create_dummy_user(self.access_token)
 
         self._user2 = user2
         self._wallet2 = wallet2
@@ -41,7 +38,7 @@ class TestWalletRoutes(BaseTestCase):
             "pin"          : "123456",
             "role"         : "USER"
         }
-        result = self.create_user(params, self._token)
+        result = self.create_user(params, self.access_token)
         response = result.get_json()["data"]
         user_id = response["user_id"]
         wallet_id = response["wallet_id"]
@@ -58,7 +55,7 @@ class TestWalletRoutes(BaseTestCase):
             "pin"          : "123456",
             "role"         : "USER"
         }
-        result = self.create_user(params, self._token)
+        result = self.create_user(params, self.access_token)
         response = result.get_json()["data"]
         user_id = response["user_id"]
         wallet_id = response["wallet_id"]
@@ -73,7 +70,7 @@ class TestWalletRoutes(BaseTestCase):
             "label" : "wallet label",
             "pin" : "123456"
         }
-        result = self.create_wallet(params, self._token)
+        result = self.create_wallet(params, self.access_token)
         self.assertEqual(result.status_code, 201)
 
     def test_create_wallet_serialize_error(self):
@@ -83,7 +80,7 @@ class TestWalletRoutes(BaseTestCase):
             "pin" : "1" # PIN TOO SHOORT
         }
 
-        result = self.create_wallet(params, self._token)
+        result = self.create_wallet(params, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 400)
         self.assertEqual(response["error"], "INVALID_PARAMETER")
@@ -94,7 +91,7 @@ class TestWalletRoutes(BaseTestCase):
     """
     def test_get_wallet_info(self):
         """ GET_WALLET_INFO CASE 1 : Successfully get wallet information """
-        result = self.get_wallet_info(self._wallet1, self._token)
+        result = self.get_wallet_info(self._wallet1, self.access_token)
         response = result.get_json()
         self.assertTrue(response["data"])
 
@@ -108,7 +105,7 @@ class TestWalletRoutes(BaseTestCase):
             "pin"    : "123456"
         }
 
-        result = self.create_wallet(params, self._token)
+        result = self.create_wallet(params, self.access_token)
         self.assertEqual(result.status_code, 201)
 
         params = {
@@ -116,20 +113,20 @@ class TestWalletRoutes(BaseTestCase):
             "pin" : "123456"
         }
 
-        result = self.create_wallet(params, self._token)
+        result = self.create_wallet(params, self.access_token)
         self.assertEqual(result.status_code, 201)
 
         response = result.get_json()
         wallet_id = response["data"]["wallet_id"]
 
-        result = self.remove_wallet(wallet_id, self._token)
+        result = self.remove_wallet(wallet_id, self.access_token)
         self.assertEqual(result.status_code, 204)
 
-        result = self.get_all_wallet(self._token)
+        result = self.get_all_wallet(self.access_token)
 
     def test_remove_wallet_failed(self):
         """ REMOVE WALLET CASE 2 : Failed remove wallet because only wallet """
-        result = self.remove_wallet(self._wallet1, self._token)
+        result = self.remove_wallet(self._wallet1, self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
@@ -141,7 +138,7 @@ class TestWalletRoutes(BaseTestCase):
     """
     def test_get_balance(self):
         """ GET_BALANCE CASE 1 : return wallet balance information """
-        result = self.get_balance(self._wallet1, self._token)
+        result = self.get_balance(self._wallet1, self.access_token)
         response = result.get_json()["data"]
         self.assertTrue(response["id"])
 
@@ -156,7 +153,7 @@ class TestWalletRoutes(BaseTestCase):
             "end_date"   : "2019/01/03",
             "flag" : "IN"
         }
-        result = self.get_transaction(self._wallet1, params, self._token)
+        result = self.get_transaction(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertTrue(result.status_code, 200)
         # TEST GETTING OUT TRANSACTION
@@ -165,7 +162,7 @@ class TestWalletRoutes(BaseTestCase):
             "end_date"   : "2019/01/03",
             "flag" : "OUT"
         }
-        result = self.get_transaction(self._wallet1, params, self._token)
+        result = self.get_transaction(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertTrue(result.status_code, 200)
         #TEST GETTING ALL TRANSACTIONS
@@ -174,7 +171,7 @@ class TestWalletRoutes(BaseTestCase):
             "end_date"   : "2019/01/03",
             "flag" : "ALL"
         }
-        result = self.get_transaction(self._wallet1, params, self._token)
+        result = self.get_transaction(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertTrue(result.status_code, 200)
 
@@ -187,7 +184,7 @@ class TestWalletRoutes(BaseTestCase):
             "end_date"   : "2019-01-03",
             "flag" : "KLK"
         }
-        result = self.get_transaction(self._wallet1, params, self._token)
+        result = self.get_transaction(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertTrue(result.status_code, 400)
 
@@ -212,7 +209,7 @@ class TestWalletRoutes(BaseTestCase):
         }
 
         result = self.transfer(self._wallet1, self._wallet2, params,
-                               self._token)
+                               self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 202)
         self.assertTrue(response["data"])
@@ -220,7 +217,7 @@ class TestWalletRoutes(BaseTestCase):
         params = {
             "transaction_id" : response['data']['id'],
         }
-        result = self.get_transaction_details(self._wallet1, params, self._token)
+        result = self.get_transaction_details(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertTrue(result.status_code, 200)
         self.assertTrue(response["data"])
@@ -231,7 +228,7 @@ class TestWalletRoutes(BaseTestCase):
         params = {
             "transaction_id" : str(uuid.uuid4()),
         }
-        result = self.get_transaction_details(self._wallet1, params, self._token)
+        result = self.get_transaction_details(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertTrue(result.status_code, 404)
         self.assertEqual(response["error"], "TRANSACTION_NOT_FOUND")
@@ -247,7 +244,7 @@ class TestWalletRoutes(BaseTestCase):
             "pin"        : "123456",
             "confirm_pin": "123546",
         }
-        result = self.update_pin(self._wallet1, params, self._token)
+        result = self.update_pin(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
         self.assertTrue(response["error"])
@@ -259,7 +256,7 @@ class TestWalletRoutes(BaseTestCase):
             "pin"        : "123456",
             "confirm_pin": "123546",
         }
-        result = self.update_pin(self._wallet1, params, self._token)
+        result = self.update_pin(self._wallet1, params, self.access_token)
         self.assertEqual(result.status_code, 422)
 
     def test_update_pin_old_pin(self):
@@ -269,7 +266,7 @@ class TestWalletRoutes(BaseTestCase):
             "pin"        : "123456",
             "confirm_pin": "123456",
         }
-        result = self.update_pin(self._wallet1, params, self._token)
+        result = self.update_pin(self._wallet1, params, self.access_token)
         self.assertEqual(result.status_code, 422)
 
     """
@@ -280,7 +277,7 @@ class TestWalletRoutes(BaseTestCase):
         params = {
             "pin" : "123456",
         }
-        result = self.check_pin(self._wallet1, params, self._token)
+        result = self.check_pin(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertEqual(response['data']['message'], "PIN VERIFIED")
 
@@ -289,28 +286,28 @@ class TestWalletRoutes(BaseTestCase):
         params = {
             "pin" : "123452",
         }
-        result = self.check_pin(self._wallet1, params, self._token)
+        result = self.check_pin(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertEqual(response['error'], "INCORRECT_PIN")
 
         params = {
             "pin" : "123452",
         }
-        result = self.check_pin(self._wallet1, params, self._token)
+        result = self.check_pin(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertEqual(response['error'], "INCORRECT_PIN")
 
         params = {
             "pin" : "123452",
         }
-        result = self.check_pin(self._wallet1, params, self._token)
+        result = self.check_pin(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertEqual(response['error'], "INCORRECT_PIN")
 
         params = {
             "pin" : "123452",
         }
-        result = self.check_pin(self._wallet1, params, self._token)
+        result = self.check_pin(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertEqual(response['error'], "MAX_PIN_ATTEMPT")
 
@@ -332,7 +329,7 @@ class TestWalletRoutes(BaseTestCase):
         }
 
         result = self.transfer(self._wallet1, self._wallet2, params,
-                               self._token)
+                               self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 202)
         self.assertTrue(response["data"])
@@ -352,7 +349,7 @@ class TestWalletRoutes(BaseTestCase):
         }
 
         result = self.transfer(self._wallet1, self._wallet2, params,
-                               self._token)
+                               self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
         self.assertTrue(response["error"], "WALLET_LOCKED")
@@ -373,7 +370,7 @@ class TestWalletRoutes(BaseTestCase):
 
         # first attempt
         result = self.transfer(self._wallet1, self._wallet2, params,
-                               self._token)
+                               self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
@@ -381,7 +378,7 @@ class TestWalletRoutes(BaseTestCase):
 
         # second attempt
         result = self.transfer(self._wallet1, self._wallet2, params,
-                               self._token)
+                               self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
@@ -389,7 +386,7 @@ class TestWalletRoutes(BaseTestCase):
 
         # third attempt
         result = self.transfer(self._wallet1, self._wallet2, params,
-                               self._token)
+                               self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
@@ -397,7 +394,7 @@ class TestWalletRoutes(BaseTestCase):
 
         # fourth attempt
         result = self.transfer(self._wallet1, self._wallet2, params,
-                               self._token)
+                               self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
@@ -405,7 +402,7 @@ class TestWalletRoutes(BaseTestCase):
 
         # fifth attempt
         result = self.transfer(self._wallet1, self._wallet2, params,
-                               self._token)
+                               self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
@@ -426,7 +423,7 @@ class TestWalletRoutes(BaseTestCase):
         }
 
         result = self.transfer(self._wallet1, self._wallet1, params,
-                               self._token)
+                               self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
 
@@ -435,14 +432,14 @@ class TestWalletRoutes(BaseTestCase):
     """
     def test_get_qr(self):
         """ GET_QR CASE 1 : return qr string"""
-        result = self.get_qr(self._wallet1, self._token)
+        result = self.get_qr(self._wallet1, self.access_token)
         response = result.get_json()["data"]
         self.assertEqual(result.status_code, 200)
         self.assertTrue(response["qr_string"])
 
     def test_qr_checkout(self):
         """ QR_CHECKOUT CASE 1 : return user info"""
-        result = self.get_qr(self._wallet1, self._token)
+        result = self.get_qr(self._wallet1, self.access_token)
         response = result.get_json()["data"]
         self.assertEqual(result.status_code, 200)
         self.assertTrue(response["qr_string"])
@@ -451,7 +448,7 @@ class TestWalletRoutes(BaseTestCase):
             "qr_string" : response["qr_string"]
         }
 
-        result = self.qr_checkout(self._wallet1, payload, self._token)
+        result = self.qr_checkout(self._wallet1, payload, self.access_token)
         response = result.get_json()["data"]
         self.assertTrue(result.status_code, 200)
     """
@@ -459,7 +456,7 @@ class TestWalletRoutes(BaseTestCase):
     """
     def test_forgot_pin(self):
         """ FORGOT PIN CASE 1 : send forgot otp"""
-        result = self.forgot_pin(self._wallet1, self._token)
+        result = self.forgot_pin(self._wallet1, self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 201)
@@ -470,7 +467,7 @@ class TestWalletRoutes(BaseTestCase):
     def test_forgot_pin_pending(self):
         """ FORGOT PIN CASE 2 : send forgot otp there's pending """
 
-        result = self.forgot_pin(self._wallet1, self._token)
+        result = self.forgot_pin(self._wallet1, self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 201)
@@ -478,7 +475,7 @@ class TestWalletRoutes(BaseTestCase):
         self.assertTrue(response["data"]["otp_key"])
         self.assertTrue(response["data"]["otp_code"])
 
-        result = self.forgot_pin(self._wallet1, self._token)
+        result = self.forgot_pin(self._wallet1, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
         self.assertEqual(response["error"], "PENDING_OTP")
@@ -488,7 +485,7 @@ class TestWalletRoutes(BaseTestCase):
     """
     def test_verify_forgot_pin(self):
         """ VERIFY FORGOT PIN CASE 1 : verify forgot otp"""
-        result = self.forgot_pin(self._wallet1, self._token)
+        result = self.forgot_pin(self._wallet1, self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 201)
@@ -505,12 +502,12 @@ class TestWalletRoutes(BaseTestCase):
             "pin" : "12345"
         }
 
-        result = self.verify_forgot_pin(self._wallet1, params, self._token)
+        result = self.verify_forgot_pin(self._wallet1, params, self.access_token)
         self.assertEqual(result.status_code, 204)
 
     def test_verify_forgot_pin_not_found(self):
         """ VERIFY FORGOT PIN CASE 2 : verify forgot otp not found """
-        result = self.forgot_pin(self._wallet1, self._token)
+        result = self.forgot_pin(self._wallet1, self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 201)
@@ -524,7 +521,7 @@ class TestWalletRoutes(BaseTestCase):
             "pin" : "12345"
         }
 
-        result = self.verify_forgot_pin(self._wallet1, params, self._token)
+        result = self.verify_forgot_pin(self._wallet1, params, self.access_token)
         self.assertEqual(result.status_code, 404)
 
     """
@@ -543,7 +540,7 @@ class TestWalletRoutes(BaseTestCase):
         }
 
         result = self.withdraw(self._wallet1, params,
-                               self._token)
+                               self.access_token)
         response = result.get_json()["data"]
         self.assertEqual(result.status_code, 200)
         self.assertTrue(response["valid_until"])
@@ -562,7 +559,7 @@ class TestWalletRoutes(BaseTestCase):
         }
 
         result = self.withdraw(self._wallet1, params,
-                               self._token)
+                               self.access_token)
         response = result.get_json()["data"]
 
         self.assertEqual(result.status_code, 200)
@@ -586,7 +583,7 @@ class TestWalletRoutes(BaseTestCase):
             "label"     : "Irene Bank Account",
             "bank_code" : "014"
         }
-        result = self.create_user_bank_account(self._user1, params, self._token)
+        result = self.create_user_bank_account(self._user1, params, self.access_token)
         response = result.get_json()["data"]
 
         bank_account_id = response["bank_account_id"]
@@ -598,7 +595,7 @@ class TestWalletRoutes(BaseTestCase):
         }
 
         result = self.bank_transfer(self._wallet1, bank_account_id, params,
-                                    self._token)
+                                    self.access_token)
         self.assertEqual(result.status_code, 202)
 
     def test_bank_transfer_bank_account_not_found(self):
@@ -616,7 +613,7 @@ class TestWalletRoutes(BaseTestCase):
             "bank_code" : "014"
         }
         result = self.create_user_bank_account(self._user1, params, \
-                                               self._token)
+                                               self.access_token)
         response = result.get_json()["data"]
 
         bank_account_id = response["bank_account_id"]
@@ -627,7 +624,7 @@ class TestWalletRoutes(BaseTestCase):
             "pin" : "123456"
         }
         result = self.bank_transfer(self._wallet1, str(uuid.uuid4()), params,
-                                    self._token)
+                                    self.access_token)
         self.assertEqual(result.status_code, 404)
 
     ############ PATCH #################
@@ -645,7 +642,7 @@ class TestWalletRoutes(BaseTestCase):
             "label"     : "Irene Bank Account",
             "bank_code" : "014"
         }
-        result = self.create_user_bank_account(self._user1, params, self._token)
+        result = self.create_user_bank_account(self._user1, params, self.access_token)
         response = result.get_json()["data"]
 
         bank_account_id = response["bank_account_id"]

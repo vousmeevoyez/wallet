@@ -103,7 +103,7 @@ class TestTransactionCore(BaseTestCase):
         db.session.add(debit_payment)
         db.session.flush()
 
-        transaction_id = TransactionCore.debit_transaction(wallet, debit_payment.id, 111, "TRANSFER_IN")
+        transaction_id = TransactionCore.debit_transaction(wallet, debit_payment.id, 111, "TRANSFER")
         self.assertTrue(transaction_id, str)
 
     def test_credit_transaction_success(self):
@@ -177,7 +177,7 @@ class TestTransactionCore(BaseTestCase):
 
         result = TransactionCore().process_transaction(
             self.source, self.destination, params['amount'], True,
-            "TRANSFER_IN", params['notes']
+            "TRANSFER", params['notes']
         )
         self.assertTrue(isinstance(result, object))
 
@@ -205,7 +205,7 @@ class TestTransactionCore(BaseTestCase):
 
         result = TransactionCore().process_transaction(
             self.source, "12345678", params['amount'], False,
-            "TRANSFER_OUT", params['notes']
+            "BANK_TRANSFER", params['notes']
         )
         self.assertTrue(isinstance(result, object))
 
@@ -243,7 +243,7 @@ class TestTransactionCore(BaseTestCase):
         with self.assertRaises(UnprocessableEntity):
             result = TransactionCore().process_transaction(
                 self.source, self.destination, -params['amount'], False,
-                "TRANSFER_IN", params['notes']
+                "TRANSFER", params['notes']
             )
 
         # make sure transaction is not recorded on user transaction

@@ -1,8 +1,11 @@
 from os import path
+import random
 import json
 import csv
 
 from flask_testing  import TestCase
+from faker import Faker
+
 from unittest.mock import Mock, patch
 
 from manage         import app, init
@@ -17,8 +20,6 @@ BASE_URL = "/api/v1"
 
 class BaseTestCase(TestCase):
     """ This is Base Tests """
-
-    user = None
 
     def create_app(self):
         """ create flask app in test mode"""
@@ -37,6 +38,12 @@ class BaseTestCase(TestCase):
 
     def _init_test(self):
         init()
+
+        # create access token for testing purpose
+        result = self.get_access_token("MODANAADMIN", "password")
+        response = result.get_json()
+        access_token = response["data"]["access_token"]
+        self.access_token = access_token
 
         role = Role(
             description="USER",
@@ -61,6 +68,30 @@ class BaseTestCase(TestCase):
             db.session.commit()
 
         self.user = user
+
+
+    def create_dummy_user(self, access_token):
+        faker = Faker()
+        faker.seed_instance(random.randint(0,100))
+
+        original_name = faker.name()
+        username = (original_name.lower()).replace(" ", "_")
+
+        payload = {
+            "username"     : username,
+            "name"         : original_name,
+            "phone_ext"    : "62",
+            "phone_number" : faker.msisdn()[0:10],
+            "email"        : faker.email(),
+            "password"     : "password",
+            "pin"          : "123456",
+            "role"         : "USER",
+            "label"        : "PERSONAL"
+        }
+        result = self.create_user(payload, access_token)
+        response = result.get_json()["data"]
+
+        return response["user_id"], response["wallet_id"]
 
     def _dict_to_url_query(self, params):
         # pattern ?key=value
@@ -142,16 +173,7 @@ class BaseTestCase(TestCase):
         }
         return self.client.post(
             BASE_URL + "/users/",
-            data=dict(
-                username=params["username"],
-                name=params["name"],
-                phone_ext=params["phone_ext"],
-                phone_number=params["phone_number"],
-                email=params["email"],
-                password=params["password"],
-                pin=params["pin"],
-                role=params["role"]
-            ),
+            data=dict(**params),
             headers=headers
         )
     #end def

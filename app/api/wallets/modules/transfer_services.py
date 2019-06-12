@@ -112,7 +112,7 @@ class TransferServices(WalletCore):
         """ method to transfer money internally"""
         amount = params["amount"]
         transfer_notes = params["notes"]
-        transfer_types = params["types"] or "TRANSFER_IN"
+        transfer_types = params["types"] or "TRANSFER"
 
         if float(amount) > float(self.source.balance):
             raise UnprocessableEntity(self.error_response["INSUFFICIENT_BALANCE"]["TITLE"],
@@ -151,7 +151,7 @@ class TransferServices(WalletCore):
         return accepted({"id" : str(debit_trx.id)})
     #end def
 
-    def external_transfer(self, params, flag="TRANSFER_OUT"):
+    def external_transfer(self, params, flag="BANK_TRANSFER"):
         """ method to transfer money externally"""
         bank_account_id = params["destination"]
         amount = params["amount"]

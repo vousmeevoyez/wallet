@@ -143,15 +143,21 @@ class TransactionServices:
                 refunded_amount = abs(refund.payment.amount)
 
                 transaction = TransactionCore().process_transaction(
-                    source, destination, refunded_amount,
-                    True, "REFUND"
+                    source=source,
+                    destination=destination,
+                    amount=refunded_amount,
+                    payment_type=True,
+                    transfer_types="REFUND"
                 )
             else:
                 refunded_amount = -refund.payment.amount
 
                 transaction = TransactionCore().process_transaction(
-                    source, destination, refunded_amount,
-                    False, "REFUND"
+                    source=source,
+                    destination=destination,
+                    amount=refunded_amount,
+                    payment_type=False,
+                    transfer_types="REFUND"
                 )
             # end if
             # update payment status to refunded

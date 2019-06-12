@@ -1,8 +1,8 @@
 key;notes
 TOP_UP;Top Up
 WITHDRAW;Withdraw
-TRANSFER_IN;Transfer Between User
-TRANSFER_OUT;Transfer to external System
+TRANSFER;Transfer Between User
+BANK_TRANSFER;Transfer to external System
 RECEIVE_TRANSFER;Receive Transfer
 RECEIVE_PAYROLL;Receive Payroll {}
 TRANSFER_FEE;Transfer Fee

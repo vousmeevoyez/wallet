@@ -18,6 +18,7 @@ class UserRequestSchema:
     parser.add_argument("password",    type=str, required=True)
     parser.add_argument("pin",         type=str, required=True)
     parser.add_argument("role",        type=str, required=True)
+    parser.add_argument("label",       type=str, required=True)
 #end class
 
 class UserUpdateRequestSchema:

@@ -1,8 +1,8 @@
 key;description
 TOP_UP;Top up balance {} from Virtual Account
 WITHDRAW;Withdraw balance {}
-TRANSFER_IN;Transfer Balance {}
-TRANSFER_OUT;Transfer to Bank {}
+TRANSFER;Transfer Balance {}
+BANK_TRANSFER;Transfer to Bank {}
 RECEIVE_TRANSFER;Receive Balance {}
 RECEIVE_PAYROLL;Receive Payroll {}
 TRANSFER_FEE;Transfer Fee {}

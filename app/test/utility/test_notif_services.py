@@ -33,7 +33,7 @@ class TestNotificationServices(BaseTestCase):
         result = NotifServices()._convert_type("TOP_UP")
         self.assertEqual(result, "top_up")
 
-        result = NotifServices()._convert_type("TRANSFER_OUT")
+        result = NotifServices()._convert_type("BANK_TRANSFER")
         self.assertEqual(result, "withdraw_to_bank")
 
     def test_convert_date(self):

@@ -9,31 +9,24 @@ class TestBankRoutes(BaseTestCase):
     """ Test Class for Bank Routes"""
     def setUp(self):
         super().setUp()
-
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-
-        access_token = response["data"]["access_token"]
-
-        self._token = access_token
     #end def
 
     def test_check_bni_balance_offline(self):
-        result = self.check_bni_balance("123456", self._token)
+        result = self.check_bni_balance("123456", self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
         self.assertEqual(response["error"], "BANK_PROCESS_FAILED")
         self.assertEqual(response["message"], "TIMEOUT")
 
     def test_check_bni_inquiry_offline(self):
-        result = self.check_bni_inquiry("123456", self._token)
+        result = self.check_bni_inquiry("123456", self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
         self.assertEqual(response["error"], "BANK_PROCESS_FAILED")
         self.assertEqual(response["message"], "TIMEOUT")
 
     def test_check_bni_payment_offline(self):
-        result = self.check_bni_payment("123456", self._token)
+        result = self.check_bni_payment("123456", self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
         self.assertEqual(response["error"], "BANK_PROCESS_FAILED")
@@ -45,7 +38,7 @@ class TestBankRoutes(BaseTestCase):
             "account_no"       : "123456",
             "amount"           : "1000"
         }
-        result = self.void_bni_payment(data, self._token)
+        result = self.void_bni_payment(data, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
         self.assertEqual(response["error"], "BANK_PROCESS_FAILED")
@@ -63,7 +56,7 @@ class TestBankRoutes(BaseTestCase):
             "address"        : "Jl. Buntu",
             "charge_mode"    : "OUR",
         }
-        result = self.bni_do_payment(data, self._token)
+        result = self.bni_do_payment(data, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
         self.assertEqual(response["error"], "BANK_PROCESS_FAILED")
@@ -75,7 +68,7 @@ class TestBankRoutes(BaseTestCase):
             "account_no"     : "115471119",
             "bank_code"      : "014",
         }
-        result = self.bni_interbank_inquiry(data, self._token)
+        result = self.bni_interbank_inquiry(data, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
         self.assertEqual(response["error"], "BANK_PROCESS_FAILED")
@@ -91,7 +84,7 @@ class TestBankRoutes(BaseTestCase):
             "bank_name"      : "BCA",
             "transfer_ref"   : "100000000024",
         }
-        result = self.bni_interbank_payment(data, self._token)
+        result = self.bni_interbank_payment(data, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
         self.assertEqual(response["error"], "BANK_PROCESS_FAILED")

@@ -19,48 +19,29 @@ class TestCallbackRoutes(BaseTestCase):
     """ Test Class for Wallet Routes"""
     def setUp(self):
         super().setUp()
+
+        user_id, wallet_id = self.create_dummy_user(self.access_token)
+        self.user_id = user_id
+        self.wallet_id = wallet_id
     #end def
-
-    def _create_dummy_user(self):
-        params = {
-            "username"     : "jennie",
-            "name"         : "jennie",
-            "phone_ext"    : "62",
-            "phone_number" : "81219643444",
-            "email"        : "jennie@blackpink.com",
-            "password"     : "password",
-            "pin"          : "123456",
-            "role"         : "USER"
-        }
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-
-        access_token = response["data"]["access_token"]
-
-        result = self.create_user(params, access_token)
-        response = result.get_json()["data"]
-
-        return access_token, response["user_id"]
 
     """
         DEPOSIT CALLBACK
     """
     def test_deposit_callback(self):
         """ DEPOSIT CALLBACK CASE 1 : Successfully deposit callback """
-        access_token, user_id = self._create_dummy_user()
-
         params = {
-            "user_id" : user_id,
-            "access_token" : access_token,
+            "user_id" : self.user_id,
+            "access_token" : self.access_token,
             "label" : "wallet label",
             "pin" : "123456"
         }
 
-        result = self.create_wallet(params, access_token)
+        result = self.create_wallet(params, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 201)
 
-        user = User.query.filter_by(id=user_id).first()
+        user = User.query.filter_by(id=params["user_id"]).first()
 
         data = {
             "virtual_account"           :
@@ -91,20 +72,18 @@ class TestCallbackRoutes(BaseTestCase):
     """
     def test_withdraw_callback(self):
         """ WITHDRAW CALLBACK CASE 1 : Successfully withdraw callback """
-        access_token, user_id = self._create_dummy_user()
-
         params = {
-            "user_id" : user_id,
-            "access_token" : access_token,
+            "user_id" : self.user_id,
+            "access_token" : self.access_token,
             "label" : "wallet label",
             "pin" : "123456"
         }
 
-        result = self.create_wallet(params, access_token)
+        result = self.create_wallet(params, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 201)
 
-        user = User.query.filter_by(id=user_id).first()
+        user = User.query.filter_by(id=params["user_id"]).first()
 
         data = {
             "virtual_account"           :

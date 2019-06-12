@@ -13,34 +13,13 @@ class TestPaymentPlanRoutes(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-
-        access_token = response["data"]["access_token"]
-        self._token = access_token
-
         # api key
         self._api_key = "8c574c41-3e01-4763-89af-fd370989da33"
 
-        user, wallet = self._create_dummy_user()
-        self._wallet = wallet
-
-    def _create_dummy_user(self):
-        params = {
-            "username"     : "roseroserose",
-            "name"         : "roseroserose",
-            "phone_ext"    : "62",
-            "phone_number" : "81219642666",
-            "email"        : "roseroserose@blackpink.com",
-            "password"     : "password",
-            "pin"          : "123456",
-            "role"         : "USER"
-        }
-        result = self.create_user(params, self._token)
-        response = result.get_json()["data"]
-        user_id = response["user_id"]
-        wallet_id = response["wallet_id"]
-        return user_id, wallet_id
+        user_id, wallet_id = self.create_dummy_user(self.access_token)
+        self.user_id = user_id
+        self.wallet_id = wallet_id
+    # end def
 
     """
         TEST BEGIN HERE 
@@ -57,16 +36,18 @@ class TestPaymentPlanRoutes(BaseTestCase):
         params = {
             "destination" : "123456",
             "method" : "AUTO_PAY",
-            "wallet_id" : self._wallet,
+            "wallet_id" : self.wallet_id,
             "plans" : plans
         }
+        # create payment plan here
         result = self.create_payment_plan(params, self._api_key)
         response = result.get_json()
         payment_plan_id = response['data']['payment_plan_id']
         self.assertTrue(response['data']['payment_plan_id'])
+
+        # make sure payment plan created here
         result = self.get_payment_plan(payment_plan_id, self._api_key)
         response = result.get_json()
-        print(response)
 
         due_date = datetime.utcnow()
         plans = [{
@@ -78,16 +59,18 @@ class TestPaymentPlanRoutes(BaseTestCase):
         params = {
             "destination" : "123456",
             "method" : "AUTO_DEBIT",
-            "wallet_id" : self._wallet,
+            "wallet_id" : self.wallet_id,
             "plans" : plans
         }
+        # create payment plan here
         result = self.create_payment_plan(params, self._api_key)
         response = result.get_json()
         self.assertTrue(response['data']['payment_plan_id'])
+
+        # make sure payment plan created
         payment_plan_id = response['data']['payment_plan_id']
         result = self.get_payment_plan(payment_plan_id, self._api_key)
         response = result.get_json()
-        print(response)
 
         due_date = datetime.utcnow()
         plans = [{
@@ -99,7 +82,7 @@ class TestPaymentPlanRoutes(BaseTestCase):
         params = {
             "destination" : "123456",
             "method" : "AUTO",
-            "wallet_id" : self._wallet,
+            "wallet_id" : self.wallet_id,
             "plans" : plans
         }
         result = self.create_payment_plan(params, self._api_key)
@@ -108,17 +91,15 @@ class TestPaymentPlanRoutes(BaseTestCase):
         payment_plan_id = response['data']['payment_plan_id']
         result = self.get_payment_plan(payment_plan_id, self._api_key)
         response = result.get_json()
-        print(response)
     # end def
 
-    '''
     def test_get_payment_plans(self):
         """ test routes function to get payment plans"""
         params = {
             "id" : "some-payment-plan-id",
             "destination" : "123456",
             "method" : "AUTO_PAY",
-            "wallet_id" : self._wallet,
+            "wallet_id" : self.wallet_id,
         }
         result = self.create_payment_plan(params, self._api_key)
         response = result.get_json()
@@ -135,7 +116,7 @@ class TestPaymentPlanRoutes(BaseTestCase):
             "id" : "some-payment-plan-id",
             "destination" : "123456",
             "method" : "AUTO_PAY",
-            "wallet_id" : self._wallet,
+            "wallet_id" : self.wallet_id,
         }
         result = self.create_payment_plan(params, self._api_key)
         response = result.get_json()
@@ -154,7 +135,7 @@ class TestPaymentPlanRoutes(BaseTestCase):
             "id" : "some-payment-plan-id",
             "destination" : "123456",
             "method" : "AUTO_PAY",
-            "wallet_id" : self._wallet,
+            "wallet_id" : self.wallet_id,
         }
         result = self.create_payment_plan(params, self._api_key)
         response = result.get_json()
@@ -169,7 +150,7 @@ class TestPaymentPlanRoutes(BaseTestCase):
             "id" : "some-payment-plan-id",
             "destination" : "123456",
             "method" : "AUTO_PAY",
-            "wallet_id" : self._wallet,
+            "wallet_id" : self.wallet_id,
         }
         result = self.create_payment_plan(params, self._api_key)
         response = result.get_json()
@@ -182,7 +163,7 @@ class TestPaymentPlanRoutes(BaseTestCase):
             "id" : "some-payment-plan-id",
             "destination" : "123456",
             "method" : "AUTO_PAY",
-            "wallet_id" : self._wallet,
+            "wallet_id" : self.wallet_id,
         }
         result = self.create_payment_plan(params, self._api_key)
         response = result.get_json()
@@ -192,7 +173,7 @@ class TestPaymentPlanRoutes(BaseTestCase):
 
         params = {
             "destination" : "654321",
-            "wallet_id" : self._wallet,
+            "wallet_id" : self.wallet_id,
             "method" : "AUTO_PAY",
             "status" : "DEACTIVE",
         }
@@ -202,5 +183,4 @@ class TestPaymentPlanRoutes(BaseTestCase):
         result = self.get_payment_plan(payment_plan_id, self._api_key)
         response = result.get_json()
     # end def
-    '''
 # end class

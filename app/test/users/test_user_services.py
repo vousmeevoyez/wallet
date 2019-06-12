@@ -27,7 +27,7 @@ class TestUserServices(BaseTestCase):
             "role_id"     : 1,
         }
         user = User(**params)
-        result = UserServices().add(user, "password", "123456")
+        result = UserServices().add(user, "password", "123456", "LABEL")
         self.assertEqual(result[1], 201) # created
 
     def test_user_add_failed_duplicate(self):
@@ -41,7 +41,8 @@ class TestUserServices(BaseTestCase):
             "role_id"     : 1,
         }
         user = User(**params)
-        result = UserServices().add(user, "password", "123456")
+        result = UserServices().add(user, "password", "123456", "LABEL")
+
         self.assertEqual(result[1], 201) # created
 
         params = {
@@ -54,7 +55,7 @@ class TestUserServices(BaseTestCase):
         }
         user = User(**params)
         with self.assertRaises(UnprocessableEntity):
-            result = UserServices().add(user, "password", "123456")
+            result = UserServices().add(user, "password", "123456", "LABEL")
 
     def test_user_list_success(self):
         """ test get list of users"""
@@ -72,7 +73,7 @@ class TestUserServices(BaseTestCase):
             "role_id"     : 1,
         }
         user = User(**params)
-        result = UserServices().add(user, "password", "123456")
+        result = UserServices().add(user, "password", "123456", "LABEL")
         self.assertEqual(result[1], 201) # created
 
         user_id = result[0]["data"]["user_id"]
@@ -95,7 +96,7 @@ class TestUserServices(BaseTestCase):
             "role_id"     : 1,
         }
         user = User(**params)
-        result = UserServices().add(user, "password", "123456")
+        result = UserServices().add(user, "password", "123456", "LABEL")
         self.assertEqual(result[1], 201) # created
 
         user_id = result[0]["data"]["user_id"]
@@ -122,7 +123,7 @@ class TestUserServices(BaseTestCase):
             "role_id"     : 1,
         }
         user = User(**params)
-        result = UserServices().add(user, "password", "123456")
+        result = UserServices().add(user, "password", "123456", "LABEL")
         self.assertEqual(result[1], 201) # created
 
         user_id = result[0]["data"]["user_id"]
@@ -152,7 +153,7 @@ class TestUserServices(BaseTestCase):
             "role_id"     : 1,
         }
         user = User(**params)
-        result = UserServices().add(user, "password", "123456")
+        result = UserServices().add(user, "password", "123456", "LABEL")
         self.assertEqual(result[1], 201) # created
 
         user_id = result[0]["data"]["user_id"]

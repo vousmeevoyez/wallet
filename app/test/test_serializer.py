@@ -18,6 +18,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -35,6 +36,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -52,6 +54,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -69,6 +72,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -85,6 +89,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -102,6 +107,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -119,6 +125,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -136,6 +143,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -152,6 +160,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -168,6 +177,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -185,6 +195,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -202,6 +213,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -219,6 +231,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -236,6 +249,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -253,6 +267,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -269,6 +284,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -286,6 +302,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -302,6 +319,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "pasrd",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -319,6 +337,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -335,6 +354,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123",
             "role"         : "USER",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -352,6 +372,7 @@ class TestUserSchema(BaseTestCase):
             "password"     : "password",
             "pin"          : "123456",
             "role"         : "&(*&*(&*(&*(&*(&",
+            "label"        : "PERSONAL",
         }
         errors = UserSchema().validate(data)
         expected_error = {
@@ -368,7 +389,8 @@ class TestUserSchema(BaseTestCase):
             "email"        : "lisa@bp.com",
             "password"     : "password",
             "pin"          : "123456",
-            "role"         : "MIMIN"
+            "role"         : "MIMIN",
+            "label"        : "PERSONAL"
         }
         errors = UserSchema().validate(data)
         expected_error = {

@@ -42,7 +42,7 @@ class UserServices:
             self.user = user
     #end def
 
-    def add(self, user, password, pin):
+    def add(self, user, password, pin, label):
         """
             add new user
             create wallet
@@ -61,7 +61,7 @@ class UserServices:
 
         # create wallet object first
         try:
-            wallet = Wallet(label="PERSONAL")
+            wallet = Wallet(label=label)
             result = WalletServices().add(user, wallet, pin)
         except UnprocessableEntity as error:
             pass

@@ -9,6 +9,7 @@
 from flask_restplus import Resource
 from marshmallow import ValidationError
 # namespace
+from app.api.core import Routes
 from app.api.users import api
 # serializer
 from app.api.serializer     import UserSchema, BankAccountSchema
@@ -23,15 +24,9 @@ from app.api.users.modules.bank_account_services import BankAccountServices
 from app.api.users.modules.user_services import UserServices
 #exceptions
 from app.api.error.http import BadRequest
-# config
-from app.config import config
-
-class BaseRoutes(Resource):
-    """ base class """
-    error_response = config.Config.ERROR_CONFIG
 
 @api.route("/")
-class UserRoutes(BaseRoutes):
+class UserRoutes(Routes):
     """
         Users
         /users
@@ -49,8 +44,10 @@ class UserRoutes(BaseRoutes):
                              self.error_response["INVALID_PARAMETER"]["MESSAGE"],
                              error.messages)
 
-        response = UserServices().add(user.data, request_data["password"],
-                                      request_data["pin"])
+        response = UserServices().add(
+            user.data,  
+            request_data["password"], request_data["pin"], request_data["label"]
+        )
         return response
     #end def
 
@@ -62,7 +59,7 @@ class UserRoutes(BaseRoutes):
 #end class
 
 @api.route("/<string:user_id>")
-class UserInfoRoutes(BaseRoutes):
+class UserInfoRoutes(Routes):
     """
         Users
         /users/<user_id>
@@ -78,7 +75,7 @@ class UserInfoRoutes(BaseRoutes):
         """ Endpoint for updating user information"""
         request_data = UserUpdateRequestSchema.parser.parse_args(strict=True)
         try:
-            excluded = "username", "pin", "role"
+            excluded = "username", "pin", "role", "label"
             data = UserSchema(strict=True).validate(request_data,
                                                     partial=(excluded))
         except ValidationError as error:
@@ -98,7 +95,7 @@ class UserInfoRoutes(BaseRoutes):
 
 
 @api.route("/<string:user_id>/bank_account/")
-class UserBankAccountRoutes(BaseRoutes):
+class UserBankAccountRoutes(Routes):
     """
         User Bank Accounts
         /users/<user_id>/bank_account/
@@ -128,7 +125,7 @@ class UserBankAccountRoutes(BaseRoutes):
 #end class
 
 @api.route("/<string:user_id>/bank_account/<string:user_bank_account_id>")
-class UserBankAccountDetailsRoutes(BaseRoutes):
+class UserBankAccountDetailsRoutes(Routes):
     """
         User Bank Accounts
         /users/<user_id>/bank_account/<bank_account_id>

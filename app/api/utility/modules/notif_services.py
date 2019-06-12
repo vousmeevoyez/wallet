@@ -51,9 +51,9 @@ class NotifServices:
     def _convert_type(types):
         transfer_types = {
             "TOP_UP"           : "top_up",
-            "TRANSFER_OUT"     : "withdraw_to_bank",
+            "BANK_TRANSFER"    : "withdraw_to_bank",
             "WITHDRAW"         : "withdraw_to_atm",
-            "TRANSFER_IN"      : "transfer",
+            "TRANSFER"         : "transfer",
             "PAYROLL"          : "transfer",
             "TRANSFER_FEE"     : "transfer",
             "RECEIVE_TRANSFER" : "transfer",

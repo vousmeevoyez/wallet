@@ -8,10 +8,10 @@
 # pylint: disable=no-self-use
 # pylint: disable=no-name-in-module
 
-# external
-from flask_restplus import Resource #pylint: disable=import-error
 # local
 from app.api.auth import api
+
+from app.api.core import Routes
 # services
 from app.api.auth.modules.auth_services import AuthServices
 # serializer
@@ -25,16 +25,9 @@ from app.api.auth.decorator import get_current_token
 from app.api.auth.decorator import get_token_payload
 # http error
 from app.api.error.http import BadRequest
-# configuration
-from app.config import config
-
-class BaseRoutes(Resource):
-    """ base routes class"""
-    error_response = config.Config.ERROR_CONFIG
-# end class
 
 @api.route("/token")
-class TokenRoutes(BaseRoutes):
+class TokenRoutes(Routes):
     """
         Access Token
         /auth/token
@@ -43,8 +36,7 @@ class TokenRoutes(BaseRoutes):
         """ Endpoint for getting access token using username and password """
         request_data = AuthRequestSchema.parser.parse_args()
 
-        excluded = "name", "phone_ext", "phone_number", "pin", "role", "email"
-        errors = UserSchema().validate(request_data, partial=(excluded))
+        errors = UserSchema(only=("username", "password")).validate(request_data)
         if errors:
             raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
                              self.error_response["INVALID_PARAMETER"]["MESSAGE"], errors)
@@ -55,7 +47,7 @@ class TokenRoutes(BaseRoutes):
 #end def
 
 @api.route("/refresh")
-class RefreshTokenRoutes(BaseRoutes):
+class RefreshTokenRoutes(Routes):
     """
         Refresh Token
         /auth/refresh
@@ -71,7 +63,7 @@ class RefreshTokenRoutes(BaseRoutes):
 #end class
 
 @api.route("/token/revoke")
-class TokenRevokeRoutes(BaseRoutes):
+class TokenRevokeRoutes(Routes):
     """
         Refresh Token
         /auth/token/revoke

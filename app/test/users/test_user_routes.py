@@ -20,11 +20,10 @@ class TestUserRoutes(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-        result = self.get_access_token("MODANAADMIN", "password")
-        response = result.get_json()
-        access_token = response["data"]["access_token"]
-
-        self._token = access_token
+        user_id, wallet_id = self.create_dummy_user(self.access_token)
+        self.user_id = user_id
+        self.wallet_id = wallet_id
+    # end def
 
     """
         TEST BEGIN HERE 
@@ -39,9 +38,10 @@ class TestUserRoutes(BaseTestCase):
             "email"        : "jennie@blackpink.com",
             "password"     : "password",
             "pin"          : "123456",
-            "role"         : "USER"
+            "role"         : "USER",
+            "label"        : "PERSONAL"
         }
-        result = self.create_user(params, self._token)
+        result = self.create_user(params, self.access_token)
         response = result.get_json()["data"]
 
         self.assertTrue(response["user_id"])
@@ -57,14 +57,15 @@ class TestUserRoutes(BaseTestCase):
             "email"        : "jennie@blackpink.com",
             "password"     : "password",
             "pin"          : "123456",
-            "role"         : "USER"
+            "role"         : "USER",
+            "label"        : "PERSONAL"
         }
-        result = self.create_user(params, self._token)
+        result = self.create_user(params, self.access_token)
         self.assertEqual(result.status_code, 400) # bad request
 
     def test_get_all_user(self):
         """ test method that return all user """
-        result = self.get_all_user(self._token)
+        result = self.get_all_user(self.access_token)
         status_code = result.status_code
         response = result.get_json()
 
@@ -80,9 +81,10 @@ class TestUserRoutes(BaseTestCase):
             "email"        : "jennie@blackpink.com",
             "password"     : "password",
             "pin"          : "123456",
-            "role"         : "USER"
+            "role"         : "USER",
+            "label"        : "PERSONAL"
         }
-        result = self.create_user(params, self._token)
+        result = self.create_user(params, self.access_token)
         response = result.get_json()["data"]
 
         user_id = response["user_id"]
@@ -94,12 +96,12 @@ class TestUserRoutes(BaseTestCase):
             "email"        : "jennie@blckpink.com",
             "password"     : "password",
         }
-        result = self.update_user(params, user_id, self._token)
+        result = self.update_user(params, user_id, self.access_token)
         self.assertEqual(result.status_code, 204)
 
     def test_get_user(self):
         """ test method that get user info"""
-        result = self.get_user(str(self.user.id), self._token)
+        result = self.get_user(self.user_id, self.access_token)
         self.assertEqual(result.status_code, 200) # ok
 
     def test_create_user_bank_account_success(self):
@@ -112,8 +114,8 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account(str(self.user.id), params,
-                                               self._token)
+        result = self.create_user_bank_account(self.user_id, params,
+                                               self.access_token)
         self.assertEqual(result.status_code, 201) # created
 
     def test_create_user_bank_account_validate_failed(self):
@@ -126,8 +128,8 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account(str(self.user.id), params,
-                                               self._token)
+        result = self.create_user_bank_account(self.user_id, params,
+                                               self.access_token)
         self.assertEqual(result.status_code, 400) # ok
 
         params = {
@@ -138,8 +140,8 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account(str(self.user.id), params,
-                                               self._token)
+        result = self.create_user_bank_account(self.user_id, params,
+                                               self.access_token)
         self.assertEqual(result.status_code, 400) # ok
 
     def test_get_user_bank_account(self):
@@ -151,11 +153,11 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account(str(self.user.id), params,
-                                               self._token)
+        result = self.create_user_bank_account(self.user_id, params,
+                                               self.access_token)
         status_code = result.status_code
 
-        result = self.get_bank_account(str(self.user.id), self._token)
+        result = self.get_bank_account(self.user_id, self.access_token)
         self.assertEqual(result.status_code, 200) # ok
 
     def test_remove_bank_account(self):
@@ -168,14 +170,14 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account(str(self.user.id), params,
-                                               self._token)
+        result = self.create_user_bank_account(self.user_id, params,
+                                               self.access_token)
         self.assertEqual(result.status_code, 201) # ok
 
         bank_account_id = result.get_json()["data"]["bank_account_id"]
 
-        result = self.remove_bank_account(str(self.user.id), bank_account_id,
-                                          self._token)
+        result = self.remove_bank_account(self.user_id, bank_account_id,
+                                          self.access_token)
         self.assertEqual(result.status_code, 204) # no content
 
     def test_update_user_bank_account_success(self):
@@ -187,8 +189,8 @@ class TestUserRoutes(BaseTestCase):
             "bank_code" : "014"
         }
 
-        result = self.create_user_bank_account(str(self.user.id), params,
-                                               self._token)
+        result = self.create_user_bank_account(self.user_id, params,
+                                               self.access_token)
         self.assertEqual(result.status_code, 201) # ok
 
         bank_account_id = result.get_json()["data"]["bank_account_id"]
@@ -200,8 +202,8 @@ class TestUserRoutes(BaseTestCase):
             "label"     : "Kelvin Bank Accounts",
             "bank_code" : "014"
         }
-        result = self.update_bank_account(str(self.user.id), bank_account_id,
-                                          params, self._token)
+        result = self.update_bank_account(self.user_id, bank_account_id,
+                                          params, self.access_token)
         status_code = result.status_code
 
         self.assertEqual(status_code, 204) # ok
