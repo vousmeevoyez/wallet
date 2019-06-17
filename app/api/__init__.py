@@ -3,6 +3,9 @@
     ______________________
     Package Initialization
 """
+#pylint: disable=import-error
+#pylint: disable=invalid-name
+
 from flask  import Flask
 
 from celery import Celery

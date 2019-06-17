@@ -1,24 +1,15 @@
-""" 
+"""
     HTTP Response
     __________
     This module to handle HTTP Success & Error code
 """
-from flask import jsonify
-from werkzeug.http import HTTP_STATUS_CODES
-"""
-    2xx Success
-"""
 def no_content():
-    """
-        Function to return 204 HTTP success message
-    """
+    """ Function to return 204 HTTP success message """
     return ('', 204)
 #end def
 
 def ok(data=None, message=None):
-    """
-        Function to return 200 HTTP success message
-    """
+    """ Function to return 200 HTTP success message """
     response = {
         "data" : data
     }
@@ -30,9 +21,7 @@ def ok(data=None, message=None):
 #end def
 
 def created(data=None, message=None):
-    """
-        Function to return 201 HTTP success message
-    """
+    """ Function to return 201 HTTP success message """
     response = {}
 
     if data is not None:
@@ -45,9 +34,7 @@ def created(data=None, message=None):
 #end def
 
 def accepted(data=None, message=None):
-    """
-        Function to return 202 HTTP success message
-    """
+    """ Function to return 202 HTTP success message """
     response = {}
 
     if data is not None:

@@ -1,4 +1,4 @@
-""" 
+"""
     Models
     ___________
     This is module contain all class models that required
@@ -493,9 +493,7 @@ class VirtualAccount(db.Model):
             function to generate va number
         """
         account_no = None
-        """
-            BNI VA Number
-        """
+        # BNI VA Number
         bank = Bank.query.filter_by(id=self.bank_id).first()
         if bank.code == "009":
             while True:
@@ -830,8 +828,8 @@ class PaymentPlan(db.Model):
         ).all()
         # calculate total payment here
         total_payment = 0
-        for plan in plans:
-            total_payment = total_payment + plan.amount
+        for plan_ in plans:
+            total_payment = total_payment + plan_.amount
         # end for
         return total_payment, plans
     #end def
@@ -848,7 +846,8 @@ class Plan(db.Model):
     type = db.Column(db.Integer, default=0)# MAIN | LATE | DLL
     status = db.Column(db.Integer, default=0)# PENDING| RETRY | SENDING | FAIL
     due_date = db.Column(db.DateTime)
-    payment_plan_id = db.Column(db.String(255), db.ForeignKey('payment_plan.id', ondelete='CASCADE'))
+    payment_plan_id = db.Column(db.String(255),
+                                db.ForeignKey('payment_plan.id', ondelete='CASCADE'))
     payment_plan = db.relationship("PaymentPlan", back_populates="plans") # many to one
     created_at = db.Column(db.DateTime, default=now)
 

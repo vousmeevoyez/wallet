@@ -3,6 +3,8 @@
     _______________
     This is module for storing all configuration for various environments
 """
+# pylint: disable=too-few-public-methods
+# pylint: disable=invalid-name
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -115,11 +117,11 @@ class Config:
             "ONLINE"   : 6500
         },
         "OTP_TIMEOUT"        : 2, # set otp timeout in minutes
-        "INCORRECT_TIMEOUT"  : os.getenv('INCORRECT_TIMEOUT') or 5, # set wallet locking timeout in minutes
+        "INCORRECT_TIMEOUT"  : os.getenv('INCORRECT_TIMEOUT') or 5,
         "INCORRECT_RETRY"    : os.getenv('INCORRECT_RETRY') or 3, # set max pin retry
         "QR_SECRET_KEY"      : "1#$@!%2jajdasnknvxivodisufu039021ofjldsjfa@@!",
         "LOCK_TIMEOUT"       : os.getenv('LOCK_TIMEOUT') or 5
-    }    
+    }
 
     # BNI E-COLLECTION CONFIG
     BNI_ECOLLECTION_CONFIG = {
@@ -172,7 +174,7 @@ class Config:
 
     NOTIF_SERVICES_CONFIG = {
         "BASE_URL" : os.getenv('NOTIF_SERVICES_BASE_URL') or
-        'http://13.231.89.176:8000/wallet/api/send-wallet-notification'
+                     'http://103.233.110.84:4000/wallet/api/send-wallet-notification'
     }
 
     # logging config
@@ -217,10 +219,6 @@ class Config:
         "VA_NOT_FOUND" : {
             "TITLE"   : "VA_NOT_FOUND",
             "MESSAGE" : "Virtual Account not found"
-        },
-        "WALLET_LOCKED" : {
-            "TITLE"   : "WALLET_LOCKED",
-            "MESSAGE" : "Wallet is locked"
         },
         "TRANSACTION_NOT_FOUND" : {
             "TITLE"   : "TRANSACTION_NOT_FOUND",

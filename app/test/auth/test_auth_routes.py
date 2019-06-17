@@ -22,14 +22,6 @@ class TestAuthRoutes(BaseTestCase):
         self.assertTrue(response["data"]["refresh_token"])
     #end def
 
-    def test_get_access_token_invalid_params(self):
-        """ test get access token using invalid params"""
-        result = self.get_access_token("MO", "pa")
-        response = result.get_json()
-        #print(response)
-        self.assertEqual(result.status_code, 400)
-    #end def
-
     def test_get_access_token_failed_record_not_found(self):
         """ test failed record not found get access token"""
         result = self.get_access_token("jennie", "password")

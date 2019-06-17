@@ -71,8 +71,7 @@ class BaseTestCase(TestCase):
 
 
     def create_dummy_user(self, access_token):
-        faker = Faker()
-        faker.seed_instance(random.randint(0,100))
+        faker = Faker("en_US")
 
         original_name = faker.name()
         username = (original_name.lower()).replace(" ", "_")

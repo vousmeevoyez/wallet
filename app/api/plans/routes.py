@@ -8,8 +8,7 @@
 #pylint: disable=too-few-public-methods
 #pylint: disable=no-name-in-module
 
-from flask_restplus import Resource
-from marshmallow import ValidationError
+from app.api.core import Routes
 
 from app.api.plans import api
 #serializer
@@ -20,34 +19,23 @@ from app.api.request_schema import PlanRequestSchema, UpdatePlanRequestSchema
 from app.api.plans.modules.plan_services import PlanServices
 # authentication
 from app.api.auth.decorator import api_key_required
-# exceptions
-from app.api.error.http import BadRequest
-# configuration
-from app.config import config
-
-class BaseRoutes(Resource):
-    """ base class for routes """
-    error_response = config.Config.ERROR_CONFIG
 
 @api.route('/')
-class PlanRoutes(BaseRoutes):
+class PlanRoutes(Routes):
     """
         Plan
         /plans
     """
+    __schema__ = PlanRequestSchema
+    __serializer__ = PlanSchema(exclude=("status"))
+
     @api_key_required
     def post(self):
         """ Endpoint for creating plan """
-        request_data = PlanRequestSchema.parser.parse_args(strict=True)
-        try:
-            excluded = ("status")
-            plan = PlanSchema(strict=True).load(request_data, partial=excluded)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        # end try
-        response = PlanServices(request_data['payment_plan_id']).add(plan.data)
+        request_data = self.payload()
+        plan = self.serialize(request_data, load=True)
+
+        response = PlanServices(request_data['payment_plan_id']).add(plan)
         return response
     #end def
 
@@ -60,41 +48,34 @@ class PlanRoutes(BaseRoutes):
 #end class
 
 @api.route('/<string:plan_id>')
-class PaymentPlanInfoRoutes(BaseRoutes):
+class PaymentPlanInfoRoutes(Routes):
     """
         Plan
         /plans
     """
+
+    __schema__ = PlanRequestSchema
+    __serializer__ = PlanSchema(exclude=("status"))
+
     @api_key_required
     def put(self, plan_id):
         """ Endpoint for updating plan """
-        request_data = PlanRequestSchema.parser.parse_args(strict=True)
-        try:
-            excluded = ("status")
-            payment_plan = PlanSchema(strict=True).load(request_data,
-                                                        partial=excluded)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        # end try
-        response = PlanServices(plan_id=plan_id).update(payment_plan.data)
+        request_data = self.payload()
+        plan = self.serialize(request_data, load=True)
+
+        response = PlanServices(plan_id=plan_id).update(plan)
         return response
     #end def
 
     @api_key_required
     def patch(self, plan_id):
         """ Endpoint for patching plan status """
-        request_data = UpdatePlanRequestSchema.parser.parse_args(strict=True)
-        try:
-            excluded = ("id", "due_date", "type", "amount")
-            payment_plan = PlanSchema(strict=True).validate(request_data,
-                                                            partial=excluded)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        # end try
+
+        self.__schema__ = UpdatePlanRequestSchema
+        self.__serializer__ = PlanSchema(exclude=("id", "due_date", "type", "amount"))
+
+        request_data = self.serialize(self.payload())
+
         response = PlanServices(plan_id=plan_id).update_status(request_data)
         return response
     #end def

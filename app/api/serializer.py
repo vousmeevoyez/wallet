@@ -733,7 +733,7 @@ class PlanSchema(ma.Schema):
         """
             function to validate start_date
         """
-        today = datetime.utcnow()
+        #today = datetime.utcnow()
         try:
             due_date = datetime.fromisoformat(due_date)
         except ValueError as error:

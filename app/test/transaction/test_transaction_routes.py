@@ -10,7 +10,7 @@ from app.api.models import User
 from app.api.models import Wallet
 from app.api import db
 
-class TestWalletRoutes(BaseTestCase):
+class TestTransactionRoutes(BaseTestCase):
     """ Test Class for Wallet Routes"""
     def setUp(self):
         super().setUp()

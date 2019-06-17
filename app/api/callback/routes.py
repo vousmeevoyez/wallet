@@ -23,53 +23,49 @@ from app.config import config
 from task.bank.BNI.utility.remote_call import decrypt
 from task.bank.BNI.utility.remote_call import DecryptError
 
-class CustomRoutes(Routes):
-    bni_ecollection_config = config.Config.BNI_ECOLLECTION_CONFIG
-    logging_config = config.Config.LOGGING_CONFIG
-    error_response = config.Config.ERROR_CONFIG
-
 @api.route('/bni/va/withdraw')
-class WithdrawCallback(CustomRoutes):
+class WithdrawCallback(Routes):
     """
         Callback
         /bni/va/withdraw
     """
-    def post(self):
-        """ Endpoint for receiving Withdraw Notification from BNI """
 
-        # we received encrypted data and we need to decrypt it first
-        encrypted_data = request.get_json()
+    __serializer__ = CallbackSchema()
+
+    bni_ecollection_config = config.Config.BNI_ECOLLECTION_CONFIG
+    logging_config = config.Config.LOGGING_CONFIG
+
+    def preprocess(self, payload):
         try:
-            request_data = decrypt(self.bni_ecollection_config["DEBIT_CLIENT_ID"],
+            payload = decrypt(self.bni_ecollection_config["DEBIT_CLIENT_ID"],
                                    self.bni_ecollection_config["DEBIT_SECRET_KEY"],
-                                   encrypted_data["data"])
-
-            # log every incoming callback
-            external_log = ExternalLog(request=request_data,
-                                       resource=self.logging_config["BNI_ECOLLECTION"],
-                                       api_name="WITHDRAW_CALLBACK",
-                                       api_type=self.logging_config["INGOING"])
-            db.session.add(external_log)
+                                   payload["data"])
         except DecryptError:
             # raise error
             raise BadRequest(self.error_response["INVALID_CALLBACK"]["TITLE"],
                              self.error_response["INVALID_CALLBACK"]["MESSAGE"])
         #end try
+        return payload
+    # end def
 
-        # validate payload
-        try:
-            result = CallbackSchema(strict=True).validate(request_data)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        #end try
+
+    def post(self):
+        """ Endpoint for receiving Withdraw Notification from BNI """
+        request_data = self.serialize(self.payload(raw=True))
+
+        # log every incoming callback
+        external_log = ExternalLog(request=request_data,
+                                   resource=self.logging_config["BNI_ECOLLECTION"],
+                                   api_name="WITHDRAW_CALLBACK",
+                                   api_type=self.logging_config["INGOING"])
+        db.session.add(external_log)
 
         # add payment channel key here to know where the request coming from
         request_data["payment_channel_key"] = "BNI_VA"
         response = CallbackServices(
             request_data["virtual_account"], request_data["trx_id"], "OUT"
         ).process_callback(request_data)
+
         # save response
         external_log.save_response(response)
         db.session.commit()
@@ -79,39 +75,40 @@ class WithdrawCallback(CustomRoutes):
 #end class
 
 @api.route('/bni/va/deposit')
-class DepositCallback(CustomRoutes):
+class DepositCallback(Routes):
     """
         Callback
         /bni/va/deposit
     """
-    def post(self):
-        """ Endpoint for receiving deposit Notification from BNI """
 
-        # we received encrypted data and we need to decrypt it first
-        encrypted_data = request.get_json()
+    __serializer__ = CallbackSchema()
+
+    bni_ecollection_config = config.Config.BNI_ECOLLECTION_CONFIG
+    logging_config = config.Config.LOGGING_CONFIG
+
+    def preprocess(self, payload):
         try:
-            request_data = decrypt(self.bni_ecollection_config["CREDIT_CLIENT_ID"],
+            payload = decrypt(self.bni_ecollection_config["CREDIT_CLIENT_ID"],
                                    self.bni_ecollection_config["CREDIT_SECRET_KEY"],
-                                   encrypted_data["data"])
-
-            # log every incoming callback
-            external_log = ExternalLog(request=request_data,
-                                       resource=self.logging_config["BNI_ECOLLECTION"],
-                                       api_name="DEPOSIT_CALLBACK",
-                                       api_type=self.logging_config["INGOING"])
-            db.session.add(external_log)
+                                   payload["data"])
         except DecryptError:
+            # raise error
             raise BadRequest(self.error_response["INVALID_CALLBACK"]["TITLE"],
                              self.error_response["INVALID_CALLBACK"]["MESSAGE"])
         #end try
+        return payload
+    # end def
 
-        try:
-            result = CallbackSchema(strict=True).validate(request_data)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        #end try
+    def post(self):
+        """ Endpoint for receiving deposit Notification from BNI """
+        request_data = self.serialize(self.payload(raw=True))
+
+        # log every incoming callback
+        external_log = ExternalLog(request=request_data,
+                                   resource=self.logging_config["BNI_ECOLLECTION"],
+                                   api_name="DEPOSIT_CALLBACK",
+                                   api_type=self.logging_config["INGOING"])
+        db.session.add(external_log)
 
         # add payment channel key here to know where the request coming from
         request_data["payment_channel_key"] = "BNI_VA"

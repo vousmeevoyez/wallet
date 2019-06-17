@@ -7,8 +7,7 @@
 #pylint: disable=no-self-use
 #pylint: disable=too-few-public-methods
 #pylint: disable=no-name-in-module
-from flask_restplus import Resource
-from marshmallow import ValidationError
+from app.api.core import Routes
 
 from app.api.payment_plans import api
 #serializer
@@ -19,33 +18,24 @@ from app.api.request_schema import PaymentPlanRequestSchema
 from app.api.payment_plans.modules.payment_plan_services import PaymentPlanServices
 # authentication
 from app.api.auth.decorator import api_key_required
-# exceptions
-from app.api.error.http import BadRequest
-# configuration
-from app.config import config
-
-class BaseRoutes(Resource):
-    """ base routes class """
-    error_response = config.Config.ERROR_CONFIG
 
 @api.route('/')
-class PaymentPlanRoutes(BaseRoutes):
+class PaymentPlanRoutes(Routes):
     """
         Payment Plan
         /payment_plans
     """
+
+    __schema__ = PaymentPlanRequestSchema
+    __serializer__ = PaymentPlanSchema()
+
     @api_key_required
     def post(self):
         """ Endpoint for creating payment plan """
-        request_data = PaymentPlanRequestSchema.parser.parse_args(strict=True)
-        try:
-            payment_plan = PaymentPlanSchema(strict=True).load(request_data)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        # end try
-        response = PaymentPlanServices(request_data["wallet_id"]).add(payment_plan.data)
+        request_data = self.payload()
+        payment_plan = self.serialize(request_data, load=True)
+
+        response = PaymentPlanServices(request_data["wallet_id"]).add(payment_plan)
         return response
     #end def
 
@@ -58,22 +48,20 @@ class PaymentPlanRoutes(BaseRoutes):
 #end class
 
 @api.route('/<string:payment_plan_id>')
-class PaymentPlanInfoRoutes(BaseRoutes):
+class PaymentPlanInfoRoutes(Routes):
     """
         Payment Plan
         /payment_plans
     """
+
+    __schema__ = PaymentPlanRequestSchema
+    __serializer__ = PaymentPlanSchema()
+
     @api_key_required
     def put(self, payment_plan_id):
         """ Endpoint for updating payment plan """
-        request_data = PaymentPlanRequestSchema.parser.parse_args(strict=True)
-        try:
-            payment_plan = PaymentPlanSchema(strict=True).validate(request_data)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        # end try
+        request_data = self.serialize(self.payload())
+
         response = PaymentPlanServices(
             payment_plan_id=payment_plan_id,
             wallet_id=request_data["wallet_id"]

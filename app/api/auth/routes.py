@@ -32,17 +32,13 @@ class TokenRoutes(Routes):
         Access Token
         /auth/token
     """
+
+    __schema__ = AuthRequestSchema
+    __serializer__ = UserSchema(only=("username", "password"))
+
     def post(self):
         """ Endpoint for getting access token using username and password """
-        request_data = AuthRequestSchema.parser.parse_args()
-
-        errors = UserSchema(only=("username", "password")).validate(request_data)
-        if errors:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"], errors)
-        #end if
-
-        response = AuthServices().create_token(request_data)
+        response = AuthServices().create_token(self.serialize(self.payload()))
         return response
 #end def
 

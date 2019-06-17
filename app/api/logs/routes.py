@@ -4,14 +4,14 @@
     Module that handler routes for log
 """
 # core
-from flask_restplus import Resource, reqparse
+from app.api.core import Routes
 # namespace
 from app.api.logs import api
 # services
 from app.api.logs.modules.log_services import LogServices
 
 @api.route("/")
-class LogRoutes(Resource):
+class LogRoutes(Routes):
     """
         Logs
         /logs

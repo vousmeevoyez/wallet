@@ -1,125 +1,89 @@
+"""
+    Core Module
+"""
+from flask import request
 from flask_restplus import Resource #pylint: disable=import-error
+
+from marshmallow import ValidationError
+
+from app.api.error.http import BadRequest, RequestNotFound
+
 from app.config import config
+
 
 class Routes(Resource):
     """ base routes class"""
     error_response = config.Config.ERROR_CONFIG
+
+    __schema__ = None
+    __serializer__ = None
+
+    def _validate(self, payload):
+        """ validate incoming request payload, preprocess it and then return
+        the validated result
+        :param payload: incoming HTTP Request Body
+        """
+        # preprocess everything here
+        payload = self.preprocess(payload)
+
+        if self.__serializer__ is not None:
+            try:
+                serialized = self.__serializer__.validate(payload)
+            except ValidationError as error:
+                raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
+                                 self.error_response["INVALID_PARAMETER"]["MESSAGE"],
+                                 error.messages)
+            # end try
+        # end if
+        return payload
+    # end def
+
+    def _load(self, payload):
+        """ validate incoming request payload, preprocess it and then load it
+        into object
+        :param payload: incoming HTTP Request Body
+        """
+        # preprocess everything here
+        payload = self.preprocess(payload)
+
+        try:
+            serialized = self.__serializer__.load(payload)
+        except ValidationError as error:
+            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
+                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
+                             error.messages)
+        # end if
+        return serialized.data
+    # end def
+
+    def preprocess(self, payload):
+        """ preprocess incoming request payload
+        can be overriden by subclass
+        :param payload: incoming HTTP Request Body
+        """
+        return payload
+
+    def payload(self, raw=False):
+        """ interface to help HTTP Request body either via Restful Reqparse or
+        Flask
+        :param raw: if its True it mean accessing Raw via Flask Request
+        """
+        payload = request.get_json()
+        if raw is False:
+            payload = self.__schema__.parser.parse_args(strict=True)
+        # end if
+        return payload
+    # end def
+
+    def serialize(self, payload, load=False):
+        """ interface to serialize incoming Request Payload and decide whether
+        only validate or load it into an object
+        :param payload: if its True it mean accessing Raw via Flask Request
+        :param load : True load request payload into object
+        """
+        result = self._validate(payload)
+        if load:
+            result = self._load(payload)
+        return result
+    # end def
 # end class
-
-class Service:
-    """A :class:`Service` instance encapsulates common SQLAlchemy model
-    operations in the context of a :class:`Flask` application.
-    """
-    __model__ = None
-
-    def _isinstance(self, model, raise_error=True):
-        """Checks if the specified model instance matches the service's model.
-        By default this method will raise a `ValueError` if the model is not the
-        expected type.
-
-        :param model: the model instance to check
-        :param raise_error: flag to raise an error on a mismatch
-        """
-        rv = isinstance(model, self.__model__)
-        if not rv and raise_error:
-            raise ValueError('%s is not of type %s' % (model, self.__model__))
-        return rv
-
-    def _preprocess_params(self, kwargs):
-        """Returns a preprocessed dictionary of parameters. Used by default
-        before creating a new instance or updating an existing instance.
-
-        :param kwargs: a dictionary of parameters
-        """
-        kwargs.pop('csrf_token', None)
-        return kwargs
-
-    def save(self, model):
-        """Commits the model to the database and returns the model
-
-        :param model: the model to save
-        """
-        self._isinstance(model)
-        db.session.add(model)
-        db.session.commit()
-        return model
-
-    def all(self):
-        """Returns a generator containing all instances of the service's model.
-        """
-        return self.__model__.query.all()
-
-    def get(self, id):
-        """Returns an instance of the service's model with the specified id.
-        Returns `None` if an instance with the specified id does not exist.
-
-        :param id: the instance id
-        """
-        return self.__model__.query.get(id)
-
-    def get_all(self, *ids):
-        """Returns a list of instances of the service's model with the specified
-        ids.
-
-        :param *ids: instance ids
-        """
-        return self.__model__.query.filter(self.__model__.id.in_(ids)).all()
-
-    def find(self, **kwargs):
-        """Returns a list of instances of the service's model filtered by the
-        specified key word arguments.
-
-        :param **kwargs: filter parameters
-        """
-        return self.__model__.query.filter_by(**kwargs)
-
-    def first(self, **kwargs):
-        """Returns the first instance found of the service's model filtered by
-        the specified key word arguments.
-
-        :param **kwargs: filter parameters
-        """
-        return self.find(**kwargs).first()
-
-    def get_or_404(self, id):
-        """Returns an instance of the service's model with the specified id or
-        raises an 404 error if an instance with the specified id does not exist.
-
-        :param id: the instance id
-        """
-        return self.__model__.query.get_or_404(id)
-
-    def new(self, **kwargs):
-        """Returns a new, unsaved instance of the service's model class.
-
-        :param **kwargs: instance parameters
-        """
-        return self.__model__(**self._preprocess_params(kwargs))
-
-    def create(self, **kwargs):
-        """Returns a new, saved instance of the service's model class.
-
-        :param **kwargs: instance parameters
-        """
-        return self.save(self.new(**kwargs))
-
-    def update(self, model, **kwargs):
-        """Returns an updated instance of the service's model class.
-
-        :param model: the model to update
-        :param **kwargs: update parameters
-        """
-        self._isinstance(model)
-        for k, v in self._preprocess_params(kwargs).items():
-            setattr(model, k, v)
-        self.save(model)
-        return model
-
-    def delete(self, model):
-        """Immediately deletes the specified model instance.
-
-        :param model: the model instance to delete
-        """
-        self._isinstance(model)
-        db.session.delete(model)
-        db.session.commit()

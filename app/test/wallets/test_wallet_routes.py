@@ -27,40 +27,6 @@ class TestWalletRoutes(BaseTestCase):
         self._wallet2 = wallet2
     #end def
 
-    def _create_dummy_user(self):
-        params = {
-            "username"     : "roseroserose",
-            "name"         : "roseroserose",
-            "phone_ext"    : "62",
-            "phone_number" : "81219642666",
-            "email"        : "roseroserose@blackpink.com",
-            "password"     : "password",
-            "pin"          : "123456",
-            "role"         : "USER"
-        }
-        result = self.create_user(params, self.access_token)
-        response = result.get_json()["data"]
-        user_id = response["user_id"]
-        wallet_id = response["wallet_id"]
-        return user_id, wallet_id
-
-    def _create_dummy_user2(self):
-        params = {
-            "username"     : "lisalisalisa",
-            "name"         : "lisalisalisa",
-            "phone_ext"    : "62",
-            "phone_number" : "81219643999",
-            "email"        : "lisalisalisa@blackpink.com",
-            "password"     : "password",
-            "pin"          : "123456",
-            "role"         : "USER"
-        }
-        result = self.create_user(params, self.access_token)
-        response = result.get_json()["data"]
-        user_id = response["user_id"]
-        wallet_id = response["wallet_id"]
-        return user_id, wallet_id
-
     """
         CREATE WALLET
     """

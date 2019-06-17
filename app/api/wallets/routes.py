@@ -8,8 +8,7 @@
 #pylint: disable=too-few-public-methods
 #pylint: disable=no-name-in-module
 
-from flask_restplus import Resource
-from marshmallow import ValidationError
+from app.api.core import Routes
 
 from app.api.wallets import api
 #serializer
@@ -30,36 +29,31 @@ from app.api.auth.decorator import api_key_required
 # utility
 from app.api.utility.utils import QR
 from app.api.utility.modules.cipher import DecryptError
-# exceptions
-from app.api.error.http import *
+
+from app.api.error.http import BadRequest
+
 # configuration
 from app.config import config
 
-class BaseRoutes(Resource):
-    """ base route class """
-    error_response = config.Config.ERROR_CONFIG
-
 @api.route('/')
-class WalletAddRoutes(BaseRoutes):
+class WalletAddRoutes(Routes):
     """
         Wallets
         /wallets/
     """
+    __schema__ = WalletRequestSchema
+    __serializer__ = WalletSchema(strict=True)
+
     @token_required
     def post(self):
         """ endpoint for creating wallet """
-        payload = get_token_payload()
-        user = payload["user"]
+        token_payload = get_token_payload()
+        user = token_payload["user"]
 
-        request_data = WalletRequestSchema.parser.parse_args(strict=True)
-        try:
-            wallet = WalletSchema(strict=True).load(request_data)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
+        request_data = self.payload()
+        wallet = self.serialize(request_data, load=True)
 
-        response = WalletServices().add(user, wallet.data, request_data["pin"])
+        response = WalletServices().add(user, wallet, request_data["pin"])
         return response
     #end def
 
@@ -75,7 +69,7 @@ class WalletAddRoutes(BaseRoutes):
 #end class
 
 @api.route('/<string:wallet_id>')
-class WalletRoutes(BaseRoutes):
+class WalletRoutes(Routes):
     """
         Wallet Routes
         api/v1/wallet/
@@ -95,7 +89,7 @@ class WalletRoutes(BaseRoutes):
 #end class
 
 @api.route('/<string:wallet_id>/qr/')
-class WalletQrRoutes(BaseRoutes):
+class WalletQrRoutes(Routes):
     """
         Wallet QR
         /<wallet_id>/qr
@@ -109,30 +103,37 @@ class WalletQrRoutes(BaseRoutes):
 #end class
 
 @api.route('/<string:wallet_id>/qr/checkout')
-class WalletQrTransferRoutes(BaseRoutes):
+class WalletQrTransferRoutes(Routes):
     """
         Wallet QR Checkout
         /<wallet_id>/qr/checkout
     """
-    @token_required
-    def post(self, wallet_id):
-        """ endpoint for checking out qr """
-        # request data validator
-        request_data = QRTransferRequestSchema.parser.parse_args(strict=True)
+    __schema__ = QRTransferRequestSchema
+
+    def preprocess(self, payload):
         # Decrypt QR Code here
         try:
-            payload = QR().read(request_data["qr_string"])
+            payload = QR().read(payload["qr_string"])
         except DecryptError:
             raise BadRequest(self.error_response["INVALID_QR"]["TITLE"],
                              self.error_response["INVALID_QR"]["MESSAGE"])
         #end try
-        response = WalletServices(payload["wallet_id"]).owner_info()
+        return payload
+    # end def
+
+    @token_required
+    def post(self, wallet_id):
+        """ endpoint for checking out qr """
+        # request data validator
+        request_data = self.serialize(self.payload())
+
+        response = WalletServices(request_data["wallet_id"]).owner_info()
         return response
     #end def
 #end class
 
 @api.route('/<string:wallet_id>/balance/')
-class WalletBalanceRoutes(BaseRoutes):
+class WalletBalanceRoutes(Routes):
     """
         Wallet Balance
         /<wallet_id>/balance
@@ -146,21 +147,19 @@ class WalletBalanceRoutes(BaseRoutes):
 #end class
 
 @api.route('/<string:wallet_id>/transactions')
-class WalletTransactionRoutes(BaseRoutes):
+class WalletTransactionRoutes(Routes):
     """
         Wallet Transaction
         /<wallet_id>/transactions
     """
+
+    __schema__ = WalletTransactionRequestSchema
+    __serializer__ = WalletTransactionSchema(strict=True)
+
     @token_required
     def get(self, wallet_id):
         """ endpoint for getting wallet transaction """
-        request_data = WalletTransactionRequestSchema.parser.parse_args(strict=True)
-        try:
-            wallet = WalletTransactionSchema(strict=True).validate(request_data)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
+        request_data = self.serialize(self.payload())
 
         response = TransactionServices(wallet_id).history(request_data)
         return response
@@ -168,7 +167,7 @@ class WalletTransactionRoutes(BaseRoutes):
 #end class
 
 @api.route('/<string:wallet_id>/transactions/<transaction_id>')
-class WalletTransactionDetailsRoutes(BaseRoutes):
+class WalletTransactionDetailsRoutes(Routes):
     """
         Wallet Transaction Details
         /<wallet_id>/transactions/<transaction_id>
@@ -182,21 +181,19 @@ class WalletTransactionDetailsRoutes(BaseRoutes):
 #end class
 
 @api.route('/<string:wallet_id>/pin/')
-class WalletPinRoutes(BaseRoutes):
+class WalletPinRoutes(Routes):
     """
         Wallet pin
         /<wallet_id>/pin/
     """
+
+    __schema__ = WalletUpdatePinRequestSchema
+    __serializer__ = UpdatePinSchema(strict=True)
+
     @token_required
     def put(self, wallet_id):
         """ endpoint for updating wallet pin """
-        request_data = WalletUpdatePinRequestSchema.parser.parse_args(strict=True)
-        try:
-            wallet = UpdatePinSchema(strict=True).validate(request_data)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
+        request_data = self.serialize(self.payload())
         response = WalletServices(wallet_id).update_pin(request_data)
         return response
     #end def
@@ -204,28 +201,24 @@ class WalletPinRoutes(BaseRoutes):
     @token_required
     def post(self, wallet_id):
         """ endpoint for checking pin """
-        request_data = PinOnlyRequestSchema.parser.parse_args(strict=True)
-        try:
-            excluded = ("id", "wallet_id", "balance", "transaction_type",
-                        "notes", "payment_details", "created_at", "amount")
-            transfer = TransactionSchema(strict=True).validate(request_data,
-                                                               partial=excluded)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        # need to serialize here
+        self.__schema__ = PinOnlyRequestSchema
+        self.__serializer__ = TransactionSchema(strict=True, only=("pin"))
+
+        request_data = self.serialize(self.payload())
         response = WalletServices(wallet_id, request_data["pin"]).check()
         return response
     #end def
 #end class
 
 @api.route('/<string:wallet_id>/forgot/')
-class WalletForgotPinRoutes(BaseRoutes):
+class WalletForgotPinRoutes(Routes):
     """
         Wallet Forgot Pin
         /<wallet_id>/forgot/
     """
+
+    __schema__ = ForgotPinRequestSchema
+
     @token_required
     def get(self, wallet_id):
         """ forgot pin request """
@@ -236,32 +229,28 @@ class WalletForgotPinRoutes(BaseRoutes):
     @token_required
     def post(self, wallet_id):
         """ verify forgot pin """
-        request_data = ForgotPinRequestSchema.parser.parse_args(strict=True)
-        # need to serialize here
+        request_data = self.payload()
+
         response = WalletServices(wallet_id).verify_forgot_otp(request_data)
         return response
     #end def
 #end class
 
 @api.route('/<string:wallet_id>/withdraw/')
-class WalletWithdrawRoutes(BaseRoutes):
+class WalletWithdrawRoutes(Routes):
     """
         Wallet Withdraw
         /<wallet_id>/withdraw/
     """
+
+    __schema__ = WithdrawRequestSchema
+    __serializer__ = TransactionSchema(strict=True, only=("pin", "amount"))
+
     @token_required
     def post(self, wallet_id):
         """ endpoint for withdraw request """
-        request_data = WithdrawRequestSchema.parser.parse_args(strict=True)
-        try:
-            excluded = ("id", "wallet_id", "balance", "transaction_type",
-                        "notes", "payment_details", "created_at")
-            transfer = TransactionSchema(strict=True).validate(request_data)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        #end try
+        request_data = self.serialize(self.payload())
+
         request_data["bank_name"] = "BNI"
         response = WithdrawServices(wallet_id,
                                     request_data["pin"]).request(request_data)
@@ -270,25 +259,20 @@ class WalletWithdrawRoutes(BaseRoutes):
 #end class
 
 @api.route('/<string:source_wallet_id>/transfer/checkout')
-class WalletCheckoutRoutes(BaseRoutes):
+class WalletCheckoutRoutes(Routes):
     """
         Wallet Checkout
         /<source>/transfer/checkout
     """
+
+    __schema__ = TransferCheckoutRequestSchema
+    __serializer__ = UserSchema(strict=True, only=("phone_ext", "phone_number"))
+
     @token_required
     def post(self, source_wallet_id):
         """ endpoint for checking out wallet before transfer """
         # parse request data
-        request_data = TransferCheckoutRequestSchema.parser.parse_args(strict=True)
-        try:
-            excluded = "username", "name", "pin", "password", "role", "email"
-            transfer = UserSchema(strict=True).validate(request_data,
-                                                        partial=(excluded))
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        #end if
+        request_data = self.serialize(self.payload())
         response = TransferServices().checkout(
             request_data["phone_ext"], request_data["phone_number"])
         return response
@@ -297,25 +281,19 @@ class WalletCheckoutRoutes(BaseRoutes):
 
 ################################## PATCH ############################################
 @api.route('/transfer/checkout2')
-class WalletCheckout2Routes(BaseRoutes):
+class WalletCheckout2Routes(Routes):
     """
         Wallet Checkout
         /<source>/transfer/checkout
     """
+
+    __schema__ = TransferCheckoutRequestSchema
+    __serializer__ = UserSchema(strict=True, only=("phone_ext", "phone_number"))
+
     @api_key_required
     def post(self):
         """ endpoint for checking out wallet before transfer """
-        # parse request data
-        request_data = TransferCheckoutRequestSchema.parser.parse_args(strict=True)
-        try:
-            excluded = "username", "name", "pin", "password", "role", "email"
-            transfer = UserSchema(strict=True).validate(request_data,
-                                                        partial=(excluded))
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        #end if
+        request_data = self.serialize(self.payload())
         response = TransferServices().checkout2(
             request_data["phone_ext"], request_data["phone_number"])
         return response
@@ -323,26 +301,21 @@ class WalletCheckout2Routes(BaseRoutes):
 #end class
 
 @api.route('/<string:source_wallet_id>/transfer/<string:destination_wallet_id>')
-class WalletTransferRoutes(BaseRoutes):
+class WalletTransferRoutes(Routes):
     """
         Wallet Transfer
         /<source>/transfer/<destination>
     """
+
+    __schema__ = TransferRequestSchema
+    __serializer__ = TransactionSchema(strict=True, only=("pin", "amount"))
+
     @token_required
     def post(self, source_wallet_id, destination_wallet_id):
         """ endpoint for executing transfer between wallet """
         # parse request data
-        request_data = TransferRequestSchema.parser.parse_args(strict=True)
-        try:
-            excluded = ("id", "wallet_id", "balance", "transaction_type",
-                        "notes", "payment_details", "created_at")
-            transfer = TransactionSchema(strict=True).validate(request_data,
-                                                               partial=excluded)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        #end if
+        request_data = self.serialize(self.payload())
+
         response = TransferServices(source_wallet_id,
                                     request_data["pin"],
                                     destination_wallet_id).internal_transfer(request_data)
@@ -351,26 +324,20 @@ class WalletTransferRoutes(BaseRoutes):
 #end class
 
 @api.route('/<string:source_wallet_id>/transfer/bank/<string:bank_account_id>')
-class WalletBankTransferRoutes(BaseRoutes):
+class WalletBankTransferRoutes(Routes):
     """
         Wallet Bank Transfer Routes
         /source/transfer/bank/<bank_account_id>
     """
+
+    __schema__ = TransferRequestSchema
+    __serializer__ = TransactionSchema(strict=True, only=("pin", "amount"))
+
     @token_required
     def post(self, source_wallet_id, bank_account_id):
         """ endpoint for executing bank transfer """
         # parse request data
-        request_data = TransferRequestSchema.parser.parse_args(strict=True)
-        try:
-            excluded = ("id", "wallet_id", "balance", "transaction_type",
-                        "payment_details", "created_at")
-            transfer = TransactionSchema(strict=True).validate(request_data,
-                                                               partial=excluded)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        #end if
+        request_data = self.serialize(self.payload())
 
         request_data["destination"] = bank_account_id
         response = TransferServices(source_wallet_id,
@@ -381,26 +348,19 @@ class WalletBankTransferRoutes(BaseRoutes):
 
 ################################## PATCH ############################################
 @api.route('/<string:source_wallet_id>/transfer/bank2/<string:bank_account_id>')
-class WalletBankTransfer2Routes(BaseRoutes):
+class WalletBankTransfer2Routes(Routes):
     """
         Wallet Bank Transfer Routes
         /source/transfer/bank/<bank_account_id>
     """
+
+    __schema__ = TransferRequestSchema
+    __serializer__ = TransactionSchema(strict=True, only=("pin", "amount"))
+
     @api_key_required
     def post(self, source_wallet_id, bank_account_id):
         """ endpoint for executing bank transfer """
-        # parse request data
-        request_data = TransferRequestSchema.parser.parse_args(strict=True)
-        try:
-            excluded = ("id", "wallet_id", "balance", "transaction_type",
-                        "payment_details", "created_at")
-            transfer = TransactionSchema(strict=True).validate(request_data,
-                                                               partial=excluded)
-        except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
-        #end if
+        request_data = self.serialize(self.payload())
 
         request_data["destination"] = bank_account_id
         response = TransferServices(source_wallet_id,
