@@ -10,7 +10,7 @@ from app.api import db
 from app.api.models import *
 # services
 from app.api.wallets.modules.transfer_services import TransferServices
-from app.api.wallets.modules.transaction_core import TransactionCore
+from app.api.transactions.factories.helper import process_transaction
 # exceptions
 from app.api.error.http import *
 # configuration
@@ -37,7 +37,7 @@ class Callback:
         self.flow = flow
     #end def
 
-    def process(self, amount, payment_type, transfer_types, reference_number, channel, transfer_notes=None):
+    def process(self, amount, flag, reference_number, channel, notes=None):
         """ base method for processing callback """
         # lookup channel and get his channel id
         payment_channel = PaymentChannel.query.filter_by(key=channel).first()
@@ -50,14 +50,13 @@ class Callback:
             destination = "account_no"
         # end if
 
-        trx = TransactionCore().process_transaction(
+        trx = process_transaction(
             source=getattr(self.virtual_account, source),
             destination=getattr(self.virtual_account, destination),
             amount=amount,
-            payment_type=payment_type,
-            transfer_types=transfer_types,
+            flag=flag,
             channel_id=payment_channel.id,
-            transfer_notes=transfer_notes,
+            notes=notes,
             reference_number=reference_number
         )
         # accepted BNI Format
@@ -78,12 +77,12 @@ class CallbackServices(Callback):
         payment_channel_key = params["payment_channel_key"]
 
         if payment_amount > 0:
-            response = super().process(payment_amount, True, "TOP_UP", reference_number,
+            response = super().process(payment_amount, "TOP_UP", reference_number,
                                        payment_channel_key)
         else:
-            transfer_notes = "Cardless Withdraw {}".format(str(-payment_amount))
-            response = super().process(abs(payment_amount), False, "WITHDRAW", reference_number,
-                                       payment_channel_key, transfer_notes)
+            notes = "Cardless Withdraw {}".format(str(-payment_amount))
+            response = super().process(payment_amount, "WITHDRAW", reference_number,
+                                       payment_channel_key, notes)
         return response
     #end def
 #end class

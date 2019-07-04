@@ -19,8 +19,8 @@ from task.bank.BNI.helper import VirtualAccount as VaServices
 from task.bank.BNI.helper import CoreBank
 
 # services
-from app.api.transactions.modules.transaction_services import \
-TransactionServices
+#from app.api.transactions.modules.transaction_services import \
+#TransactionServices
 # exceptions
 from task.bank.exceptions.general import *
 # gRPC

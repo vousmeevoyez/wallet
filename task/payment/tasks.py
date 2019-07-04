@@ -9,8 +9,6 @@ from app.api import sentry
 from app.api import db
 from app.api import celery
 from app.api import scheduler
-# transfer services
-from app.api.wallets.modules.transfer_services import TransferServices
 # models
 from app.api.models import *
 # exceptions
@@ -49,6 +47,9 @@ class PaymentTask(celery.Task):
                 )
     def background_transfer(self, plan_id, flag="AUTO_DEBIT"):
         """ create task in background to move money between wallet """
+        from app.api.wallets.modules.transfer_services import TransferServices
+
+
         # fetch payment record that going to be processed
         # extract all info needed from plan_id
         plan = Plan.query.filter(Plan.id == plan_id, Plan.status.in_([0, 1, 2])).first()

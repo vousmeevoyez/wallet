@@ -8,9 +8,7 @@
 #pylint: disable=import-error
 #pylint: disable=bad-whitespace
 #pylint: disable=invalid-name
-from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
-from flask import current_app
 # core
 from app.api import scheduler
 from app.api import db
@@ -18,7 +16,8 @@ from app.api import db
 from app.api.models import *
 # core
 from app.api.wallets.modules.wallet_core import WalletCore
-from app.api.wallets.modules.transaction_core import TransactionCore
+# transactions
+from app.api.transactions.factories.helper import process_transaction
 # exceptions
 from app.api.error.http import *
 #http response
@@ -27,8 +26,6 @@ from app.api.http_response import *
 from app.api.serializer import UserSchema
 # utility
 from app.api.utility.utils import validate_uuid
-# task
-from task.bank.tasks import BankTask
 
 class TransferServices(WalletCore):
     """ Transfer Services"""
@@ -47,101 +44,34 @@ class TransferServices(WalletCore):
         # end if
         return transfer_fee
 
-    def auto_pay(self, wallet, payroll_amount):
-        """ special function to deduct payroll automatically """
-        # prevent circular import!
-        from task.payment.tasks import PaymentTask
-
-        response = {}
-
-        plan = PaymentPlan.check_payment(wallet)
-        if plan is not None:
-            # make sure today is the due date to able deduct it
-            due_date = plan.due_date
-            payroll_date = datetime.utcnow()
-            differences = payroll_date - due_date
-
-            total_amount, plans = PaymentPlan.total(plan)
-
-            # if there's no day differences and payroll is bigger than payment
-            if differences.days == 0 and payroll_amount >= total_amount:
-                # bank account
-                current_app.logger.info("should trigger AUTO_PAY")
-                PaymentTask.background_transfer.apply_async(args=[plan.id,
-                                                                  "AUTO_PAY"],
-                                                            queue="payment")
-                response["data"] = {"message" : "AUTO_PAY"}
-                current_app.logger.info("payroll_date : {}".format(payroll_date))
-                current_app.logger.info("due_date : {}".format(due_date))
-                current_app.logger.info("differences : {}".format(differences.days))
-                current_app.logger.info("should trigger AUTO_PAY")
-            else:
-                current_app.logger.info("payroll_date : {}".format(payroll_date))
-                current_app.logger.info("due_date : {}".format(due_date))
-                current_app.logger.info("differences : {}".format(differences.days))
-                current_app.logger.info("should trigger AUTO_DEBIT")
-                # should switch to AUTO_DEBIT
-                # if its early payroll should trigger auto debit on due date
-                if differences.days < 0:
-                    due_date = plan.due_date
-                # if its payroll == due date but insufficient payroll, should
-                # trigger auto debit on the next minutese
-                elif differences.days == 0:
-                    due_date = payroll_date + timedelta(minutes=1)
-                elif differences.days > 0:
-                    due_date = None
-                # end if
-
-                if due_date is not None:
-                    job = scheduler.add_job(
-                        lambda:
-                        PaymentTask.background_transfer.apply_async(
-                            args=[plan.id], queue="payment"
-                        ),
-                        trigger='date',
-                        next_run_time=due_date
-                    )
-                    response["data"] = {"message" : "AUTO_DEBIT"}
-                # end if
-            # end if
-        # end if
-        return response
-    # end def
-
     def internal_transfer(self, params):
         """ method to transfer money internally"""
         amount = params["amount"]
-        transfer_notes = params["notes"]
-        transfer_types = params["types"] or "TRANSFER"
+        notes = params["notes"]
+        flag = params["types"] or "TRANSFER"
 
         if float(amount) > float(self.source.balance):
             raise UnprocessableEntity(self.error_response["INSUFFICIENT_BALANCE"]["TITLE"],
                                       self.error_response["INSUFFICIENT_BALANCE"]["MESSAGE"])
         #end if
 
-        debit_trx = TransactionCore().process_transaction(
+        debit_trx = process_transaction(
             source=self.source,
             destination=self.destination,
             amount=-amount,
-            payment_type=False,
-            transfer_types=transfer_types,
-            transfer_notes=transfer_notes
+            flag=flag,
+            notes=notes
         )
 
-        destination_transfer_types = "RECEIVE_" + transfer_types
+        destination_flag = "RECEIVE_" + flag
 
-        credit_trx = TransactionCore().process_transaction(
+        credit_trx = process_transaction(
             source=self.source,
             destination=self.destination,
             amount=amount,
-            payment_type=True,
-            transfer_types=destination_transfer_types,
-            transfer_notes=transfer_notes
+            flag=destination_flag,
+            notes=notes
         )
-
-        if destination_transfer_types == "RECEIVE_PAYROLL":
-            result = self.auto_pay(self.destination, amount)
-        # end if
 
         # link debit and credit
         debit_trx.transaction_link_id = credit_trx.id
@@ -155,7 +85,7 @@ class TransferServices(WalletCore):
         """ method to transfer money externally"""
         bank_account_id = params["destination"]
         amount = params["amount"]
-        transfer_notes = params["notes"]
+        notes = params["notes"]
 
         # calculate transfer fee here
         # for now only online
@@ -175,24 +105,22 @@ class TransferServices(WalletCore):
                                   self.error_response["BANK_ACC_NOT_FOUND"]["MESSAGE"])
         #end if
 
-        bank_transfer_trx = TransactionCore().process_transaction(
+        bank_transfer_trx = process_transaction(
             source=self.source,
             destination=bank_account.account_no,
             amount=-amount,
-            payment_type=False,
-            transfer_types=flag,
-            transfer_notes=transfer_notes
+            flag=flag,
+            notes=notes
         )
 
         # create fee payment if transfer fee > 0
         if transfer_fee > 0:
-            fee_trx = TransactionCore().process_transaction(
+            fee_trx = process_transaction(
                 source=self.source,
                 destination="N/A",
                 amount=-transfer_fee,
-                payment_type=False,
-                transfer_types="TRANSFER_FEE",
-                transfer_notes=transfer_notes
+                flag="TRANSFER_FEE",
+                notes=notes
             )
             # link bank and transaction fee
             bank_transfer_trx.transaction_link_id = fee_trx.id
@@ -200,11 +128,6 @@ class TransferServices(WalletCore):
             db.session.commit()
         # end if
 
-        # send queue here
-        result = BankTask().bank_transfer.apply_async(
-            args=[bank_transfer_trx.payment.id],
-            queue="bank"
-        )
         return accepted({"id": str(bank_transfer_trx.id)})
     #end def
 

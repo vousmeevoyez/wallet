@@ -7,6 +7,7 @@ RECEIVE_TRANSFER;Receive Transfer
 RECEIVE_PAYROLL;Receive Payroll {}
 TRANSFER_FEE;Transfer Fee
 PAYROLL;Disburse Payroll
-REFUND;Transaction Refund
+DEBIT_REFUND;Debit Transaction Refund
+CREDIT_REFUND;Credit Transaction Refund
 AUTO_DEBIT;Auto Debit Payment
 AUTO_PAY;Auto Payment {}

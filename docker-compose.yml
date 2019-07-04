@@ -28,6 +28,7 @@ services:
                 env_file: env/${ENV}.env
                 build:
                         context: dockerfiles/rabbitmq/
+                restart: always
 
         celery:
                 env_file: env/${ENV}.env
@@ -36,6 +37,7 @@ services:
                 depends_on:
                 - rabbitmq
                 - postgres
+                restart: always
 
         celery2:
                 env_file: env/${ENV}.env
@@ -44,6 +46,7 @@ services:
                 depends_on:
                 - rabbitmq
                 - postgres
+                restart: always
 
         celery3:
                 env_file: env/${ENV}.env
@@ -52,6 +55,7 @@ services:
                 depends_on:
                 - rabbitmq
                 - postgres
+                restart: always
 
         flower:
                 env_file: env/${ENV}.env
@@ -60,6 +64,7 @@ services:
                 - rabbitmq
                 ports:
                 - 6555:5555
+                restart: always
 
         grpc:
                 env_file: env/${ENV}.env
@@ -69,6 +74,7 @@ services:
                 - flask
                 ports:
                 - 6001:6001
+                restart: always
 
         callback:
                 image: modana-va-fake-grpc
@@ -79,6 +85,7 @@ services:
                 - flask
                 ports:
                 - 10000:10000
+                restart: always
 
 volumes:
         db_volume:

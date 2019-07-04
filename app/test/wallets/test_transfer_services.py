@@ -17,8 +17,8 @@ from app.api.models import *
 from app.api.utility.utils import QR
 
 from app.api.wallets.modules.transfer_services import TransferServices
-from app.api.wallets.modules.transaction_core  import TransactionCore
-from app.api.wallets.modules.transaction_core  import TransactionError
+from app.api.transactions.factories import helper as transaction_helper
+from app.api.transactions.factories.transactions.products import TransactionError
 
 # callback for unittest purpose
 from app.api.callback.modules.callback_services import CallbackServices
@@ -351,7 +351,8 @@ class TestTransferServices(BaseTestCase):
                 str(self.source.id), "123456"
             ).external_transfer(params)
 
-    @patch.object(TransactionCore, "debit_transaction")
+    '''
+    @patch(transaction_helper, "process_transaction")
     def test_external_transfer_debit_failed(self, mock_transfer_services):
         """ test function to create main transaction """
         # add bank account
@@ -372,6 +373,7 @@ class TestTransferServices(BaseTestCase):
         self.assertTrue(len(trx) == 0)
         # make sure the wallet balance isstill same
         self.assertEqual(self.source.balance, 10000)
+    '''
 
     def test_calculate_transfer_fee(self):
         #  Wallet to Wallet Transfer
@@ -405,166 +407,3 @@ class TestTransferServices(BaseTestCase):
         """ test checkout function """
         result = TransferServices().checkout("62", "88308644314")[0]
         self.assertTrue(result["data"])
-
-    def test_auto_pay(self):
-        """ test auto pay functionality """
-        # if there's no payment
-        result = TransferServices().auto_pay(self.source, 10000)
-        self.assertEqual(result, {})
-
-        # if there's payment
-        # create payment plan
-        payment_plan = PaymentPlan(
-            destination="12345678910",
-            wallet_id=self.source.id
-        )
-        db.session.add(payment_plan)
-        db.session.commit()
-
-        # create plan
-        due_date = datetime.utcnow().replace(hour=0, minute=1, second=0)
-        january_plan = Plan(
-            payment_plan_id=payment_plan.id,
-            amount=10000,
-            due_date=due_date
-        )
-        db.session.add(january_plan)
-        db.session.commit()
-
-        # register destination as bank account
-        bni = Bank(
-            key="BNI",
-            code="009"
-        )
-        db.session.add(bni)
-        db.session.commit()
-
-        bank_account = BankAccount(
-            account_no="12345678910",
-            bank_id=bni.id
-        )
-        db.session.add(bank_account)
-        db.session.commit()
-
-        result = TransferServices().auto_pay(self.source, 10000)
-        self.assertEqual(result["data"]["message"], "AUTO_PAY")
-
-    def test_auto_pay_less_payroll(self):
-        """ test auto pay with payroll < repayment amount should switch to auto
-        debit"""
-
-        # if there's payment
-        # create payment plan
-        payment_plan = PaymentPlan(
-            destination="12345678910",
-            wallet_id=self.source.id
-        )
-        db.session.add(payment_plan)
-        db.session.commit()
-
-        # create plan
-        due_date = datetime.utcnow().replace(hour=0, minute=1, second=0)
-        january_plan = Plan(
-            payment_plan_id=payment_plan.id,
-            amount=100000,
-            due_date=due_date
-        )
-        db.session.add(january_plan)
-        db.session.commit()
-
-        # register destination as bank account
-        bni = Bank(
-            key="BNI",
-            code="009"
-        )
-        db.session.add(bni)
-        db.session.commit()
-
-        bank_account = BankAccount(
-            account_no="12345678910",
-            bank_id=bni.id
-        )
-        db.session.add(bank_account)
-        db.session.commit()
-
-        result = TransferServices().auto_pay(self.source, 10000)
-        self.assertEqual(result["data"]["message"], "AUTO_DEBIT")
-
-    def test_auto_pay_early_payroll(self):
-        """ test auto pay early payroll """
-        # if there's payment
-        # create payment plan
-        payment_plan = PaymentPlan(
-            destination="12345678910",
-            wallet_id=self.source.id
-        )
-        db.session.add(payment_plan)
-        db.session.commit()
-
-        # create plan due date h-1
-        due_date = datetime.utcnow() + timedelta(days=1)
-        january_plan = Plan(
-            payment_plan_id=payment_plan.id,
-            amount=100000,
-            due_date=due_date
-        )
-        db.session.add(january_plan)
-        db.session.commit()
-
-        # register destination as bank account
-        bni = Bank(
-            key="BNI",
-            code="009"
-        )
-        db.session.add(bni)
-        db.session.commit()
-
-        bank_account = BankAccount(
-            account_no="12345678910",
-            bank_id=bni.id
-        )
-        db.session.add(bank_account)
-        db.session.commit()
-
-        result = TransferServices().auto_pay(self.source, 10000)
-        self.assertEqual(result["data"]["message"], "AUTO_DEBIT")
-
-    @freeze_time("2019-04-29")
-    def test_auto_pay_late_payroll(self):
-        """ test auto pay with inccorect date """
-        # if there's payment
-        # create payment plan
-        payment_plan = PaymentPlan(
-            destination="12345678910",
-            wallet_id=self.source.id
-        )
-        db.session.add(payment_plan)
-        db.session.commit()
-
-        # create plan due date h+1
-        due_date = datetime.utcnow() - timedelta(days=1)
-        january_plan = Plan(
-            payment_plan_id=payment_plan.id,
-            amount=100000,
-            due_date=due_date
-        )
-        db.session.add(january_plan)
-        db.session.commit()
-
-        # register destination as bank account
-        bni = Bank(
-            key="BNI",
-            code="009"
-        )
-        db.session.add(bni)
-        db.session.commit()
-
-        bank_account = BankAccount(
-            account_no="12345678910",
-            bank_id=bni.id
-        )
-        db.session.add(bank_account)
-        db.session.commit()
-
-        result = TransferServices().auto_pay(self.source, 10000)
-        self.assertEqual(result, {})

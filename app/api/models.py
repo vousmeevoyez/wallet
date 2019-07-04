@@ -82,7 +82,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(128)) # hashed password
     status = db.Column(db.Integer, default=1) # active
     role_id = db.Column(db.Integer, db.ForeignKey("role.id"))
-    role = db.relationship("Role", back_populates="user") # one to one
+    role = db.relationship("Role", back_populates="user", cascade="delete") # one to one
     wallets = db.relationship("Wallet", back_populates="user", cascade="delete") # one to many
     bank_accounts = db.relationship("BankAccount", back_populates="user",
                                     cascade="delete") # one to N
@@ -178,14 +178,14 @@ class Wallet(db.Model):
     status = db.Column(db.Integer, default=1) # active
     balance = db.Column(db.Float, default=0)
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('user.id'))
-    user = db.relationship("User", back_populates="wallets") # many to one
+    user = db.relationship("User", back_populates="wallets", cascade="delete") # many to one
     virtual_accounts = db.relationship("VirtualAccount", cascade="delete") # one to many
-    forgot_pin = db.relationship("ForgotPin") # one to many
-    incorrect_pin = db.relationship("IncorrectPin") # one to many
-    wallet_lock = db.relationship("WalletLock") # one to many
-    withdraw = db.relationship("Withdraw") # one to many
-    payment_plans = db.relationship("PaymentPlan", back_populates="wallet") # one to many
-    transactions = db.relationship("Transaction", back_populates="wallet") # one to many
+    forgot_pin = db.relationship("ForgotPin", cascade="delete") # one to many
+    incorrect_pin = db.relationship("IncorrectPin", cascade="delete") # one to many
+    wallet_lock = db.relationship("WalletLock", cascade="delete") # one to many
+    withdraw = db.relationship("Withdraw", cascade="delete") # one to many
+    payment_plans = db.relationship("PaymentPlan", back_populates="wallet", cascade="delete") # one to many
+    transactions = db.relationship("Transaction", back_populates="wallet", cascade="delete") # one to many
 
     def __repr__(self):
         return '<Wallet {} {} {}>'.format(self.id, self.balance, self.user_id)
@@ -333,7 +333,7 @@ class VaType(db.Model):
     key = db.Column(db.String(24))
     created_at = db.Column(db.DateTime, default=now)
     status = db.Column(db.Boolean, default=True)
-    virtual_account = db.relationship("VirtualAccount", back_populates="va_type")
+    virtual_account = db.relationship("VirtualAccount", back_populates="va_type", cascade="delete")
 
     def __repr__(self):
         return '<VaType {} {} {}>'.format(self.id, self.key, self.status)
@@ -427,6 +427,10 @@ class Payment(db.Model):
         return '<Payment {} {} {} {} {} {}>'.format(self.source_account, self.to, self.payment_type,
                                                     self.ref_number, self.amount, self.status)
     #end def
+
+    def load(self, generator):
+        # interface for factory method
+        generator.load(self)
 #end class
 
 class VirtualAccount(db.Model):
@@ -445,9 +449,9 @@ class VirtualAccount(db.Model):
     wallet_id = db.Column(UUID(as_uuid=True), db.ForeignKey('wallet.id'))
     wallet = db.relationship("Wallet", back_populates="virtual_accounts", cascade="delete")
     va_type_id = db.Column(db.Integer, db.ForeignKey("va_type.id"))
-    va_type = db.relationship("VaType", back_populates="virtual_account")
+    va_type = db.relationship("VaType", back_populates="virtual_account", cascade="delete")
     bank_id = db.Column(UUID(as_uuid=True), db.ForeignKey("bank.id"))
-    bank = db.relationship("Bank", back_populates="virtual_account")
+    bank = db.relationship("Bank", back_populates="virtual_account", cascade="delete")
 
     TIMEZONE = pytz.timezone("Asia/Jakarta")
 
@@ -616,6 +620,9 @@ class Transaction(db.Model):
         return '<Transaction {} {} {} {} {}>'.format(self.id, self.wallet_id, self.amount,
                                                      self.transaction_type, self.notes)
     #end def
+
+    def load(self, generator):
+        generator.load(self)
 #end class
 
 class ExternalLog(db.Model):

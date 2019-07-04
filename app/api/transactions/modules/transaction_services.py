@@ -20,7 +20,7 @@ from app.api.models import Wallet, Transaction, Payment
 # serializer
 from app.api.serializer import TransactionSchema
 # core
-from app.api.wallets.modules.transaction_core import TransactionCore
+from app.api.transactions.factories.helper import process_transaction
 # config
 from app.config import config
 # http error
@@ -112,7 +112,7 @@ class TransactionServices:
                                       self.error_response["TRANSACTION_REFUNDED"]["MESSAGE"])
 
         # prevent refund a refund transaction!
-        if self.transaction.transaction_type.key == "REFUND":
+        if "REFUND" in self.transaction.transaction_type.key:
             raise UnprocessableEntity(self.error_response["INVALID_REFUND"]["TITLE"],
                                       self.error_response["INVALID_REFUND"]["MESSAGE"])
 
@@ -142,22 +142,20 @@ class TransactionServices:
             if refund.payment.payment_type is False:
                 refunded_amount = abs(refund.payment.amount)
 
-                transaction = TransactionCore().process_transaction(
+                transaction = process_transaction(
                     source=source,
                     destination=destination,
                     amount=refunded_amount,
-                    payment_type=True,
-                    transfer_types="REFUND"
+                    flag="DEBIT_REFUND"
                 )
             else:
                 refunded_amount = -refund.payment.amount
 
-                transaction = TransactionCore().process_transaction(
+                transaction = process_transaction(
                     source=source,
                     destination=destination,
                     amount=refunded_amount,
-                    payment_type=False,
-                    transfer_types="REFUND"
+                    flag="CREDIT_REFUND"
                 )
             # end if
             # update payment status to refunded

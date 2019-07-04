@@ -59,7 +59,8 @@ class NotifServices:
             "RECEIVE_TRANSFER" : "transfer",
             "RECEIVE_PAYROLL"  : "transfer",
             "AUTO_DEBIT"       : "transfer",
-            "REFUND"           : "transfer",
+            "DEBIT_REFUND"     : "transfer",
+            "CREDIT_REFUND"    : "transfer",
             "AUTO_PAY"         : "transfer",
         }
         return transfer_types[types]

@@ -174,7 +174,7 @@ class Config:
 
     NOTIF_SERVICES_CONFIG = {
         "BASE_URL" : os.getenv('NOTIF_SERVICES_BASE_URL') or
-                     'http://103.233.110.84:4000/wallet/api/send-wallet-notification'
+                     'http://147.139.134.250:8000/wallet/api/send-wallet-notification'
     }
 
     # logging config

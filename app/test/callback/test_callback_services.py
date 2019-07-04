@@ -72,12 +72,11 @@ class TestCallback(BaseCallbackTest):
         virtual_account, trx_id = self._create_credit_va()
 
         payment_amount = 10000
-        payment_type = True
         transfer_types = "TOP_UP"
         reference_number = 123456
         channel = "BNI_VA"
         result = Callback(virtual_account, trx_id, "IN").process(
-            payment_amount, payment_type, transfer_types,
+            payment_amount, transfer_types,
             reference_number, channel
         )
         self.assertEqual(result["status"], "000")
