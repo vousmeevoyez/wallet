@@ -27,7 +27,7 @@ class PaymentPlanRoutes(Routes):
     """
 
     __schema__ = PaymentPlanRequestSchema
-    __serializer__ = PaymentPlanSchema()
+    __serializer__ = PaymentPlanSchema(strict=True)
 
     @api_key_required
     def post(self):
@@ -55,7 +55,7 @@ class PaymentPlanInfoRoutes(Routes):
     """
 
     __schema__ = PaymentPlanRequestSchema
-    __serializer__ = PaymentPlanSchema()
+    __serializer__ = PaymentPlanSchema(strict=True)
 
     @api_key_required
     def put(self, payment_plan_id):
