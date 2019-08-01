@@ -10,9 +10,9 @@ from app.api.models import *
 
 from app.api.utility.utils import Sms
 
-from app.api.utility.modules.sms_services import SmsError
-
 from app.api.error.http import *
+
+from app.api.utility.utils import UtilityError
 
 from app.api.wallets.modules.wallet_services import WalletServices
 
@@ -127,7 +127,7 @@ class TestWalletServices(BaseTestCase):
     def test_send_forgot_otp_failed_raise_sms_error(self, mock_send_sms):
         """ test method for sending forgot otp sms but there's an error when
         sending the message """
-        mock_send_sms.side_effect = SmsError(Mock())
+        mock_send_sms.side_effect = UtilityError(Mock())
         with self.assertRaises(UnprocessableEntity):
             result = WalletServices(self.wallet_id).send_forgot_otp()
 
