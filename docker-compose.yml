@@ -57,6 +57,15 @@ services:
                 - postgres
                 restart: always
 
+        celery4:
+                env_file: env/${ENV}.env
+                image: modana-wallet-services
+                entrypoint: make utility-worker
+                depends_on:
+                - rabbitmq
+                - postgres
+                restart: always
+
         flower:
                 env_file: env/${ENV}.env
                 image: mher/flower

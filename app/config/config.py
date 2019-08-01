@@ -32,10 +32,12 @@ class Config:
 
     CELERY_BROKER_URL = os.getenv("BROKER_URL") or \
     'amqp://guest:guest@localhost:5672'
+    # REGISTER ALL KNOWN CELERY TASK HERE
     CELERY_IMPORTS = (
-        "task.bank.tasks", "task.transaction.tasks", "task.payment.tasks"
+        "task.bank.tasks", "task.transaction.tasks", "task.payment.tasks", "task.utility.tasks"
     )
     CELERY_TASK_DEFAULT_QUEUE = "default"
+    # REGISTER ALL KNOWN QUEUES HERE
     CELERY_QUEUES = {
         "default" : {
             "exchange" : "default",
@@ -52,6 +54,10 @@ class Config:
         "transaction" : {
             "exchange" : "transaction",
             "binding_key" : "transaction"
+        },
+        "utility" : {
+            "exchange" : "utility",
+            "binding_key" : "utility"
         }
     }
 

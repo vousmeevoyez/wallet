@@ -28,7 +28,7 @@ from app.api.virtual_accounts.modules.va_services import VirtualAccountServices
 from app.api.http_response import *
 # exception
 from app.api.error.http import *
-from app.api.utility.modules.sms_services import SmsError
+from app.api.utility.utils import UtilityError
 
 class WalletServices(WalletCore):
     """ Wallet Services Class"""
@@ -184,7 +184,7 @@ class WalletServices(WalletCore):
         msisdn = str(self.source.user.phone_ext) + str(self.source.user.phone_number)
         try:
             Sms().send(msisdn, "FORGOT_PIN", otp_code)
-        except SmsError:
+        except UtilityError:
             db.session.rollback()
             raise UnprocessableEntity(self.error_response["SMS_FAILED"]["TITLE"],
                                       self.error_response["SMS_FAILED"]["MESSAGE"])

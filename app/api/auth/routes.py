@@ -23,8 +23,6 @@ from app.api.auth.decorator import refresh_token_only
 from app.api.auth.decorator import token_required
 from app.api.auth.decorator import get_current_token
 from app.api.auth.decorator import get_token_payload
-# http error
-from app.api.error.http import BadRequest
 
 @api.route("/token")
 class TokenRoutes(Routes):
@@ -37,7 +35,10 @@ class TokenRoutes(Routes):
     __serializer__ = UserSchema(only=("username", "password"))
 
     def post(self):
-        """ Endpoint for getting access token using username and password """
+        """
+            Handle POST Method
+            Endpoint for getting access token using username and password
+        """
         response = AuthServices().create_token(self.serialize(self.payload()))
         return response
 #end def
@@ -51,7 +52,10 @@ class RefreshTokenRoutes(Routes):
     # refresh the token
     @refresh_token_only
     def post(self):
-        """ Endpoint for refreshing token """
+        """
+            Handle POST Method
+            Endpoint for refreshing token
+        """
         payload = get_token_payload()
         response = AuthServices().refresh_token(payload["user"])
         return response
@@ -66,7 +70,10 @@ class TokenRevokeRoutes(Routes):
     """
     @token_required
     def post(self):
-        """ Endpoint for revoking access token """
+        """
+            Handle POST Method
+            Endpoint for revoking access token
+        """
         # fetch token from header
         token = get_current_token()
         response = AuthServices().logout(token)

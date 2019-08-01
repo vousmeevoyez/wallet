@@ -15,10 +15,22 @@ from app.api.utility.modules.cipher import AESCipher
 from app.api.utility.modules.sms_services import SmsServices
 from app.api.utility.modules.notif_services import NotifServices
 
+# exceptions
+from app.api.utility.modules.cipher import DecryptError
+from app.api.utility.modules.sms_services import ApiError as SmsError
+from app.api.utility.modules.notif_services import ApiError as NotifError
+
 from app.api.error.http import BadRequest
 
 ERROR_CONFIG = config.Config.ERROR_CONFIG
 WALLET_CONFIG = config.Config.WALLET_CONFIG
+
+
+class UtilityError(Exception):
+    """ base error class for utility """
+    def __init__(self, original=None):
+        super(UtilityError).__init__()
+        self.original = original
 
 class Sms:
     """ Class for helping sending SMS """
@@ -36,7 +48,11 @@ class Sms:
             "from" : self.sms_services_config["FROM"],
             "text" : self.sms_services_templates[sms_type].format(str(content))
         }
-        result = self.services.send_sms(to, message)
+        try:
+            result = self.services.send_sms(to, message)
+        except SmsError as error:
+            raise UtilityError(error.original)
+        # end try
         return result
     #end def
 #end class
@@ -53,7 +69,11 @@ class QR:
 
     def read(self, data):
         """ function to read encrypyed QR Code """
-        qr_decrypted = AESCipher(WALLET_CONFIG["QR_SECRET_KEY"]).decrypt(data)
+        try:
+            qr_decrypted = AESCipher(WALLET_CONFIG["QR_SECRET_KEY"]).decrypt(data)
+        except DecryptError as error:
+            raise UtilityError()
+        # end try
         return json.loads(qr_decrypted)
     #end def
 #end class
@@ -62,7 +82,12 @@ class Notif:
     """ class for helping send notification"""
     def send(self, data):
         """ send notification """
-        return NotifServices().send(data)
+        try:
+            result = NotifServices().send(data)
+        except NotifError as error:
+            raise UtilityError(error.original)
+        # end try
+        return result
     # end def
 # end class
 

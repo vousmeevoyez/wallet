@@ -5,12 +5,14 @@ from unittest.mock import Mock, patch
 
 from app.test.base import BaseTestCase
 
-from app.api.utility.utils import Sms
-from app.api.utility.utils import QR
+from app.api.utility.utils import (
+    Sms, QR, Notif
+)
 
 from app.api.utility.modules.sms_services import SmsServices
-from app.api.utility.modules.sms_services import ApiError
-from app.api.utility.modules.sms_services import SmsError
+
+from app.api.utility.utils import UtilityError
+
 
 class TestSms(BaseTestCase):
     """ Test class for SMS helper interface """
@@ -23,9 +25,9 @@ class TestSms(BaseTestCase):
     def test_send_failed_raise_error(self, mock_post):
         """ test function that generate sms template and then send the sms but
         raise error"""
-        mock_post.side_effect = ApiError(Mock())
+        mock_post.side_effect = UtilityError(Mock())
 
-        with self.assertRaises(SmsError):
+        with self.assertRaises(UtilityError):
             result = Sms().send("6281219644314", "FORGOT_PIN", "1234")
 
 class TestQR(BaseTestCase):
@@ -49,3 +51,18 @@ class TestQR(BaseTestCase):
 
         result = QR().read(encrypted)
         self.assertEqual(result, data)
+
+class TestNotif(BaseTestCase):
+    """ Test class for notification """
+
+    def test_send(self):
+        """ test function that will send push notification through utility """
+        data = {
+            "wallet_id"        : "d795ce30-3da6-4fb3-be4f-12d1f46a0688",
+            "amount"           : 1000,
+            "balance"          : 1001,
+            "transaction_type" : "TOP_UP",
+            "en_message"       : "halo ini notifikasi dari kelvin",
+        }
+        result = Notif().send(data)
+        self.assertTrue(result)

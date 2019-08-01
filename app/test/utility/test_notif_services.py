@@ -19,6 +19,7 @@ class TestNotificationServices(BaseTestCase):
             "wallet_id": "1b5af355-72bb-4874-bf33-8e43088a3eb4",
             "created_at": "2019-03-26 10:00:00",
             "amount": 1000,
+            "balance": 1000,
             "type": "top_up",
             "message": "Top Up Virtual account 10.000"
         }
@@ -44,8 +45,9 @@ class TestNotificationServices(BaseTestCase):
         data = {
             "wallet_id"        : "some_wallet_id",
             "amount"           : 1000,
+            "balance"          : 1001,
             "transaction_type" : "TOP_UP",
-            "notes"            : "some message",
+            "en_message"       : "some message",
         }
         result = NotifServices().send(data)
         self.assertTrue(result)
@@ -54,7 +56,8 @@ class TestNotificationServices(BaseTestCase):
         data = {
             "wallet_id"        : "d795ce30-3da6-4fb3-be4f-12d1f46a0688",
             "amount"           : 1000,
+            "balance"          : 1001,
             "transaction_type" : "TOP_UP",
-            "notes"            : "halo ini notifikasi dari kelvin",
+            "en_message"       : "halo ini notifikasi dari kelvin",
         }
         result = NotifServices().send(data)

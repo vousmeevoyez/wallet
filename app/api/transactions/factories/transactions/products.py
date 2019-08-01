@@ -8,6 +8,7 @@
 #pylint: disable=invalid-name
 #pylint: disable=no-name-in-module
 #pylint: disable=no-member
+from celery import chain
 from abc import ABC
 from datetime import datetime, timedelta
 
@@ -24,12 +25,12 @@ from app.api.models import (
     TransactionNote,
     PaymentPlan
 )
-# utility
-from app.api.utility.utils import Notif
 # task
 from task.transaction.tasks import TransactionTask
 from task.bank.tasks import BankTask
 from task.payment.tasks import PaymentTask
+from task.utility.tasks import UtilityTask
+
 
 class TransactionError(Exception):
     """ raised when something occured on creating transaction """
@@ -79,43 +80,23 @@ class AbstractTransaction(ABC):
         #end try
 
         # should send queue here
-        result = TransactionTask().transfer.apply_async(args=[self.transaction.payment.id], queue="transaction")
+        result = chain(
+            TransactionTask().transfer.s(
+                self.transaction.payment.id
+            ).set(queue="transaction"),
+            UtilityTask().push_notification.s(
+            ).set(queue="utility")
+        ).apply_async()
+
         return transaction
     #end def
 
 class DebitTransaction(AbstractTransaction):
-    def create(self, flag):
-        result = super().create(flag)
-        self.post_create(flag)
-        return result
-    # end def
-
-    def post_create(self, flag):
-        notif_status = Notif().send({
-            "wallet_id" : str(self.transaction.wallet.id),
-            "amount" : self.transaction.amount,
-            "transaction_type" : flag,
-            "notes" : self.transaction.notes
-        })
-    # end def
+    pass
 # end class
 
 class CreditTransaction(AbstractTransaction):
-
-    def create(self, flag):
-        result = super().create(flag)
-        self.post_create(flag)
-        return result
-    # end def
-
-    def post_create(self, flag):
-        notif_status = Notif().send({
-            "wallet_id" : str(self.transaction.wallet.id),
-            "amount" : self.transaction.amount,
-            "transaction_type" : flag,
-            "notes" : self.transaction.notes
-        })
-    # end def
+    pass
 # end class
 
 class TransferTransaction(DebitTransaction):

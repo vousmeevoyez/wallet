@@ -153,8 +153,8 @@ class AuthServices:
         """
             Function to logout access token and blacklist the token
         """
-        result = Token(token).blacklist()
-        if result is False:
+        has_been_blacklisted = Token(token).blacklist()
+        if has_been_blacklisted is False:
             raise UnprocessableEntity("REVOKE_FAILED", "Revoke Token failed")
         #end try
         return no_content()

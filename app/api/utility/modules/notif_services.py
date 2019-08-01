@@ -20,18 +20,11 @@ class ApiError(Exception):
 
 class NotifServices:
     """ Notif Helper Class"""
-    def _post(self, params):
+    def _post(self, payload):
+        """ execute HTTP request to Notification API """
         # build header
         headers = {
             "content-type": "application/json"
-        }
-
-        payload = {
-            "wallet_id": params["wallet_id"],
-            "transaction_completed_time": params["created_at"],
-            "amount": params["amount"],
-            "type": params["type"], #top_up | withdraw_to_bank | withdraw_to_atm | transfer
-            "message": params["message"]
         }
 
         try:
@@ -43,9 +36,26 @@ class NotifServices:
         except (requests.exceptions.Timeout, requests.exceptions.RequestException) as e:
             raise ApiError(e)
         #end try
-        print(r.status_code)
         return True
     #end def
+
+    @staticmethod
+    def _create_id_notes(key, amount):
+        transfer_types = {
+            "TOP_UP"           : "Top up sebesar {} dari Virtual Account",
+            "BANK_TRANSFER"    : "Transfer ke Bank sebesar {}",
+            "WITHDRAW"         : "Tarik tunai tanpa kartu sebesar {}",
+            "TRANSFER"         : "Transfer sebesar {}",
+            "PAYROLL"          : "Kirim gaji sebesar {}",
+            "TRANSFER_FEE"     : "Biaya transfer sebesar {}",
+            "RECEIVE_TRANSFER" : "Terima transfer sebesar {}",
+            "RECEIVE_PAYROLL"  : "Terima gaji sebesar {}",
+            "AUTO_DEBIT"       : "Auto debit sebesar {}",
+            "DEBIT_REFUND"     : "Pengembalian transaksi debit sebesar {}",
+            "CREDIT_REFUND"    : "Pengembalian transaksi kredit sebesar {}",
+            "AUTO_PAY"         : "Auto pay sebesar {}",
+        }
+        return transfer_types[key].format(amount)
 
     @staticmethod
     def _convert_type(types):
@@ -65,17 +75,34 @@ class NotifServices:
         }
         return transfer_types[types]
 
+    def _generate_message(self, en_message, types, amount):
+        """ generate ID and EN message that requested by HR """
+        message = {
+            "en" : en_message,
+            "id" : self._create_id_notes(types, amount)
+        }
+        return message
+
     @staticmethod
     def _convert_date(date_time):
         return date_time.strftime("%Y-%m-%d %H:%M:%S")
 
     def send(self, params):
         """ execute send notifcation """
+        amount = params["amount"]
+        transaction_type = params["transaction_type"]
+        en_message = params["en_message"]
+
+        # need to convert message that going to be send into english and
+        # indonesia
+        id_en_message = self._generate_message(en_message, transaction_type, amount)
+
         return self._post({
-            "wallet_id" : params["wallet_id"],
-            "created_at": self._convert_date(datetime.utcnow()),
-            "amount"    : params["amount"],
-            "type"      : self._convert_type(params["transaction_type"]),
-            "message"   : params["notes"],
+            "wallet_id"                 : params["wallet_id"],
+            "transaction_completed_time": self._convert_date(datetime.utcnow()),
+            "amount"                    : amount,
+            "current_balance"           : params["balance"],
+            "type"                      : self._convert_type(transaction_type),
+            "message"                   : id_en_message # english message
         })
 #end class

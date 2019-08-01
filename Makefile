@@ -29,5 +29,8 @@ bank-worker:
 transaction-worker:
 	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q transaction -n transactionworker@h
 
+utility-worker:
+	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q utility -n utilityworker@%h
+
 flower:
 	flower -A task.worker.celery --port=5555

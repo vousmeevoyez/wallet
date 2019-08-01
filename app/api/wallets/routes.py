@@ -24,12 +24,12 @@ from app.api.transactions.modules.transaction_services import TransactionService
 # authentication
 from app.api.auth.decorator import token_required
 from app.api.auth.decorator import get_token_payload
-from app.api.auth.decorator import admin_required
 from app.api.auth.decorator import api_key_required
 # utility
 from app.api.utility.utils import QR
-from app.api.utility.modules.cipher import DecryptError
 
+# exceptions
+from app.api.utility.utils import UtilityError
 from app.api.error.http import BadRequest
 
 # configuration
@@ -114,7 +114,7 @@ class WalletQrTransferRoutes(Routes):
         # Decrypt QR Code here
         try:
             payload = QR().read(payload["qr_string"])
-        except DecryptError:
+        except UtilityError:
             raise BadRequest(self.error_response["INVALID_QR"]["TITLE"],
                              self.error_response["INVALID_QR"]["MESSAGE"])
         #end try

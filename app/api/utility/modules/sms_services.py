@@ -21,9 +21,9 @@ SMS_SERVICES_CONFIG = config.Config.SMS_SERVICES_CONFIG
 
 class ApiError(Exception):
     """ raised when api error happened"""
-    def __init__(self, original_exception):
-        super().__init__(original_exception)
-        self.original_exception = original_exception
+    def __init__(self, original):
+        super().__init__(original)
+        self.original = original
         
 class SmsError(ApiError):
     """ raised when sms error """
