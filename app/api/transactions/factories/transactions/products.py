@@ -111,12 +111,13 @@ class WithdrawTransaction(DebitTransaction):
 class BankTransferTransaction(DebitTransaction):
 
     def create(self, flag):
-        super().create(flag)
+        transaction = super().create(flag)
 
         result = BankTask().bank_transfer.apply_async(
             args=[self.transaction.payment.id],
             queue="bank"
         )
+        return transaction
 
 class TransferFeeTransaction(DebitTransaction):
     pass
