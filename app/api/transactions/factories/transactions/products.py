@@ -92,11 +92,29 @@ class AbstractTransaction(ABC):
     #end def
 
 class DebitTransaction(AbstractTransaction):
-    pass
+    def create(self, flag):
+        result = super().create(flag)
+        self.post_create(flag)
+        return result
+    # end def
+
+    def post_create(self, flag):
+        ''' should trigger something when after debit transaction created '''
+        pass
+    # end def
 # end class
 
 class CreditTransaction(AbstractTransaction):
-    pass
+    def create(self, flag):
+        result = super().create(flag)
+        self.post_create(flag)
+        return result
+    # end def
+
+    def post_create(self, flag):
+        ''' should trigger something when after credit transaction created '''
+        pass
+    # end def
 # end class
 
 class TransferTransaction(DebitTransaction):
@@ -110,14 +128,11 @@ class WithdrawTransaction(DebitTransaction):
 
 class BankTransferTransaction(DebitTransaction):
 
-    def create(self, flag):
-        transaction = super().create(flag)
-
+    def post_create(self, flag):
         result = BankTask().bank_transfer.apply_async(
             args=[self.transaction.payment.id],
             queue="bank"
         )
-        return transaction
 
 class TransferFeeTransaction(DebitTransaction):
     pass
@@ -139,10 +154,7 @@ class ReceiveTransferTransaction(CreditTransaction):
 
 class ReceivePayrollTransaction(CreditTransaction):
 
-    def create(self, flag):
-        # execute original task
-        super().create(flag)
-
+    def post_create(self, flag):
         payroll_amount = self.transaction.amount
 
         response = {}
@@ -197,8 +209,8 @@ class ReceivePayrollTransaction(CreditTransaction):
                     response["data"] = {"message" : "AUTO_DEBIT"}
                 # end if
             # end if
-        # end if
-        return response
+        #end if
+        return response 
 
 class DebitRefundTransaction(CreditTransaction):
     pass

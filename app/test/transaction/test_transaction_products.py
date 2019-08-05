@@ -309,4 +309,3 @@ class TestTransactionProduct(BaseTestCase):
 
         result = receive_payroll_transaction.post_create("RECEIVE_PAYROLL")
         self.assertEqual(result, {})
-
