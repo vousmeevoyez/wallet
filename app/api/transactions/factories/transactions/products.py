@@ -110,8 +110,8 @@ class WithdrawTransaction(DebitTransaction):
 
 class BankTransferTransaction(DebitTransaction):
 
-    def post_create(self, flag):
-        super().post_create(flag)
+    def create(self, flag):
+        super().create(flag)
 
         result = BankTask().bank_transfer.apply_async(
             args=[self.transaction.payment.id],
@@ -138,7 +138,9 @@ class ReceiveTransferTransaction(CreditTransaction):
 
 class ReceivePayrollTransaction(CreditTransaction):
 
-    def post_create(self, flag):
+    def create(self, flag):
+        # execute original task
+        super().create(flag)
 
         payroll_amount = self.transaction.amount
 
