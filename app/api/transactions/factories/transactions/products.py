@@ -92,6 +92,7 @@ class AbstractTransaction(ABC):
     #end def
 
 class DebitTransaction(AbstractTransaction):
+    ''' Base class that represent transaction that deduct balance '''
     def create(self, flag):
         result = super().create(flag)
         self.post_create(flag)
@@ -105,6 +106,7 @@ class DebitTransaction(AbstractTransaction):
 # end class
 
 class CreditTransaction(AbstractTransaction):
+    ''' Base class that represent transaction that add balance '''
     def create(self, flag):
         result = super().create(flag)
         self.post_create(flag)
@@ -118,15 +120,19 @@ class CreditTransaction(AbstractTransaction):
 # end class
 
 class TransferTransaction(DebitTransaction):
+    ''' implementation class of transfer between user '''
     pass
 
 class PayrollTransaction(DebitTransaction):
+    ''' implementation class of sending payroll to user '''
     pass
 
 class WithdrawTransaction(DebitTransaction):
+    ''' implementation class of withdraw money from wallet '''
     pass
 
 class BankTransferTransaction(DebitTransaction):
+    ''' implementation class of transfer money to bank '''
 
     def post_create(self, flag):
         result = BankTask().bank_transfer.apply_async(
@@ -135,26 +141,34 @@ class BankTransferTransaction(DebitTransaction):
         )
 
 class TransferFeeTransaction(DebitTransaction):
+    ''' implementation class of transfer fee '''
     pass
 
-class AutoDebitTransaction(DebitTransaction):
+class AutoDebitTransaction(BankTransferTransaction):
+    ''' implementation class of auto debit transaction '''
     pass
 
-class AutoPayTransaction(DebitTransaction):
+class AutoPayTransaction(BankTransferTransaction):
+    ''' implementation class of auto pay transaction '''
     pass
 
 class CreditRefundTransaction(DebitTransaction):
+    ''' implementation class of refund credit transaction '''
     pass
 
 class TopUpTransaction(CreditTransaction):
+    ''' implementation class of top up to wallet '''
     pass
 
 class ReceiveTransferTransaction(CreditTransaction):
+    ''' implementation class of receive money to wallet '''
     pass
 
 class ReceivePayrollTransaction(CreditTransaction):
+    ''' implementation class of receive payroll to wallet '''
 
     def post_create(self, flag):
+        ''' should decide trigger auto debit or auto pay here after successfully receive the money '''
         payroll_amount = self.transaction.amount
 
         response = {}
@@ -213,4 +227,5 @@ class ReceivePayrollTransaction(CreditTransaction):
         return response 
 
 class DebitRefundTransaction(CreditTransaction):
+    ''' implementation class of refund debit transaction '''
     pass

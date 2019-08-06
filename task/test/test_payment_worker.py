@@ -29,7 +29,7 @@ class TestBankWorker(BaseTestCase):
         # create plan
         monthly_plan = Plan(
             payment_plan_id=payment_plan.id,
-            amount=10000,
+            amount=100,
             due_date=datetime.utcnow()
         )
         db.session.add(monthly_plan)
@@ -46,8 +46,12 @@ class TestBankWorker(BaseTestCase):
         db.session.add(bank_account)
         db.session.commit()
 
-        result = PaymentTask().background_transfer.delay(monthly_plan.id)
-        print(result.get())
+        result = PaymentTask().background_transfer.apply_async(
+            args=[monthly_plan.id, "AUTO_PAY"],
+            queue="payment"
+        )
+        time.sleep(3)
+        print(result)
 
     def test_background_transfer_but_already_paid(self):
         """ test background transfer for payment plan that already paid """
@@ -62,7 +66,7 @@ class TestBankWorker(BaseTestCase):
         # create plan
         monthly_plan = Plan(
             payment_plan_id=payment_plan.id,
-            amount=10000,
+            amount=100,
             status=3,
             due_date=datetime.utcnow()
         )
@@ -80,5 +84,9 @@ class TestBankWorker(BaseTestCase):
         db.session.add(bank_account)
         db.session.commit()
 
-        result = PaymentTask().background_transfer.delay(monthly_plan.id)
-        print(result.get())
+        result = PaymentTask().background_transfer.apply_async(
+            args=[monthly_plan.id, "AUTO_PAY"],
+            queue="payment"
+        )
+        time.sleep(3)
+        print(result)
