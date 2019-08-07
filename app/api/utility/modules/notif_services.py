@@ -7,6 +7,8 @@ import json
 from datetime import datetime
 import requests
 
+from flask import current_app
+
 # configuration
 from app.config import config
 
@@ -33,6 +35,7 @@ class NotifServices:
                 data=json.dumps(payload),
                 headers=headers,
             )
+            current_app.logger.info(r.text)
         except (requests.exceptions.Timeout, requests.exceptions.RequestException) as e:
             raise ApiError(e)
         #end try
@@ -103,6 +106,6 @@ class NotifServices:
             "amount"                    : amount,
             "current_balance"           : params["balance"],
             "type"                      : self._convert_type(transaction_type),
-            "message"                   : id_en_message # english message
+            "message"                   : str(id_en_message) # english message
         })
 #end class
