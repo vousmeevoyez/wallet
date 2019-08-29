@@ -74,27 +74,5 @@ services:
                 ports:
                 - 6555:5555
                 restart: always
-
-        grpc:
-                env_file: env/${ENV}.env
-                image: modana-wallet-grpc
-                entrypoint: ./start.sh
-                depends_on:
-                - flask
-                ports:
-                - 6001:6001
-                restart: always
-
-        callback:
-                image: modana-va-fake-grpc
-                entrypoint: ./start.sh
-                environment: 
-                - GRPC_PORT=10000
-                depends_on:
-                - flask
-                ports:
-                - 10000:10000
-                restart: always
-
 volumes:
         db_volume:
