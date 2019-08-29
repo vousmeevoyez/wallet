@@ -19,8 +19,7 @@ from task.bank.BNI.helper import VirtualAccount as VaServices
 from task.bank.BNI.helper import CoreBank
 
 # services
-#from app.api.transactions.modules.transaction_services import \
-#TransactionServices
+
 # exceptions
 from task.bank.exceptions.general import *
 # gRPC
@@ -101,6 +100,8 @@ class BankTask(celery.Task):
                  acks_late=WORKER_CONFIG["ACKS_LATE"],
                 )
     def bank_transfer(self, payment_id):
+        # fix circular import!
+        from app.api.transactions.modules.transaction_services import TransactionServices 
         payment = Payment.query.filter_by(id=payment_id).first()
 
         bank_account_no = payment.to
@@ -122,13 +123,12 @@ class BankTask(celery.Task):
             result = CoreBank().transfer(transfer_payload)
         except ApiError as error:
             # handle celery exception here
-            #try:
-            self.retry(countdown=backoff(self.request.retries), exc=error)
-            #    self.retry(countdown=backoff(self.request.retries))
-            #except MaxRetriesExceededError:
-            #    # creat transaction refund here
-            #    transaction_id = str(payment.transaction.id)
-            #    result = TransactionServices(transaction_id=transaction_id).refund()
+            try:
+                self.retry(countdown=backoff(self.request.retries))
+            except MaxRetriesExceededError:
+                # create transaction refund here
+                transaction_id = str(payment.transaction.id)
+                result = TransactionServices(transaction_id=transaction_id).refund()
         else:
             # get reference number from transfer response
             transfer_info = result["data"]["transfer_info"]
@@ -138,18 +138,18 @@ class BankTask(celery.Task):
             response_reference = transfer_info.get("bank_ref", "NA")
             payment.ref_number = request_reference + "-" + response_reference
             db.session.commit()
-        finally:
-            # send fake callback via gRPC
-            channel = grpc.insecure_channel("callback:10000")
-            stub = callback_pb2_grpc.CallbackStub(channel)
-            request = callback_pb2.DepositCallbackRequest()
-            request.body.virtual_account = bank_account_no
-            request.body.payment_amount = str(amount)
-            try:
-                response = stub.DepositCallback(request)
-            except grpc.RpcError as error:
-                print(error.code())
-                print(error.details())
-            # end try
-            current_app.logger.info(response)
+        #finally:
+        #    # send fake callback via gRPC
+        #    channel = grpc.insecure_channel("callback:10000")
+        #    stub = callback_pb2_grpc.CallbackStub(channel)
+        #    request = callback_pb2.DepositCallbackRequest()
+        #    request.body.virtual_account = bank_account_no
+        #    request.body.payment_amount = str(amount)
+        #    try:
+        #        response = stub.DepositCallback(request)
+        #    except grpc.RpcError as error:
+        #        print(error.code())
+        #        print(error.details())
+        #    # end try
+        #    current_app.logger.info(response)
         # end try
