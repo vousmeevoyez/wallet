@@ -10,10 +10,13 @@ from flask_restplus import Resource
 # namespace
 from app.api.banks import api
 # request schema
-from app.api.request_schema import BNIUtilityRequestSchema
-from app.api.request_schema import BNIUtilityDoPaymentRequestSchema
-from app.api.request_schema import BNIUtilityInterbankInquiryRequestSchema
-from app.api.request_schema import BNIUtilityInterbankPaymentRequestSchema
+from app.api.request_schema import (
+    BNIUtilityRequestSchema,
+    BNIUtilityDoPaymentRequestSchema,
+    BNIUtilityInterbankInquiryRequestSchema,
+    BNIUtilityInterbankPaymentRequestSchema
+)
+
 # decorator
 from app.api.auth.decorator import admin_required
 # services

@@ -8,12 +8,11 @@ from marshmallow import ValidationError
 
 from app.api.error.http import BadRequest, RequestNotFound
 
-from app.config import config
+from app.api.error.message import RESPONSE as error_response
 
 
-class Routes(Resource):
+class CoreRoutes:
     """ base routes class"""
-    error_response = config.Config.ERROR_CONFIG
 
     __schema__ = None
     __serializer__ = None
@@ -30,8 +29,8 @@ class Routes(Resource):
             try:
                 serialized = self.__serializer__.validate(payload)
             except ValidationError as error:
-                raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                                 self.error_response["INVALID_PARAMETER"]["MESSAGE"],
+                raise BadRequest(error_response["INVALID_PARAMETER"]["TITLE"],
+                                 error_response["INVALID_PARAMETER"]["MESSAGE"],
                                  error.messages)
             # end try
         # end if
@@ -49,8 +48,8 @@ class Routes(Resource):
         try:
             serialized = self.__serializer__.load(payload)
         except ValidationError as error:
-            raise BadRequest(self.error_response["INVALID_PARAMETER"]["TITLE"],
-                             self.error_response["INVALID_PARAMETER"]["MESSAGE"],
+            raise BadRequest(error_response["INVALID_PARAMETER"]["TITLE"],
+                             error_response["INVALID_PARAMETER"]["MESSAGE"],
                              error.messages)
         # end if
         return serialized.data
@@ -87,3 +86,6 @@ class Routes(Resource):
         return result
     # end def
 # end class
+
+class Routes(CoreRoutes, Resource):
+    pass

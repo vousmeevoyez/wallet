@@ -1,4 +1,4 @@
-""" 
+"""
     Remote Call
     __________________
     this is utility module that necessary to communicate to BNI Server to
@@ -7,33 +7,19 @@
 import time
 import json
 import requests
-import numpy as np
 
 from app.api import db
 
 from app.api.models import ExternalLog
 
-from app.config import config
+# const
+from app.api.const import LOGGING
 
+from task.bank.exceptions.general import ServicesFailed
 from task.bank.BNI.utility.BniEnc3 import BniEnc
-
-# exceptions
-from task.bank.exceptions.general import *
-
-LOGGING_CONFIG = config.Config.LOGGING_CONFIG
-BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 
 class DecryptError(Exception):
     """ decrypt error"""
-
-class MyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        elif isinstance(obj, bytes):
-            return str(obj, encoding='utf-8')
-        return json.JSONEncoder.default(self, obj)
-#end class
 
 def encrypt(client_id, secret_key, payload):
     """
@@ -73,23 +59,23 @@ def post(api_name, base_url, client_id, secret_key, data):
     headers = {"content-type" : "application/json"}
     payload = {"client_id" : None, "data" : None}
 
-    response = {"status" : 0, "data" : ""}
-
     payload["client_id"] = client_id
-    payload["data"] = encrypt(client_id, secret_key, data)
+    # decode bytes into string
+    payload["data"] = encrypt(client_id, secret_key, data).decode("utf-8")
     try:
         # log everything before creating request
         log = ExternalLog(request=data, \
-                          resource=LOGGING_CONFIG["BNI_ECOLLECTION"],
+                          resource=LOGGING["BNI_ECOLLECTION"],
                           api_name=api_name,
-                          api_type=LOGGING_CONFIG["OUTGOING"]
+                          api_type=LOGGING["OUTGOING"]
                           )
         db.session.add(log)
 
         # start measuring response time
         start_time = time.time()
         r = requests.post(base_url, #pylint: disable=invalid-name
-                          data=json.dumps(payload, cls=MyEncoder),
+                          #data=json.dumps(payload, cls=MyEncoder),
+                          data=json.dumps(payload),
                           headers=headers)
         # save response time
         log.save_response_time(time.time() - start_time)
@@ -99,13 +85,15 @@ def post(api_name, base_url, client_id, secret_key, data):
         raise ServicesFailed("SSL_ERROR", error)
     #end try
 
-    result = r.json()
+    response = r.json()
     try:
-        decrypted_data = decrypt(client_id, secret_key, result["data"])
-        response = decrypted_data
+        decrypted_data = decrypt(client_id, secret_key, response["data"])
+        # replace value
+        response["data"] = decrypted_data
     except KeyError:
+        # if we can't access response["data"] its potentially error
         log.set_status(False)
-        response = result["message"]
+        response = response["message"]
         raise ServicesFailed("RESPONSE_ERROR", response)
     finally:
         log.save_response(response)

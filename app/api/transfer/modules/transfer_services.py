@@ -10,14 +10,15 @@
 #pylint: disable=invalid-name
 from sqlalchemy.exc import IntegrityError
 # core
-from app.api import scheduler
-from app.api import db
+from app.api import scheduler, db
 # models
 from app.api.models import *
 # core
 from app.api.wallets.modules.wallet_core import WalletCore
 # transactions
 from app.api.transactions.factories.helper import process_transaction
+# error response
+from app.api.error.message import RESPONSE as error_response
 # exceptions
 from app.api.error.http import *
 #http response
@@ -39,7 +40,7 @@ class TransferServices(WalletCore):
         ).first()
         if bank_account:
             if bank_account.bank.code != "009":
-                transfer_fee = self.wallet_config["TRANSFER_FEE"][method]
+                transfer_fee = WALLET["TRANSFER_FEE"][method]
             # end if
         # end if
         return transfer_fee
@@ -51,8 +52,8 @@ class TransferServices(WalletCore):
         flag = params["types"] or "TRANSFER"
 
         if float(amount) > float(self.source.balance):
-            raise UnprocessableEntity(self.error_response["INSUFFICIENT_BALANCE"]["TITLE"],
-                                      self.error_response["INSUFFICIENT_BALANCE"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["INSUFFICIENT_BALANCE"]["TITLE"],
+                                      error_response["INSUFFICIENT_BALANCE"]["MESSAGE"])
         #end if
 
         debit_trx = process_transaction(
@@ -92,8 +93,8 @@ class TransferServices(WalletCore):
         transfer_fee = self.calculate_transfer_fee(bank_account_id, "ONLINE")
 
         if float(amount) + float(transfer_fee) > float(self.source.balance):
-            raise UnprocessableEntity(self.error_response["INSUFFICIENT_BALANCE"]["TITLE"],
-                                      self.error_response["INSUFFICIENT_BALANCE"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["INSUFFICIENT_BALANCE"]["TITLE"],
+                                      error_response["INSUFFICIENT_BALANCE"]["MESSAGE"])
         #end if
 
         # fetch bank information from bank account id here
@@ -101,8 +102,8 @@ class TransferServices(WalletCore):
             id=validate_uuid(bank_account_id)
         ).first()
         if bank_account is None:
-            raise RequestNotFound(self.error_response["BANK_ACC_NOT_FOUND"]["TITLE"],
-                                  self.error_response["BANK_ACC_NOT_FOUND"]["MESSAGE"])
+            raise RequestNotFound(error_response["BANK_ACC_NOT_FOUND"]["TITLE"],
+                                  error_response["BANK_ACC_NOT_FOUND"]["MESSAGE"])
         #end if
 
         bank_transfer_trx = process_transaction(
@@ -139,8 +140,8 @@ class TransferServices(WalletCore):
         user = User.query.filter_by(phone_ext=phone_ext,
                                     phone_number=phone_number).first()
         if user is None:
-            raise RequestNotFound(self.error_response["USER_NOT_FOUND"]["TITLE"],
-                                  self.error_response["USER_NOT_FOUND"]["MESSAGE"])
+            raise RequestNotFound(error_response["USER_NOT_FOUND"]["TITLE"],
+                                  error_response["USER_NOT_FOUND"]["MESSAGE"])
         #end if
 
         # serialize
@@ -159,8 +160,8 @@ class TransferServices(WalletCore):
         user = User.query.filter_by(phone_ext=phone_ext,
                                     phone_number=phone_number).first()
         if user is None:
-            raise RequestNotFound(self.error_response["USER_NOT_FOUND"]["TITLE"],
-                                  self.error_response["USER_NOT_FOUND"]["MESSAGE"])
+            raise RequestNotFound(error_response["USER_NOT_FOUND"]["TITLE"],
+                                  error_response["USER_NOT_FOUND"]["MESSAGE"])
         #end if
 
         # serialize

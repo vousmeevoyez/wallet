@@ -13,9 +13,10 @@ import time
 import random
 import base64
 import json
+
+import jwt
 import pytz
 import requests
-import jwt
 
 from werkzeug.contrib.cache import SimpleCache
 
@@ -23,40 +24,54 @@ from app.api import db
 # models
 from app.api.models import ExternalLog
 # configuration
-from app.config import config
+from app.config.external.bank import (
+    BNI_ECOLLECTION,
+    BNI_OPG
+)
+# const
+from app.api.const import LOGGING
 # exceptions
 from task.bank.exceptions.general import *
 # utility
 from task.bank.BNI.utility import remote_call
 
-LOGGING_CONFIG = config.Config.LOGGING_CONFIG
 
 class VirtualAccount:
     """ This is class to interact with BNI E-Collection API"""
-
-    BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
-
-    BASE_URL = BNI_ECOLLECTION_CONFIG["BASE_URL"]
 
     TIMEZONE = pytz.timezone("Asia/Jakarta")
 
     def _post(self, api_name, resource_type, payload):
         if resource_type == "CREDIT":
-            client_id = self.BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
-            secret_key = self.BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"]
+            client_id = BNI_ECOLLECTION["CREDIT_CLIENT_ID"]
+            secret_key = BNI_ECOLLECTION["CREDIT_SECRET_KEY"]
         elif resource_type == "DEBIT":
-            client_id = self.BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
-            secret_key = self.BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"]
+            client_id = BNI_ECOLLECTION["DEBIT_CLIENT_ID"]
+            secret_key = BNI_ECOLLECTION["DEBIT_SECRET_KEY"]
 
         # assign client in in payload
         payload["client_id"] = client_id
         try:
-            remote_response = remote_call.post(api_name, self.BASE_URL, client_id,
-                                               secret_key, payload)
+            remote_response = remote_call.post(
+                api_name, BNI_ECOLLECTION["BASE_URL"], client_id, secret_key,
+                payload
+            )
         except ServicesFailed as error:
             raise RemoteCallError(error)
         return remote_response
     #end def
+
+    @staticmethod
+    def health_check():
+        """
+            function to check BNI Virtual Account Services
+        """
+        try:
+            r = requests.get(BNI_ECOLLECTION["BASE_URL"])
+        except (requests.exceptions.Timeout, requests.exceptions.SSLError) as error:
+            raise ApiError(error)
+        #end try
+        return r.status_code
 
     def create_va(self, resource_type, params):
         """
@@ -67,13 +82,13 @@ class VirtualAccount:
                 session -- database session (optional)
         """
         if resource_type == "CREDIT":
-            api_type = self.BNI_ECOLLECTION_CONFIG["BILLING"]
-            billing_type = self.BNI_ECOLLECTION_CONFIG["BILLING_TYPE"]["DEPOSIT"]
+            api_type = BNI_ECOLLECTION["BILLING"]
+            billing_type = BNI_ECOLLECTION["BILLING_TYPE"]["DEPOSIT"]
             api_name = "CREATE_CREDIT_VA"
         elif resource_type == "DEBIT":
-            api_type = self.BNI_ECOLLECTION_CONFIG["CARDLESS"]
+            api_type = BNI_ECOLLECTION["CARDLESS"]
             billing_type =\
-            self.BNI_ECOLLECTION_CONFIG["BILLING_TYPE"]["WITHDRAW"]
+            BNI_ECOLLECTION["BILLING_TYPE"]["WITHDRAW"]
             api_name = "CREATE_CARDLESS_VA"
         #end if
 
@@ -114,7 +129,7 @@ class VirtualAccount:
         api_name = "GET_INQUIRY"
 
         payload = {
-            'type'     : self.BNI_ECOLLECTION_CONFIG["INQUIRY"],
+            'type'     : BNI_ECOLLECTION["INQUIRY"],
             'client_id': None, # set in another function
             'trx_id'   : params["trx_id"]
         }
@@ -141,7 +156,7 @@ class VirtualAccount:
         }
 
         payload = {
-            'type'             : self.BNI_ECOLLECTION_CONFIG["UPDATE"],
+            'type'             : BNI_ECOLLECTION["UPDATE"],
             'client_id'        : None,
             'trx_id'           : params["trx_id"],
             'trx_amount'       : params["amount"],
@@ -161,9 +176,8 @@ class VirtualAccount:
 class CoreBank:
     """ This is class that handle interaction to BNI Core Banking API"""
 
-    BNI_OPG_CONFIG = config.Config.BNI_OPG_CONFIG
-    ROUTES = BNI_OPG_CONFIG["ROUTES"]
-    URL = BNI_OPG_CONFIG["BASE_URL"] + ":" + BNI_OPG_CONFIG["PORT"]
+    ROUTES = BNI_OPG["ROUTES"]
+    URL = BNI_OPG["BASE_URL"] + ":" + BNI_OPG["PORT"]
 
     cache = SimpleCache()
 
@@ -184,10 +198,11 @@ class CoreBank:
         #end if
     #end def
 
-    def _create_signature(self, payload):
+    @staticmethod
+    def _create_signature(payload):
         signature = jwt.encode(
             payload,
-            self.BNI_OPG_CONFIG["SECRET_API_KEY"],
+            BNI_OPG["SECRET_API_KEY"],
             algorithm="HS256")
         return signature.decode("utf-8")
     #end def
@@ -216,6 +231,46 @@ class CoreBank:
         return True
     #end def
 
+    @staticmethod
+    def health_check():
+        """
+            function to health check BNI Core Bank Services
+        """
+        try:
+            headers = {}
+            payload = {}
+
+            # build designated header
+            base_64 = base64.b64encode(
+                (BNI_OPG["USERNAME"] + ":"
+                 + BNI_OPG["PASSWORD"]).encode("utf-8")
+            )
+            base_64 = base_64.decode("utf-8")
+            headers["Authorization"] = "Basic {}".format(str(base_64))
+            headers["Content-Type"] = "application/x-www-form-urlencoded"
+
+            # build designated payload
+            payload["clientId"] = BNI_OPG["CLIENT_NAME"]
+            signature = CoreBank._create_signature(payload)
+            payload["signature"] = signature
+
+            # build url
+            url = CoreBank.URL + CoreBank.ROUTES["GET_TOKEN"]
+
+            r = requests.post(
+                url,
+                headers=headers,
+                data=payload,
+                timeout=LOGGING["TIMEOUT"]
+            )
+
+            # currently we dont interested for any external response so we just
+            # return status code
+        except (requests.exceptions.Timeout, requests.exceptions.SSLError) as error:
+            raise ApiError(error)
+        #end try
+        return r.status_code
+
     def _post(self, api_name, payload):
         """
             send request to BNI server and adjust everything
@@ -234,7 +289,7 @@ class CoreBank:
         }
 
         # client_id in payload
-        payload["clientId"] = self.BNI_OPG_CONFIG["CLIENT_NAME"]
+        payload["clientId"] = BNI_OPG["CLIENT_NAME"]
 
         # add signature here
         signature = self._create_signature(payload)
@@ -242,8 +297,8 @@ class CoreBank:
 
         if api_name == "GET_TOKEN":
             base_64 = base64.b64encode(
-                (self.BNI_OPG_CONFIG["USERNAME"] + ":"
-                 + self.BNI_OPG_CONFIG["PASSWORD"]).encode("utf-8")
+                (BNI_OPG["USERNAME"] + ":"
+                 + BNI_OPG["PASSWORD"]).encode("utf-8")
             )
             base_64 = base_64.decode("utf-8")
             headers["Authorization"] = "Basic {}".format(str(base_64))
@@ -251,7 +306,7 @@ class CoreBank:
 
             url = self.URL + self.ROUTES[api_name]
         else:
-            headers["x-api-key"] = self.BNI_OPG_CONFIG["API_KEY"]
+            headers["x-api-key"] = BNI_OPG["API_KEY"]
             headers["Content-Type"] = "application/json"
 
             # attach access_token on url here
@@ -263,9 +318,9 @@ class CoreBank:
 
         # log everything before creating request
         log = ExternalLog(request=payload,
-                          resource=LOGGING_CONFIG["BNI_OPG"],
+                          resource=LOGGING["BNI_OPG"],
                           api_name=api_name,
-                          api_type=LOGGING_CONFIG["OUTGOING"]
+                          api_type=LOGGING["OUTGOING"]
                          )
         db.session.add(log)
 
@@ -275,7 +330,7 @@ class CoreBank:
                 url,
                 headers=headers,
                 data=payload,
-                timeout=LOGGING_CONFIG["TIMEOUT"]
+                timeout=LOGGING["TIMEOUT"]
             )
             # access the data here
             resp = r.json()
@@ -313,8 +368,10 @@ class CoreBank:
     #end def
 
     def _get_token(self):
+        """
+            Function to fetch access token from BNI services using secret credentials
+        """
         api_name = "GET_TOKEN"
-        # define response here
 
         # build request body here
         payload = {"grant_type" : "client_credentials"}
@@ -325,6 +382,7 @@ class CoreBank:
         except ServicesFailed as error:
             raise ApiError(error)
         #end try
+
         access_token = response["data"]["access_token"]
         return access_token
     #end def

@@ -12,18 +12,23 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api import db
 # helper
-from app.api.utility.utils import Sms
-from app.api.utility.utils import QR
+from app.api.utility.utils import (
+    Sms, QR
+)
 # models
 from app.api.models import *
 # serializer
-from app.api.serializer import UserSchema
-from app.api.serializer import WalletSchema
-from app.api.serializer import TransactionSchema
-from app.api.serializer import VirtualAccountSchema
+from app.api.serializer import (
+    UserSchema,
+    WalletSchema,
+    TransactionSchema,
+    VirtualAccountSchema
+)
 # core
 from app.api.wallets.modules.wallet_core import WalletCore
 from app.api.virtual_accounts.modules.va_services import VirtualAccountServices
+# error
+from app.api.error.message import RESPONSE as error_response
 # http error
 from app.api.http_response import *
 # exception
@@ -48,8 +53,8 @@ class WalletServices(WalletCore):
         except IntegrityError as error:
             #print(error.origin)
             db.session.rollback()
-            raise UnprocessableEntity(self.error_response["DUPLICATE_WALLET"]["TITLE"],
-                                      self.error_response["DUPLICATE_WALLET"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["DUPLICATE_WALLET"]["TITLE"],
+                                      error_response["DUPLICATE_WALLET"]["MESSAGE"])
         #end try
 
         # automatically create virtual account for additional wallet here
@@ -98,8 +103,8 @@ class WalletServices(WalletCore):
         user_id = self.source.user_id
         wallet_number = Wallet.query.filter_by(user_id=user_id).count()
         if wallet_number <= 1:
-            raise UnprocessableEntity(self.error_response["ONLY_WALLET"]["TITLE"],
-                                      self.error_response["ONLY_WALLET"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["ONLY_WALLET"]["TITLE"],
+                                      error_response["ONLY_WALLET"]["MESSAGE"])
         #end if
 
         self.source.status = 0 # deactive
@@ -131,14 +136,14 @@ class WalletServices(WalletCore):
 
         # first need to check pin and confirmation pin must same
         if pin != confirm_pin:
-            raise UnprocessableEntity(self.error_response["UNMATCH_PIN"]["TITLE"],
-                                      self.error_response["UNMATCH_PIN"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["UNMATCH_PIN"]["TITLE"],
+                                      error_response["UNMATCH_PIN"]["MESSAGE"])
         #end if
 
         # second make sure the new pin is not the same with the old one
         if self.source.check_pin(pin) == "CORRECT":
-            raise UnprocessableEntity(self.error_response["DUPLICATE_PIN"]["TITLE"],
-                                      self.error_response["DUPLICATE_PIN"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["DUPLICATE_PIN"]["TITLE"],
+                                      error_response["DUPLICATE_PIN"]["MESSAGE"])
         #end if
 
         # update the new pin here
@@ -155,13 +160,14 @@ class WalletServices(WalletCore):
                 wallet_id
         """
         # first check if there are any pending otp record
-        pending_otp = ForgotPin.query.filter(ForgotPin.wallet_id == self.source.id,\
-                                             ForgotPin.status == False,\
-                                             ForgotPin.valid_until > datetime.now() \
-                                            ).count()
+        pending_otp = ForgotPin.query.filter(
+            ForgotPin.wallet_id == self.source.id,
+            ForgotPin.status == False,
+            ForgotPin.valid_until > datetime.now()
+        ).count()
         if pending_otp > 0:
-            raise UnprocessableEntity(self.error_response["PENDING_OTP"]["TITLE"],
-                                      self.error_response["PENDING_OTP"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["PENDING_OTP"]["TITLE"],
+                                      error_response["PENDING_OTP"]["MESSAGE"])
         #end if
 
         # second generate random verify otp number to user phone
@@ -170,7 +176,7 @@ class WalletServices(WalletCore):
         otp_code = random.randint(start_range, end_range)
 
         # third add record to database contain hashed otp code
-        valid_until = datetime.now() + timedelta(minutes=self.wallet_config["OTP_TIMEOUT"])
+        valid_until = datetime.now() + timedelta(minutes=WALLET["OTP_TIMEOUT"])
         forgot_pin = ForgotPin(
             wallet_id=self.source.id,
             valid_until=valid_until,
@@ -186,8 +192,8 @@ class WalletServices(WalletCore):
             Sms().send(msisdn, "FORGOT_PIN", otp_code)
         except UtilityError:
             db.session.rollback()
-            raise UnprocessableEntity(self.error_response["SMS_FAILED"]["TITLE"],
-                                      self.error_response["SMS_FAILED"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["SMS_FAILED"]["TITLE"],
+                                      error_response["SMS_FAILED"]["MESSAGE"])
         #end try
         db.session.commit()
         response = {
@@ -214,18 +220,18 @@ class WalletServices(WalletCore):
         ).first()
 
         if forgot_otp is None:
-            raise RequestNotFound(self.error_response["FORGOT_OTP_NOT_FOUND"]["TITLE"],
-                                  self.error_response["FORGOT_OTP_NOT_FOUND"]["MESSAGE"])
+            raise RequestNotFound(error_response["FORGOT_OTP_NOT_FOUND"]["TITLE"],
+                                  error_response["FORGOT_OTP_NOT_FOUND"]["MESSAGE"])
         #end if
 
         if forgot_otp.status is not False:
-            raise UnprocessableEntity(self.error_response["OTP_ALREADY_VERIFIED"]["TITLE"],
-                                      self.error_response["OTP_ALREADY_VERIFIED"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["OTP_ALREADY_VERIFIED"]["TITLE"],
+                                      error_response["OTP_ALREADY_VERIFIED"]["MESSAGE"])
         #end if
 
         if forgot_otp.check_otp_code(otp_code) is not True:
-            raise UnprocessableEntity(self.error_response["INVALID_OTP_CODE"]["TITLE"],
-                                      self.error_response["INVALID_OTP_CODE"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["INVALID_OTP_CODE"]["TITLE"],
+                                      error_response["INVALID_OTP_CODE"]["MESSAGE"])
         #end if
 
         # update otp record to DONE
@@ -255,9 +261,9 @@ class WalletServices(WalletCore):
         """
             function to return wallet owner information
         """
-        user_info = UserSchema(only=('name',
-                                     'msisdn', 'wallets.id',
-                                     'wallets.label')).dump(self.source.user).data
+        user_info = UserSchema(only=(
+            'name', 'msisdn', 'wallets.id', 'wallets.label')
+        ).dump(self.source.user).data
         return ok(user_info)
     #end def
 

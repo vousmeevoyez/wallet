@@ -11,9 +11,8 @@ from app.api import db
 
 from task.bank.BNI.utility import remote_call
 
-from app.config import config
+from app.config.external.bank import BNI_ECOLLECTION
 
-BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
 
 class TestCallbackRoutes(BaseTestCase):
     """ Test Class for Wallet Routes"""
@@ -54,10 +53,10 @@ class TestCallbackRoutes(BaseTestCase):
             "payment_ntb"               : "12345",
             "datetime_payment"          : "2018-12-20 11:16:00",
         }
-        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"], BNI_ECOLLECTION_CONFIG["CREDIT_SECRET_KEY"], data)
+        encrypted_data = remote_call.encrypt(BNI_ECOLLECTION["CREDIT_CLIENT_ID"], BNI_ECOLLECTION["CREDIT_SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION["CREDIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
         result = self.deposit_callback(expected_value)
@@ -97,11 +96,11 @@ class TestCallbackRoutes(BaseTestCase):
             "datetime_payment"          : "2018-12-20 11:16:00",
         }
         encrypted_data = \
-        remote_call.encrypt(BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
-                            BNI_ECOLLECTION_CONFIG["DEBIT_SECRET_KEY"], data)
+        remote_call.encrypt(BNI_ECOLLECTION["DEBIT_CLIENT_ID"],
+                            BNI_ECOLLECTION["DEBIT_SECRET_KEY"], data)
 
         expected_value = {
-            "client_id" : BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"],
+            "client_id" : BNI_ECOLLECTION["DEBIT_CLIENT_ID"],
             "data"      : encrypted_data.decode("UTF-8")
         }
         result = self.withdraw_callback(expected_value)

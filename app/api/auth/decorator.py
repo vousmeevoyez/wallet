@@ -10,9 +10,8 @@ from flask_restplus import reqparse
 # local
 from app.api.auth.modules.auth_services import AuthServices
 from app.api.error.http import BadRequest, InsufficientScope, MethodNotAllowed
-from app.config import config
+from app.api.error.message import RESPONSE as error_response
 
-ERROR_CONFIG = config.Config.ERROR_CONFIG
 
 class ParseError(Exception):
     """ raised when failed parsing token from header"""
@@ -47,7 +46,7 @@ def get_token_payload():
     try:
         token = _parse_token()
     except ParseError as error:
-        raise BadRequest(ERROR_CONFIG["BAD_AUTH_HEADER"], error.message)
+        raise BadRequest(error_response["BAD_AUTH_HEADER"], error.message)
     #end try
 
     response = AuthServices().current_login_user(token)
@@ -65,8 +64,8 @@ def admin_required(func):
 
         # check permission here
         if user.role.description != "ADMIN":
-            raise InsufficientScope(ERROR_CONFIG["ADMIN_REQUIRED"]["TITLE"],
-                                    ERROR_CONFIG["ADMIN_REQUIRED"]["MESSAGE"])
+            raise InsufficientScope(error_response["ADMIN_REQUIRED"]["TITLE"],
+                                    error_response["ADMIN_REQUIRED"]["MESSAGE"])
         # end if
 
         return func(*args, **kwargs)
@@ -105,7 +104,7 @@ def get_current_token():
     try:
         token = _parse_token()
     except ParseError as error:
-        raise BadRequest(ERROR_CONFIG["BAD_AUTH_HEADER"], error.message)
+        raise BadRequest(error_response["BAD_AUTH_HEADER"], error.message)
     #end try
     return token
 #end def
@@ -133,7 +132,7 @@ def api_key_required(func):
         try:
             result = _parse_key()
         except ParseError as error:
-            raise BadRequest(ERROR_CONFIG["BAD_AUTH_HEADER"], error.message)
+            raise BadRequest(error_response["BAD_AUTH_HEADER"], error.message)
         else:
             result = AuthServices.check_key(result)
         # end try

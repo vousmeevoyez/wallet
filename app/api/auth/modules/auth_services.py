@@ -10,24 +10,32 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api import db
 # models
-from app.api.models import User
-from app.api.models import BlacklistToken
-from app.api.models import ApiKey
+from app.api.models import (
+    User,
+    BlacklistToken,
+    ApiKey
+)
 # exceptions
-from app.api.error.authentication import RevokedTokenError
-from app.api.error.authentication import SignatureExpiredError
-from app.api.error.authentication import InvalidTokenError
-from app.api.error.authentication import EmptyPayloadError
+from app.api.error.authentication import (
+    RevokedTokenError,
+    SignatureExpiredError,
+    InvalidTokenError,
+    EmptyPayloadError
+)
 # http error
-from app.api.error.http import Unauthorized
-from app.api.error.http import UnprocessableEntity
-from app.api.error.http import RequestNotFound
+from app.api.error.http import (
+    Unauthorized,
+    UnprocessableEntity,
+    RequestNotFound
+)
 # utility
 from app.api.utility.utils import validate_uuid
 # http response
 from app.api.http_response import ok, no_content
-# configuration
-from app.config import config
+# error response
+from app.api.error.message import RESPONSE as error_response
+# const
+from app.api.const import STATUS
 
 class Token:
     """ Handle everything related to Token """
@@ -81,9 +89,6 @@ class Token:
 class AuthServices:
     """ Authentication Services Class"""
 
-    error_response = config.Config.ERROR_CONFIG
-    status_config = config.Config.STATUS_CONFIG
-
     def current_login_user(self, token):
         """
             function to check who is currently login by decode their token
@@ -91,15 +96,15 @@ class AuthServices:
         """
         payload = Token(token).decode()
         if isinstance(payload, str):
-            raise Unauthorized(self.error_response[payload]["TITLE"],
-                               self.error_response[payload]["MESSAGE"])
+            raise Unauthorized(error_response[payload]["TITLE"],
+                               error_response[payload]["MESSAGE"])
 
         # fetch user information
         user = User.query.filter_by(id=validate_uuid(payload["sub"]),
-                                    status=self.status_config["ACTIVE"]).first()
+                                    status=STATUS["ACTIVE"]).first()
         if user is None:
-            raise RequestNotFound(self.error_response["USER_NOT_FOUND"]["TITLE"],
-                                  self.error_response["USER_NOT_FOUND"]["MESSAGE"])
+            raise RequestNotFound(error_response["USER_NOT_FOUND"]["TITLE"],
+                                  error_response["USER_NOT_FOUND"]["MESSAGE"])
         # end if
 
         response = {
@@ -118,13 +123,13 @@ class AuthServices:
 
         user = User.query.filter_by(username=username).first()
         if user is None:
-            raise RequestNotFound(self.error_response["USER_NOT_FOUND"]["TITLE"],
-                                  self.error_response["USER_NOT_FOUND"]["MESSAGE"])
+            raise RequestNotFound(error_response["USER_NOT_FOUND"]["TITLE"],
+                                  error_response["USER_NOT_FOUND"]["MESSAGE"])
         #end if
 
         if user.check_password(password) is not True:
-            raise Unauthorized(self.error_response["INVALID_CREDENTIALS"]["TITLE"],
-                               self.error_response["INVALID_CREDENTIALS"]["MESSAGE"])
+            raise Unauthorized(error_response["INVALID_CREDENTIALS"]["TITLE"],
+                               error_response["INVALID_CREDENTIALS"]["MESSAGE"])
         #end if
 
         # generate token here

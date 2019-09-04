@@ -14,7 +14,7 @@ TransactionServices
 
 # unittest purpose
 from app.api.callback.modules.callback_services import CallbackServices
-from app.api.wallets.modules.transfer_services import TransferServices
+from app.api.transfer.modules.transfer_services import TransferServices
 
 # exceptions
 from app.api.error.http import *

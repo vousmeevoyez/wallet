@@ -13,11 +13,10 @@ from app.api.utility.modules.cipher import AESCipher
 # models
 from app.api.models import ExternalLog
 # configuration
-from app.config import config
+from app.config.external.sms import WAVECELL
+# const
+from app.api.const import LOGGING
 
-WALLET_CONFIG = config.Config.WALLET_CONFIG
-LOGGING_CONFIG = config.Config.LOGGING_CONFIG
-SMS_SERVICES_CONFIG = config.Config.SMS_SERVICES_CONFIG
 
 class ApiError(Exception):
     """ raised when api error happened"""
@@ -35,21 +34,21 @@ class SmsServices:
         headers = {
             "content-type": "application/json"
         }
-        headers["Authorization"] = "Bearer {}".format(SMS_SERVICES_CONFIG["API_KEY"])
+        headers["Authorization"] = "Bearer {}".format(WAVECELL["API_KEY"])
 
         result = True
         try:
             # build external logging object here
             log = ExternalLog(request=payload,
-                              resource=LOGGING_CONFIG["WAVECELL"],
+                              resource=LOGGING["WAVECELL"],
                               api_name=api_name,
-                              api_type=LOGGING_CONFIG["OUTGOING"]
+                              api_type=LOGGING["OUTGOING"]
                              )
             db.session.add(log)
             # start measuring time here
             start_time = time.time()
             r = requests.post(
-                SMS_SERVICES_CONFIG["BASE_URL"],
+                WAVECELL["BASE_URL"],
                 data=json.dumps(payload),
                 headers=headers,
             )

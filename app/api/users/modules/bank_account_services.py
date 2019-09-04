@@ -19,19 +19,17 @@ from app.api.http_response import created, no_content
 from app.api.utility.utils import validate_uuid
 # exception
 from app.api.error.http import RequestNotFound, UnprocessableEntity
-# configuration
-from app.config import config
+# error
+from app.api.error.message import RESPONSE as error_response
 
 class BankAccountServices:
     """ Bank Account Services Class"""
 
-    error_response = config.Config.ERROR_CONFIG
-
     def __init__(self, user_id, bank_code=None, bank_account_id=None):
         user_record = User.query.filter_by(id=validate_uuid(user_id)).first()
         if user_record is None:
-            raise RequestNotFound(self.error_response["USER_NOT_FOUND"]["TITLE"],
-                                  self.error_response["USER_NOT_FOUND"]["MESSAGE"])
+            raise RequestNotFound(error_response["USER_NOT_FOUND"]["TITLE"],
+                                  error_response["USER_NOT_FOUND"]["MESSAGE"])
         #end if
 
         # get bank id from bank code
@@ -40,8 +38,8 @@ class BankAccountServices:
             bank_record = Bank.query.filter_by(code=bank_code).first()
 
             if bank_record is None:
-                raise RequestNotFound(self.error_response["BANK_NOT_FOUND"]["TITLE"],
-                                      self.error_response["BANK_NOT_FOUND"]["MESSAGE"])
+                raise RequestNotFound(error_response["BANK_NOT_FOUND"]["TITLE"],
+                                      error_response["BANK_NOT_FOUND"]["MESSAGE"])
             #end if
         #end if
 
@@ -52,8 +50,8 @@ class BankAccountServices:
                 id=validate_uuid(bank_account_id)
             ).first()
             if bank_account_record is None:
-                raise RequestNotFound(self.error_response["BANK_ACC_NOT_FOUND"]["TITLE"],
-                                      self.error_response["BANK_ACC_NOT_FOUND"]["MESSAGE"])
+                raise RequestNotFound(error_response["BANK_ACC_NOT_FOUND"]["TITLE"],
+                                      error_response["BANK_ACC_NOT_FOUND"]["MESSAGE"])
         #end if
 
         self.user = user_record
@@ -70,8 +68,8 @@ class BankAccountServices:
             db.session.commit()
         except IntegrityError as error:
             db.session.rollback()
-            raise UnprocessableEntity(self.error_response["DUPLICATE_BANK_ACCOUNT"]["TITLE"],
-                                      self.error_response["DUPLICATE_BANK_ACCOUNT"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["DUPLICATE_BANK_ACCOUNT"]["TITLE"],
+                                      error_response["DUPLICATE_BANK_ACCOUNT"]["MESSAGE"])
         #end try
         response = {
             "bank_account_id" : str(bank_account.id)

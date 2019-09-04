@@ -36,7 +36,15 @@ def run():
 @manager.command
 def test():
     """ function to run unittest"""
-    tests = unittest.TestLoader().discover('app/test', pattern='test*.py')
+    test_dir = [
+        "app/test",
+        "task/test"
+    ]
+    tests = unittest.TestSuite()
+    for test in test_dir:
+        test_suite = unittest.TestLoader().discover(test, pattern='test*.py')
+        tests.addTest(test_suite)
+    # end for
     result = unittest.TextTestRunner(verbosity=2).run(tests)
     if result.wasSuccessful():
         return 0

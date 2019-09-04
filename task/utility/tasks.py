@@ -17,9 +17,7 @@ from app.api.utility.utils import (
     UtilityError
 )
 
-from app.config import config
-
-WORKER_CONFIG = config.Config.WORKER_CONFIG
+from app.api.const import WORKER
 
 def backoff(attempts):
     """ prevent hammering service with thousand retry"""
@@ -39,14 +37,18 @@ class UtilityTask(celery.Task):
         sentry.captureException(exc)
         super(NotificationTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
+    @celery.task(bind=True)
+    def health_check(self, text):
+        return text
+
     """
         PUSH NOTIFICATION
     """
     @celery.task(bind=True,
-                 max_retries=int(WORKER_CONFIG["MAX_RETRIES"]),
-                 task_soft_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
-                 task_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
-                 acks_late=WORKER_CONFIG["ACKS_LATE"],
+                 max_retries=int(WORKER["MAX_RETRIES"]),
+                 task_soft_time_limit=WORKER["SOFT_LIMIT"],
+                 task_time_limit=WORKER["SOFT_LIMIT"],
+                 acks_late=WORKER["ACKS_LATE"],
                 )
     def push_notification(self, transaction_id):
         """ create task in background to push some notification """

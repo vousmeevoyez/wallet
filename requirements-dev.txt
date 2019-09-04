@@ -64,7 +64,7 @@ PyYAML==3.13
 raven==6.10.0
 requests==2.20.0
 rsa==4.0
-sentry-sdk==0.7.2
+sentry-sdk==0.11.2
 shellescape==3.4.1
 six==1.11.0
 SQLAlchemy==1.2.13

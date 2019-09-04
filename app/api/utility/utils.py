@@ -9,7 +9,11 @@ import json
 
 from uuid import UUID
 
-from app.config import config
+# const
+from app.api.const import WALLET
+from app.config.external.sms import WAVECELL, TEMPLATES
+# error
+from app.api.error.message import RESPONSE as error_response
 
 from app.api.utility.modules.cipher import AESCipher
 from app.api.utility.modules.sms_services import SmsServices
@@ -19,11 +23,7 @@ from app.api.utility.modules.notif_services import NotifServices
 from app.api.utility.modules.cipher import DecryptError
 from app.api.utility.modules.sms_services import ApiError as SmsError
 from app.api.utility.modules.notif_services import ApiError as NotifError
-
 from app.api.error.http import BadRequest
-
-ERROR_CONFIG = config.Config.ERROR_CONFIG
-WALLET_CONFIG = config.Config.WALLET_CONFIG
 
 
 class UtilityError(Exception):
@@ -35,21 +35,14 @@ class UtilityError(Exception):
 class Sms:
     """ Class for helping sending SMS """
 
-    sms_services_config = config.Config.SMS_SERVICES_CONFIG
-    sms_services_templates = config.Config.SMS_SERVICES_TEMPLATES
-
-    def __init__(self):
-        self.services = SmsServices()
-    #end def
-
     def send(self, to, sms_type, content):
         """ build a sms template and send it using sms services """
         message = {
-            "from" : self.sms_services_config["FROM"],
-            "text" : self.sms_services_templates[sms_type].format(str(content))
+            "from" : WAVECELL["FROM"],
+            "text" : TEMPLATES[sms_type].format(str(content))
         }
         try:
-            result = self.services.send_sms(to, message)
+            result = SmsServices().send_sms(to, message)
         except SmsError as error:
             raise UtilityError(error.original)
         # end try
@@ -63,14 +56,14 @@ class QR:
     def generate(self, data):
         """ function to generate QR Code using AES256 Encryption """
         # convert dict to string so it be able to converted to qr code using
-        qr_raw = AESCipher(WALLET_CONFIG["QR_SECRET_KEY"]).encrypt(json.dumps(data))
+        qr_raw = AESCipher(WALLET["QR_SECRET_KEY"]).encrypt(json.dumps(data))
         return qr_raw.decode('utf-8')
     #end def
 
     def read(self, data):
         """ function to read encrypyed QR Code """
         try:
-            qr_decrypted = AESCipher(WALLET_CONFIG["QR_SECRET_KEY"]).decrypt(data)
+            qr_decrypted = AESCipher(WALLET["QR_SECRET_KEY"]).decrypt(data)
         except DecryptError as error:
             raise UtilityError()
         # end try
@@ -96,7 +89,7 @@ def validate_uuid(string):
     try:
         uuid_object = UUID(string)
     except ValueError:
-        raise BadRequest(ERROR_CONFIG["INVALID_ID"]["TITLE"],
-                         ERROR_CONFIG["INVALID_ID"]["MESSAGE"])
+        raise BadRequest(error_response["INVALID_ID"]["TITLE"],
+                         error_response["INVALID_ID"]["MESSAGE"])
     return uuid_object
 #end def

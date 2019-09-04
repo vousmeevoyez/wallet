@@ -5,9 +5,6 @@
 #pylint:disable=too-few-public-methods
 from flask_restplus import Namespace
 
-class UtilityNamespace:
-    api = Namespace("utility")
-#end class
 
 class AuthNamespace:
     api = Namespace("authentication")
@@ -51,4 +48,12 @@ class PlanNamespace:
 
 class SchedulerNamespace:
     api = Namespace("scheduler")
+#end class
+
+class TransferNamespace:
+    api = Namespace("transfer")
+#end class
+
+class UtilityNamespace:
+    api = Namespace("utility")
 #end class

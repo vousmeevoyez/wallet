@@ -20,6 +20,8 @@ from app.api.serializer import PlanSchema
 from app.api.http_response import ok, no_content, created
 # exceptions
 from app.api.error.http import RequestNotFound, UnprocessableEntity
+# error
+from app.api.error.message import RESPONSE as error_response
 # configuration
 from app.config import config
 # task
@@ -27,7 +29,6 @@ from task.payment.tasks import PaymentTask
 
 class PlanServices:
     """ Plan Services Class"""
-    error_response = config.Config.ERROR_CONFIG
 
     def __init__(self, payment_plan_id=None, plan_id=None):
         if payment_plan_id is not None:
@@ -36,8 +37,8 @@ class PlanServices:
                 id=payment_plan_id,
             ).first()
             if payment_plan is None:
-                raise RequestNotFound(self.error_response["PAYMENT_PLAN_NOT_FOUND"]["TITLE"],
-                                      self.error_response["PAYMENT_PLAN_NOT_FOUND"]["MESSAGE"])
+                raise RequestNotFound(error_response["PAYMENT_PLAN_NOT_FOUND"]["TITLE"],
+                                      error_response["PAYMENT_PLAN_NOT_FOUND"]["MESSAGE"])
             # end if
             self.payment_plan = payment_plan
         # end if
@@ -48,8 +49,8 @@ class PlanServices:
                 id=plan_id,
             ).first()
             if plan is None:
-                raise RequestNotFound(self.error_response["PLAN_NOT_FOUND"]["TITLE"],
-                                      self.error_response["PLAN_NOT_FOUND"]["MESSAGE"])
+                raise RequestNotFound(error_response["PLAN_NOT_FOUND"]["TITLE"],
+                                      error_response["PLAN_NOT_FOUND"]["MESSAGE"])
             # end if
             self.plan = plan
         # end if
@@ -88,8 +89,8 @@ class PlanServices:
             #print(err.orig)
             db.session.rollback()
             raise UnprocessableEntity(
-                self.error_response["DUPLICATE_PLAN"]["TITLE"],
-                self.error_response["DUPLICATE_PLAN"]["MESSAGE"]
+                error_response["DUPLICATE_PLAN"]["TITLE"],
+                error_response["DUPLICATE_PLAN"]["MESSAGE"]
             )
         # end try
         response = {

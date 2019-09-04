@@ -17,11 +17,12 @@ from app.api.models import *
 # exceptions
 from task.bank.exceptions.general import *
 
-from app.config import config
-
-TRANSACTION_LOG_CONFIG = config.Config.TRANSACTION_LOG_CONFIG
-PAYMENT_STATUS_CONFIG = config.Config.PAYMENT_STATUS_CONFIG
-WORKER_CONFIG = config.Config.WORKER_CONFIG
+# const 
+from app.api.const import (
+    TRANSACTION_LOG,
+    PAYMENT_STATUS,
+    WORKER
+)
 
 now = datetime.utcnow()
 
@@ -51,11 +52,15 @@ class TransactionTask(celery.Task):
         sentry.captureException(exc)
         super(TransactionTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
+    @celery.task(bind=True)
+    def health_check(self, text):
+        return text
+
     @celery.task(bind=True,
-                 max_retries=WORKER_CONFIG["MAX_RETRIES"],
-                 task_soft_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
-                 task_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
-                 acks_late=WORKER_CONFIG["ACKS_LATE"],
+                 max_retries=WORKER["MAX_RETRIES"],
+                 task_soft_time_limit=WORKER["SOFT_LIMIT"],
+                 task_time_limit=WORKER["SOFT_LIMIT"],
+                 acks_late=WORKER["ACKS_LATE"],
                 )
     def transfer(self, payment_id):
         """ create task in background to move money between wallet """
@@ -96,7 +101,7 @@ class TransactionTask(celery.Task):
             # add wallet balance
             wallet.add_balance(payment.amount)
 
-            payment.status = PAYMENT_STATUS_CONFIG["DONE"]
+            payment.status = PAYMENT_STATUS["DONE"]
             log.state = 2 # COMPLETED
             log.created_at = now
 
@@ -107,7 +112,7 @@ class TransactionTask(celery.Task):
             db.session.commit()
         except (IntegrityError, OperationalError) as error:
             db.session.rollback()
-            payment.status = PAYMENT_STATUS_CONFIG["CANCELLED"]
+            payment.status = PAYMENT_STATUS["CANCELLED"]
             # retry the task again
             self.retry(countdown=backoff(self.request.retries), exc=error)
         #end try

@@ -11,31 +11,38 @@ from sqlalchemy.exc import IntegrityError
 # database
 from app.api import db
 # models
-from app.api.models import VirtualAccount, Bank, VaType
+from app.api.models import (
+    VirtualAccount,
+    Bank,
+    VaType
+)
 # serializer
 from app.api.serializer import VirtualAccountSchema
 from app.api.http_response import created, no_content
-from app.api.error.http import RequestNotFound, UnprocessableEntity
-from app.config import config
+from app.api.error.http import (
+    RequestNotFound,
+    UnprocessableEntity
+)
+# const
+from app.api.const import STATUS
+# error response
+from app.api.error.message import RESPONSE as error_response
 # bank task
 from task.bank.tasks import BankTask
 
 class VirtualAccountServices:
     """ Virtual Account Services Class"""
 
-    status_config = config.Config.STATUS_CONFIG
-    error_response = config.Config.ERROR_CONFIG
-
     def __init__(self, virtual_account_no=None):
         if virtual_account_no is not None:
             va_record = \
             VirtualAccount.query.filter(
                 VirtualAccount.account_no == virtual_account_no,
-                VirtualAccount.status != self.status_config["DEACTIVE"]
+                VirtualAccount.status != STATUS["DEACTIVE"]
             ).first()
             if va_record is None:
-                raise RequestNotFound(self.error_response["VA_NOT_FOUND"]["TITLE"],
-                                      self.error_response["VA_NOT_FOUND"]["MESSAGE"])
+                raise RequestNotFound(error_response["VA_NOT_FOUND"]["TITLE"],
+                                      error_response["VA_NOT_FOUND"]["MESSAGE"])
 
             self.virtual_account = va_record
 
@@ -75,8 +82,8 @@ class VirtualAccountServices:
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
-            raise UnprocessableEntity(self.error_response["DUPLICATE_VA"]["TITLE"],
-                                      self.error_response["DUPLICATE_VA"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["DUPLICATE_VA"]["TITLE"],
+                                      error_response["DUPLICATE_VA"]["MESSAGE"])
         #end try
 
         # create va in the background here
@@ -106,7 +113,7 @@ class VirtualAccountServices:
         """
             return Virtual Account information details
         """
-        self.virtual_account.status = self.status_config["DEACTIVE"]
+        self.virtual_account.status = STATUS["DEACTIVE"]
         db.session.commit()
         return no_content()
     #end def

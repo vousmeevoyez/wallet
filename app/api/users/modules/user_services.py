@@ -20,24 +20,24 @@ from app.api.http_response import ok, created, no_content
 from app.api.utility.utils import validate_uuid
 # exceptions
 from app.api.error.http import RequestNotFound, UnprocessableEntity
+# const
+from app.api.const import STATUS
 # configuration
-from app.config import config
+from app.api.error.message import RESPONSE as error_response
 
 class UserServices:
     """ User Services Class"""
-    error_response = config.Config.ERROR_CONFIG
-    status_config = config.Config.STATUS_CONFIG
 
     def __init__(self, user_id=None):
         if user_id is not None:
         # look up user only if user_id is set
             user = User.query.filter_by(
                 id=validate_uuid(user_id),
-                status=self.status_config["ACTIVE"]
+                status=STATUS["ACTIVE"]
             ).first()
             if user is None:
-                raise RequestNotFound(self.error_response["USER_NOT_FOUND"]["TITLE"],
-                                      self.error_response["USER_NOT_FOUND"]["MESSAGE"])
+                raise RequestNotFound(error_response["USER_NOT_FOUND"]["TITLE"],
+                                      error_response["USER_NOT_FOUND"]["MESSAGE"])
             #end if
             self.user = user
     #end def
@@ -55,8 +55,8 @@ class UserServices:
         except IntegrityError as error:
             #print(err.orig)
             db.session.rollback()
-            raise UnprocessableEntity(self.error_response["DUPLICATE_USER"]["TITLE"],
-                                      self.error_response["DUPLICATE_USER"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["DUPLICATE_USER"]["TITLE"],
+                                      error_response["DUPLICATE_USER"]["MESSAGE"])
         #end try
 
         # create wallet object first
@@ -77,7 +77,7 @@ class UserServices:
 
     def show(self, page):
         """ show all stored user for admin"""
-        users = User.query.filter_by(status=self.status_config["ACTIVE"]).all()
+        users = User.query.filter_by(status=STATUS["ACTIVE"]).all()
         response = UserSchema(many=True).dump(users).data
         return ok(response)
     #end def
@@ -114,8 +114,8 @@ class UserServices:
                 })
 
         if error != []:
-            raise UnprocessableEntity(self.error_response["DUPLICATE_UPDATE_ENTRY"]["TITLE"],
-                                      self.error_response["DUPLICATE_UPDATE_ENTRY"]["MESSAGE"],
+            raise UnprocessableEntity(error_response["DUPLICATE_UPDATE_ENTRY"]["TITLE"],
+                                      error_response["DUPLICATE_UPDATE_ENTRY"]["MESSAGE"],
                                       error)
 
         self.user.set_password(params["password"])

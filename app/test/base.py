@@ -761,4 +761,11 @@ class BaseTestCase(TestCase):
             headers=headers
         )
     #end def
+
+    def health_check(self):
+        """ Api Call for checking services health """
+        return self.client.get(
+            BASE_URL + "/utility/health"
+        )
+    #end def
 #end class

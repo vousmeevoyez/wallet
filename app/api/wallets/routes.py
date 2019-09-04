@@ -17,8 +17,8 @@ from app.api.serializer import *
 from app.api.request_schema import *
 # wallet modules
 from app.api.wallets.modules.wallet_services import WalletServices
-from app.api.wallets.modules.transfer_services import TransferServices
 from app.api.wallets.modules.withdraw_services import WithdrawServices
+from app.api.transfer.modules.transfer_services import TransferServices
 # transaction modules
 from app.api.transactions.modules.transaction_services import TransactionServices
 # authentication
@@ -202,7 +202,7 @@ class WalletPinRoutes(Routes):
     def post(self, wallet_id):
         """ endpoint for checking pin """
         self.__schema__ = PinOnlyRequestSchema
-        self.__serializer__ = TransactionSchema(strict=True, only=("pin"))
+        self.__serializer__ = TransactionSchema(only=("pin"))
 
         request_data = self.serialize(self.payload())
         response = WalletServices(wallet_id, request_data["pin"]).check()
@@ -259,9 +259,9 @@ class WalletWithdrawRoutes(Routes):
 #end class
 
 @api.route('/<string:source_wallet_id>/transfer/checkout')
-class WalletCheckoutRoutes(Routes):
+class TransferCheckoutRoutes(Routes):
     """
-        Wallet Checkout
+        Transfer Checkout
         /<source>/transfer/checkout
     """
 
@@ -281,9 +281,9 @@ class WalletCheckoutRoutes(Routes):
 
 ################################## PATCH ############################################
 @api.route('/transfer/checkout2')
-class WalletCheckout2Routes(Routes):
+class TransferCheckout2Routes(Routes):
     """
-        Wallet Checkout
+        Transfer Checkout
         /<source>/transfer/checkout
     """
 
@@ -301,9 +301,9 @@ class WalletCheckout2Routes(Routes):
 #end class
 
 @api.route('/<string:source_wallet_id>/transfer/<string:destination_wallet_id>')
-class WalletTransferRoutes(Routes):
+class TransferTransferRoutes(Routes):
     """
-        Wallet Transfer
+        Transfer Transfer
         /<source>/transfer/<destination>
     """
 
@@ -324,9 +324,9 @@ class WalletTransferRoutes(Routes):
 #end class
 
 @api.route('/<string:source_wallet_id>/transfer/bank/<string:bank_account_id>')
-class WalletBankTransferRoutes(Routes):
+class TransferBankTransferRoutes(Routes):
     """
-        Wallet Bank Transfer Routes
+        Transfer Bank Transfer Routes
         /source/transfer/bank/<bank_account_id>
     """
 
@@ -348,9 +348,9 @@ class WalletBankTransferRoutes(Routes):
 
 ################################## PATCH ############################################
 @api.route('/<string:source_wallet_id>/transfer/bank2/<string:bank_account_id>')
-class WalletBankTransfer2Routes(Routes):
+class TransferBankTransfer2Routes(Routes):
     """
-        Wallet Bank Transfer Routes
+        Transfer Bank Transfer Routes
         /source/transfer/bank/<bank_account_id>
     """
 

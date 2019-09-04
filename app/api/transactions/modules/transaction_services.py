@@ -25,21 +25,21 @@ from app.api.transactions.factories.helper import process_transaction
 from app.config import config
 # http error
 from app.api.http_response import ok, accepted
+# const
+from app.api.error.message import RESPONSE as error_response
 # exception
 from app.api.error.http import UnprocessableEntity, RequestNotFound
 
 class TransactionServices:
     """ Transaction Services Class"""
 
-    error_response = config.Config.ERROR_CONFIG
-
     def __init__(self, wallet_id=None, transaction_id=None):
         # only look up in db when source is set
         if wallet_id is not None:
             wallet_record = Wallet.query.filter_by(id=validate_uuid(wallet_id)).first()
             if wallet_record is None:
-                raise RequestNotFound(self.error_response["WALLET_NOT_FOUND"]["TITLE"],
-                                      self.error_response["WALLET_NOT_FOUND"]["MESSAGE"])
+                raise RequestNotFound(error_response["WALLET_NOT_FOUND"]["TITLE"],
+                                      error_response["WALLET_NOT_FOUND"]["MESSAGE"])
             #end if
             self.wallet = wallet_record
         # end if
@@ -49,8 +49,8 @@ class TransactionServices:
                 id=validate_uuid(transaction_id)
             ).first()
             if transaction_record is None:
-                raise RequestNotFound(self.error_response["TRANSACTION_NOT_FOUND"]["TITLE"],
-                                      self.error_response["TRANSACTION_NOT_FOUND"]["MESSAGE"])
+                raise RequestNotFound(error_response["TRANSACTION_NOT_FOUND"]["TITLE"],
+                                      error_response["TRANSACTION_NOT_FOUND"]["MESSAGE"])
             #end if
             self.transaction = transaction_record
         # end if
@@ -108,13 +108,13 @@ class TransactionServices:
         """ method to refund a transaction """
         # make sure the transaction is not refunded yet == CANCELLED
         if self.transaction.payment.status == 2 :
-            raise UnprocessableEntity(self.error_response["TRANSACTION_REFUNDED"]["TITLE"],
-                                      self.error_response["TRANSACTION_REFUNDED"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["TRANSACTION_REFUNDED"]["TITLE"],
+                                      error_response["TRANSACTION_REFUNDED"]["MESSAGE"])
 
         # prevent refund a refund transaction!
         if "REFUND" in self.transaction.transaction_type.key:
-            raise UnprocessableEntity(self.error_response["INVALID_REFUND"]["TITLE"],
-                                      self.error_response["INVALID_REFUND"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["INVALID_REFUND"]["TITLE"],
+                                      error_response["INVALID_REFUND"]["MESSAGE"])
 
         # populates refund transaction
         refunds = []

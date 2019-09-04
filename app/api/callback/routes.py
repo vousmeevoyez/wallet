@@ -18,7 +18,9 @@ from app.api.callback.modules.callback_services import CallbackServices
 # error
 from app.api.error.http import *
 # configuration
-from app.config import config
+from app.api.const import LOGGING
+from app.config.external.bank import BNI_ECOLLECTION
+from app.api.error.message import RESPONSE as error_response
 # remote call
 from task.bank.BNI.utility.remote_call import decrypt
 from task.bank.BNI.utility.remote_call import DecryptError
@@ -32,18 +34,17 @@ class WithdrawCallback(Routes):
 
     __serializer__ = CallbackSchema()
 
-    bni_ecollection_config = config.Config.BNI_ECOLLECTION_CONFIG
-    logging_config = config.Config.LOGGING_CONFIG
-
     def preprocess(self, payload):
         try:
-            payload = decrypt(self.bni_ecollection_config["DEBIT_CLIENT_ID"],
-                                   self.bni_ecollection_config["DEBIT_SECRET_KEY"],
-                                   payload["data"])
+            payload = decrypt(
+                BNI_ECOLLECTION["DEBIT_CLIENT_ID"],
+                BNI_ECOLLECTION["DEBIT_SECRET_KEY"],
+                payload["data"]
+            )
         except DecryptError:
             # raise error
-            raise BadRequest(self.error_response["INVALID_CALLBACK"]["TITLE"],
-                             self.error_response["INVALID_CALLBACK"]["MESSAGE"])
+            raise BadRequest(error_response["INVALID_CALLBACK"]["TITLE"],
+                             error_response["INVALID_CALLBACK"]["MESSAGE"])
         #end try
         return payload
     # end def
@@ -54,10 +55,12 @@ class WithdrawCallback(Routes):
         request_data = self.serialize(self.payload(raw=True))
 
         # log every incoming callback
-        external_log = ExternalLog(request=request_data,
-                                   resource=self.logging_config["BNI_ECOLLECTION"],
-                                   api_name="WITHDRAW_CALLBACK",
-                                   api_type=self.logging_config["INGOING"])
+        external_log = ExternalLog(
+            request=request_data,
+            resource=LOGGING["BNI_ECOLLECTION"],
+            api_name="WITHDRAW_CALLBACK",
+            api_type=LOGGING["INGOING"]
+        )
         db.session.add(external_log)
 
         # add payment channel key here to know where the request coming from
@@ -83,18 +86,17 @@ class DepositCallback(Routes):
 
     __serializer__ = CallbackSchema()
 
-    bni_ecollection_config = config.Config.BNI_ECOLLECTION_CONFIG
-    logging_config = config.Config.LOGGING_CONFIG
-
     def preprocess(self, payload):
         try:
-            payload = decrypt(self.bni_ecollection_config["CREDIT_CLIENT_ID"],
-                                   self.bni_ecollection_config["CREDIT_SECRET_KEY"],
-                                   payload["data"])
+            payload = decrypt(
+                BNI_ECOLLECTION["CREDIT_CLIENT_ID"],
+                BNI_ECOLLECTION["CREDIT_SECRET_KEY"],
+                payload["data"]
+            )
         except DecryptError:
             # raise error
-            raise BadRequest(self.error_response["INVALID_CALLBACK"]["TITLE"],
-                             self.error_response["INVALID_CALLBACK"]["MESSAGE"])
+            raise BadRequest(error_response["INVALID_CALLBACK"]["TITLE"],
+                             error_response["INVALID_CALLBACK"]["MESSAGE"])
         #end try
         return payload
     # end def
@@ -104,10 +106,12 @@ class DepositCallback(Routes):
         request_data = self.serialize(self.payload(raw=True))
 
         # log every incoming callback
-        external_log = ExternalLog(request=request_data,
-                                   resource=self.logging_config["BNI_ECOLLECTION"],
-                                   api_name="DEPOSIT_CALLBACK",
-                                   api_type=self.logging_config["INGOING"])
+        external_log = ExternalLog(
+            request=request_data,
+            resource=LOGGING["BNI_ECOLLECTION"],
+            api_name="DEPOSIT_CALLBACK",
+            api_type=LOGGING["INGOING"]
+        )
         db.session.add(external_log)
 
         # add payment channel key here to know where the request coming from

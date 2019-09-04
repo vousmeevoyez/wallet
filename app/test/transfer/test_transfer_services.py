@@ -2,11 +2,8 @@
     Test Transfer Services
 """
 import uuid
-import time
-from datetime import datetime, timedelta
-from unittest.mock import patch, Mock
 
-from freezegun import freeze_time
+from unittest.mock import patch
 
 from app.api import db
 
@@ -16,7 +13,7 @@ from app.api.models import *
 
 from app.api.utility.utils import QR
 
-from app.api.wallets.modules.transfer_services import TransferServices
+from app.api.transfer.modules.transfer_services import TransferServices
 from app.api.transactions.factories import helper as transaction_helper
 from app.api.transactions.factories.transactions.products import TransactionError
 

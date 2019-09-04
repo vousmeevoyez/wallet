@@ -11,9 +11,11 @@ from app.api.users import api
 # serializer
 from app.api.serializer import UserSchema, BankAccountSchema
 # request schema
-from app.api.request_schema import BankAccountRequestSchema
-from app.api.request_schema import UserRequestSchema
-from app.api.request_schema import UserUpdateRequestSchema
+from app.api.request_schema import (
+    BankAccountRequestSchema,
+    UserRequestSchema,
+    UserUpdateRequestSchema
+)
 # decorator
 from app.api.auth.decorator import token_required, admin_required
 # services
