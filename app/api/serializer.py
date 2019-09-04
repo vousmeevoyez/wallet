@@ -14,10 +14,9 @@ from marshmallow import fields, ValidationError, post_load, validates
 
 from app.api import ma
 from app.api.models  import *
-from app.config  import config
 
-BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
-WALLET_CONFIG = config.Config.WALLET_CONFIG
+from app.api.const import WALLET
+from app.config.external.bank  import BNI_ECOLLECTION
 
 """
     GLOBAL VALIDATION FUNCTION
@@ -534,8 +533,8 @@ class CallbackSchema(ma.Schema):
             if va_number[:3] != "988":
                 # third make sure 3 first va_number is valid
                 if va_number[3:8] != \
-                BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]\
-                or BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]:
+                BNI_ECOLLECTION["CREDIT_CLIENT_ID"]\
+                or BNI_ECOLLECTION["DEBIT_CLIENT_ID"]:
                     valid = False
                 #end if
                 valid = False
@@ -556,25 +555,25 @@ class CallbackSchema(ma.Schema):
         """
         # if payment amount is positive it means deposit
         if payment_amount > 0:
-            if payment_amount < int(WALLET_CONFIG["MINIMAL_DEPOSIT"]):
+            if payment_amount < int(WALLET["MINIMAL_DEPOSIT"]):
                 raise ValidationError("Minimal deposit is {}".
-                                      format(str(WALLET_CONFIG["MINIMAL_DEPOSIT"])))
+                                      format(str(WALLET["MINIMAL_DEPOSIT"])))
             #end if
 
-            if payment_amount > int(WALLET_CONFIG["MAX_DEPOSIT"]):
+            if payment_amount > int(WALLET["MAX_DEPOSIT"]):
                 raise ValidationError("Maximum deposit is {}".
-                                      format(str(WALLET_CONFIG["MAX_DEPOSIT"])))
+                                      format(str(WALLET["MAX_DEPOSIT"])))
             #end if
         # negatives it means withdraw
         elif payment_amount < 0:
-            if abs(payment_amount) < int(WALLET_CONFIG["MINIMAL_WITHDRAW"]):
+            if abs(payment_amount) < int(WALLET["MINIMAL_WITHDRAW"]):
                 raise ValidationError("Minimal withdraw is {}".
-                                      format(str(WALLET_CONFIG["MINIMAL_WITHDRAW"])))
+                                      format(str(WALLET["MINIMAL_WITHDRAW"])))
             #end if
 
-            if abs(payment_amount) > int(WALLET_CONFIG["MAX_WITHDRAW"]):
+            if abs(payment_amount) > int(WALLET["MAX_WITHDRAW"]):
                 raise ValidationError("Maximum withdraw is {}".
-                                      format(str(WALLET_CONFIG["MAX_WITHDRAW"])))
+                                      format(str(WALLET["MAX_WITHDRAW"])))
             #end if
         #end if
 #end class

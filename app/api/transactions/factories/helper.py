@@ -7,9 +7,7 @@ TransactionError
 from app.api.transactions.factories.payments.factory import generate_payment
 
 from app.api.error.http import UnprocessableEntity
-from app.config import config
-
-ERROR_RESPONSE = config.Config.ERROR_CONFIG
+from app.api.error.message import RESPONSE as error_response
 
 def _serialize_object(object_):
     if hasattr(object_, "id"):
@@ -43,8 +41,8 @@ def process_transaction(source, destination, amount, flag, notes=None,
     payment = generate_payment(payment, payment_type)
     if payment is None:
         raise UnprocessableEntity(
-            ERROR_RESPONSE["DUPLICATE_PAYMENT"]["TITLE"],
-            ERROR_RESPONSE["DUPLICATE_PAYMENT"]["MESSAGE"]
+            error_response["DUPLICATE_PAYMENT"]["TITLE"],
+            error_response["DUPLICATE_PAYMENT"]["MESSAGE"]
         )
 
     transaction = Transaction(
@@ -58,7 +56,7 @@ def process_transaction(source, destination, amount, flag, notes=None,
         transaction = generate_transaction(transaction, flag)
     except TransactionError as error:
         raise UnprocessableEntity(
-            ERROR_RESPONSE["TRANSFER_FAILED"]["TITLE"],
-            ERROR_RESPONSE["TRANSFER_FAILED"]["MESSAGE"]
+            error_response["TRANSFER_FAILED"]["TITLE"],
+            error_response["TRANSFER_FAILED"]["MESSAGE"]
         )
     return transaction

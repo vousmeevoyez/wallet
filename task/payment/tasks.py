@@ -16,13 +16,10 @@ from sqlalchemy.exc import OperationalError, IntegrityError
 from celery.exceptions import MaxRetriesExceededError
 from app.api.error.http import *
 # configuration
-from app.config import config
+from app.api.const import BACKGROUND_PAYMENT, WORKER
 
-BACKGROUND_PAYMENT_CONFIG = config.Config.BACKGROUND_PAYMENT_CONFIG
-WORKER_CONFIG = config.Config.WORKER_CONFIG
-
-max_retries = int(BACKGROUND_PAYMENT_CONFIG["DAY"]) \
-               / int(BACKGROUND_PAYMENT_CONFIG["COUNTDOWN"])
+max_retries = int(BACKGROUND_PAYMENT["DAY"]) \
+               / int(BACKGROUND_PAYMENT["COUNTDOWN"])
 
 class PaymentTask(celery.Task):
     """Abstract base class for all tasks in my app."""
@@ -39,11 +36,15 @@ class PaymentTask(celery.Task):
         sentry.captureException(exc)
         super(PaymentTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
+    @celery.task(bind=True)
+    def health_check(self, text):
+        return text
+
     @celery.task(bind=True,
                  max_retries=max_retries,
-                 task_soft_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
-                 task_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
-                 acks_late=WORKER_CONFIG["ACKS_LATE"],
+                 task_soft_time_limit=WORKER["SOFT_LIMIT"],
+                 task_time_limit=WORKER["SOFT_LIMIT"],
+                 acks_late=WORKER["ACKS_LATE"],
                 )
     def background_transfer(self, plan_id, flag="AUTO_DEBIT"):
         """ create task in background to move money between wallet """
@@ -89,8 +90,8 @@ class PaymentTask(celery.Task):
                     db.session.commit()
                 # end for
 
-                self.retry(countdown=int(BACKGROUND_PAYMENT_CONFIG["COUNTDOWN"]),
-                           expires=int(BACKGROUND_PAYMENT_CONFIG["EXPIRES"]))
+                self.retry(countdown=int(BACKGROUND_PAYMENT["COUNTDOWN"]),
+                           expires=int(BACKGROUND_PAYMENT["EXPIRES"]))
             except MaxRetriesExceededError:
                 # update plan to FAILED
                 for plan in plans:

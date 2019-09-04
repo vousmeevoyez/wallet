@@ -9,6 +9,8 @@ from unittest.mock import Mock, patch
 
 from datetime import datetime
 
+import requests
+
 from task.test.base import BaseTestCase
 from app.api import db
 from app.api.models import Wallet
@@ -317,18 +319,82 @@ class TestMockVirtualAccountHelper(BaseTestCase):
         mock_post.side_effect = ServicesFailed("some error", Mock())
         with self.assertRaises(RemoteCallError):
             result = VirtualAccountHelper()._post(api_name, "CREDIT", payload)
-#end class
+
+    @patch("requests.get")
+    def test_health_check_success(self, mock_get):
+        """ test success check to BNI Virtual Account"""
+        api_name = "HEALTH_CHECK"
+
+        expected_value = {"status":"998","message":"\"Content-Type\" header not defined as it should be."}
+
+        mock_get.return_value = Mock()
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = expected_value
+
+        result = VirtualAccountHelper.health_check()
+        self.assertEqual(result, 200)
+
+    @patch("requests.get")
+    def test_health_check_failed(self, mock_get):
+        """ test failed check to BNI Virtual Account"""
+        mock_get.side_effect = requests.exceptions.Timeout("error", "errror")
+
+        with self.assertRaises(ApiError):
+            result = VirtualAccountHelper.health_check()
+    #end class
 
 class TestMockCoreBankHelper(BaseTestCase):
     """ This is class to test by mocking all response from BNI COre Bank helper"""
 
     def test_generate_ref_number(self):
-        result = CoreBankHelper()._generate_ref_number()
+        result = CoreBankHelper._generate_ref_number()
         self.assertTrue(len(result) > 15)
     #end def
 
-    def test__check_response_code(self):
-        result = CoreBankHelper()._generate_ref_number()
+    def test_check_response_code(self):
+        response = {
+            "getBalanceResponse": {
+                "clientId": "BNISERVICE",
+                "parameters": {
+                    "responseCode"     : "0001",
+                    "responseMessage"  : "Request has been processed successfully",
+                    "responseTimestamp": "2017-02-24T14:12:25.871Z",
+                    "customerName"     : "Bpk JONOMADE MADEMADEMADEMADE IMAMADE",
+                    "accountCurrency"  : "IDR",
+                    "accountBalance"   : 16732765949981
+                }
+            }
+        }
+        result = CoreBankHelper._check_response_code(response)
+        self.assertTrue(result)
+    #end def
+
+    @patch("requests.post")
+    def test_health_check_success(self, mock_post):
+        """ test function that successfully check BNI core bank services health """
+        # mock the response here
+        expected_value = {
+            "access_token": "x3LyfeWKbeaARhd2PfU4F4OeNi43CrDFdi6XnzScKIuk5VmvFiq0B2",
+            "token_type": "Bearer",
+            "expires_in": 3599,
+            "scope": "resource.WRITE resource.READ"
+        }
+        mock_post.return_value = Mock()
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = expected_value
+
+        result = CoreBankHelper.health_check()
+        self.assertEqual(result, 200)
+    #end def
+
+    @patch("requests.post")
+    def test_health_check_failed(self, mock_post):
+        """ test function that failed check BNI core bank services health """
+        # mock the response here
+        mock_post.side_effect = requests.exceptions.Timeout("error", "errror")
+
+        with self.assertRaises(ApiError):
+            CoreBankHelper.health_check()
     #end def
 
     @patch("requests.post")
@@ -483,7 +549,7 @@ class TestMockCoreBankHelper(BaseTestCase):
             "clientId": "IDBNIU0FOREJPWA==",
             "accountNo": "0115476117"
         }
-        result = CoreBankHelper()._create_signature(payload)
+        result = CoreBankHelper._create_signature(payload)
         self.assertTrue(isinstance(result, str))
     #end def
 
@@ -945,6 +1011,7 @@ class TestMockCoreBankHelper(BaseTestCase):
             "account_no"    : "115471119",
             "amount"        : "100500",
             "bank_code"     : "009",
+            "ref_number"    : None
         }
 
         # mock the response here
@@ -993,6 +1060,7 @@ class TestMockCoreBankHelper(BaseTestCase):
             "account_no"    : "115471119",
             "amount"        : "100500",
             "bank_code"     : "009",
+            "ref_number"    : None
         }
 
         # mock the response here

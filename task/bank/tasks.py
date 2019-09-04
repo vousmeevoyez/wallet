@@ -4,16 +4,18 @@
 """
 import random
 
-import grpc
+#import grpc
 from flask import current_app
 from sqlalchemy.exc import OperationalError, IntegrityError
 from celery.exceptions import MaxRetriesExceededError, Reject, Retry
 
-from app.api import celery
-from app.api import sentry
-from app.api import db
+from app.api import (
+    celery,
+    sentry,
+    db
+)
 
-from app.api.models import *
+from app.api.models import VirtualAccount, Payment, BankAccount
 
 from task.bank.BNI.helper import VirtualAccount as VaServices
 from task.bank.BNI.helper import CoreBank
@@ -22,17 +24,14 @@ from task.bank.BNI.helper import CoreBank
 
 # exceptions
 from task.bank.exceptions.general import *
-# gRPC
-from task.bank.rpc import callback_pb2
-from task.bank.rpc import callback_pb2_grpc
 
-from app.config import config
+# config
+from app.config.external.bank import BNI_OPG
+from app.api.const import (
+    WORKER,
+    STATUS
+)
 
-TRANSACTION_LOG_CONFIG = config.Config.TRANSACTION_LOG_CONFIG
-PAYMENT_STATUS_CONFIG = config.Config.PAYMENT_STATUS_CONFIG
-BNI_OPG_CONFIG = config.Config.BNI_OPG_CONFIG
-WORKER_CONFIG = config.Config.WORKER_CONFIG
-STATUS_CONFIG = config.Config.STATUS_CONFIG
 
 def backoff(attempts):
     """ prevent hammering service with thousand retry"""
@@ -42,32 +41,39 @@ class BankTask(celery.Task):
     """Abstract base class for all tasks in my app."""
     abstract = True
 
+    current_user = None
+
     def on_retry(self, exc, task_id, args, kwargs, einfo):
         """Log the exceptions to sentry at retry."""
-        sentry.captureException(exc)
+        sentry_sdk.captureException(exc)
         super(BankTask, self).on_retry(exc, task_id, args, kwargs, einfo)
 
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         """Log the exceptions to sentry."""
-        sentry.captureException(exc)
+        sentry_sdk.captureException(exc)
+        # end with
         super(BankTask, self).on_failure(exc, task_id, args, kwargs, einfo)
+
+    @celery.task(bind=True)
+    def health_check(self, text):
+        return text
 
     """
         BNI VIRTUAL ACCOUNT TASK 
     """
     @celery.task(bind=True,
-                 max_retries=int(WORKER_CONFIG["MAX_RETRIES"]),
-                 task_soft_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
-                 task_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
-                 acks_late=WORKER_CONFIG["ACKS_LATE"],
+                 max_retries=int(WORKER["MAX_RETRIES"]),
+                 task_soft_time_limit=WORKER["SOFT_LIMIT"],
+                 task_time_limit=WORKER["SOFT_LIMIT"],
+                 acks_late=WORKER["ACKS_LATE"],
                 )
     def create_va(self, virtual_account_id):
         """ create task in background to create a Virtual account """
         # fetch va object
         virtual_account = VirtualAccount.query.filter_by(id=virtual_account_id).first()
 
-        # build phone number 
-        phone_ext =  virtual_account.wallet.user.phone_ext
+        # build phone number
+        phone_ext = virtual_account.wallet.user.phone_ext
         phone_number = virtual_account.wallet.user.phone_number
         msisdn = str(phone_ext) + str(phone_number)
 
@@ -83,25 +89,29 @@ class BankTask(celery.Task):
         try:
             result = VaServices().create_va(resources, va_payload)
         except ApiError as error:
+            # set current user to wallet id so when something wrong we know exactly what happen
+            self.current_user = virtual_account.wallet.id
             self.retry(countdown=backoff(self.request.retries), exc=error)
         #end try
 
         # update virtual account status to database
-        virtual_account.status = STATUS_CONFIG["ACTIVE"]
+        virtual_account.status = STATUS["ACTIVE"]
         db.session.commit()
 
     """
         BNI CORE BANK
     """
     @celery.task(bind=True,
-                 max_retries=int(WORKER_CONFIG["MAX_RETRIES"]),
-                 task_soft_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
-                 task_time_limit=WORKER_CONFIG["SOFT_LIMIT"],
-                 acks_late=WORKER_CONFIG["ACKS_LATE"],
+                 max_retries=int(WORKER["MAX_RETRIES"]),
+                 task_soft_time_limit=WORKER["SOFT_LIMIT"],
+                 task_time_limit=WORKER["SOFT_LIMIT"],
+                 acks_late=WORKER["ACKS_LATE"],
                 )
     def bank_transfer(self, payment_id):
         # fix circular import!
         from app.api.transactions.modules.transaction_services import TransactionServices 
+        #from task.bank.rpc import callback_pb2
+        #from task.bank.rpc import callback_pb2_grpc
         payment = Payment.query.filter_by(id=payment_id).first()
 
         bank_account_no = payment.to
@@ -114,7 +124,7 @@ class BankTask(celery.Task):
         transfer_payload = {
             "amount"         : amount, # BANK CODE
             "bank_code"      : bank_account.bank.code, # BANK CODE
-            "source_account" : BNI_OPG_CONFIG["MASTER_ACCOUNT"], # MASTER ACCOUNT ID
+            "source_account" : BNI_OPG["MASTER_ACCOUNT"], # MASTER ACCOUNT ID
             "account_no"     : bank_account_no,# destination account bank transfer
             "ref_number"     : None # use system generated refnumber
         }
@@ -124,7 +134,9 @@ class BankTask(celery.Task):
         except ApiError as error:
             # handle celery exception here
             try:
-                self.retry(countdown=backoff(self.request.retries))
+                # set current user to wallet id so when something wrong we know exactly what happen
+                self.current_user = payment.source_account
+                self.retry(countdown=backoff(self.request.retries), exc=error)
             except MaxRetriesExceededError:
                 # create transaction refund here
                 transaction_id = str(payment.transaction.id)

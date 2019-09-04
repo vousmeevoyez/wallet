@@ -76,7 +76,7 @@ services:
                 ports:
                 - 6555:5555
                 restart: always
-                
+
         grpc:
                 env_file: env/${ENV}.env
                 image: modana-wallet-grpc

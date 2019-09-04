@@ -16,8 +16,12 @@ from app.api.wallets.modules.wallet_core import WalletCore
 from app.api.models import *
 # http
 from app.api.http_response import *
+# const
+from app.api.const import WALLET
 # exceptions
 from app.api.error.http import *
+# error
+from app.api.error.message import RESPONSE as error_response
 
 class WithdrawServices(WalletCore):
     """ class that handle request to withdraw """
@@ -30,19 +34,19 @@ class WithdrawServices(WalletCore):
         if amount == 0:
             amount = self.source.balance
 
-        if amount < float(self.wallet_config["MINIMAL_WITHDRAW"]):
-            raise UnprocessableEntity(self.error_response["MIN_WITHDRAW"]["TITLE"],
-                                      self.error_response["MIN_WITHDRAW"]["MESSAGE"])
+        if amount < float(WALLET["MINIMAL_WITHDRAW"]):
+            raise UnprocessableEntity(error_response["MIN_WITHDRAW"]["TITLE"],
+                                      error_response["MIN_WITHDRAW"]["MESSAGE"])
         #end if
 
-        if amount > float(self.wallet_config["MAX_WITHDRAW"]):
-            raise UnprocessableEntity(self.error_response["MAX_WITHDRAW"]["TITLE"],
-                                      self.error_response["MAX_WITHDRAW"]["MESSAGE"])
+        if amount > float(WALLET["MAX_WITHDRAW"]):
+            raise UnprocessableEntity(error_response["MAX_WITHDRAW"]["TITLE"],
+                                      error_response["MAX_WITHDRAW"]["MESSAGE"])
         #end if
 
         if amount > float(self.source.balance):
-            raise UnprocessableEntity(self.error_response["INSUFFICIENT_BALANCE"]["TITLE"],
-                                      self.error_response["INSUFFICIENT_BALANCE"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["INSUFFICIENT_BALANCE"]["TITLE"],
+                                      error_response["INSUFFICIENT_BALANCE"]["MESSAGE"])
         #end if
 
         # before creating a cardless va, we need to make sure there's no ongoing withdraw request
@@ -50,13 +54,13 @@ class WithdrawServices(WalletCore):
                                                  self.source.id,
                                                  Withdraw.valid_until > datetime.now()).count()
         if pending_withdraw > 0:
-            raise UnprocessableEntity(self.error_response["PENDING_WITHDRAW"]["TITLE"],
-                                      self.error_response["PENDING_WITHDRAW"]["MESSAGE"])
+            raise UnprocessableEntity(error_response["PENDING_WITHDRAW"]["TITLE"],
+                                      error_response["PENDING_WITHDRAW"]["MESSAGE"])
         #end if
 
         # creating withdraw record and set it to valid for certain period of time
         valid_until = datetime.now() + \
-        timedelta(minutes=VIRTUAL_ACCOUNT_CONFIG["BNI"]["DEBIT_VA_TIMEOUT"])
+        timedelta(minutes=VIRTUAL_ACCOUNT["BNI"]["DEBIT_VA_TIMEOUT"])
 
         withdraw = Withdraw(
             wallet_id=self.source.id,

@@ -14,7 +14,7 @@ def register_blueprint(core):
     """ regist all module here"""
     for module in ("auth", "wallets", "users", "virtual_accounts",
                    "payment_plans", "plans", "callback", "banks", "logs",
-                   "utility", "transactions", "schedulers"):
+                   "utility", "transactions", "schedulers", "transfer"):
         namespace = import_module('app.api.{}'.format(module))
         core.add_namespace(namespace.api, path="/{}".format(module))
 

@@ -15,6 +15,8 @@ from flask_marshmallow import Marshmallow
 
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -46,6 +48,6 @@ def create_app(config_name):
 
     if not app.testing and not app.debug:
         sentry_sdk.init(
-            integrations=[FlaskIntegration()]
+            integrations=[FlaskIntegration(), CeleryIntegration(), SqlalchemyIntegration()]
         )
     return app

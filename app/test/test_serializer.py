@@ -1,3 +1,6 @@
+"""
+    Testing Serializer
+"""
 from app.test.base      import BaseTestCase
 from app.api.serializer import *
 from app.api.models     import *
@@ -990,6 +993,7 @@ class TestPaymentPlanSchema(BaseTestCase):
                 "due_date" : "2019-04-29T21:08:12",
             }
         ]
+
         data = {
             "id"          : "some-payment-plan-id",
             "method"      : "AUTO",
@@ -999,6 +1003,7 @@ class TestPaymentPlanSchema(BaseTestCase):
         }
         payment_plan = PaymentPlanSchema(strict=True).load(data)
         print(payment_plan.data)
+
 
 class TestPlanSchema(BaseTestCase):
     """ testing Plan Schema Serializer """
@@ -1077,7 +1082,7 @@ class TestPlanSchema(BaseTestCase):
             "due_date" : "2019!06-11",
         }
         errors = PlanSchema().validate(data)
-        expected_error = {'due_date': ['Invalid isoformat string: 2019!06-11']}
+        expected_error = {'due_date': ["Invalid isoformat string: '2019!06-11'"]}
         self.assertEqual(errors, expected_error)
 
         data = {
@@ -1090,15 +1095,6 @@ class TestPlanSchema(BaseTestCase):
         expected_error = {'due_date': ['day is out of range for month']}
         self.assertEqual(errors, expected_error)
 
-        data = {
-            "id" : "some-payment-plan-id",
-            "amount" : 10000,
-            "type" : "MAIN",
-            "due_date" : "2020-04-29T21:08:12",
-        }
-        errors = PlanSchema().validate(data)
-        expected_error = {'due_date': ['Due date already expired']}
-        self.assertEqual(errors, expected_error)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

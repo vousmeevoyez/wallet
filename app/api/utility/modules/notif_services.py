@@ -10,9 +10,8 @@ import requests
 from flask import current_app
 
 # configuration
-from app.config import config
+from app.config.external.notif import HR_NOTIF
 
-NOTIF_SERVICES_CONFIG = config.Config.NOTIF_SERVICES_CONFIG
 
 class ApiError(Exception):
     """ notification api error class """
@@ -31,7 +30,7 @@ class NotifServices:
 
         try:
             r = requests.post(
-                NOTIF_SERVICES_CONFIG["BASE_URL"],
+                HR_NOTIF["BASE_URL"],
                 data=json.dumps(payload),
                 headers=headers,
             )

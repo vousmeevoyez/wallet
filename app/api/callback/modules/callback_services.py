@@ -9,15 +9,13 @@ from app.api import db
 # model
 from app.api.models import *
 # services
-from app.api.wallets.modules.transfer_services import TransferServices
+from app.api.transfer.modules.transfer_services import TransferServices
 from app.api.transactions.factories.helper import process_transaction
 # exceptions
 from app.api.error.http import *
 # configuration
-from app.config import config
+from app.api.error.message import RESPONSE as error_response
 
-ERROR_CONFIG = config.Config.ERROR_CONFIG
-LOGGING_CONFIG = config.Config.LOGGING_CONFIG
 
 class Callback:
     """ Base Callback """
@@ -30,8 +28,8 @@ class Callback:
         virtual_account = VirtualAccount.query.filter_by(account_no=virtual_account,
                                                          trx_id=trx_id).first()
         if virtual_account is None:
-            raise RequestNotFound(ERROR_CONFIG["VA_NOT_FOUND"]["TITLE"],
-                                  ERROR_CONFIG["VA_NOT_FOUND"]["MESSAGE"])
+            raise RequestNotFound(error_response["VA_NOT_FOUND"]["TITLE"],
+                                  error_response["VA_NOT_FOUND"]["MESSAGE"])
 
         self.virtual_account = virtual_account
         self.flow = flow

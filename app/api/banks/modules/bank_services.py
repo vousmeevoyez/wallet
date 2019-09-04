@@ -8,8 +8,8 @@
 from app.api.models import Bank
 # serializer
 from app.api.serializer import BankSchema
-# configuration
-from app.config import config
+# error response
+from app.api.error.message import RESPONSE as error_response
 # http error
 from app.api.error.http import UnprocessableEntity
 # BNI API
@@ -19,7 +19,6 @@ from task.bank.exceptions.general import ApiError
 
 class BankServices:
     """ Bank Services Class"""
-    error_response = config.Config.ERROR_CONFIG
 
     @staticmethod
     def get_banks():
@@ -61,7 +60,7 @@ class BankServices:
             })
         except ApiError as error:
             message = self._extract_error(error.original_exception, "getBalanceResponse")
-            raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
+            raise UnprocessableEntity(error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
         # end try
         return response
@@ -76,7 +75,7 @@ class BankServices:
         except ApiError as error:
             message = self._extract_error(error.original_exception,
                                           "getInHouseInquiryResponse")
-            raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
+            raise UnprocessableEntity(error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
         # end try
         return response
@@ -91,7 +90,7 @@ class BankServices:
         except ApiError as error:
             message = self._extract_error(error.original_exception,
                                           "getPaymentStatusResponse")
-            raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
+            raise UnprocessableEntity(error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
         # end try
         return response
@@ -108,7 +107,7 @@ class BankServices:
         except ApiError as error:
             message = self._extract_error(error.original_exception,
                                           "holdAmountResponse")
-            raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
+            raise UnprocessableEntity(error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
         # end try
         return response
@@ -121,7 +120,7 @@ class BankServices:
         except ApiError as error:
             message = self._extract_error(error.original_exception,
                                           "doPaymentResponse")
-            raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
+            raise UnprocessableEntity(error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
         # end try
         return response
@@ -134,7 +133,7 @@ class BankServices:
         except ApiError as error:
             message = self._extract_error(error.original_exception,
                                           "getInterbankInquiryResponse")
-            raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
+            raise UnprocessableEntity(error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
         # end try
         return response
@@ -147,7 +146,7 @@ class BankServices:
         except ApiError as error:
             message = self._extract_error(error.original_exception,
                                           "getInterbankPaymentResponse")
-            raise UnprocessableEntity(self.error_response["BANK_PROCESS_FAILED"]["TITLE"],
+            raise UnprocessableEntity(error_response["BANK_PROCESS_FAILED"]["TITLE"],
                                       message)
         # end try
         return response

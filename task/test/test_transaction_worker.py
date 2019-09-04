@@ -15,10 +15,8 @@ class TestTransactionTask(BaseTestCase):
             self._transfer(self.destination, self.source, 1)
         #end for
         time.sleep(3)
-        source = Wallet.query.get(1)
-        destination = Wallet.query.get(2)
-        self.assertEqual(source.balance, 100)
-        self.assertEqual(destination.balance, 100)
+        self.assertEqual(self.source.balance, 100)
+        self.assertEqual(self.destination.balance, 100)
     #end for
 
     def _transfer(self, source, destination, amount):

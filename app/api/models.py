@@ -8,8 +8,6 @@
 #pylint: disable=too-few-public-methods
 #pylint: disable=no-name-in-module
 #pylint: disable=no-member
-
-
 import secrets
 import random
 import uuid
@@ -20,27 +18,36 @@ from dateutil import relativedelta
 import pytz
 import jwt
 
-from werkzeug.security import generate_password_hash
-from werkzeug.security import check_password_hash
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
 
 from sqlalchemy import asc
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.api import db
+# const
+from app.api.const import (
+    WALLET,
+    JWT,
+    VIRTUAL_ACCOUNT
+)
+# external config
+from app.config.external.bank import (
+    BNI_ECOLLECTION
+)
 from app.config import config
 
 # exceptions
-from app.api.error.authentication import RevokedTokenError
-from app.api.error.authentication import SignatureExpiredError
-from app.api.error.authentication import InvalidTokenError
-from app.api.error.authentication import EmptyPayloadError
+from app.api.error.authentication import (
+    RevokedTokenError,
+    SignatureExpiredError,
+    InvalidTokenError,
+    EmptyPayloadError
+)
 
 now = datetime.utcnow
-
-BNI_ECOLLECTION_CONFIG = config.Config.BNI_ECOLLECTION_CONFIG
-WALLET_CONFIG = config.Config.WALLET_CONFIG
-JWT_CONFIG = config.Config.JWT_CONFIG
-VIRTUAL_ACCOUNT_CONFIG = config.Config.VIRTUAL_ACCOUNT_CONFIG
 
 def uid():
     """ generate uuid """
@@ -128,9 +135,9 @@ class User(db.Model):
                 role -- User Role
         """
         if token_type == "ACCESS":
-            exp = datetime.utcnow() + timedelta(minutes=JWT_CONFIG["ACCESS_EXPIRE"])
+            exp = datetime.utcnow() + timedelta(minutes=JWT["ACCESS_EXPIRE"])
         elif token_type == "REFRESH":
-            exp = datetime.utcnow() + timedelta(days=JWT_CONFIG["ACCESS_EXPIRE"])
+            exp = datetime.utcnow() + timedelta(days=JWT["ACCESS_EXPIRE"])
         # end if
 
         payload = {
@@ -141,8 +148,8 @@ class User(db.Model):
         }
         return jwt.encode(
             payload,
-            JWT_CONFIG["SECRET"],
-            JWT_CONFIG["ALGORITHM"]
+            JWT["SECRET"],
+            JWT["ALGORITHM"]
         )
 
     @staticmethod
@@ -153,8 +160,8 @@ class User(db.Model):
                 token -- Jwt token
         """
         try:
-            payload = jwt.decode(token, JWT_CONFIG["SECRET"],
-                                 algorithms=JWT_CONFIG["ALGORITHM"])
+            payload = jwt.decode(token, JWT["SECRET"],
+                                 algorithms=JWT["ALGORITHM"])
             blacklist_status = BlacklistToken.is_blacklisted(token)
             if blacklist_status:
                 raise RevokedTokenError
@@ -232,7 +239,7 @@ class Wallet(db.Model):
         if wallet_lock is None:
             # add lock record
             lock_until = datetime.now() + \
-            timedelta(minutes=int(WALLET_CONFIG['LOCK_TIMEOUT']))
+            timedelta(minutes=int(WALLET['LOCK_TIMEOUT']))
 
             wallet_lock = WalletLock(
                 wallet_id=self.id,
@@ -283,7 +290,7 @@ class Wallet(db.Model):
                 # create first incorrect record here
                 # that valid for certain amount of time
                 valid_until = datetime.now() + \
-                timedelta(minutes=int(WALLET_CONFIG['INCORRECT_TIMEOUT']))
+                timedelta(minutes=int(WALLET['INCORRECT_TIMEOUT']))
                 incorrect_record = IncorrectPin(
                     wallet_id=self.id,
                     valid_until=valid_until,
@@ -295,7 +302,7 @@ class Wallet(db.Model):
                 incorrect_record.attempt = incorrect_record.attempt + 1
                 #print("number of attempt: {}".format(incorrect_record.attempt))
                 if incorrect_record.attempt > \
-                int(WALLET_CONFIG["INCORRECT_RETRY"]):
+                int(WALLET["INCORRECT_RETRY"]):
                     if self.is_unlocked() is not True:
                         status = "LOCKED"
                     else:
@@ -479,7 +486,7 @@ class VirtualAccount(db.Model):
     def get_datetime_expired(self, bank_name, va_type):
         """ function to set virtual account datetime_expired based on which
         bank and which type"""
-        timeout = VIRTUAL_ACCOUNT_CONFIG[bank_name]
+        timeout = VIRTUAL_ACCOUNT[bank_name]
 
         if va_type == "CREDIT":
             datetime_expired = datetime.now(self.TIMEZONE) \
@@ -501,14 +508,14 @@ class VirtualAccount(db.Model):
         bank = Bank.query.filter_by(id=self.bank_id).first()
         if bank.code == "009":
             while True:
-                fixed = BNI_ECOLLECTION_CONFIG["VA_PREFIX"]
-                length = BNI_ECOLLECTION_CONFIG["VA_LENGTH"]
+                fixed = BNI_ECOLLECTION["VA_PREFIX"]
+                length = BNI_ECOLLECTION["VA_LENGTH"]
 
                 va_type = VaType.query.filter_by(id=self.va_type_id).first()
                 if va_type.key == "CREDIT":
-                    client_id = BNI_ECOLLECTION_CONFIG["CREDIT_CLIENT_ID"]
+                    client_id = BNI_ECOLLECTION["CREDIT_CLIENT_ID"]
                 else:
-                    client_id = BNI_ECOLLECTION_CONFIG["DEBIT_CLIENT_ID"]
+                    client_id = BNI_ECOLLECTION["DEBIT_CLIENT_ID"]
                 #end if
 
                 # calculate fixed length first

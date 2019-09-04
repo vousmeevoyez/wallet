@@ -2,9 +2,11 @@
 FROM python:3.7 AS base
 MAINTAINER KELVIN
 # copy requirements
-COPY requirements.txt ./
-# install requirements
-RUN pip install -r requirements.txt
+# install requirements dynamically
+ARG dependencies=requirements
+ENV dependencies=${dependencies}
+COPY ${dependencies}.txt ./
+RUN pip install -r ${dependencies}.txt
 # create app dir
 WORKDIR /app
 # copy everything to app dir
@@ -17,9 +19,11 @@ RUN apt-get update && apt-get install make
 # set work dir
 WORKDIR /app
 # copy everything from base
-COPY --from=base /app/requirements.txt ./
+ARG dependencies=requirements
+ENV dependencies=${dependencies}
+COPY --from=base /app/${dependencies}.txt ./
 COPY --from=base /root/.cache /root/.cache
 # install requirements
-RUN pip install -r requirements.txt
+RUN pip install -r ${dependencies}.txt
 # copy again
 COPY --from=base /app ./
