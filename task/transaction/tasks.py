@@ -14,28 +14,25 @@ from app.api import celery
 
 from app.api.models import *
 
-# exceptions
-from task.bank.exceptions.general import *
-
-# const 
-from app.api.const import (
-    TRANSACTION_LOG,
-    PAYMENT_STATUS,
-    WORKER
-)
+# const
+from app.api.const import TRANSACTION_LOG, PAYMENT_STATUS, WORKER
 
 now = datetime.utcnow()
+
 
 @task_postrun.connect
 def close_session(*args, **kwargs):
     db.session.remove()
 
+
 def backoff(attempts):
     """ prevent hammering service with thousand retry"""
-    return random.uniform(2,4) ** attempts
+    return random.uniform(2, 4) ** attempts
+
 
 class TransferFailed(Exception):
     """ raised when something occured on transfer process """
+
 
 class TransactionTask(celery.Task):
     """Abstract base class for all tasks in my app."""
@@ -56,12 +53,13 @@ class TransactionTask(celery.Task):
     def health_check(self, text):
         return text
 
-    @celery.task(bind=True,
-                 max_retries=WORKER["MAX_RETRIES"],
-                 task_soft_time_limit=WORKER["SOFT_LIMIT"],
-                 task_time_limit=WORKER["SOFT_LIMIT"],
-                 acks_late=WORKER["ACKS_LATE"],
-                )
+    @celery.task(
+        bind=True,
+        max_retries=WORKER["MAX_RETRIES"],
+        task_soft_time_limit=WORKER["SOFT_LIMIT"],
+        task_time_limit=WORKER["SOFT_LIMIT"],
+        acks_late=WORKER["ACKS_LATE"],
+    )
     def transfer(self, payment_id):
         """ create task in background to move money between wallet """
         # fetch payment record that going to be processed
@@ -75,34 +73,33 @@ class TransactionTask(celery.Task):
             # create log object if its not exist
             log = Log(payment_id=payment_id)
             db.session.add(log)
-        #end if
+        # end if
 
         transaction = Transaction.query.filter_by(payment_id=payment.id).first()
         if transaction is None:
             # should abort the transfer
             print("transaction not found")
-        #end if
+        # end if
 
         # update log state here
-        log.state = 1 # PENDING
+        log.state = 1  # PENDING
         log.created_at = now
 
         db.session.begin(nested=True)
         try:
             # fetch target wallet here
-            if payment.payment_type is True: # CREDIT
+            if payment.payment_type is True:  # CREDIT
                 wallet_id = payment.to
-            else: # DEBIT
+            else:  # DEBIT
                 wallet_id = payment.source_account
 
-            wallet = \
-            Wallet.query.filter_by(id=wallet_id).with_for_update().first()
+            wallet = Wallet.query.filter_by(id=wallet_id).with_for_update().first()
 
             # add wallet balance
             wallet.add_balance(payment.amount)
 
             payment.status = PAYMENT_STATUS["DONE"]
-            log.state = 2 # COMPLETED
+            log.state = 2  # COMPLETED
             log.created_at = now
 
             # added transaction balance
@@ -115,7 +112,8 @@ class TransactionTask(celery.Task):
             payment.status = PAYMENT_STATUS["CANCELLED"]
             # retry the task again
             self.retry(countdown=backoff(self.request.retries), exc=error)
-        #end try
+        # end try
         db.session.commit()
         return transaction.id
-    #end def
+
+    # end def

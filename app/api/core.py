@@ -2,7 +2,7 @@
     Core Module
 """
 from flask import request
-from flask_restplus import Resource #pylint: disable=import-error
+from flask_restplus import Resource  # pylint: disable=import-error
 
 from marshmallow import ValidationError
 
@@ -29,12 +29,15 @@ class CoreRoutes:
             try:
                 serialized = self.__serializer__.validate(payload)
             except ValidationError as error:
-                raise BadRequest(error_response["INVALID_PARAMETER"]["TITLE"],
-                                 error_response["INVALID_PARAMETER"]["MESSAGE"],
-                                 error.messages)
+                raise BadRequest(
+                    error_response["INVALID_PARAMETER"]["TITLE"],
+                    error_response["INVALID_PARAMETER"]["MESSAGE"],
+                    error.messages,
+                )
             # end try
         # end if
         return payload
+
     # end def
 
     def _load(self, payload):
@@ -48,11 +51,14 @@ class CoreRoutes:
         try:
             serialized = self.__serializer__.load(payload)
         except ValidationError as error:
-            raise BadRequest(error_response["INVALID_PARAMETER"]["TITLE"],
-                             error_response["INVALID_PARAMETER"]["MESSAGE"],
-                             error.messages)
+            raise BadRequest(
+                error_response["INVALID_PARAMETER"]["TITLE"],
+                error_response["INVALID_PARAMETER"]["MESSAGE"],
+                error.messages,
+            )
         # end if
         return serialized.data
+
     # end def
 
     def preprocess(self, payload):
@@ -72,6 +78,7 @@ class CoreRoutes:
             payload = self.__schema__.parser.parse_args(strict=True)
         # end if
         return payload
+
     # end def
 
     def serialize(self, payload, load=False):
@@ -84,8 +91,12 @@ class CoreRoutes:
         if load:
             result = self._load(payload)
         return result
+
     # end def
+
+
 # end class
+
 
 class Routes(CoreRoutes, Resource):
     pass

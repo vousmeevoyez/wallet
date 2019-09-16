@@ -10,27 +10,25 @@ services:
                         args:
                                 dependencies: requirements-${ENV}
                 image: modana-wallet-services
-                entrypoint: ./scripts/build-prod.sh
+                entrypoint: ./scripts/build-dev.sh
                 depends_on:
                 - postgres
                 - rabbitmq
-                restart: always
+                restart: unless-stopped
                 ports:
-                - ${APP_PORT}:6000
+                - ${APP_PORT}:5000
 
         postgres:
                 env_file: env/${ENV}.env
-                build:
-                        context: dockerfiles/postgres/
+                image: postgres
                 volumes:
                 - "db_volume:/var/lib/postgresql/data"
-                restart: always
+                restart: unless-stopped
 
         rabbitmq:
                 env_file: env/${ENV}.env
-                build:
-                        context: dockerfiles/rabbitmq/
-                restart: always
+                image: rabbitmq:3-management
+                restart: unless-stopped
 
         celery:
                 env_file: env/${ENV}.env
@@ -39,7 +37,7 @@ services:
                 depends_on:
                 - rabbitmq
                 - postgres
-                restart: always
+                restart: unless-stopped
 
         celery2:
                 env_file: env/${ENV}.env
@@ -48,7 +46,7 @@ services:
                 depends_on:
                 - rabbitmq
                 - postgres
-                restart: always
+                restart: unless-stopped
 
         celery3:
                 env_file: env/${ENV}.env
@@ -57,7 +55,7 @@ services:
                 depends_on:
                 - rabbitmq
                 - postgres
-                restart: always
+                restart: unless-stopped
 
         celery4:
                 env_file: env/${ENV}.env
@@ -66,7 +64,25 @@ services:
                 depends_on:
                 - rabbitmq
                 - postgres
-                restart: always
+                restart: unless-stopped
+
+        celery5:
+                env_file: env/${ENV}.env
+                image: modana-wallet-services
+                entrypoint: make logging-worker
+                depends_on:
+                - rabbitmq
+                - postgres
+                restart: unless-stopped
+
+        beat:
+                env_file: env/${ENV}.env
+                image: modana-wallet-services
+                entrypoint: make beat
+                depends_on:
+                - rabbitmq
+                - postgres
+                restart: unless-stopped
 
         flower:
                 env_file: env/${ENV}.env
@@ -75,7 +91,7 @@ services:
                 - rabbitmq
                 ports:
                 - 6555:5555
-                restart: always
+                restart: unless-stopped
 
         grpc:
                 env_file: env/${ENV}.env
@@ -85,7 +101,7 @@ services:
                 - flask
                 ports:
                 - 6001:6001
-                restart: always
+                restart: unless-stopped
 
         callback:
                 image: modana-va-fake-grpc
@@ -96,7 +112,7 @@ services:
                 - flask
                 ports:
                 - 10000:10000
-                restart: always
+                restart: unless-stopped
 
 volumes:
         db_volume:

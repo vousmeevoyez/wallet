@@ -3,32 +3,41 @@
     ________________
     This is module that serve everything related to Transaction
 """
-#pylint: disable=bad-whitespace
-#pylint: disable=no-self-use
-#pylint: disable=import-error
-#pylint: disable=no-name-in-module
-#pylint: disable=singleton-comparison
+# pylint: disable=bad-whitespace
+# pylint: disable=no-self-use
+# pylint: disable=import-error
+# pylint: disable=no-name-in-module
+# pylint: disable=singleton-comparison
 from datetime import datetime, timedelta
 
 from sqlalchemy.exc import IntegrityError
 
 from app.api import db
+
 # helper
 from app.api.utility.utils import validate_uuid
+
 # models
 from app.api.models import Wallet, Transaction, Payment
+
 # serializer
 from app.api.serializer import TransactionSchema
+
 # core
 from app.api.transactions.factories.helper import process_transaction
+
 # config
 from app.config import config
+
 # http error
 from app.api.http_response import ok, accepted
+
 # const
 from app.api.error.message import RESPONSE as error_response
+
 # exception
 from app.api.error.http import UnprocessableEntity, RequestNotFound
+
 
 class TransactionServices:
     """ Transaction Services Class"""
@@ -38,9 +47,11 @@ class TransactionServices:
         if wallet_id is not None:
             wallet_record = Wallet.query.filter_by(id=validate_uuid(wallet_id)).first()
             if wallet_record is None:
-                raise RequestNotFound(error_response["WALLET_NOT_FOUND"]["TITLE"],
-                                      error_response["WALLET_NOT_FOUND"]["MESSAGE"])
-            #end if
+                raise RequestNotFound(
+                    error_response["WALLET_NOT_FOUND"]["TITLE"],
+                    error_response["WALLET_NOT_FOUND"]["MESSAGE"],
+                )
+            # end if
             self.wallet = wallet_record
         # end if
 
@@ -49,12 +60,15 @@ class TransactionServices:
                 id=validate_uuid(transaction_id)
             ).first()
             if transaction_record is None:
-                raise RequestNotFound(error_response["TRANSACTION_NOT_FOUND"]["TITLE"],
-                                      error_response["TRANSACTION_NOT_FOUND"]["MESSAGE"])
-            #end if
+                raise RequestNotFound(
+                    error_response["TRANSACTION_NOT_FOUND"]["TITLE"],
+                    error_response["TRANSACTION_NOT_FOUND"]["MESSAGE"],
+                )
+            # end if
             self.transaction = transaction_record
         # end if
-    #end def
+
+    # end def
 
     def history(self, params):
         """
@@ -72,7 +86,7 @@ class TransactionServices:
             conditions.append(Payment.payment_type == True)
         elif transaction_type == "OUT":
             conditions.append(Payment.payment_type == False)
-        #end if
+        # end if
 
         # filter by transaction date
         if start_date is not None and end_date is not None:
@@ -80,18 +94,19 @@ class TransactionServices:
             end_date = datetime.strptime(end_date, "%Y/%m/%d")
             end_date = end_date + timedelta(hours=23, minutes=59)
 
-            conditions.append(Transaction.created_at.between(start_date, \
-                                                                 end_date))
-        #end if
-        wallet_response = Transaction.query.join(Payment,
-                                                 Transaction.payment_id == \
-                                                 Payment.id,
-                                                 ).filter(*conditions)
-        transaction_history = TransactionSchema(many=True,
-                                                exclude=["payment_details","wallet_id"]).\
-                                                dump(wallet_response).data
+            conditions.append(Transaction.created_at.between(start_date, end_date))
+        # end if
+        wallet_response = Transaction.query.join(
+            Payment, Transaction.payment_id == Payment.id
+        ).filter(*conditions)
+        transaction_history = (
+            TransactionSchema(many=True, exclude=["payment_details", "wallet_id"])
+            .dump(wallet_response)
+            .data
+        )
         return ok(transaction_history)
-    #end def
+
+    # end def
 
     def history_details(self):
         """
@@ -102,19 +117,24 @@ class TransactionServices:
         """
         transaction_details = TransactionSchema().dump(self.transaction).data
         return ok(transaction_details)
-    #end def
+
+    # end def
 
     def refund(self):
         """ method to refund a transaction """
         # make sure the transaction is not refunded yet == CANCELLED
-        if self.transaction.payment.status == 2 :
-            raise UnprocessableEntity(error_response["TRANSACTION_REFUNDED"]["TITLE"],
-                                      error_response["TRANSACTION_REFUNDED"]["MESSAGE"])
+        if self.transaction.payment.status == 2:
+            raise UnprocessableEntity(
+                error_response["TRANSACTION_REFUNDED"]["TITLE"],
+                error_response["TRANSACTION_REFUNDED"]["MESSAGE"],
+            )
 
         # prevent refund a refund transaction!
         if "REFUND" in self.transaction.transaction_type.key:
-            raise UnprocessableEntity(error_response["INVALID_REFUND"]["TITLE"],
-                                      error_response["INVALID_REFUND"]["MESSAGE"])
+            raise UnprocessableEntity(
+                error_response["INVALID_REFUND"]["TITLE"],
+                error_response["INVALID_REFUND"]["MESSAGE"],
+            )
 
         # populates refund transaction
         refunds = []
@@ -137,7 +157,9 @@ class TransactionServices:
 
             # only look up object when it is not a bank account
             if not destination.isdigit():
-                destination = Wallet.query.filter_by(id=validate_uuid(destination)).first()
+                destination = Wallet.query.filter_by(
+                    id=validate_uuid(destination)
+                ).first()
 
             if refund.payment.payment_type is False:
                 refunded_amount = abs(refund.payment.amount)
@@ -146,7 +168,7 @@ class TransactionServices:
                     source=source,
                     destination=destination,
                     amount=refunded_amount,
-                    flag="DEBIT_REFUND"
+                    flag="DEBIT_REFUND",
                 )
             else:
                 refunded_amount = -refund.payment.amount
@@ -155,14 +177,16 @@ class TransactionServices:
                     source=source,
                     destination=destination,
                     amount=refunded_amount,
-                    flag="CREDIT_REFUND"
+                    flag="CREDIT_REFUND",
                 )
             # end if
             # update payment status to refunded
             refund.payment.status = 2
             db.session.commit()
             # append
-            transactions.append({ "id" : str(transaction.id) })
+            transactions.append({"id": str(transaction.id)})
         # end for
         return accepted(transactions)
-#end class
+
+
+# end class

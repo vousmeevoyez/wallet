@@ -1,9 +1,10 @@
 """
     Test HTTP Response
 """
-from app.test.base  import BaseTestCase
+from app.test.base import BaseTestCase
 
 from app.api.http_response import *
+
 
 class TestHTTPResponse(BaseTestCase):
     """ HTTP Response test class"""
@@ -27,12 +28,12 @@ class TestHTTPResponse(BaseTestCase):
 
     def test_accepted(self):
         """ test accepted HTTP response """
-        result = accepted({"data" : "some data"})
+        result = accepted({"data": "some data"})
         self.assertEqual(result[1], 202)
         self.assertTrue(result[0]["data"])
 
     def test_ok(self):
         """ test okHTTP response """
-        result = ok({"data" : "some data"})
+        result = ok({"data": "some data"})
         self.assertEqual(result[1], 200)
         self.assertTrue(result[0]["data"])

@@ -8,9 +8,8 @@ from unittest.mock import Mock, patch
 from app.test.base import BaseTestCase
 from app.api.banks.modules.bank_services import BankServices
 
-from task.bank.BNI.helper import CoreBank
-from task.bank.exceptions.general import *
-from app.api.error.http import *
+from task.bank.BNI.core import CoreBank, ApiError
+from app.api.error.http import UnprocessableEntity
 
 class TestMockBankServices(BaseTestCase):
     """ Test Class by mocking Bank Services"""

@@ -18,8 +18,8 @@ from app.api.error.authentication import EmptyPayloadError
 
 from app.api.error.http import *
 
-class TestToken(BaseTestCase):
 
+class TestToken(BaseTestCase):
     def test_create(self):
         """ test Token class method that generate token """
         user = User.query.filter_by(username="MODANAADMIN").first()
@@ -81,6 +81,7 @@ class TestToken(BaseTestCase):
         result = Token(token).blacklist()
         self.assertTrue(result)
 
+
 class TestAuthServices(BaseTestCase):
     """ test auth services class"""
 
@@ -98,19 +99,18 @@ class TestAuthServices(BaseTestCase):
         mock_decode.return_value = "INVALID_TOKEN"
 
         with self.assertRaises(Unauthorized):
-            result = \
-            AuthServices().current_login_user("jaskdjlasjdkljaksldnasndkalsdl")
+            result = AuthServices().current_login_user("jaskdjlasjdkljaksldnasndkalsdl")
 
         mock_decode.return_value = "EMPTY_PAYLOAD"
 
         with self.assertRaises(Unauthorized):
-            result = \
-            AuthServices().current_login_user("jaskdjlasjdkljaksldnasndkalsdl")
+            result = AuthServices().current_login_user("jaskdjlasjdkljaksldnasndkalsdl")
 
     def test_create_token_success(self):
         """ test success create access & refresh token"""
-        result = AuthServices().create_token({"username" : "MODANAADMIN",\
-                                              "password" : "password"})
+        result = AuthServices().create_token(
+            {"username": "MODANAADMIN", "password": "password"}
+        )
         result = result[0]["data"]
 
         self.assertTrue(result["access_token"])
@@ -120,15 +120,17 @@ class TestAuthServices(BaseTestCase):
         """ test failed create access & refresh token because user is not
         created yet"""
         with self.assertRaises(RequestNotFound):
-            result = AuthServices().create_token({"username" : "roserose",\
-                                                  "password" : "password"})
+            result = AuthServices().create_token(
+                {"username": "roserose", "password": "password"}
+            )
 
     def test_create_token_failed_incorrect_login(self):
         """ test failed create access & refresh token by using invalid
         credentials"""
         with self.assertRaises(Unauthorized):
-            result = AuthServices().create_token({"username" : "MODANAADMIN",\
-                                              "password" : "pasword"})
+            result = AuthServices().create_token(
+                {"username": "MODANAADMIN", "password": "pasword"}
+            )
 
     def test_refresh_token_success(self):
         """ test success refreshing token"""
@@ -141,12 +143,13 @@ class TestAuthServices(BaseTestCase):
 
     def test_logout(self):
         """ test blacklist access token """
-        result = AuthServices().create_token({"username" : "MODANAADMIN",\
-                                              "password" : "password"})
+        result = AuthServices().create_token(
+            {"username": "MODANAADMIN", "password": "password"}
+        )
         result = result[0]["data"]
         access_token = result["access_token"]
         result = AuthServices().logout(access_token)
-        self.assertTrue(result[1], 204) # no content
+        self.assertTrue(result[1], 204)  # no content
 
     def test_check_key(self):
         """ test check api key"""

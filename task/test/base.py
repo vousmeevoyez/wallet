@@ -1,23 +1,27 @@
-from flask_testing  import TestCase
+from flask_testing import TestCase
 
 from unittest.mock import Mock, patch
 
-from manage  import init
+from manage import init
 from task.worker import app
 
 from app.api import db
+
 # configuration
 from app.config import config
+
 # models
 from app.api.models import *
 
 TEST_CONFIG = config.TestingConfig
+
 
 class BaseTestCase(TestCase):
 
     user = None
 
     """ This is Base Tests """
+
     def create_app(self):
         app.config.from_object(TEST_CONFIG)
         return app
@@ -35,19 +39,17 @@ class BaseTestCase(TestCase):
     def _init_test(self):
         init()
 
-        role = Role(
-            description="USER",
-        )
+        role = Role(description="USER")
         db.session.add(role)
         db.session.commit()
 
         # add dummy user
         user = User(
-            username='testtest',
-            name='jennie',
-            email='testtest@bp.com',
-            phone_ext='62',
-            phone_number='8212341234123',
+            username="testtest",
+            name="jennie",
+            email="testtest@bp.com",
+            phone_ext="62",
+            phone_number="8212341234123",
             role_id=role.id,
         )
         user.set_password("password")
@@ -55,7 +57,7 @@ class BaseTestCase(TestCase):
         db.session.commit()
 
         self.user = user
-        
+
         wallet = Wallet(user_id=user.id)
         db.session.add(wallet)
         db.session.commit()
@@ -76,4 +78,6 @@ class BaseTestCase(TestCase):
 
         self.source = source
         self.destination = destination
-#end class
+
+
+# end class

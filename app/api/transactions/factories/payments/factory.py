@@ -1,10 +1,9 @@
-from app.api.transactions.factories.payments.products import (
-    CreditPayment,
-    DebitPayment
-)
+from app.api.transactions.factories.payments.products import CreditPayment, DebitPayment
+
 
 class PaymentFactory:
     """ payment factory """
+
     def __init__(self):
         self._creators = {}
 

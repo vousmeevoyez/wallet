@@ -2,29 +2,35 @@
     Wallet Routes
     _______________
 """
-#pylint: disable=import-error
-#pylint: disable=invalid-name
-#pylint: disable=no-self-use
-#pylint: disable=too-few-public-methods
-#pylint: disable=no-name-in-module
+# pylint: disable=import-error
+# pylint: disable=invalid-name
+# pylint: disable=no-self-use
+# pylint: disable=too-few-public-methods
+# pylint: disable=no-name-in-module
 
 from app.api.core import Routes
 
 from app.api.wallets import api
-#serializer
+
+# serializer
 from app.api.serializer import *
+
 # request schema
 from app.api.request_schema import *
+
 # wallet modules
 from app.api.wallets.modules.wallet_services import WalletServices
 from app.api.wallets.modules.withdraw_services import WithdrawServices
 from app.api.transfer.modules.transfer_services import TransferServices
+
 # transaction modules
 from app.api.transactions.modules.transaction_services import TransactionServices
+
 # authentication
 from app.api.auth.decorator import token_required
 from app.api.auth.decorator import get_token_payload
 from app.api.auth.decorator import api_key_required
+
 # utility
 from app.api.utility.utils import QR
 
@@ -35,12 +41,14 @@ from app.api.error.http import BadRequest
 # configuration
 from app.config import config
 
-@api.route('/')
+
+@api.route("/")
 class WalletAddRoutes(Routes):
     """
         Wallets
         /wallets/
     """
+
     __schema__ = WalletRequestSchema
     __serializer__ = WalletSchema(strict=True)
 
@@ -55,7 +63,8 @@ class WalletAddRoutes(Routes):
 
         response = WalletServices().add(user, wallet, request_data["pin"])
         return response
-    #end def
+
+    # end def
 
     @token_required
     def get(self):
@@ -65,49 +74,65 @@ class WalletAddRoutes(Routes):
 
         response = WalletServices.show(user)
         return response
-    #end def
-#end class
 
-@api.route('/<string:wallet_id>')
+    # end def
+
+
+# end class
+
+
+@api.route("/<string:wallet_id>")
 class WalletRoutes(Routes):
     """
         Wallet Routes
         api/v1/wallet/
     """
+
     @token_required
     def get(self, wallet_id):
         """ endpoint for getting wallet information """
         response = WalletServices(wallet_id).info()
         return response
-    #end def
+
+    # end def
 
     def delete(self, wallet_id):
         """ endpoint for removing wallet """
         response = WalletServices(wallet_id).remove()
         return response
-    #end def
-#end class
 
-@api.route('/<string:wallet_id>/qr/')
+    # end def
+
+
+# end class
+
+
+@api.route("/<string:wallet_id>/qr/")
 class WalletQrRoutes(Routes):
     """
         Wallet QR
         /<wallet_id>/qr
     """
+
     @token_required
     def get(self, wallet_id):
         """ endpoint for getting wallet qr codes """
         response = WalletServices(wallet_id).get_qr()
         return response
-    #end def
-#end class
 
-@api.route('/<string:wallet_id>/qr/checkout')
+    # end def
+
+
+# end class
+
+
+@api.route("/<string:wallet_id>/qr/checkout")
 class WalletQrTransferRoutes(Routes):
     """
         Wallet QR Checkout
         /<wallet_id>/qr/checkout
     """
+
     __schema__ = QRTransferRequestSchema
 
     def preprocess(self, payload):
@@ -115,10 +140,13 @@ class WalletQrTransferRoutes(Routes):
         try:
             payload = QR().read(payload["qr_string"])
         except UtilityError:
-            raise BadRequest(self.error_response["INVALID_QR"]["TITLE"],
-                             self.error_response["INVALID_QR"]["MESSAGE"])
-        #end try
+            raise BadRequest(
+                self.error_response["INVALID_QR"]["TITLE"],
+                self.error_response["INVALID_QR"]["MESSAGE"],
+            )
+        # end try
         return payload
+
     # end def
 
     @token_required
@@ -129,24 +157,33 @@ class WalletQrTransferRoutes(Routes):
 
         response = WalletServices(request_data["wallet_id"]).owner_info()
         return response
-    #end def
-#end class
 
-@api.route('/<string:wallet_id>/balance/')
+    # end def
+
+
+# end class
+
+
+@api.route("/<string:wallet_id>/balance/")
 class WalletBalanceRoutes(Routes):
     """
         Wallet Balance
         /<wallet_id>/balance
     """
+
     @token_required
     def get(self, wallet_id):
         """ endpoint for getting wallet balance """
         response = WalletServices(wallet_id).check_balance()
         return response
-    #end def
-#end class
 
-@api.route('/<string:wallet_id>/transactions')
+    # end def
+
+
+# end class
+
+
+@api.route("/<string:wallet_id>/transactions")
 class WalletTransactionRoutes(Routes):
     """
         Wallet Transaction
@@ -163,24 +200,33 @@ class WalletTransactionRoutes(Routes):
 
         response = TransactionServices(wallet_id).history(request_data)
         return response
-    #end def
-#end class
 
-@api.route('/<string:wallet_id>/transactions/<transaction_id>')
+    # end def
+
+
+# end class
+
+
+@api.route("/<string:wallet_id>/transactions/<transaction_id>")
 class WalletTransactionDetailsRoutes(Routes):
     """
         Wallet Transaction Details
         /<wallet_id>/transactions/<transaction_id>
     """
+
     @token_required
     def get(self, wallet_id, transaction_id):
         """ endpoint for getting transaction details """
         response = TransactionServices(wallet_id, transaction_id).history_details()
         return response
-    #end def
-#end class
 
-@api.route('/<string:wallet_id>/pin/')
+    # end def
+
+
+# end class
+
+
+@api.route("/<string:wallet_id>/pin/")
 class WalletPinRoutes(Routes):
     """
         Wallet pin
@@ -196,7 +242,8 @@ class WalletPinRoutes(Routes):
         request_data = self.serialize(self.payload())
         response = WalletServices(wallet_id).update_pin(request_data)
         return response
-    #end def
+
+    # end def
 
     @token_required
     def post(self, wallet_id):
@@ -207,10 +254,14 @@ class WalletPinRoutes(Routes):
         request_data = self.serialize(self.payload())
         response = WalletServices(wallet_id, request_data["pin"]).check()
         return response
-    #end def
-#end class
 
-@api.route('/<string:wallet_id>/forgot/')
+    # end def
+
+
+# end class
+
+
+@api.route("/<string:wallet_id>/forgot/")
 class WalletForgotPinRoutes(Routes):
     """
         Wallet Forgot Pin
@@ -224,7 +275,8 @@ class WalletForgotPinRoutes(Routes):
         """ forgot pin request """
         response = WalletServices(wallet_id).send_forgot_otp()
         return response
-    #end def
+
+    # end def
 
     @token_required
     def post(self, wallet_id):
@@ -233,10 +285,14 @@ class WalletForgotPinRoutes(Routes):
 
         response = WalletServices(wallet_id).verify_forgot_otp(request_data)
         return response
-    #end def
-#end class
 
-@api.route('/<string:wallet_id>/withdraw/')
+    # end def
+
+
+# end class
+
+
+@api.route("/<string:wallet_id>/withdraw/")
 class WalletWithdrawRoutes(Routes):
     """
         Wallet Withdraw
@@ -252,13 +308,18 @@ class WalletWithdrawRoutes(Routes):
         request_data = self.serialize(self.payload())
 
         request_data["bank_name"] = "BNI"
-        response = WithdrawServices(wallet_id,
-                                    request_data["pin"]).request(request_data)
+        response = WithdrawServices(wallet_id, request_data["pin"]).request(
+            request_data
+        )
         return response
-    #end def
-#end class
 
-@api.route('/<string:source_wallet_id>/transfer/checkout')
+    # end def
+
+
+# end class
+
+
+@api.route("/<string:source_wallet_id>/transfer/checkout")
 class TransferCheckoutRoutes(Routes):
     """
         Transfer Checkout
@@ -274,13 +335,17 @@ class TransferCheckoutRoutes(Routes):
         # parse request data
         request_data = self.serialize(self.payload())
         response = TransferServices().checkout(
-            request_data["phone_ext"], request_data["phone_number"])
+            request_data["phone_ext"], request_data["phone_number"]
+        )
         return response
-    #end def
-#end class
+
+    # end def
+
+
+# end class
 
 ################################## PATCH ############################################
-@api.route('/transfer/checkout2')
+@api.route("/transfer/checkout2")
 class TransferCheckout2Routes(Routes):
     """
         Transfer Checkout
@@ -295,12 +360,17 @@ class TransferCheckout2Routes(Routes):
         """ endpoint for checking out wallet before transfer """
         request_data = self.serialize(self.payload())
         response = TransferServices().checkout2(
-            request_data["phone_ext"], request_data["phone_number"])
+            request_data["phone_ext"], request_data["phone_number"]
+        )
         return response
-    #end def
-#end class
 
-@api.route('/<string:source_wallet_id>/transfer/<string:destination_wallet_id>')
+    # end def
+
+
+# end class
+
+
+@api.route("/<string:source_wallet_id>/transfer/<string:destination_wallet_id>")
 class TransferTransferRoutes(Routes):
     """
         Transfer Transfer
@@ -316,14 +386,18 @@ class TransferTransferRoutes(Routes):
         # parse request data
         request_data = self.serialize(self.payload())
 
-        response = TransferServices(source_wallet_id,
-                                    request_data["pin"],
-                                    destination_wallet_id).internal_transfer(request_data)
+        response = TransferServices(
+            source_wallet_id, request_data["pin"], destination_wallet_id
+        ).internal_transfer(request_data)
         return response
-    #end def
-#end class
 
-@api.route('/<string:source_wallet_id>/transfer/bank/<string:bank_account_id>')
+    # end def
+
+
+# end class
+
+
+@api.route("/<string:source_wallet_id>/transfer/bank/<string:bank_account_id>")
 class TransferBankTransferRoutes(Routes):
     """
         Transfer Bank Transfer Routes
@@ -340,14 +414,18 @@ class TransferBankTransferRoutes(Routes):
         request_data = self.serialize(self.payload())
 
         request_data["destination"] = bank_account_id
-        response = TransferServices(source_wallet_id,
-                                    request_data["pin"]).external_transfer(request_data)
+        response = TransferServices(
+            source_wallet_id, request_data["pin"]
+        ).external_transfer(request_data)
         return response
-    #end def
-#end class
+
+    # end def
+
+
+# end class
 
 ################################## PATCH ############################################
-@api.route('/<string:source_wallet_id>/transfer/bank2/<string:bank_account_id>')
+@api.route("/<string:source_wallet_id>/transfer/bank2/<string:bank_account_id>")
 class TransferBankTransfer2Routes(Routes):
     """
         Transfer Bank Transfer Routes
@@ -363,8 +441,12 @@ class TransferBankTransfer2Routes(Routes):
         request_data = self.serialize(self.payload())
 
         request_data["destination"] = bank_account_id
-        response = TransferServices(source_wallet_id,
-                                    request_data["pin"]).external_transfer(request_data)
+        response = TransferServices(
+            source_wallet_id, request_data["pin"]
+        ).external_transfer(request_data)
         return response
-    #end def
-#end class
+
+    # end def
+
+
+# end class

@@ -10,6 +10,7 @@ from app.api.models import User
 from app.api.models import Wallet
 from app.api import db
 
+
 class TestTransferRoutes(BaseTestCase):
     """ Test Class that represent all test suite for transfer """
 
@@ -25,11 +26,13 @@ class TestTransferRoutes(BaseTestCase):
 
         self._user2 = user2
         self._wallet2 = wallet2
-    #end def
+
+    # end def
 
     """
         TRANSFER 
     """
+
     def test_transfer(self):
         """ CASE 1 Transfer : successfully transfer """
         # inject balance
@@ -38,14 +41,13 @@ class TestTransferRoutes(BaseTestCase):
         db.session.commit()
 
         params = {
-            "amount" : "15",
-            "notes" : "some notes",
-            "pin" : "123456",
-            "types": "PAYROLL"
+            "amount": "15",
+            "notes": "some notes",
+            "pin": "123456",
+            "types": "PAYROLL",
         }
 
-        result = self.transfer(self._wallet1, self._wallet2, params,
-                               self.access_token)
+        result = self.transfer(self._wallet1, self._wallet2, params, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 202)
         self.assertTrue(response["data"])
@@ -58,14 +60,13 @@ class TestTransferRoutes(BaseTestCase):
         db.session.commit()
 
         params = {
-            "amount" : "15",
-            "types" : "PAYROLL",
-            "notes" : "some notes",
-            "pin" : "123456"
+            "amount": "15",
+            "types": "PAYROLL",
+            "notes": "some notes",
+            "pin": "123456",
         }
 
-        result = self.transfer(self._wallet1, self._wallet2, params,
-                               self.access_token)
+        result = self.transfer(self._wallet1, self._wallet2, params, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
         self.assertTrue(response["error"], "WALLET_LOCKED")
@@ -78,47 +79,42 @@ class TestTransferRoutes(BaseTestCase):
         db.session.commit()
 
         params = {
-            "amount" : "15",
-            "types" : "PAYROLL",
-            "notes" : "some notes",
-            "pin" : "111111"
+            "amount": "15",
+            "types": "PAYROLL",
+            "notes": "some notes",
+            "pin": "111111",
         }
 
         # first attempt
-        result = self.transfer(self._wallet1, self._wallet2, params,
-                               self.access_token)
+        result = self.transfer(self._wallet1, self._wallet2, params, self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
         self.assertTrue(response["error"], "INCORRECT_PIN")
 
         # second attempt
-        result = self.transfer(self._wallet1, self._wallet2, params,
-                               self.access_token)
+        result = self.transfer(self._wallet1, self._wallet2, params, self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
         self.assertTrue(response["error"], "INCORRECT_PIN")
 
         # third attempt
-        result = self.transfer(self._wallet1, self._wallet2, params,
-                               self.access_token)
+        result = self.transfer(self._wallet1, self._wallet2, params, self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
         self.assertTrue(response["error"], "INCORRECT_PIN")
 
         # fourth attempt
-        result = self.transfer(self._wallet1, self._wallet2, params,
-                               self.access_token)
+        result = self.transfer(self._wallet1, self._wallet2, params, self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
         self.assertTrue(response["error"], "MAX_PIN_ATTEMPT")
 
         # fifth attempt
-        result = self.transfer(self._wallet1, self._wallet2, params,
-                               self.access_token)
+        result = self.transfer(self._wallet1, self._wallet2, params, self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 422)
@@ -132,20 +128,20 @@ class TestTransferRoutes(BaseTestCase):
         db.session.commit()
 
         params = {
-            "amount" : "15",
-            "types" : "PAYROLL",
-            "notes" : "some notes",
-            "pin" : "123456"
+            "amount": "15",
+            "types": "PAYROLL",
+            "notes": "some notes",
+            "pin": "123456",
         }
 
-        result = self.transfer(self._wallet1, self._wallet1, params,
-                               self.access_token)
+        result = self.transfer(self._wallet1, self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
 
     """
         BANK TRANSFER 
     """
+
     def test_bank_transfer(self):
         """ CASE 1 Bank Transfer : successfully bank transfer """
         # inject balance
@@ -156,23 +152,20 @@ class TestTransferRoutes(BaseTestCase):
         # add account bank information
         params = {
             "account_no": "3333333333",
-            "name"      : "Bpk KEN AROK",
-            "label"     : "Irene Bank Account",
-            "bank_code" : "014"
+            "name": "Bpk KEN AROK",
+            "label": "Irene Bank Account",
+            "bank_code": "014",
         }
         result = self.create_user_bank_account(self._user1, params, self.access_token)
         response = result.get_json()["data"]
 
         bank_account_id = response["bank_account_id"]
 
-        params = {
-            "amount" : "15",
-            "notes" : "some notes",
-            "pin" : "123456"
-        }
+        params = {"amount": "15", "notes": "some notes", "pin": "123456"}
 
-        result = self.bank_transfer(self._wallet1, bank_account_id, params,
-                                    self.access_token)
+        result = self.bank_transfer(
+            self._wallet1, bank_account_id, params, self.access_token
+        )
         self.assertEqual(result.status_code, 202)
 
     def test_bank_transfer_bank_account_not_found(self):
@@ -185,23 +178,19 @@ class TestTransferRoutes(BaseTestCase):
         # add account bank information
         params = {
             "account_no": "3333333333",
-            "name"      : "Bpk KEN AROK",
-            "label"     : "Irene Bank Account",
-            "bank_code" : "014"
+            "name": "Bpk KEN AROK",
+            "label": "Irene Bank Account",
+            "bank_code": "014",
         }
-        result = self.create_user_bank_account(self._user1, params, \
-                                               self.access_token)
+        result = self.create_user_bank_account(self._user1, params, self.access_token)
         response = result.get_json()["data"]
 
         bank_account_id = response["bank_account_id"]
 
-        params = {
-            "amount" : "15",
-            "notes" : "some notes",
-            "pin" : "123456"
-        }
-        result = self.bank_transfer(self._wallet1, str(uuid.uuid4()), params,
-                                    self.access_token)
+        params = {"amount": "15", "notes": "some notes", "pin": "123456"}
+        result = self.bank_transfer(
+            self._wallet1, str(uuid.uuid4()), params, self.access_token
+        )
         self.assertEqual(result.status_code, 404)
 
     ############ PATCH #################
@@ -215,24 +204,19 @@ class TestTransferRoutes(BaseTestCase):
         # add account bank information
         params = {
             "account_no": "3333333333",
-            "name"      : "Bpk KEN AROK",
-            "label"     : "Irene Bank Account",
-            "bank_code" : "014"
+            "name": "Bpk KEN AROK",
+            "label": "Irene Bank Account",
+            "bank_code": "014",
         }
         result = self.create_user_bank_account(self._user1, params, self.access_token)
         response = result.get_json()["data"]
 
         bank_account_id = response["bank_account_id"]
 
-        params = {
-            "amount" : "15",
-            "notes" : "some notes",
-            "pin" : "123456"
-        }
+        params = {"amount": "15", "notes": "some notes", "pin": "123456"}
 
         # api key
         _api_key = "8c574c41-3e01-4763-89af-fd370989da33"
 
-        result = self.bank_transfer2(self._wallet1, bank_account_id, params,
-                                    _api_key)
+        result = self.bank_transfer2(self._wallet1, bank_account_id, params, _api_key)
         self.assertEqual(result.status_code, 202)

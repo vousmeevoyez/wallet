@@ -12,19 +12,19 @@ from app.api import db
 
 from app.api.models import *
 
-from app.api.utility.utils import (
-    Notif,
-    UtilityError
-)
+from app.api.utility.utils import Notif, UtilityError
 
 from app.api.const import WORKER
+
 
 def backoff(attempts):
     """ prevent hammering service with thousand retry"""
     return random.uniform(2, 4) ** attempts
 
+
 class UtilityTask(celery.Task):
     """Abstract base class for all tasks in my app."""
+
     abstract = True
 
     def on_retry(self, exc, task_id, args, kwargs, einfo):
@@ -44,12 +44,14 @@ class UtilityTask(celery.Task):
     """
         PUSH NOTIFICATION
     """
-    @celery.task(bind=True,
-                 max_retries=int(WORKER["MAX_RETRIES"]),
-                 task_soft_time_limit=WORKER["SOFT_LIMIT"],
-                 task_time_limit=WORKER["SOFT_LIMIT"],
-                 acks_late=WORKER["ACKS_LATE"],
-                )
+
+    @celery.task(
+        bind=True,
+        max_retries=int(WORKER["MAX_RETRIES"]),
+        task_soft_time_limit=WORKER["SOFT_LIMIT"],
+        task_time_limit=WORKER["SOFT_LIMIT"],
+        acks_late=WORKER["ACKS_LATE"],
+    )
     def push_notification(self, transaction_id):
         """ create task in background to push some notification """
         # fetch transaction object
@@ -57,14 +59,17 @@ class UtilityTask(celery.Task):
 
         # build transaction notif payload
         try:
-            result = Notif().send({
-                "wallet_id" : str(transaction.wallet_id),
-                "amount" : transaction.amount,
-                "transaction_type" : transaction.transaction_type.key,
-                "balance" : transaction.balance,
-                "en_message" : transaction.notes
-            })
+            result = Notif().send(
+                {
+                    "wallet_id": str(transaction.wallet_id),
+                    "amount": transaction.amount,
+                    "transaction_type": transaction.transaction_type.key,
+                    "balance": transaction.balance,
+                    "en_message": transaction.notes,
+                }
+            )
         except UtilityError as error:
             self.retry(countdown=backoff(self.request.retries), exc=error)
-        #end try
+        # end try
+
     # end def

@@ -14,16 +14,13 @@ from app.api.error.http import *
 
 fake_uuid = str(uuid.uuid4())
 
+
 class TestUserBankAccountServices(BaseTestCase):
     """ Test Class for User Bank Account Services"""
 
     def test_add_bank_account_success(self):
         """ test add bank account """
-        params = {
-            "label"     : "sample label",
-            "name"      : "jennie",
-            "account_no": "1234567891",
-        }
+        params = {"label": "sample label", "name": "jennie", "account_no": "1234567891"}
         bank_account = BankAccount(**params)
 
         result = BankAccountServices(str(self.user.id), "009").add(bank_account)
@@ -31,11 +28,7 @@ class TestUserBankAccountServices(BaseTestCase):
 
     def test_add_bank_account_failed_user_not_found(self):
         """ test add bank account but not found"""
-        params = {
-            "label"     : "sample label",
-            "name"      : "jennie",
-            "account_no": "1234567891",
-        }
+        params = {"label": "sample label", "name": "jennie", "account_no": "1234567891"}
         bank_account = BankAccount(**params)
 
         with self.assertRaises(RequestNotFound):
@@ -43,11 +36,7 @@ class TestUserBankAccountServices(BaseTestCase):
 
     def test_add_bank_account_failed_bank_not_found(self):
         """ test add bank account but bank not found"""
-        params = {
-            "label"     : "sample label",
-            "name"      : "jennie",
-            "account_no": "1234567891",
-        }
+        params = {"label": "sample label", "name": "jennie", "account_no": "1234567891"}
         bank_account = BankAccount(**params)
 
         with self.assertRaises(RequestNotFound):
@@ -65,11 +54,7 @@ class TestUserBankAccountServices(BaseTestCase):
 
     def test_update_bank_account_success(self):
         """ test function that update bank account information"""
-        params = {
-            "label"     : "sample label",
-            "name"      : "jennie",
-            "account_no": "1234567891",
-        }
+        params = {"label": "sample label", "name": "jennie", "account_no": "1234567891"}
         bank_account = BankAccount(**params)
 
         result = BankAccountServices(str(self.user.id), "009").add(bank_account)
@@ -80,23 +65,17 @@ class TestUserBankAccountServices(BaseTestCase):
 
         user_bank_account_id = result[0]["id"]
 
-        params = {
-            "label"     : "my label",
-            "name"      : "jennie",
-            "account_no": "1234567891",
-        }
-        result = BankAccountServices(str(self.user.id), "009", user_bank_account_id).update(params)
+        params = {"label": "my label", "name": "jennie", "account_no": "1234567891"}
+        result = BankAccountServices(
+            str(self.user.id), "009", user_bank_account_id
+        ).update(params)
 
         self.assertEqual(result[1], 204)
 
     def test_update_bank_account_failed_bank_account_not_found(self):
         """ test function to update bank account information but account not
         found"""
-        params = {
-            "label"     : "sample label",
-            "name"      : "jennie",
-            "account_no": "1234567891",
-        }
+        params = {"label": "sample label", "name": "jennie", "account_no": "1234567891"}
         bank_account = BankAccount(**params)
 
         result = BankAccountServices(str(self.user.id), "009").add(bank_account)
@@ -105,21 +84,15 @@ class TestUserBankAccountServices(BaseTestCase):
         result = BankAccountServices(str(self.user.id)).show()
         self.assertEqual(len(result), 1)
 
-        params = {
-            "label"     : "my label",
-            "name"      : "jennie",
-            "account_no": "1234567891",
-        }
+        params = {"label": "my label", "name": "jennie", "account_no": "1234567891"}
         with self.assertRaises(RequestNotFound):
-            result = BankAccountServices(str(self.user.id), "009", fake_uuid).update(params)
+            result = BankAccountServices(str(self.user.id), "009", fake_uuid).update(
+                params
+            )
 
     def test_update_bank_account_failed_bank_not_found(self):
         """ test update bank account but bank no tofund"""
-        params = {
-            "label"     : "sample label",
-            "name"      : "jennie",
-            "account_no": "1234567891",
-        }
+        params = {"label": "sample label", "name": "jennie", "account_no": "1234567891"}
         bank_account = BankAccount(**params)
 
         result = BankAccountServices(str(self.user.id), "009").add(bank_account)
@@ -130,21 +103,15 @@ class TestUserBankAccountServices(BaseTestCase):
 
         user_bank_account_id = result[0]["id"]
 
-        params = {
-            "label"     : "my label",
-            "name"      : "jennie",
-            "account_no": "1234567891",
-        }
+        params = {"label": "my label", "name": "jennie", "account_no": "1234567891"}
         with self.assertRaises(RequestNotFound):
-            result = BankAccountServices(str(self.user.id), "009", fake_uuid).update(params)
+            result = BankAccountServices(str(self.user.id), "009", fake_uuid).update(
+                params
+            )
 
     def test_remove_bank_account_success(self):
         """ tst function to remove bank account """
-        params = {
-            "label"     : "sample label",
-            "name"      : "jennie",
-            "account_no": "1234567891",
-        }
+        params = {"label": "sample label", "name": "jennie", "account_no": "1234567891"}
         bank_account = BankAccount(**params)
 
         result = BankAccountServices(str(self.user.id), "009").add(bank_account)
@@ -155,5 +122,7 @@ class TestUserBankAccountServices(BaseTestCase):
 
         user_bank_account_id = result[0]["id"]
 
-        result = BankAccountServices(str(self.user.id), None, user_bank_account_id).remove()
+        result = BankAccountServices(
+            str(self.user.id), None, user_bank_account_id
+        ).remove()
         self.assertEqual(result[1], 204)

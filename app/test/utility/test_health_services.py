@@ -9,10 +9,10 @@ from app.test.base import BaseTestCase
 
 from app.api.utility.modules.health_services import HealthServices
 
-from task.bank.BNI.helper import VirtualAccount as BNIVirtualAccount
-from task.bank.BNI.helper import CoreBank as BNICoreBank
-
-from task.bank.exceptions.general import ApiError
+from task.bank.BNI.va import VirtualAccount as BNIVirtualAccount
+from task.bank.BNI.va import ApiError as BNIVirtualAccountApiError
+from task.bank.BNI.core import CoreBank as BNICoreBank
+from task.bank.BNI.core import ApiError as BNICoreBankApiError
 
 
 class TestHealthServices(BaseTestCase):

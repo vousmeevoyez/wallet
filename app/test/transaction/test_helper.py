@@ -1,15 +1,15 @@
 """
     Test Transaction Factory
 """
-from app.test.base  import BaseTestCase
+from app.test.base import BaseTestCase
 
 from app.api.models import *
 from app.api import db
 
 from app.api.transactions.factories.helper import process_transaction
 
-class TestHelper(BaseTestCase):
 
+class TestHelper(BaseTestCase):
     def test_process_transation(self):
         wallet = Wallet()
         wallet2 = Wallet()
@@ -23,6 +23,6 @@ class TestHelper(BaseTestCase):
             destination=wallet2,
             amount=1000,
             flag="TRANSFER",
-            notes="some notes"
+            notes="some notes",
         )
         print(result)

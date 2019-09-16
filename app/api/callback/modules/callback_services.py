@@ -6,34 +6,43 @@
 """
 # database
 from app.api import db
+
 # model
 from app.api.models import *
+
 # services
 from app.api.transfer.modules.transfer_services import TransferServices
 from app.api.transactions.factories.helper import process_transaction
+
 # exceptions
 from app.api.error.http import *
+
 # configuration
 from app.api.error.message import RESPONSE as error_response
 
 
 class Callback:
     """ Base Callback """
+
     def __init__(self, virtual_account, trx_id, flow):
         """
             virtual_account -> virtual_account no
             trx_id -> virtual_account trx_id
             flow -> IN | OUT
         """
-        virtual_account = VirtualAccount.query.filter_by(account_no=virtual_account,
-                                                         trx_id=trx_id).first()
+        virtual_account = VirtualAccount.query.filter_by(
+            account_no=virtual_account, trx_id=trx_id
+        ).first()
         if virtual_account is None:
-            raise RequestNotFound(error_response["VA_NOT_FOUND"]["TITLE"],
-                                  error_response["VA_NOT_FOUND"]["MESSAGE"])
+            raise RequestNotFound(
+                error_response["VA_NOT_FOUND"]["TITLE"],
+                error_response["VA_NOT_FOUND"]["MESSAGE"],
+            )
 
         self.virtual_account = virtual_account
         self.flow = flow
-    #end def
+
+    # end def
 
     def process(self, amount, flag, reference_number, channel, notes=None):
         """ base method for processing callback """
@@ -55,15 +64,17 @@ class Callback:
             flag=flag,
             channel_id=payment_channel.id,
             notes=notes,
-            reference_number=reference_number
+            reference_number=reference_number,
         )
         # accepted BNI Format
-        response = {
-            "status" : "000"
-        }
+        response = {"status": "000"}
         return response
+
     # end def
+
+
 # end class
+
 
 class CallbackServices(Callback):
     """ Callback Services Class """
@@ -75,12 +86,17 @@ class CallbackServices(Callback):
         payment_channel_key = params["payment_channel_key"]
 
         if payment_amount > 0:
-            response = super().process(payment_amount, "TOP_UP", reference_number,
-                                       payment_channel_key)
+            response = super().process(
+                payment_amount, "TOP_UP", reference_number, payment_channel_key
+            )
         else:
             notes = "Cardless Withdraw {}".format(str(-payment_amount))
-            response = super().process(payment_amount, "WITHDRAW", reference_number,
-                                       payment_channel_key, notes)
+            response = super().process(
+                payment_amount, "WITHDRAW", reference_number, payment_channel_key, notes
+            )
         return response
-    #end def
-#end class
+
+    # end def
+
+
+# end class

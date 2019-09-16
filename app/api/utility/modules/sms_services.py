@@ -8,74 +8,80 @@ import json
 import requests
 
 from app.api import db
+
 # helper
 from app.api.utility.modules.cipher import AESCipher
+
 # models
 from app.api.models import ExternalLog
+
 # configuration
 from app.config.external.sms import WAVECELL
+
 # const
 from app.api.const import LOGGING
 
 
 class ApiError(Exception):
     """ raised when api error happened"""
+
     def __init__(self, original):
         super().__init__(original)
         self.original = original
-        
+
+
 class SmsError(ApiError):
     """ raised when sms error """
 
+
 class SmsServices:
     """ SMS Helper Class"""
+
     def _post(self, api_name, payload):
         # build header
-        headers = {
-            "content-type": "application/json"
-        }
+        headers = {"content-type": "application/json"}
         headers["Authorization"] = "Bearer {}".format(WAVECELL["API_KEY"])
 
         result = True
         try:
             # build external logging object here
-            log = ExternalLog(request=payload,
-                              resource=LOGGING["WAVECELL"],
-                              api_name=api_name,
-                              api_type=LOGGING["OUTGOING"]
-                             )
+            log = ExternalLog(
+                request=payload,
+                resource=LOGGING["WAVECELL"],
+                api_name=api_name,
+                api_type=LOGGING["OUTGOING"],
+            )
             db.session.add(log)
             # start measuring time here
             start_time = time.time()
             r = requests.post(
-                WAVECELL["BASE_URL"],
-                data=json.dumps(payload),
-                headers=headers,
+                WAVECELL["BASE_URL"], data=json.dumps(payload), headers=headers
             )
             if r.status_code != 200:
                 # flag request as failed
                 log.set_status(False)
                 result = False
-            #end if
+            # end if
             log.save_response(r.json())
             log.save_response_time(time.time() - start_time)
 
             db.session.commit()
         except (requests.exceptions.Timeout, requests.exceptions.RequestException) as e:
             raise ApiError(e)
-        #end try
+        # end try
         return result
-    #end def
+
+    # end def
 
     def send_sms(self, to, message):
         """ To send sms to specific msisdn """
         api_name = "SEND_SMS_SINGLE"
         # build payload
         payload = {
-            "source"     : message["from"],
+            "source": message["from"],
             "destination": to,
-            "text"       : message["text"],
-            "encoding"   : "AUTO"
+            "text": message["text"],
+            "encoding": "AUTO",
         }
 
         try:
@@ -84,5 +90,8 @@ class SmsServices:
             raise SmsError(e)
         else:
             return result
-    #end def
-#end class
+
+    # end def
+
+
+# end class
