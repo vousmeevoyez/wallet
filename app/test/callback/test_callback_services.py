@@ -1,10 +1,11 @@
 import time
 import json
 
-from app.test.base  import BaseTestCase
+from app.test.base import BaseTestCase
 from app.api.models import *
 
 from app.api.callback.modules.callback_services import *
+
 
 class BaseCallbackTest(BaseTestCase):
     """
@@ -24,10 +25,7 @@ class BaseCallbackTest(BaseTestCase):
         """ helper test function to create credit virtual account """
         wallet = self._create_wallet()
 
-        bank = Bank(
-              key="BNI",
-              code="009"
-        )
+        bank = Bank(key="BNI", code="009")
         db.session.add(bank)
         db.session.commit()
 
@@ -46,10 +44,7 @@ class BaseCallbackTest(BaseTestCase):
         """ helper test function to create debit virtual account """
         wallet = self._create_wallet()
 
-        bank = Bank(
-              key="BNI",
-              code="009"
-        )
+        bank = Bank(key="BNI", code="009")
         db.session.add(bank)
         db.session.commit()
 
@@ -64,6 +59,7 @@ class BaseCallbackTest(BaseTestCase):
 
         return va_id, trx_id
 
+
 class TestCallback(BaseCallbackTest):
     """ test class for Callback Class """
 
@@ -76,43 +72,48 @@ class TestCallback(BaseCallbackTest):
         reference_number = 123456
         channel = "BNI_VA"
         result = Callback(virtual_account, trx_id, "IN").process(
-            payment_amount, transfer_types,
-            reference_number, channel
+            payment_amount, transfer_types, reference_number, channel
         )
         self.assertEqual(result["status"], "000")
 
+
 class TestCallbackServices(BaseCallbackTest):
     """ test callback services """
+
     def test_deposit(self):
         """ test deposit """
         virtual_account, trx_id = self._create_credit_va()
 
         params = {
-            "payment_amount" : 10000,
-            "payment_ntb" : "123456",
-            "payment_channel_key" : "BNI_VA"
+            "payment_amount": 10000,
+            "payment_ntb": "123456",
+            "payment_channel_key": "BNI_VA",
         }
-        result = CallbackServices(
-            virtual_account, trx_id, "IN"
-        ).process_callback(params)
+        result = CallbackServices(virtual_account, trx_id, "IN").process_callback(
+            params
+        )
         va = VirtualAccount.query.filter_by(account_no=virtual_account).first()
         time.sleep(3)
         self.assertEqual(va.wallet.balance, 10000)
-    #end def
+
+    # end def
 
     def test_withdraw(self):
         """ test deposit """
         virtual_account, trx_id = self._create_debit_va()
         params = {
-            "payment_amount" : -10000,
-            "payment_ntb" : "123456",
-            "payment_channel_key" : "BNI_VA"
+            "payment_amount": -10000,
+            "payment_ntb": "123456",
+            "payment_channel_key": "BNI_VA",
         }
-        result = CallbackServices(
-            virtual_account, trx_id, "OUT"
-        ).process_callback(params)
+        result = CallbackServices(virtual_account, trx_id, "OUT").process_callback(
+            params
+        )
         va = VirtualAccount.query.filter_by(account_no=virtual_account).first()
         time.sleep(3)
         self.assertEqual(va.wallet.balance, 0)
-    #end def
-#end class
+
+    # end def
+
+
+# end class

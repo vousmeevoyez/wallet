@@ -3,10 +3,10 @@
     ______________________
     Package Initialization
 """
-#pylint: disable=import-error
-#pylint: disable=invalid-name
+# pylint: disable=import-error
+# pylint: disable=invalid-name
 
-from flask  import Flask
+from flask import Flask
 
 from celery import Celery
 
@@ -21,6 +21,7 @@ from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.config import config
+
 # import logging config immediately
 from app.config import logging
 
@@ -31,6 +32,7 @@ celery = Celery(__name__, broker=config.Config.CELERY_BROKER_URL)
 # start scheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
+
 
 def create_app(config_name):
     """
@@ -44,10 +46,14 @@ def create_app(config_name):
 
     db.init_app(app)
     ma.init_app(app)
-    celery.conf.update(app.config) # update celery with flask application configuration
+    celery.conf.update(app.config)  # update celery with flask application configuration
 
     if not app.testing and not app.debug:
         sentry_sdk.init(
-            integrations=[FlaskIntegration(), CeleryIntegration(), SqlalchemyIntegration()]
+            integrations=[
+                FlaskIntegration(),
+                CeleryIntegration(),
+                SqlalchemyIntegration(),
+            ]
         )
     return app

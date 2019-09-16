@@ -1,17 +1,14 @@
 """
     Test Payment Products
 """
-from app.test.base  import BaseTestCase
+from app.test.base import BaseTestCase
 
 from app.api.models import Payment
 
-from app.api.transactions.factories.payments.products import (
-    CreditPayment,
-    DebitPayment
-)
+from app.api.transactions.factories.payments.products import CreditPayment, DebitPayment
+
 
 class TestPaymentProducts(BaseTestCase):
-
     def test_credit_payment(self):
         payment = Payment(source_account="123456", to="123455", amount=1000)
 

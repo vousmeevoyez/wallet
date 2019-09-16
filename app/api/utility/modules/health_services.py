@@ -20,17 +20,18 @@ from task.payment.tasks import PaymentTask
 from task.utility.tasks import UtilityTask
 
 # External
-from task.bank.BNI.helper import VirtualAccount as BNIVirtualAccount
-from task.bank.BNI.helper import CoreBank as BNICoreBank
-# exceptions
-from task.bank.exceptions.general import ApiError
+from task.bank.BNI.va import VirtualAccount as BNIVirtualAccount
+from task.bank.BNI.va import ApiError as BNIVirtualAccountApiError
+
+from task.bank.BNI.core import CoreBank as BNICoreBank
+from task.bank.BNI.core import ApiError as BNICoreBankApiError
 
 
 def str_to_class(class_name):
     return getattr(sys.modules[__name__], class_name)
 
-class HealthServices:
 
+class HealthServices:
     @staticmethod
     def _check_db():
         """ method to check db that we connect """
@@ -43,15 +44,17 @@ class HealthServices:
             return False
         # end try
         return True
+
     # end def
 
     @staticmethod
     def _convert_state_to_bool(task):
         """ convert known celery task state into boolean """
         worker_status = True
-        if task.completed_count() != 4: #no of known worker
+        if task.completed_count() != 4:  # no of known worker
             worker_status = False
         return worker_status
+
     # end def
 
     @staticmethod
@@ -61,6 +64,7 @@ class HealthServices:
         if status_code != 200:
             result = False
         return result
+
     # end def
 
     @staticmethod
@@ -98,27 +102,20 @@ class HealthServices:
         """ method to check all worker that we connect """
         # iterate to all known worker
         workers = [
-            {
-                "name" : "TransactionTask",
-                "queue": "transaction"
-            },
-            {
-                "name" : "BankTask",
-                "queue": "bank"
-            },
-            {
-                "name" : "PaymentTask",
-                "queue": "payment"
-            },
-            {
-                "name" : "UtilityTask",
-                "queue": "utility"
-            }
+            {"name": "TransactionTask", "queue": "transaction"},
+            {"name": "BankTask", "queue": "bank"},
+            {"name": "PaymentTask", "queue": "payment"},
+            {"name": "UtilityTask", "queue": "utility"},
         ]
 
-        job_group = group([
-            str_to_class(wrk["name"])().health_check.s("CHECK").set(queue=wrk["queue"]) for wrk in workers
-        ])
+        job_group = group(
+            [
+                str_to_class(wrk["name"])()
+                .health_check.s("CHECK")
+                .set(queue=wrk["queue"])
+                for wrk in workers
+            ]
+        )
 
         result = job_group.apply_async()
         return self._convert_state_to_bool(result)
@@ -126,16 +123,14 @@ class HealthServices:
     def _check_external(self):
         """ method to check all health for external services that we connect """
         # check all external service here
-        banks = [
-            "BNIVirtualAccount", "BNICoreBank"
-        ]
+        banks = ["BNIVirtualAccount"]
 
         external_status = {}
         for bank in banks:
             bank_class = str_to_class(bank)
             try:
                 result = bank_class.health_check()
-            except ApiError:
+            except:
                 result = 500
             # end try
             external_status[bank] = self._convert_http_to_bool(result)

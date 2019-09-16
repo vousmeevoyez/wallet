@@ -16,6 +16,7 @@ from app.api.utility.utils import UtilityError
 
 from app.api.wallets.modules.wallet_services import WalletServices
 
+
 class TestWalletServices(BaseTestCase):
     """ Test Class for Wallet Services"""
 
@@ -28,7 +29,8 @@ class TestWalletServices(BaseTestCase):
         result = WalletServices().add(self.user, wallet, "123456")
 
         self.wallet_id = result[0]["data"]["wallet_id"]
-    #end def
+
+    # end def
 
     def test_wallet_owner_info(self):
         result = WalletServices(self.wallet_id).owner_info()[0]
@@ -61,21 +63,17 @@ class TestWalletServices(BaseTestCase):
 
     def test_wallet_update_pin(self):
         """ test checking wallet balance"""
-        params = {
-            "old_pin" : "123456",
-            "pin" : "111111",
-            "confirm_pin" : "111111"
-        }
+        params = {"old_pin": "123456", "pin": "111111", "confirm_pin": "111111"}
         result = WalletServices(self.wallet_id, "123456").update_pin(params)
         self.assertEqual(result[1], 204)
 
         result = WalletServices(self.wallet_id, "111111").check()
-        self.assertEqual(result[0]['data']["message"], "PIN VERIFIED")
+        self.assertEqual(result[0]["data"]["message"], "PIN VERIFIED")
 
     def test_wallet_check_pin(self):
         """ test checking wallet balance"""
         result = WalletServices(self.wallet_id, "123456").check()
-        self.assertEqual(result[0]['data']["message"], "PIN VERIFIED")
+        self.assertEqual(result[0]["data"]["message"], "PIN VERIFIED")
 
         with self.assertRaises(UnprocessableEntity):
             result = WalletServices(self.wallet_id, "113456").check()
@@ -145,11 +143,9 @@ class TestWalletServices(BaseTestCase):
         otp_code = result[0]["data"]["otp_code"]
         otp_key = result[0]["data"]["otp_key"]
 
-        result = WalletServices(self.wallet_id).verify_forgot_otp({
-            "otp_code" : otp_code,
-            "otp_key"  : otp_key,
-            "pin"      : "111111",
-        })
+        result = WalletServices(self.wallet_id).verify_forgot_otp(
+            {"otp_code": otp_code, "otp_key": otp_key, "pin": "111111"}
+        )
         self.assertEqual(result[1], 204)
 
     @patch.object(Sms, "send")
@@ -161,19 +157,15 @@ class TestWalletServices(BaseTestCase):
         otp_code = result[0]["data"]["otp_code"]
         otp_key = result[0]["data"]["otp_key"]
 
-        result = WalletServices(self.wallet_id).verify_forgot_otp({
-            "otp_code" : otp_code,
-            "otp_key"  : otp_key,
-            "pin"      : "111111",
-        })
+        result = WalletServices(self.wallet_id).verify_forgot_otp(
+            {"otp_code": otp_code, "otp_key": otp_key, "pin": "111111"}
+        )
         self.assertEqual(result[1], 204)
 
         with self.assertRaises(UnprocessableEntity):
-            result = WalletServices(self.wallet_id).verify_forgot_otp({
-                "otp_code" : otp_code,
-                "otp_key"  : otp_key,
-                "pin"      : "111111",
-            })
+            result = WalletServices(self.wallet_id).verify_forgot_otp(
+                {"otp_code": otp_code, "otp_key": otp_key, "pin": "111111"}
+            )
 
     @patch.object(Sms, "send")
     def test_verify_forgot_otp_but_invalid_otp_code(self, mock_send_sms):
@@ -185,11 +177,9 @@ class TestWalletServices(BaseTestCase):
         otp_key = result[0]["data"]["otp_key"]
 
         with self.assertRaises(UnprocessableEntity):
-            result = WalletServices(self.wallet_id).verify_forgot_otp({
-                "otp_code" : "1234",
-                "otp_key"  : otp_key,
-                "pin"      : "111111",
-            })
+            result = WalletServices(self.wallet_id).verify_forgot_otp(
+                {"otp_code": "1234", "otp_key": otp_key, "pin": "111111"}
+            )
 
     @patch.object(Sms, "send")
     def test_verify_forgot_otp_but_invalid_otp_code(self, mock_send_sms):
@@ -201,8 +191,6 @@ class TestWalletServices(BaseTestCase):
         otp_key = result[0]["data"]["otp_key"]
 
         with self.assertRaises(RequestNotFound):
-            result = WalletServices(self.wallet_id).verify_forgot_otp({
-                "otp_code" : "1234",
-                "otp_key"  : "46464654654654",
-                "pin"      : "111111",
-            })
+            result = WalletServices(self.wallet_id).verify_forgot_otp(
+                {"otp_code": "1234", "otp_key": "46464654654654", "pin": "111111"}
+            )

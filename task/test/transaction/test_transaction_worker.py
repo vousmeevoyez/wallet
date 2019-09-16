@@ -6,26 +6,29 @@ from app.api.models import *
 
 from task.transaction.tasks import TransactionTask
 
+
 class TestTransactionTask(BaseTestCase):
     """ Test Class for Transaction Worker """
+
     def test_bulk_transfer(self):
         # add some balance here for test case
         for i in range(0, 100):
             self._transfer(self.source, self.destination, 1)
             self._transfer(self.destination, self.source, 1)
-        #end for
+        # end for
         time.sleep(3)
         self.assertEqual(self.source.balance, 100)
         self.assertEqual(self.destination.balance, 100)
-    #end for
+
+    # end for
 
     def _transfer(self, source, destination, amount):
         # DEBIT
         payment_payload = {
-            "payment_type"   : False,
-            "source_account" : source.id,
-            "to"             : destination.id,
-            "amount"         : -amount
+            "payment_type": False,
+            "source_account": source.id,
+            "to": destination.id,
+            "amount": -amount,
         }
 
         debit = Payment(**payment_payload)
@@ -36,10 +39,10 @@ class TestTransactionTask(BaseTestCase):
 
         # CREDIT
         payment_payload = {
-            "payment_type"   : True,
-            "source_account" : source.id,
-            "to"             : destination.id,
-            "amount"         : amount
+            "payment_type": True,
+            "source_account": source.id,
+            "to": destination.id,
+            "amount": amount,
         }
 
         credit = Payment(**payment_payload)

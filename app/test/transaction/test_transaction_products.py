@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from freezegun import freeze_time
 
-from app.test.base  import BaseTestCase
+from app.test.base import BaseTestCase
 
 from app.api import db
 
@@ -18,17 +18,17 @@ from app.api.models import (
     BankAccount,
     Payment,
     PaymentPlan,
-    Plan
+    Plan,
 )
 
 from app.api.transactions.factories.transactions.products import (
     DebitTransaction,
     CreditTransaction,
-    ReceivePayrollTransaction
+    ReceivePayrollTransaction,
 )
 
-class TestTransactionProduct(BaseTestCase):
 
+class TestTransactionProduct(BaseTestCase):
     def setUp(self):
         super().setUp()
 
@@ -75,14 +75,11 @@ class TestTransactionProduct(BaseTestCase):
             source_account=str(wallet.id),
             to=str(wallet2.id),
             amount=1000,
-            payment_type=True
+            payment_type=True,
         )
 
         transaction = Transaction(
-            wallet=wallet,
-            amount=1000,
-            notes="some transfer",
-            payment=credit_payment
+            wallet=wallet, amount=1000, notes="some transfer", payment=credit_payment
         )
 
         credit_transaction = CreditTransaction()
@@ -102,14 +99,11 @@ class TestTransactionProduct(BaseTestCase):
             source_account=str(wallet.id),
             to=str(wallet2.id),
             amount=-1000,
-            payment_type=False
+            payment_type=False,
         )
 
         transaction = Transaction(
-            wallet=wallet,
-            amount=1000,
-            notes="some transfer",
-            payment=debit_payment,
+            wallet=wallet, amount=1000, notes="some transfer", payment=debit_payment
         )
 
         debit_transaction = DebitTransaction()
@@ -129,14 +123,11 @@ class TestTransactionProduct(BaseTestCase):
             source_account=str(wallet.id),
             to=str(wallet2.id),
             amount=-1000,
-            payment_type=False
+            payment_type=False,
         )
 
         transaction = Transaction(
-            wallet=wallet,
-            amount=1000,
-            notes="Terima gaji",
-            payment=debit_payment,
+            wallet=wallet, amount=1000, notes="Terima gaji", payment=debit_payment
         )
 
         receive_payroll_transaction = ReceivePayrollTransaction()
@@ -150,46 +141,32 @@ class TestTransactionProduct(BaseTestCase):
             source_account=str(self.source.id),
             to=str(self.destination.id),
             amount=-1000,
-            payment_type=False
+            payment_type=False,
         )
 
         transaction = Transaction(
-            wallet=self.source,
-            amount=1000,
-            notes="Terima gaji",
-            payment=debit_payment,
+            wallet=self.source, amount=1000, notes="Terima gaji", payment=debit_payment
         )
 
         # create payment plan
-        payment_plan = PaymentPlan(
-            destination="12345678910",
-            wallet_id=self.source.id
-        )
+        payment_plan = PaymentPlan(destination="12345678910", wallet_id=self.source.id)
         db.session.add(payment_plan)
         db.session.commit()
 
         # create plan
         due_date = datetime.utcnow().replace(hour=0, minute=1, second=0)
         january_plan = Plan(
-            payment_plan_id=payment_plan.id,
-            amount=100000,
-            due_date=due_date
+            payment_plan_id=payment_plan.id, amount=100000, due_date=due_date
         )
         db.session.add(january_plan)
         db.session.commit()
 
         # register destination as bank account
-        bni = Bank(
-            key="BNI",
-            code="009"
-        )
+        bni = Bank(key="BNI", code="009")
         db.session.add(bni)
         db.session.commit()
 
-        bank_account = BankAccount(
-            account_no="12345678910",
-            bank_id=bni.id
-        )
+        bank_account = BankAccount(account_no="12345678910", bank_id=bni.id)
         db.session.add(bank_account)
         db.session.commit()
 
@@ -204,21 +181,15 @@ class TestTransactionProduct(BaseTestCase):
             source_account=str(self.source.id),
             to=str(self.destination.id),
             amount=-1000,
-            payment_type=False
+            payment_type=False,
         )
 
         transaction = Transaction(
-            wallet=self.source,
-            amount=1000,
-            notes="Terima gaji",
-            payment=debit_payment,
+            wallet=self.source, amount=1000, notes="Terima gaji", payment=debit_payment
         )
 
         # create payment plan
-        payment_plan = PaymentPlan(
-            destination="12345678910",
-            wallet_id=self.source.id
-        )
+        payment_plan = PaymentPlan(destination="12345678910", wallet_id=self.source.id)
         db.session.add(payment_plan)
         db.session.commit()
 
@@ -226,25 +197,17 @@ class TestTransactionProduct(BaseTestCase):
         due_date = datetime.utcnow() + timedelta(days=1)
 
         january_plan = Plan(
-            payment_plan_id=payment_plan.id,
-            amount=100000,
-            due_date=due_date
+            payment_plan_id=payment_plan.id, amount=100000, due_date=due_date
         )
         db.session.add(january_plan)
         db.session.commit()
 
         # register destination as bank account
-        bni = Bank(
-            key="BNI",
-            code="009"
-        )
+        bni = Bank(key="BNI", code="009")
         db.session.add(bni)
         db.session.commit()
 
-        bank_account = BankAccount(
-            account_no="12345678910",
-            bank_id=bni.id
-        )
+        bank_account = BankAccount(account_no="12345678910", bank_id=bni.id)
         db.session.add(bank_account)
         db.session.commit()
 
@@ -260,21 +223,15 @@ class TestTransactionProduct(BaseTestCase):
             source_account=str(self.source.id),
             to=str(self.destination.id),
             amount=-1000,
-            payment_type=False
+            payment_type=False,
         )
 
         transaction = Transaction(
-            wallet=self.source,
-            amount=1000,
-            notes="Terima gaji",
-            payment=debit_payment,
+            wallet=self.source, amount=1000, notes="Terima gaji", payment=debit_payment
         )
 
         # create payment plan
-        payment_plan = PaymentPlan(
-            destination="12345678910",
-            wallet_id=self.source.id
-        )
+        payment_plan = PaymentPlan(destination="12345678910", wallet_id=self.source.id)
         db.session.add(payment_plan)
         db.session.commit()
 
@@ -282,25 +239,17 @@ class TestTransactionProduct(BaseTestCase):
         due_date = datetime.utcnow() - timedelta(days=1)
 
         january_plan = Plan(
-            payment_plan_id=payment_plan.id,
-            amount=100000,
-            due_date=due_date
+            payment_plan_id=payment_plan.id, amount=100000, due_date=due_date
         )
         db.session.add(january_plan)
         db.session.commit()
 
         # register destination as bank account
-        bni = Bank(
-            key="BNI",
-            code="009"
-        )
+        bni = Bank(key="BNI", code="009")
         db.session.add(bni)
         db.session.commit()
 
-        bank_account = BankAccount(
-            account_no="12345678910",
-            bank_id=bni.id
-        )
+        bank_account = BankAccount(account_no="12345678910", bank_id=bni.id)
         db.session.add(bank_account)
         db.session.commit()
 

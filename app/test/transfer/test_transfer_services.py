@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from app.api import db
 
-from app.test.base  import BaseTestCase
+from app.test.base import BaseTestCase
 
 from app.api.models import *
 
@@ -26,6 +26,7 @@ from app.api.error.http import *
 from task.bank.tasks import BankTask
 
 fake_wallet_id = str(uuid.uuid4())
+
 
 class TestTransferServices(BaseTestCase):
     """ Test Class for Transfer Services"""
@@ -67,10 +68,7 @@ class TestTransferServices(BaseTestCase):
     def _create_deposit(self):
         wallet = self.source
 
-        bank = Bank(
-              key="BNI",
-              code="009"
-        )
+        bank = Bank(key="BNI", code="009")
         db.session.add(bank)
         db.session.commit()
 
@@ -84,32 +82,29 @@ class TestTransferServices(BaseTestCase):
         db.session.commit()
 
         params = {
-            "payment_amount" : 10000,
-            "payment_ntb" : "123456",
-            "payment_channel_key" : "BNI_VA"
+            "payment_amount": 10000,
+            "payment_ntb": "123456",
+            "payment_channel_key": "BNI_VA",
         }
         result = CallbackServices(va.account_no, trx_id).deposit(params)
-        self.assertEqual(result['status'], '000')
+        self.assertEqual(result["status"], "000")
 
-        transaction = Transaction.query.join(
-            TransactionType, Transaction.transaction_type_id ==
-            TransactionType.id
-        ).filter(
-            Transaction.wallet_id == wallet.id,
-            TransactionType.key == "TOP_UP",
-        ).first()
+        transaction = (
+            Transaction.query.join(
+                TransactionType, Transaction.transaction_type_id == TransactionType.id
+            )
+            .filter(Transaction.wallet_id == wallet.id, TransactionType.key == "TOP_UP")
+            .first()
+        )
         return transaction.id
 
     def test_internal_transfer_success(self):
         """ test function to create main transaction """
-        params = {
-            "amount" : 1,
-            "notes" : "Some transfer notes",
-            "types" : None
-        }
+        params = {"amount": 1, "notes": "Some transfer notes", "types": None}
 
-        result = TransferServices(str(self.source.id), "123456",
-                                  str(self.destination.id)).internal_transfer(params)
+        result = TransferServices(
+            str(self.source.id), "123456", str(self.destination.id)
+        ).internal_transfer(params)
 
         transaction = Transaction.query.all()
         self.assertTrue(len(transaction) > 0)
@@ -169,28 +164,22 @@ class TestTransferServices(BaseTestCase):
     def test_internal_transfer_failed_invalid_id(self):
         """ test function to create main transaction """
         # create sourc wallet first
-        params = {
-            "amount" : 1,
-            "notes" : "Some transfer notes",
-            "types" : None
-        }
+        params = {"amount": 1, "notes": "Some transfer notes", "types": None}
 
         with self.assertRaises(BadRequest):
-            result = TransferServices("90", "123456",
-                                      str(self.destination.id)).internal_transfer(params)
+            result = TransferServices(
+                "90", "123456", str(self.destination.id)
+            ).internal_transfer(params)
 
     def test_internal_transfer_failed_source_not_found(self):
         """ test function to create main transaction """
         # create sourc wallet first
-        params = {
-            "amount" : 1,
-            "notes" : "Some transfer notes",
-            "types" : None
-        }
+        params = {"amount": 1, "notes": "Some transfer notes", "types": None}
 
         with self.assertRaises(RequestNotFound):
-            result = TransferServices(fake_wallet_id, "123456",
-                                      str(self.destination.id)).internal_transfer(params)
+            result = TransferServices(
+                fake_wallet_id, "123456", str(self.destination.id)
+            ).internal_transfer(params)
 
     def test_internal_transfer_failed_source_locked(self):
         """ test function to create main transaction """
@@ -198,52 +187,45 @@ class TestTransferServices(BaseTestCase):
         self.source.lock()
         db.session.commit()
 
-        params = {
-            "amount" : 1,
-            "notes" : "some transfer notes",
-            "types" : None
-        }
+        params = {"amount": 1, "notes": "some transfer notes", "types": None}
 
         with self.assertRaises(UnprocessableEntity):
-            result = TransferServices(str(self.source.id), "123456",
-                                      str(self.destination.id)).internal_transfer(params)
+            result = TransferServices(
+                str(self.source.id), "123456", str(self.destination.id)
+            ).internal_transfer(params)
 
     def test_internal_transfer_failed_source_wrong_pin(self):
         """ test function to create main transaction """
-        params = {
-            "amount" : 1,
-            "notes" : "Some transfer notes",
-            "types" : None
-        }
+        params = {"amount": 1, "notes": "Some transfer notes", "types": None}
 
         with self.assertRaises(UnprocessableEntity):
-            result = TransferServices(str(self.source.id), "111111",
-                                      str(self.destination.id)).internal_transfer(params)
+            result = TransferServices(
+                str(self.source.id), "111111", str(self.destination.id)
+            ).internal_transfer(params)
 
     def test_internal_transfer_failed_source_max_wrong_pin(self):
         """ test function to create main transaction """
-        params = {
-            "amount" : 1,
-            "notes" : "Some transfer notes",
-            "types" : None
-        }
+        params = {"amount": 1, "notes": "Some transfer notes", "types": None}
 
         with self.assertRaises(UnprocessableEntity):
-            result = TransferServices(str(self.source.id), "111111",
-                                      str(self.destination.id)).internal_transfer(params)
+            result = TransferServices(
+                str(self.source.id), "111111", str(self.destination.id)
+            ).internal_transfer(params)
 
         with self.assertRaises(UnprocessableEntity):
-            result = TransferServices(str(self.source.id), "111111",
-                                      str(self.destination.id)).internal_transfer(params)
+            result = TransferServices(
+                str(self.source.id), "111111", str(self.destination.id)
+            ).internal_transfer(params)
 
         with self.assertRaises(UnprocessableEntity):
-            result = TransferServices(str(self.source.id), "111111",
-                                      str(self.destination.id)).internal_transfer(params)
+            result = TransferServices(
+                str(self.source.id), "111111", str(self.destination.id)
+            ).internal_transfer(params)
 
         with self.assertRaises(UnprocessableEntity):
-            result = TransferServices(str(self.source.id), "111111",
-                                      str(self.destination.id)).internal_transfer(params)
-
+            result = TransferServices(
+                str(self.source.id), "111111", str(self.destination.id)
+            ).internal_transfer(params)
 
     def test_internal_transfer_failed_source_insufficient_balance(self):
         """ test function to create main transaction """
@@ -251,26 +233,21 @@ class TestTransferServices(BaseTestCase):
         self.source.balance = 0
         db.session.commit()
 
-        params = {
-            "amount" : 10,
-            "notes" : "some transfer notes",
-            "types" : None
-        }
+        params = {"amount": 10, "notes": "some transfer notes", "types": None}
 
         with self.assertRaises(UnprocessableEntity):
-            result = TransferServices(str(self.source.id), "123456",
-                                      str(self.destination.id)).internal_transfer(params)
+            result = TransferServices(
+                str(self.source.id), "123456", str(self.destination.id)
+            ).internal_transfer(params)
 
     def test_internal_transfer_failed_destination_not_found(self):
         """ test function to create main transaction """
-        params = {
-            "amount" : 1,
-            "notes" : "some transfer notes",
-            "types" : None
-        }
+        params = {"amount": 1, "notes": "some transfer notes", "types": None}
 
         with self.assertRaises(RequestNotFound):
-            result = TransferServices(str(self.source.id), "123456", fake_wallet_id).internal_transfer(params)
+            result = TransferServices(
+                str(self.source.id), "123456", fake_wallet_id
+            ).internal_transfer(params)
 
     def test_internal_transfer_failed_destination_locked(self):
         """ test function to create main transaction """
@@ -278,43 +255,33 @@ class TestTransferServices(BaseTestCase):
         self.destination.lock()
         db.session.commit()
 
-        params = {
-            "amount" : 1,
-            "notes" : "some transfer notes",
-            "types" : None
-        }
+        params = {"amount": 1, "notes": "some transfer notes", "types": None}
 
         with self.assertRaises(UnprocessableEntity):
-            result = TransferServices(str(self.source.id), "123456",
-                                      str(self.destination.id)).internal_transfer(params)
+            result = TransferServices(
+                str(self.source.id), "123456", str(self.destination.id)
+            ).internal_transfer(params)
 
     def test_internal_transfer_failed_destination_source_same(self):
         """ test function to create main transaction """
         # create sourc wallet first
-        params = {
-            "amount" : 1,
-            "notes" : "some transfer notes",
-            "types" : None
-        }
+        params = {"amount": 1, "notes": "some transfer notes", "types": None}
 
         with self.assertRaises(UnprocessableEntity):
-            result = TransferServices(str(self.source.id), "123456",
-                                      str(self.source.id)).internal_transfer(params)
+            result = TransferServices(
+                str(self.source.id), "123456", str(self.source.id)
+            ).internal_transfer(params)
 
     @patch.object(BankTask, "bank_transfer")
     def test_external_transfer(self, mock_bank_transfer):
         """ test function to create main transaction """
-        params = {
-            "amount" : 1,
-            "destination" : str(self.bank_account.id),
-            "notes" : None,
-        }
+        params = {"amount": 1, "destination": str(self.bank_account.id), "notes": None}
 
         mock_bank_transfer.return_value = True
 
-        result = TransferServices(
-            str(self.source.id), "123456"
-        ).external_transfer(params)
+        result = TransferServices(str(self.source.id), "123456").external_transfer(
+            params
+        )
 
         transaction = Transaction.query.all()
         self.assertTrue(len(transaction) > 0)
@@ -324,29 +291,25 @@ class TestTransferServices(BaseTestCase):
     def test_external_transfer_insufficient(self):
         """ test function to create main transaction """
         params = {
-            "amount" : 100000,
-            "destination" : str(self.bank_account.id),
-            "notes" : None,
+            "amount": 100000,
+            "destination": str(self.bank_account.id),
+            "notes": None,
         }
 
         with self.assertRaises(UnprocessableEntity):
-            result = TransferServices(
-                str(self.source.id), "123456"
-            ).external_transfer(params)
+            result = TransferServices(str(self.source.id), "123456").external_transfer(
+                params
+            )
 
     def test_external_transfer_bank_account_error(self):
         """ test function to create main transaction """
         # add bank account
-        params = {
-            "amount" : 1,
-            "destination" : fake_wallet_id,
-            "notes" : None,
-        }
+        params = {"amount": 1, "destination": fake_wallet_id, "notes": None}
 
         with self.assertRaises(RequestNotFound):
-            result = TransferServices(
-                str(self.source.id), "123456"
-            ).external_transfer(params)
+            result = TransferServices(str(self.source.id), "123456").external_transfer(
+                params
+            )
 
     '''
     @patch(transaction_helper, "process_transaction")
@@ -374,29 +337,28 @@ class TestTransferServices(BaseTestCase):
 
     def test_calculate_transfer_fee(self):
         #  Wallet to Wallet Transfer
-        result = \
-        TransferServices().calculate_transfer_fee(str(self.destination.id))
+        result = TransferServices().calculate_transfer_fee(str(self.destination.id))
         # should be zero
         self.assertEqual(result, 0)
 
         # wallet to BNI transfer
-        result = \
-        TransferServices().calculate_transfer_fee(str(self.bank_account.id),
-                                                "ONLINE")
+        result = TransferServices().calculate_transfer_fee(
+            str(self.bank_account.id), "ONLINE"
+        )
         # should be zero
         self.assertEqual(result, 0)
 
         # wallet to BCA transfer Online
-        result = \
-        TransferServices().calculate_transfer_fee(str(self.bank_account2.id),
-                                                "ONLINE")
+        result = TransferServices().calculate_transfer_fee(
+            str(self.bank_account2.id), "ONLINE"
+        )
         # should be 6500
         self.assertEqual(result, 6500)
 
         # wallet to BCA transfer Clearing
-        result = \
-        TransferServices().calculate_transfer_fee(str(self.bank_account2.id),
-                                                "CLEARING")
+        result = TransferServices().calculate_transfer_fee(
+            str(self.bank_account2.id), "CLEARING"
+        )
         # should be 5000
         self.assertEqual(result, 5000)
 

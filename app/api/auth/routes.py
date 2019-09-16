@@ -12,17 +12,22 @@
 from app.api.auth import api
 
 from app.api.core import Routes
+
 # services
 from app.api.auth.modules.auth_services import AuthServices
+
 # serializer
 from app.api.serializer import UserSchema
+
 # request schema
 from app.api.request_schema import AuthRequestSchema
+
 # decorator
 from app.api.auth.decorator import refresh_token_only
 from app.api.auth.decorator import token_required
 from app.api.auth.decorator import get_current_token
 from app.api.auth.decorator import get_token_payload
+
 
 @api.route("/token")
 class TokenRoutes(Routes):
@@ -41,7 +46,10 @@ class TokenRoutes(Routes):
         """
         response = AuthServices().create_token(self.serialize(self.payload()))
         return response
-#end def
+
+
+# end def
+
 
 @api.route("/refresh")
 class RefreshTokenRoutes(Routes):
@@ -49,6 +57,7 @@ class RefreshTokenRoutes(Routes):
         Refresh Token
         /auth/refresh
     """
+
     # refresh the token
     @refresh_token_only
     def post(self):
@@ -59,8 +68,12 @@ class RefreshTokenRoutes(Routes):
         payload = get_token_payload()
         response = AuthServices().refresh_token(payload["user"])
         return response
-    #end def
-#end class
+
+    # end def
+
+
+# end class
+
 
 @api.route("/token/revoke")
 class TokenRevokeRoutes(Routes):
@@ -68,6 +81,7 @@ class TokenRevokeRoutes(Routes):
         Refresh Token
         /auth/token/revoke
     """
+
     @token_required
     def post(self):
         """
@@ -78,5 +92,8 @@ class TokenRevokeRoutes(Routes):
         token = get_current_token()
         response = AuthServices().logout(token)
         return response
-    #end def
-#end class
+
+    # end def
+
+
+# end class

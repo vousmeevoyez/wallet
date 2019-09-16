@@ -9,6 +9,7 @@ from app.test.base import BaseTestCase
 
 from app.api.utility.modules.notif_services import NotifServices
 
+
 class TestNotificationServices(BaseTestCase):
     """ Test Class for SMS helper"""
 
@@ -21,7 +22,7 @@ class TestNotificationServices(BaseTestCase):
             "amount": 1000,
             "balance": 1000,
             "type": "top_up",
-            "message": "Top Up Virtual account 10.000"
+            "message": "Top Up Virtual account 10.000",
         }
 
         mock_post.return_value = Mock()
@@ -43,21 +44,21 @@ class TestNotificationServices(BaseTestCase):
 
     def test_send(self):
         data = {
-            "wallet_id"        : "some_wallet_id",
-            "amount"           : 1000,
-            "balance"          : 1001,
-            "transaction_type" : "TOP_UP",
-            "en_message"       : "some message",
+            "wallet_id": "some_wallet_id",
+            "amount": 1000,
+            "balance": 1001,
+            "transaction_type": "TOP_UP",
+            "en_message": "some message",
         }
         result = NotifServices().send(data)
         self.assertTrue(result)
 
     def test_send_real(self):
         data = {
-            "wallet_id"        : "d795ce30-3da6-4fb3-be4f-12d1f46a0688",
-            "amount"           : 1000,
-            "balance"          : 1001,
-            "transaction_type" : "TOP_UP",
-            "en_message"       : "halo ini notifikasi dari kelvin",
+            "wallet_id": "d795ce30-3da6-4fb3-be4f-12d1f46a0688",
+            "amount": 1000,
+            "balance": 1001,
+            "transaction_type": "TOP_UP",
+            "en_message": "halo ini notifikasi dari kelvin",
         }
         result = NotifServices().send(data)

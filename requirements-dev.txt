@@ -31,7 +31,6 @@ freezegun==0.3.11
 future==0.17.1
 grpcio==1.20.1
 grpcio-tools==1.20.1
-gunicorn==19.9.0
 idna==2.7
 itsdangerous==1.1.0
 Jinja2==2.10

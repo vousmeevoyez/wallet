@@ -7,6 +7,7 @@ from app.api import db
 from app.api.models import ExternalLog
 from app.api.serializer import ExternalLogSchema
 
+
 class LogServices:
     """ Log Services Class"""
 
@@ -21,5 +22,7 @@ class LogServices:
         ext_log = ExternalLog.query.all()
         response["data"] = ExternalLogSchema(many=True).dump(ext_log).data
         return response
-        #end def
-#end class
+        # end def
+
+
+# end class

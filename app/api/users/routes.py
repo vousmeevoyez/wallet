@@ -2,25 +2,30 @@
     User Routes
     _______________
 """
-#pylint: disable=no-name-in-module
-#pylint: disable=import-error
-#pylint: disable=no-self-use
+# pylint: disable=no-name-in-module
+# pylint: disable=import-error
+# pylint: disable=no-self-use
 
 from app.api.core import Routes
 from app.api.users import api
+
 # serializer
 from app.api.serializer import UserSchema, BankAccountSchema
+
 # request schema
 from app.api.request_schema import (
     BankAccountRequestSchema,
     UserRequestSchema,
-    UserUpdateRequestSchema
+    UserUpdateRequestSchema,
 )
+
 # decorator
 from app.api.auth.decorator import token_required, admin_required
+
 # services
 from app.api.users.modules.bank_account_services import BankAccountServices
 from app.api.users.modules.user_services import UserServices
+
 
 @api.route("/")
 class UserRoutes(Routes):
@@ -28,6 +33,7 @@ class UserRoutes(Routes):
         Users
         /users
     """
+
     __schema__ = UserRequestSchema
     __serializer__ = UserSchema(strict=True)
 
@@ -41,14 +47,18 @@ class UserRoutes(Routes):
             user, request_data["password"], request_data["pin"], request_data["label"]
         )
         return response
-    #end def
+
+    # end def
 
     @admin_required
     def get(self):
         """ Endpoint for returning all stored user """
         response = UserServices().show(1)
         return response
-#end class
+
+
+# end class
+
 
 @api.route("/<string:user_id>")
 class UserInfoRoutes(Routes):
@@ -79,7 +89,9 @@ class UserInfoRoutes(Routes):
         """ Endpoint for removing user """
         response = UserServices(user_id).remove()
         return response
-#end class
+
+
+# end class
 
 
 @api.route("/<string:user_id>/bank_account/")
@@ -98,17 +110,24 @@ class UserBankAccountRoutes(Routes):
         request_data = self.payload()
         bank_account = self.serialize(request_data, load=True)
 
-        response = BankAccountServices(user_id, request_data["bank_code"]).add(bank_account)
+        response = BankAccountServices(user_id, request_data["bank_code"]).add(
+            bank_account
+        )
         return response
-    #end def
+
+    # end def
 
     @token_required
     def get(self, user_id):
         """ Endpoint for getting all user bank account """
         response = BankAccountServices(user_id).show()
         return response
-    #end def
-#end class
+
+    # end def
+
+
+# end class
+
 
 @api.route("/<string:user_id>/bank_account/<string:user_bank_account_id>")
 class UserBankAccountDetailsRoutes(Routes):
@@ -123,18 +142,22 @@ class UserBankAccountDetailsRoutes(Routes):
     @token_required
     def delete(self, user_id, user_bank_account_id):
         """ Endpoint for removing user bank account """
-        response = BankAccountServices(user_id, None,
-                                       user_bank_account_id).remove()
+        response = BankAccountServices(user_id, None, user_bank_account_id).remove()
         return response
-    #end def
+
+    # end def
 
     @token_required
     def put(self, user_id, user_bank_account_id):
         """ Endpoint for updating user bank account """
         request_data = self.serialize(self.payload())
 
-        response = BankAccountServices(user_id, request_data["bank_code"],
-                                       user_bank_account_id).update(request_data)
+        response = BankAccountServices(
+            user_id, request_data["bank_code"], user_bank_account_id
+        ).update(request_data)
         return response
-    #end def
-#end class
+
+    # end def
+
+
+# end class

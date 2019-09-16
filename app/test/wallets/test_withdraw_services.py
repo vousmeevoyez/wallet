@@ -4,7 +4,7 @@
 from unittest.mock import patch, Mock
 from app.api import db
 
-from app.test.base  import BaseTestCase
+from app.test.base import BaseTestCase
 
 from app.api.models import *
 
@@ -13,10 +13,12 @@ from task.bank.tasks import BankTask
 from app.api.wallets.modules.withdraw_services import WithdrawServices
 from app.api.virtual_accounts.modules.va_services import VirtualAccountServices
 from app.api.wallets.modules.wallet_services import WalletServices
+
 # exceptions
 from app.api.error.http import *
 
 from app.api.utility.utils import validate_uuid
+
 
 class TestWithdrawServices(BaseTestCase):
     """ Test Class for Withdraw Services"""
@@ -28,21 +30,19 @@ class TestWithdrawServices(BaseTestCase):
         response = result[0]["data"]
         wallet_id = response["wallet_id"]
 
-        virtual_account = VirtualAccount(
-            name="lisa",
-        )
+        virtual_account = VirtualAccount(name="lisa")
 
         params = {
-            "bank_name" : "BNI",
-            "type"      : "DEBIT",
-            "wallet_id" : wallet_id,
-            "amount"    : "10000000"
+            "bank_name": "BNI",
+            "type": "DEBIT",
+            "wallet_id": wallet_id,
+            "amount": "10000000",
         }
 
         mock_create_va.return_value = True
         result = VirtualAccountServices().add(virtual_account, params)
         self.assertTrue(result[0]["data"]["virtual_account"])
-        
+
         wallet = Wallet.query.filter_by(id=validate_uuid(wallet_id)).first()
         return wallet
 
@@ -53,9 +53,7 @@ class TestWithdrawServices(BaseTestCase):
         response = result[0]["data"]
         wallet_id = response["wallet_id"]
 
-        virtual_account = VirtualAccount(
-            name="lisa",
-        )
+        virtual_account = VirtualAccount(name="lisa")
 
         wallet = Wallet.query.filter_by(id=validate_uuid(wallet_id)).first()
         return wallet
@@ -65,10 +63,7 @@ class TestWithdrawServices(BaseTestCase):
         source = self._create_wallet_without_va()
         source.balance = 500000
 
-        params = {
-            "amount"    : 50000,
-            "bank_name" : "BNI",
-        }
+        params = {"amount": 50000, "bank_name": "BNI"}
 
         result = WithdrawServices(str(source.id), "123456").request(params)
         print(result)
@@ -78,10 +73,7 @@ class TestWithdrawServices(BaseTestCase):
         source = self._create_wallet_without_va()
         source.balance = 500000
 
-        params = {
-            "amount"    : 50000,
-            "bank_name" : "BNI",
-        }
+        params = {"amount": 50000, "bank_name": "BNI"}
 
         result = WithdrawServices(str(source.id), "123456").request(params)
 
@@ -93,10 +85,7 @@ class TestWithdrawServices(BaseTestCase):
         source = self._create_wallet_with_va()
         source.balance = 500000
 
-        params = {
-            "amount"    : 50000,
-            "bank_name" : "BNI",
-        }
+        params = {"amount": 50000, "bank_name": "BNI"}
 
         result = WithdrawServices(str(source.id), "123456").request(params)
         print(result)
@@ -105,10 +94,7 @@ class TestWithdrawServices(BaseTestCase):
         """ test function to request withdraw """
         source = self._create_wallet_without_va()
 
-        params = {
-            "amount"    : 1000,
-            "bank_name" : "BNI"
-        }
+        params = {"amount": 1000, "bank_name": "BNI"}
 
         with self.assertRaises(UnprocessableEntity):
             result = WithdrawServices(str(source.id), "123456").request(params)
@@ -117,10 +103,7 @@ class TestWithdrawServices(BaseTestCase):
         """ test function to request withdraw """
         source = self._create_wallet_without_va()
 
-        params = {
-            "amount"    : 99999999999999999999,
-            "bank_name" : "BNI"
-        }
+        params = {"amount": 99999999999999999999, "bank_name": "BNI"}
 
         with self.assertRaises(UnprocessableEntity):
             result = WithdrawServices(str(source.id), "123456").request(params)
@@ -129,10 +112,7 @@ class TestWithdrawServices(BaseTestCase):
         """ test function to request withdraw """
         source = self._create_wallet_without_va()
 
-        params = {
-            "amount" : 99999,
-            "bank_name" : "BNI"
-        }
+        params = {"amount": 99999, "bank_name": "BNI"}
 
         with self.assertRaises(UnprocessableEntity):
             result = WithdrawServices(str(source.id), "123456").request(params)
@@ -142,10 +122,7 @@ class TestWithdrawServices(BaseTestCase):
         source = self._create_wallet_without_va()
         source.balance = 1000
 
-        params = {
-            "amount" : 99999,
-            "bank_name" : "BNI"
-        }
+        params = {"amount": 99999, "bank_name": "BNI"}
 
         with self.assertRaises(UnprocessableEntity):
             result = WithdrawServices(str(source.id), "111111").request(params)

@@ -2,27 +2,28 @@
     Transfer Routes
     _______________
 """
-#pylint: disable=import-error
-#pylint: disable=invalid-name
-#pylint: disable=no-self-use
-#pylint: disable=too-few-public-methods
-#pylint: disable=no-name-in-module
+# pylint: disable=import-error
+# pylint: disable=invalid-name
+# pylint: disable=no-self-use
+# pylint: disable=too-few-public-methods
+# pylint: disable=no-name-in-module
 
 from app.api.core import Routes
 
 from app.api.transfer import api
-#serializer
+
+# serializer
 from app.api.serializer import *
+
 # request schema
 from app.api.request_schema import *
+
 # transfer modules
 from app.api.transfer.modules.transfer_services import TransferServices
+
 # authentication
-from app.api.auth.decorator import (
-    token_required,
-    get_token_payload,
-    api_key_required
-)
+from app.api.auth.decorator import token_required, get_token_payload, api_key_required
+
 # utility
 from app.api.utility.utils import QR
 

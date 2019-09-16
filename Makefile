@@ -1,6 +1,8 @@
 clean:
 	find . -type f -name '*.pyc' -delete
 	find . -type f -name '*.log' -delete
+migrate:
+	python manage.py db migrate
 
 upgrade:
 	python manage.py db upgrade
@@ -31,6 +33,12 @@ transaction-worker:
 
 utility-worker:
 	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q utility -n utilityworker@%h
+
+logging-worker:
+	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q logging -n loggingworker@%h
+
+beat:
+	celery beat -A task.worker.celery --loglevel=info
 
 flower:
 	flower -A task.worker.celery --port=5555

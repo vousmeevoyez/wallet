@@ -2,59 +2,71 @@
     Plan Services
     _______________
 """
-#pylint: disable=import-error
-#pylint: disable=no-name-in-module
+# pylint: disable=import-error
+# pylint: disable=no-name-in-module
 # standard
 from datetime import timedelta
+
 # external
 from sqlalchemy.exc import IntegrityError
+
 # local
 from app.api import scheduler
+
 # database
-from app.api  import db
+from app.api import db
+
 # models
 from app.api.models import Plan, PaymentPlan
+
 # serializer
 from app.api.serializer import PlanSchema
+
 # http response
 from app.api.http_response import ok, no_content, created
+
 # exceptions
 from app.api.error.http import RequestNotFound, UnprocessableEntity
+
 # error
 from app.api.error.message import RESPONSE as error_response
+
 # configuration
 from app.config import config
+
 # task
 from task.payment.tasks import PaymentTask
+
 
 class PlanServices:
     """ Plan Services Class"""
 
     def __init__(self, payment_plan_id=None, plan_id=None):
         if payment_plan_id is not None:
-        # look up user only if user_id is set
-            payment_plan = PaymentPlan.query.filter_by(
-                id=payment_plan_id,
-            ).first()
+            # look up user only if user_id is set
+            payment_plan = PaymentPlan.query.filter_by(id=payment_plan_id).first()
             if payment_plan is None:
-                raise RequestNotFound(error_response["PAYMENT_PLAN_NOT_FOUND"]["TITLE"],
-                                      error_response["PAYMENT_PLAN_NOT_FOUND"]["MESSAGE"])
+                raise RequestNotFound(
+                    error_response["PAYMENT_PLAN_NOT_FOUND"]["TITLE"],
+                    error_response["PAYMENT_PLAN_NOT_FOUND"]["MESSAGE"],
+                )
             # end if
             self.payment_plan = payment_plan
         # end if
 
         if plan_id is not None:
-        # look up user only if user_id is set
-            plan = Plan.query.filter_by(
-                id=plan_id,
-            ).first()
+            # look up user only if user_id is set
+            plan = Plan.query.filter_by(id=plan_id).first()
             if plan is None:
-                raise RequestNotFound(error_response["PLAN_NOT_FOUND"]["TITLE"],
-                                      error_response["PLAN_NOT_FOUND"]["MESSAGE"])
+                raise RequestNotFound(
+                    error_response["PLAN_NOT_FOUND"]["TITLE"],
+                    error_response["PLAN_NOT_FOUND"]["MESSAGE"],
+                )
             # end if
             self.plan = plan
         # end if
-    #end def
+
+    # end def
 
     def add(self, plan):
         """
@@ -76,28 +88,25 @@ class PlanServices:
                         due_date = plan.due_date + timedelta(hours=23)
                     # end if
                     job = scheduler.add_job(
-                        lambda:
-                        PaymentTask.background_transfer.apply_async(
+                        lambda: PaymentTask.background_transfer.apply_async(
                             args=[plan.id], queue="payment"
                         ),
-                        trigger='date',
+                        trigger="date",
                         next_run_time=due_date,
                     )
                 # end if
             # end if
         except IntegrityError:
-            #print(err.orig)
+            # print(err.orig)
             db.session.rollback()
             raise UnprocessableEntity(
                 error_response["DUPLICATE_PLAN"]["TITLE"],
-                error_response["DUPLICATE_PLAN"]["MESSAGE"]
+                error_response["DUPLICATE_PLAN"]["MESSAGE"],
             )
         # end try
-        response = {
-            "plan_id" : plan.id
-        }
+        response = {"plan_id": plan.id}
         return created(response)
-        #end try
+        # end try
 
     @staticmethod
     def show():
@@ -105,13 +114,15 @@ class PlanServices:
         plans = Plan.query.all()
         response = PlanSchema(many=True).dump(plans).data
         return ok(response)
-    #end def
+
+    # end def
 
     def info(self):
         """ return single plan """
         plan = PlanSchema().dump(self.plan).data
         return ok(plan)
-    #end def
+
+    # end def
 
     def update(self, plan):
         """ update plan """
@@ -121,7 +132,8 @@ class PlanServices:
 
         db.session.commit()
         return no_content()
-    #end def
+
+    # end def
 
     def update_status(self, params):
         """ update plan status """
@@ -138,7 +150,8 @@ class PlanServices:
 
         db.session.commit()
         return no_content()
-    #end def
+
+    # end def
 
     def remove(self):
         """ remove plan """
@@ -147,7 +160,10 @@ class PlanServices:
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
-        #end try
+        # end try
         return no_content()
-    #end def
-#end class
+
+    # end def
+
+
+# end class

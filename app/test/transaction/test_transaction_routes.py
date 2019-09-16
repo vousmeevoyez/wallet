@@ -10,8 +10,10 @@ from app.api.models import User
 from app.api.models import Wallet
 from app.api import db
 
+
 class TestTransactionRoutes(BaseTestCase):
     """ Test Class for Wallet Routes"""
+
     def setUp(self):
         super().setUp()
 
@@ -22,7 +24,8 @@ class TestTransactionRoutes(BaseTestCase):
         user2, wallet2 = self.create_dummy_user(self.access_token)
         self._user2 = user2
         self._wallet2 = wallet2
-    #end def
+
+    # end def
 
     '''
     """
@@ -89,6 +92,7 @@ class TestTransactionRoutes(BaseTestCase):
     """
         REFUND
     """
+
     def test_refund_transfer(self):
         """ CASE 1 Refund : successfully refund a transfer """
         # inject balance
@@ -97,16 +101,13 @@ class TestTransactionRoutes(BaseTestCase):
         db.session.commit()
 
         params = {
-            "amount" : "15",
-            "notes" : "some notes",
-            "pin" : "123456",
-            "types": "PAYROLL"
+            "amount": "15",
+            "notes": "some notes",
+            "pin": "123456",
+            "types": "PAYROLL",
         }
 
-        result = self.transfer(
-            self._wallet1, self._wallet2,
-            params, self.access_token
-        )
+        result = self.transfer(self._wallet1, self._wallet2, params, self.access_token)
         response = result.get_json()
 
         self.assertEqual(result.status_code, 202)

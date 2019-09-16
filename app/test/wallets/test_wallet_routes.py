@@ -10,6 +10,7 @@ from app.api.models import User
 from app.api.models import Wallet
 from app.api import db
 
+
 class TestWalletRoutes(BaseTestCase):
     """ Test Class for Wallet Routes"""
 
@@ -25,25 +26,24 @@ class TestWalletRoutes(BaseTestCase):
 
         self._user2 = user2
         self._wallet2 = wallet2
-    #end def
+
+    # end def
 
     """
         CREATE WALLET
     """
+
     def test_create_wallet(self):
         """ CREATE_WALLET CASE 1 : Successfully created wallet """
-        params = {
-            "label" : "wallet label",
-            "pin" : "123456"
-        }
+        params = {"label": "wallet label", "pin": "123456"}
         result = self.create_wallet(params, self.access_token)
         self.assertEqual(result.status_code, 201)
 
     def test_create_wallet_serialize_error(self):
         """ CREATE_WALLET CASE 3 : Failed created wallet because some invalid payload """
         params = {
-            "label" : "wallet_label", # ALPHABET ONLY
-            "pin" : "1" # PIN TOO SHOORT
+            "label": "wallet_label",  # ALPHABET ONLY
+            "pin": "1",  # PIN TOO SHOORT
         }
 
         result = self.create_wallet(params, self.access_token)
@@ -55,6 +55,7 @@ class TestWalletRoutes(BaseTestCase):
     """
         WALLET INFO
     """
+
     def test_get_wallet_info(self):
         """ GET_WALLET_INFO CASE 1 : Successfully get wallet information """
         result = self.get_wallet_info(self._wallet1, self.access_token)
@@ -64,20 +65,15 @@ class TestWalletRoutes(BaseTestCase):
     """
         REMOVE WALLET
     """
+
     def test_remove_wallet(self):
         """ REMOVE WALLET CASE 1 : Successfully remove wallet """
-        params = {
-            "label"  : "wallet label",
-            "pin"    : "123456"
-        }
+        params = {"label": "wallet label", "pin": "123456"}
 
         result = self.create_wallet(params, self.access_token)
         self.assertEqual(result.status_code, 201)
 
-        params = {
-            "label" : "wallet lllabel",
-            "pin" : "123456"
-        }
+        params = {"label": "wallet lllabel", "pin": "123456"}
 
         result = self.create_wallet(params, self.access_token)
         self.assertEqual(result.status_code, 201)
@@ -102,6 +98,7 @@ class TestWalletRoutes(BaseTestCase):
     """
         GET BALANCE
     """
+
     def test_get_balance(self):
         """ GET_BALANCE CASE 1 : return wallet balance information """
         result = self.get_balance(self._wallet1, self.access_token)
@@ -111,32 +108,21 @@ class TestWalletRoutes(BaseTestCase):
     """
         GET TRANSACTIONS
     """
+
     def test_get_transactions(self):
         """ GET TRANSACTIONS CASE 1 : Get wallet transaction for specific date"""
         # TEST GETTING IN TRANSACTION
-        params = {
-            "start_date" : "2019/01/01",
-            "end_date"   : "2019/01/03",
-            "flag" : "IN"
-        }
+        params = {"start_date": "2019/01/01", "end_date": "2019/01/03", "flag": "IN"}
         result = self.get_transaction(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertTrue(result.status_code, 200)
         # TEST GETTING OUT TRANSACTION
-        params = {
-            "start_date" : "2019/01/01",
-            "end_date"   : "2019/01/03",
-            "flag" : "OUT"
-        }
+        params = {"start_date": "2019/01/01", "end_date": "2019/01/03", "flag": "OUT"}
         result = self.get_transaction(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertTrue(result.status_code, 200)
-        #TEST GETTING ALL TRANSACTIONS
-        params = {
-            "start_date" : "2019/01/01",
-            "end_date"   : "2019/01/03",
-            "flag" : "ALL"
-        }
+        # TEST GETTING ALL TRANSACTIONS
+        params = {"start_date": "2019/01/01", "end_date": "2019/01/03", "flag": "ALL"}
         result = self.get_transaction(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertTrue(result.status_code, 200)
@@ -145,11 +131,7 @@ class TestWalletRoutes(BaseTestCase):
         """ GET TRANSACTIONS CASE 2 : Get wallet transaction with invalid
         payload """
         # TEST GETTING IN TRANSACTION
-        params = {
-            "start_date" : "2019-01-01",
-            "end_date"   : "2019-01-03",
-            "flag" : "KLK"
-        }
+        params = {"start_date": "2019-01-01", "end_date": "2019-01-03", "flag": "KLK"}
         result = self.get_transaction(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertTrue(result.status_code, 400)
@@ -168,21 +150,18 @@ class TestWalletRoutes(BaseTestCase):
         db.session.commit()
 
         params = {
-            "amount" : "15",
-            "notes" : "some notes",
-            "pin" : "123456",
-            "types": "PAYROLL"
+            "amount": "15",
+            "notes": "some notes",
+            "pin": "123456",
+            "types": "PAYROLL",
         }
 
-        result = self.transfer(self._wallet1, self._wallet2, params,
-                               self.access_token)
+        result = self.transfer(self._wallet1, self._wallet2, params, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 202)
         self.assertTrue(response["data"])
 
-        params = {
-            "transaction_id" : response['data']['id'],
-        }
+        params = {"transaction_id": response["data"]["id"]}
         result = self.get_transaction_details(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertTrue(result.status_code, 200)
@@ -191,9 +170,7 @@ class TestWalletRoutes(BaseTestCase):
     def test_get_transactions_details_failed(self):
         """ GET TRANSACTIONS DETAILS 2 : Get wallet transaction details but
         transaction not found"""
-        params = {
-            "transaction_id" : str(uuid.uuid4()),
-        }
+        params = {"transaction_id": str(uuid.uuid4())}
         result = self.get_transaction_details(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertTrue(result.status_code, 404)
@@ -203,13 +180,10 @@ class TestWalletRoutes(BaseTestCase):
     """ 
         UPDATE PIN
     """
+
     def test_update_pin_incorrect_old_pin(self):
         """CASE 1 UPDATE PIN : Incorrect old pin"""
-        params = {
-            "old_pin"    : "111111",
-            "pin"        : "123456",
-            "confirm_pin": "123546",
-        }
+        params = {"old_pin": "111111", "pin": "123456", "confirm_pin": "123546"}
         result = self.update_pin(self._wallet1, params, self.access_token)
         response = result.get_json()
         self.assertEqual(result.status_code, 422)
@@ -217,69 +191,53 @@ class TestWalletRoutes(BaseTestCase):
 
     def test_update_pin_unmatch_pin(self):
         """ CASE 2 UPDATE PIN : unmatch pin """
-        params = {
-            "old_pin"    : "123456",
-            "pin"        : "123456",
-            "confirm_pin": "123546",
-        }
+        params = {"old_pin": "123456", "pin": "123456", "confirm_pin": "123546"}
         result = self.update_pin(self._wallet1, params, self.access_token)
         self.assertEqual(result.status_code, 422)
 
     def test_update_pin_old_pin(self):
         """ CASE 3 UPDATE PIN : old pin """
-        params = {
-            "old_pin"    : "123456",
-            "pin"        : "123456",
-            "confirm_pin": "123456",
-        }
+        params = {"old_pin": "123456", "pin": "123456", "confirm_pin": "123456"}
         result = self.update_pin(self._wallet1, params, self.access_token)
         self.assertEqual(result.status_code, 422)
 
     """
         CHECK PIN
     """
+
     def test_check_pin(self):
         """CASE 1 CHECK PIN : Check pin successfully"""
-        params = {
-            "pin" : "123456",
-        }
+        params = {"pin": "123456"}
         result = self.check_pin(self._wallet1, params, self.access_token)
         response = result.get_json()
-        self.assertEqual(response['data']['message'], "PIN VERIFIED")
+        self.assertEqual(response["data"]["message"], "PIN VERIFIED")
 
     def test_check_pin_incorrect(self):
         """CASE 2 CHECK PIN : Check pin incorrectly """
-        params = {
-            "pin" : "123452",
-        }
+        params = {"pin": "123452"}
         result = self.check_pin(self._wallet1, params, self.access_token)
         response = result.get_json()
-        self.assertEqual(response['error'], "INCORRECT_PIN")
+        self.assertEqual(response["error"], "INCORRECT_PIN")
 
-        params = {
-            "pin" : "123452",
-        }
+        params = {"pin": "123452"}
         result = self.check_pin(self._wallet1, params, self.access_token)
         response = result.get_json()
-        self.assertEqual(response['error'], "INCORRECT_PIN")
+        self.assertEqual(response["error"], "INCORRECT_PIN")
 
-        params = {
-            "pin" : "123452",
-        }
+        params = {"pin": "123452"}
         result = self.check_pin(self._wallet1, params, self.access_token)
         response = result.get_json()
-        self.assertEqual(response['error'], "INCORRECT_PIN")
+        self.assertEqual(response["error"], "INCORRECT_PIN")
 
-        params = {
-            "pin" : "123452",
-        }
+        params = {"pin": "123452"}
         result = self.check_pin(self._wallet1, params, self.access_token)
         response = result.get_json()
-        self.assertEqual(response['error'], "MAX_PIN_ATTEMPT")
+        self.assertEqual(response["error"], "MAX_PIN_ATTEMPT")
 
     """
         QR Code
     """
+
     def test_get_qr(self):
         """ GET_QR CASE 1 : return qr string"""
         result = self.get_qr(self._wallet1, self.access_token)
@@ -294,16 +252,16 @@ class TestWalletRoutes(BaseTestCase):
         self.assertEqual(result.status_code, 200)
         self.assertTrue(response["qr_string"])
 
-        payload = {
-            "qr_string" : response["qr_string"]
-        }
+        payload = {"qr_string": response["qr_string"]}
 
         result = self.qr_checkout(self._wallet1, payload, self.access_token)
         response = result.get_json()["data"]
         self.assertTrue(result.status_code, 200)
+
     """
         FOrgot pin
     """
+
     def test_forgot_pin(self):
         """ FORGOT PIN CASE 1 : send forgot otp"""
         result = self.forgot_pin(self._wallet1, self.access_token)
@@ -333,6 +291,7 @@ class TestWalletRoutes(BaseTestCase):
     """
         Verify Forgot OTP
     """
+
     def test_verify_forgot_pin(self):
         """ VERIFY FORGOT PIN CASE 1 : verify forgot otp"""
         result = self.forgot_pin(self._wallet1, self.access_token)
@@ -346,11 +305,7 @@ class TestWalletRoutes(BaseTestCase):
         otp_key = response["data"]["otp_key"]
         otp_code = response["data"]["otp_code"]
 
-        params = {
-            "otp_key" : otp_key,
-            "otp_code": otp_code,
-            "pin" : "12345"
-        }
+        params = {"otp_key": otp_key, "otp_code": otp_code, "pin": "12345"}
 
         result = self.verify_forgot_pin(self._wallet1, params, self.access_token)
         self.assertEqual(result.status_code, 204)
@@ -365,11 +320,7 @@ class TestWalletRoutes(BaseTestCase):
         self.assertTrue(response["data"]["otp_key"])
         self.assertTrue(response["data"]["otp_code"])
 
-        params = {
-            "otp_key" : "12312312312",
-            "otp_code": "123456",
-            "pin" : "12345"
-        }
+        params = {"otp_key": "12312312312", "otp_code": "123456", "pin": "12345"}
 
         result = self.verify_forgot_pin(self._wallet1, params, self.access_token)
         self.assertEqual(result.status_code, 404)
@@ -377,6 +328,7 @@ class TestWalletRoutes(BaseTestCase):
     """
         WITHDRAW 
     """
+
     def test_withdraw(self):
         """ CASE 1 Withdraw : try success withdraw """
         # inject balance
@@ -384,13 +336,9 @@ class TestWalletRoutes(BaseTestCase):
         wallet.balance = 99999999
         db.session.commit()
 
-        params = {
-            "amount" : "50000",
-            "pin" : "123456"
-        }
+        params = {"amount": "50000", "pin": "123456"}
 
-        result = self.withdraw(self._wallet1, params,
-                               self.access_token)
+        result = self.withdraw(self._wallet1, params, self.access_token)
         response = result.get_json()["data"]
         self.assertEqual(result.status_code, 200)
         self.assertTrue(response["valid_until"])
@@ -403,13 +351,9 @@ class TestWalletRoutes(BaseTestCase):
         wallet.balance = 99999999
         db.session.commit()
 
-        params = {
-            "amount" : "0",
-            "pin" : "123456"
-        }
+        params = {"amount": "0", "pin": "123456"}
 
-        result = self.withdraw(self._wallet1, params,
-                               self.access_token)
+        result = self.withdraw(self._wallet1, params, self.access_token)
         response = result.get_json()["data"]
 
         self.assertEqual(result.status_code, 200)
