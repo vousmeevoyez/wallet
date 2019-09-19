@@ -24,11 +24,11 @@ class BNIOpgAuthResponse(HTTPResponse):
         status_code = self.http_status
         if status_code != 200:
             # later should check whether status code valid or not !
-            raise ResponseError(self.data)
+            raise ResponseError("RESPONSE_FAILED", self.data)
         return True
 
 
-class BNIOpgResponse(BNIOpgAuthResponse):
+class BNIOpgResponse(HTTPResponse):
     """ HTTP Response represent BNI OPG Response """
 
     @staticmethod
@@ -55,3 +55,7 @@ class BNIOpgResponse(BNIOpgAuthResponse):
         except FailedResponseError as error:
             raise ResponseError("RESPONSE_FAILED", error.original_exception)
         # end try
+
+    def validate(self):
+        # only validate data ignore HTTP status code
+        self.validate_data()
