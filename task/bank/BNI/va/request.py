@@ -38,6 +38,10 @@ class BNIEcollectionCreditRequest(HTTPRequest):
     @payload.setter
     def payload(self, payload):
         """ set payload """
+        # include client id
+        payload["client_id"] = self.client_id
+        # need to add description
+        payload["description"] = ""
         encrypted_data = encrypt(self.client_id, self.secret_key, payload)
         self._payload = {"client_id": self.client_id, "data": encrypted_data}
 

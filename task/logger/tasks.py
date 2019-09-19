@@ -3,8 +3,7 @@
     in the background
 """
 import random
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import time
+from concurrent.futures import ThreadPoolExecutor
 
 from flask import current_app
 from app.api import celery, sentry, db
@@ -27,7 +26,7 @@ from task.bank.BNI.core import ApiError as BNICoreBankError
 
 # config
 from app.config.external.bank import BNI_OPG
-from app.api.const import WORKER, STATUS, LOGGING
+from app.api.const import WORKER, LOGGING
 
 
 def backoff(attempts):
@@ -37,14 +36,17 @@ def backoff(attempts):
 
 def check_va(va_trx_id):
     # wrapper function to help interact with BNI
-    result = None
+    result = {
+        "amount": 0,
+        "status": True
+    }
     try:
-        result = BNIVA("CREDIT").get_inquiry(va_trx_id)
+        response = BNIVA("CREDIT").get_inquiry(va_trx_id)
     except BNIVAError:
-        result = 0
+        result["status"] = False
     else:
         # access paymount value
-        result = result["payment_amount"]
+        result["amount"] = response["payment_amount"]
     # end try
     return result
 
@@ -57,10 +59,10 @@ def count_page(va_count):
     return int(pages)
 
 
-def record_va(account_no, balance):
+def record_va(account_no, balance, status):
     va = VirtualAccount.query.filter_by(account_no=account_no).first()
     # create va log
-    log = VaLog(virtual_account_id=va.id, balance=balance)
+    log = VaLog(virtual_account_id=va.id, balance=balance, status=status)
     db.session.add(log)
     db.session.commit()
 
@@ -100,18 +102,22 @@ class LoggingTask(celery.Task):
         """ get all virtual account that created on our system and record the
         virtual account balance """
         va_count = VirtualAccount.query.count()
-        current_app.logger.info(va_count)
+        current_app.logger.info("No of Virtual Accounts: {}".format(va_count))
         # after we know how many va we need to split it into pages
         pages = count_page(va_count)
 
         for page in range(pages):
             # paginate virtual account and process it
-            virtual_accounts = VirtualAccount.query.paginate(
+            virtual_accounts = VirtualAccount.query.join(
+                VaType, VirtualAccount.va_type_id == VaType.id
+            ).filter(
+                VaType.key == "CREDIT"
+            ).paginate(
                 page, LOGGING["PAGE_SIZE"], False
             ).items
 
             results = []
-            with ThreadPoolExecutor(max_workers=4) as executor:
+            with ThreadPoolExecutor(max_workers=LOGGING["PAGE_SIZE"]) as executor:
                 results = executor.map(
                     check_va, [va.trx_id for va in virtual_accounts]
                 )
@@ -120,7 +126,7 @@ class LoggingTask(celery.Task):
             # zip virtual account with result
             virtual_accounts = zip(virtual_accounts, results)
             for va in virtual_accounts:
-                record_va(va[0].account_no, va[1])
+                record_va(va[0].account_no, va[1]["amount"], va[1]["status"])
             # end for
     # end def
 
@@ -137,7 +143,7 @@ class LoggingTask(celery.Task):
 
         # check system balance
         internal_balance = Wallet.total_balance()
-        current_app.logger.info(internal_balance)
+        current_app.logger.info("Internal balance: {}".format(internal_balance))
 
         try:
             response = BNICoreBank().get_balance(
@@ -155,7 +161,7 @@ class LoggingTask(celery.Task):
                 "balance": external_balance,
             }
             external_balance = response["data"]["bank_account_info"]["balance"]
-            if internal_balance <= external_balance:
+            if internal_balance <= float(external_balance):
                 # we want to keep our external balance more than our internal balance
                 balance_log["is_match"] = True
             # end if

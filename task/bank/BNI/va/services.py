@@ -108,10 +108,6 @@ class VirtualAccount:
             .strftime("%Y-%m-%d %H:%M:%S"),
         }
 
-        # to match payload we need to add description on CREDIT VA
-        if self.resource == "CREDIT":
-            payload["description"] = ""
-
         try:
             result = self._post(payload)
         except RequestError as error:
@@ -163,7 +159,10 @@ class VirtualAccount:
         """
         # assign client in in payload
         try:
-            request = HTTPRequest(url=BNI_ECOLLECTION["BASE_URL"], method="GET")
+            request = HTTPRequest(
+                url=BNI_ECOLLECTION["BASE_URL"],
+                method="GET"
+            )
             response = HTTPResponse
             response = RemoteCall(request, response).call()
         except (RemoteCallError, ResponseError) as error:
