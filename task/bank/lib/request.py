@@ -13,7 +13,7 @@ class HTTPRequest:
         self._url = url
         self._header = {}
         self._method = method
-        self._payload = None
+        self._payload = {}
         self.timeout = LOGGING["TIMEOUT"]
 
     @staticmethod

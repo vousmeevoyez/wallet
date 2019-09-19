@@ -49,6 +49,7 @@ class RemoteCall:
             debug_request()
             resp = requests.request(**self.request.to_representation())
             logging.info("%s %s", self.request.method, self.request.url)
+            logging.info("HEADER : %s", resp.request.headers)
             logging.info("PAYLOAD : %s", self.request.payload)
         except requests.exceptions.Timeout as error:
             raise RemoteCallError("TIMEOUT", error)

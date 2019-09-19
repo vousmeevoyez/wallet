@@ -66,7 +66,6 @@ class TestBNIEcollectionCreditRequest(BaseTestCase):
 
         payload = {
             "type": "createbilling",
-            "client_id": "99096",
             "trx_id": "41980682",
             "trx_amount": "100000",
             "billing_type": "d",
@@ -86,17 +85,43 @@ class TestBNIEcollectionCreditRequest(BaseTestCase):
         self.assertTrue(request["headers"])
         self.assertTrue(request["data"])
 
-    @patch("task.bank.BNI.va.BniEnc3.BniEnc")
-    def test_set_payload_error(self, mock_decrypt):
-        mock_decrypt.side_effect = DecryptError
+    def test_get_payload(self):
         http_request = BNIEcollectionCreditRequest(
             url="https://apibeta.bni-ecollection.com/", method="POST"
         )
 
-        http_request.payload = ""
+        payload = {
+            "type": "createbilling",
+            "trx_id": "41980682",
+            "trx_amount": "100000",
+            "billing_type": "d",
+            "customer_name": "BL652M",
+            "customer_email": "",
+            "customer_phone": "628797655047",
+            "virtual_account": "9889909667037879",
+            "datetime_expired": "2019-09-12 11:45:07",
+        }
 
-        with self.assertRaises(DecryptError):
-            http_request.payload
+        # set the request here
+        http_request.payload = payload
+        # get the request here
+        request = http_request.payload
+        # mandatory information!
+        self.assertTrue(request["client_id"])
+        self.assertTrue(request["data"])
+        # data inside
+        request_data = request["data"]
+        self.assertTrue(request_data["type"])
+        self.assertTrue(request_data["trx_id"])
+        self.assertTrue(request_data["trx_amount"])
+        self.assertTrue(request_data["billing_type"])
+        self.assertTrue(request_data["customer_name"])
+        self.assertEqual(request_data["customer_email"], "")
+        self.assertEqual(request_data["description"], "")
+        self.assertTrue(request_data["customer_phone"])
+        self.assertTrue(request_data["virtual_account"])
+        self.assertTrue(request_data["datetime_expired"])
+        self.assertTrue(request_data["client_id"])
 
 
 class TestBNIEcollectionDebitRequest(BaseTestCase):
@@ -107,7 +132,6 @@ class TestBNIEcollectionDebitRequest(BaseTestCase):
 
         payload = {
             "type": "createdebitcardless",
-            "client_id": "99096",
             "trx_id": "59061955",
             "trx_amount": "100000",
             "billing_type": "z",
@@ -127,14 +151,39 @@ class TestBNIEcollectionDebitRequest(BaseTestCase):
         self.assertTrue(request["headers"])
         self.assertTrue(request["data"])
 
-    @patch("task.bank.BNI.va.BniEnc3.BniEnc")
-    def test_set_payload_error(self, mock_decrypt):
-        mock_decrypt.side_effect = DecryptError
+    def test_get_payload(self):
         http_request = BNIEcollectionDebitRequest(
             url="https://apibeta.bni-ecollection.com/", method="POST"
         )
 
-        http_request.payload = ""
+        payload = {
+            "type": "createdebitcardless",
+            "trx_id": "59061955",
+            "trx_amount": "100000",
+            "billing_type": "z",
+            "customer_name": "5HLRM3",
+            "customer_email": "",
+            "customer_phone": "628302881349",
+            "virtual_account": "9889909655293943",
+            "datetime_expired": "2019-09-12 11:45:06",
+        }
 
-        with self.assertRaises(DecryptError):
-            http_request.payload
+        # set the request here
+        http_request.payload = payload
+        # get the request here
+        request = http_request.payload
+        # mandatory information!
+        self.assertTrue(request["client_id"])
+        self.assertTrue(request["data"])
+        # data inside
+        request_data = request["data"]
+        self.assertTrue(request_data["type"])
+        self.assertTrue(request_data["trx_id"])
+        self.assertTrue(request_data["trx_amount"])
+        self.assertTrue(request_data["billing_type"])
+        self.assertTrue(request_data["customer_name"])
+        self.assertEqual(request_data["customer_email"], "")
+        self.assertTrue(request_data["customer_phone"])
+        self.assertTrue(request_data["virtual_account"])
+        self.assertTrue(request_data["datetime_expired"])
+        self.assertTrue(request_data["client_id"])

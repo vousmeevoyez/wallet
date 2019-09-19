@@ -4,7 +4,6 @@
 """
 import random
 
-# import grpc
 from flask import current_app
 from sqlalchemy.exc import OperationalError, IntegrityError
 from celery.exceptions import MaxRetriesExceededError, Reject, Retry
@@ -150,6 +149,7 @@ class BankTask(celery.Task):
         finally:
             # only enable the fake callback when it is debug
             if current_app.debug:
+                import grpc
                 from task.bank.lib.rpc import callback_pb2
                 from task.bank.lib.rpc import callback_pb2_grpc
                 # send fake callback via gRPC

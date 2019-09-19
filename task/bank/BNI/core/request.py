@@ -42,9 +42,11 @@ class BNIOpgAuthRequest(HTTPRequest):
     @payload.setter
     def payload(self, payload):
         """ set payload """
+        # add clientId
+        payload["clientId"] = self.client_id
+        # add signature
+        payload["signature"] = self.create_signature(payload)
         self._payload = payload
-        self._payload["signature"] = self.create_signature(payload)
-        self._payload["clientId"] = self.client_id
 
 
 class BNIOpgRequest(BNIOpgAuthRequest):
