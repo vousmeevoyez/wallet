@@ -58,5 +58,6 @@ class RemoteCall:
         except requests.exceptions.ConnectionError as error:
             raise RemoteCallError("CONNECTION_ERROR", error)
         else:
+            logging.info("HTTP_STATUS : %s", resp.status_code)
             logging.info("RESPONSE : %s", resp.text)
         return self.response(resp).to_representation()
