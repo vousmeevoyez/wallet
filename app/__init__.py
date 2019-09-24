@@ -22,7 +22,6 @@ def register_blueprint(core):
         "plans",
         "callback",
         "banks",
-        "logs",
         "utility",
         "transactions",
         "schedulers",

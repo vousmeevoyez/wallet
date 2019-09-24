@@ -13,9 +13,10 @@ from app.api import celery, sentry, db
 from app.api.models import VirtualAccount, Payment, BankAccount
 
 from task.bank.BNI.va import VirtualAccount as VaServices
-from task.bank.BNI.va import ApiError
+from task.bank.BNI.va import ApiError as BniVaApiError
 
 from task.bank.BNI.core import CoreBank
+from task.bank.BNI.core import ApiError as BniCoreApiError
 
 # config
 from app.config.external.bank import BNI_OPG
@@ -36,12 +37,12 @@ class BankTask(celery.Task):
 
     def on_retry(self, exc, task_id, args, kwargs, einfo):
         """Log the exceptions to sentry at retry."""
-        sentry_sdk.captureException(exc)
+        sentry.captureException(exc)
         super(BankTask, self).on_retry(exc, task_id, args, kwargs, einfo)
 
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         """Log the exceptions to sentry."""
-        sentry_sdk.captureException(exc)
+        sentry.captureException(exc)
         # end with
         super(BankTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
@@ -50,7 +51,7 @@ class BankTask(celery.Task):
         return text
 
     """
-        BNI VIRTUAL ACCOUNT TASK 
+        BNI VIRTUAL ACCOUNT TASK
     """
 
     @celery.task(
@@ -81,7 +82,7 @@ class BankTask(celery.Task):
         resources = virtual_account.va_type.key
         try:
             result = VaServices(resources).create_va(va_payload)
-        except ApiError as error:
+        except BniVaApiError as error:
             # set current user to wallet id so when something wrong we know exactly what happen
             self.current_user = virtual_account.wallet.id
             self.retry(countdown=backoff(self.request.retries), exc=error)
@@ -105,14 +106,16 @@ class BankTask(celery.Task):
     def bank_transfer(self, payment_id):
         # fix circular import!
         from app.api.transactions.modules.transaction_services import (
-            TransactionServices,
+            TransactionServices
         )
 
         payment = Payment.query.filter_by(id=payment_id).first()
 
         bank_account_no = payment.to
         # get bank account information
-        bank_account = BankAccount.query.filter_by(account_no=bank_account_no).first()
+        bank_account = BankAccount.query.filter_by(
+            account_no=bank_account_no
+        ).first()
 
         # convert amount to positive
         amount = abs(int(payment.amount))
@@ -127,16 +130,19 @@ class BankTask(celery.Task):
 
         try:
             result = CoreBank().transfer(transfer_payload)
-        except ApiError as error:
+        except BniCoreApiError as error:
             # handle celery exception here
             try:
                 # set current user to wallet id so when something wrong we know exactly what happen
                 self.current_user = payment.source_account
-                self.retry(countdown=backoff(self.request.retries), exc=error)
+                self.retry(countdown=backoff(self.request.retries))
             except MaxRetriesExceededError:
                 # create transaction refund here
                 transaction_id = str(payment.transaction.id)
-                result = TransactionServices(transaction_id=transaction_id).refund()
+                result = TransactionServices(
+                    transaction_id=transaction_id
+                ).refund()
+                current_app.logger.info("REFUND {}".format(result))
         else:
             # get reference number from transfer response
             transfer_info = result["data"]["transfer_info"]

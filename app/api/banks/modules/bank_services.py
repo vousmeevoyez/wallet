@@ -40,7 +40,7 @@ class BankServices:
         """ extract error from BNI Response format """
         error_message = ""
         if isinstance(obj.original_exception, dict):
-            for key, value in obj[error_key].items():
+            for key, value in obj.original_exception[error_key].items():
                 if key == "parameters":
                     for key, value in value.items():
                         if key == "errorMessage":
@@ -172,6 +172,4 @@ class BankServices:
         return response
 
     # end try
-
-
 # end class

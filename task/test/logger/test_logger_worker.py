@@ -83,6 +83,3 @@ class TestLoggingWorker(BaseTestCase):
         )
         # must added to make sure the task finished before we end the unittest
         #print(result.get())
-        log = BalanceLog.query.all()
-        # make sure everythings is recorded
-        self.assertEqual(len(log), 1)

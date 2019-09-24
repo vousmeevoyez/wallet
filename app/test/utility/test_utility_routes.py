@@ -25,8 +25,8 @@ class TestUtilityRoutes(BaseTestCase):
         expected_result = {
             "db": True,
             "worker": False,
-            "external": {"BNIVirtualAccount": True, "BNICoreBank": False},
-            "hp": 50,
+            "external": {"BNIVirtualAccount": True},
+            "hp": 66.7,
         }
 
         result = self.health_check()

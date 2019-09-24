@@ -3,18 +3,10 @@
     ________________
     This is module that contain interact with sms gateway services
 """
-import time
 import json
 import requests
 
-from app.api import db
-
-# helper
-from app.api.utility.modules.cipher import AESCipher
-
-# models
-from app.api.models import ExternalLog
-
+from flask import current_app
 # configuration
 from app.config.external.sms import WAVECELL
 
@@ -44,28 +36,13 @@ class SmsServices:
 
         result = True
         try:
-            # build external logging object here
-            log = ExternalLog(
-                request=payload,
-                resource=LOGGING["WAVECELL"],
-                api_name=api_name,
-                api_type=LOGGING["OUTGOING"],
-            )
-            db.session.add(log)
-            # start measuring time here
-            start_time = time.time()
             r = requests.post(
                 WAVECELL["BASE_URL"], data=json.dumps(payload), headers=headers
             )
             if r.status_code != 200:
-                # flag request as failed
-                log.set_status(False)
                 result = False
             # end if
-            log.save_response(r.json())
-            log.save_response_time(time.time() - start_time)
-
-            db.session.commit()
+            current_app.logger.info("OTP: {}". format(r.status_code))
         except (requests.exceptions.Timeout, requests.exceptions.RequestException) as e:
             raise ApiError(e)
         # end try

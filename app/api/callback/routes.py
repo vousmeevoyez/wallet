@@ -4,16 +4,11 @@
     this module that receive http request from callback url
 """
 import json
-from marshmallow import ValidationError
-from flask import request, current_app
+from flask import current_app
 
 # api
 from app.api.core import Routes
-from app.api import db
 from app.api.callback import api
-
-# models
-from app.api.models import ExternalLog
 
 # serializer
 from app.api.serializer import CallbackSchema
@@ -22,10 +17,9 @@ from app.api.serializer import CallbackSchema
 from app.api.callback.modules.callback_services import CallbackServices
 
 # error
-from app.api.error.http import *
+from app.api.error.http import BadRequest
 
 # configuration
-from app.api.const import LOGGING
 from app.config.external.bank import BNI_ECOLLECTION
 from app.api.error.message import RESPONSE as error_response
 

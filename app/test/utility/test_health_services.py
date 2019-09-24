@@ -68,27 +68,9 @@ class TestHealthServices(BaseTestCase):
         mock_va.return_value = 200
         mock_core_bank.return_value = 200
 
-        expected_result = {'BNIVirtualAccount': True, 'BNICoreBank': True}
+        expected_result = {'BNIVirtualAccount': True}
         external_status = HealthServices()._check_external()
         self.assertEqual(external_status, expected_result)
-
-    def test_check_partial_success(self):
-        expected_result = {
-            'db': True,
-            'worker': {
-                'TransactionTask': False,
-                'BankTask': False,
-                'PaymentTask': False,
-                'UtilityTask': False
-            },
-            'external': {
-                'BNIVirtualAccount': True,
-                'BNICoreBank': False
-            },
-            'hp': 28.6
-        }
-        result = HealthServices().check()
-        self.assertEqual(result, expected_result)
 
     @patch.object(HealthServices, "_check_db")
     @patch.object(HealthServices, "_check_worker")
@@ -96,14 +78,13 @@ class TestHealthServices(BaseTestCase):
     def test_check_partial_success(self, mock_db, mock_worker, mock_external):
         mock_db.return_value = True
         mock_worker.return_value = {
-            "TransactionTask" : True,
-            "BankTask" : True,
-            "PaymentTask" : True,
-            "UtilityTask" : True
+            "TransactionTask": True,
+            "BankTask": True,
+            "PaymentTask": True,
+            "UtilityTask": True
         }
         mock_external.return_value = {
-            "BNIVirtualAccount" : True,
-            "BNICoreBank" : True
+            "BNIVirtualAccount": True,
         }
 
         result = HealthServices().check()

@@ -240,7 +240,11 @@ class WalletPinRoutes(Routes):
     def put(self, wallet_id):
         """ endpoint for updating wallet pin """
         request_data = self.serialize(self.payload())
-        response = WalletServices(wallet_id).update_pin(request_data)
+        # need to check the original old pin first
+        response = WalletServices(
+            source=wallet_id,
+            pin=request_data["old_pin"]
+        ).update_pin(request_data)
         return response
 
     # end def

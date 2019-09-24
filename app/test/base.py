@@ -88,6 +88,14 @@ class BaseTestCase(TestCase):
             "label": "PERSONAL",
         }
         result = self.create_user(payload, access_token)
+        # try generate again if there's an error
+        if "error" in result.get_json():
+            new_random_name = faker.first_name()
+            username = (new_random_name.lower()).replace(" ", "_")
+            payload["username"] = username
+            payload["name"] = new_random_name
+            result = self.create_user(payload, access_token)
+        # end if
         response = result.get_json()["data"]
 
         return response["user_id"], response["wallet_id"]

@@ -4,8 +4,6 @@
 from unittest.mock import Mock, patch
 import requests
 
-from app.api.models import ExternalLog
-
 from app.test.base import BaseTestCase
 
 from app.api.utility.modules.sms_services import SmsServices
@@ -53,10 +51,6 @@ class TestSMSHelper(BaseTestCase):
         result = SmsServices()._post(api_name, payload)
         self.assertTrue(result)
 
-        # make sure the log is recorded
-        log = ExternalLog.query.all()
-        self.assertTrue(len(log) > 0)
-
     @patch("requests.post")
     def test_post_failed(self, mock_post):
         """ test method to post to some rest api but server return 400 """
@@ -85,10 +79,6 @@ class TestSMSHelper(BaseTestCase):
 
         result = SmsServices()._post(api_name, payload)
         self.assertFalse(result)
-
-        # make sure the log is recorded
-        log = ExternalLog.query.all()
-        self.assertTrue(len(log) > 0)
 
     @patch("requests.post")
     def test_post_timeout(self, mock_post):
@@ -156,7 +146,3 @@ class TestSMSHelper(BaseTestCase):
 
         result = SmsServices().send_sms("6281219644314", message)
         self.assertTrue(result)
-
-        # make sure the log is recorded
-        log = ExternalLog.query.all()
-        self.assertTrue(len(log) > 0)

@@ -58,12 +58,12 @@ class Config:
     CELERYBEAT_SCHEDULE = {
         "tracking_va": {
             "task": "task.logger.tasks.fetch_va",
-            "schedule": crontab(minute=10),
+            "schedule": crontab(minute=30),
             "options": {"queue": "logging"}
         },
         "tracking_master_balance": {
             "task": "task.logger.tasks.record_external_balance",
-            "schedule": crontab(minute=10),
+            "schedule": crontab(hour=12),
             "options": {"queue": "logging"}
         },
     }

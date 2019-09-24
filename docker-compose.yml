@@ -1,7 +1,6 @@
 # Docker Compose Production Environments 
 version : '3'
 services:
-
         flask:
                 env_file: env/${ENV}.env
                 build:
@@ -22,6 +21,8 @@ services:
                   options:
                     max-size: "100k"
                     max-file: "10"
+                networks:
+                - wallet-net
 
         postgres:
                 env_file: env/${ENV}.env
@@ -34,6 +35,8 @@ services:
                   options:
                     max-size: "100k"
                     max-file: "10"
+                networks:
+                - wallet-net
 
         rabbitmq:
                 env_file: env/${ENV}.env
@@ -44,12 +47,15 @@ services:
                   options:
                     max-size: "100k"
                     max-file: "10"
+                networks:
+                - wallet-net
 
         celery:
                 env_file: env/${ENV}.env
                 image: modana-wallet-services
                 entrypoint: make bank-worker
                 depends_on:
+                - flask
                 - rabbitmq
                 - postgres
                 restart: unless-stopped
@@ -58,12 +64,15 @@ services:
                   options:
                     max-size: "100k"
                     max-file: "10"
+                networks:
+                - wallet-net
 
         celery2:
                 env_file: env/${ENV}.env
                 image: modana-wallet-services
                 entrypoint: make transaction-worker
                 depends_on:
+                - flask
                 - rabbitmq
                 - postgres
                 restart: unless-stopped
@@ -72,12 +81,15 @@ services:
                   options:
                     max-size: "100k"
                     max-file: "10"
+                networks:
+                - wallet-net
 
         celery3:
                 env_file: env/${ENV}.env
                 image: modana-wallet-services
                 entrypoint: make payment-worker
                 depends_on:
+                - flask
                 - rabbitmq
                 - postgres
                 restart: unless-stopped
@@ -86,12 +98,15 @@ services:
                   options:
                     max-size: "100k"
                     max-file: "10"
+                networks:
+                - wallet-net
 
         celery4:
                 env_file: env/${ENV}.env
                 image: modana-wallet-services
                 entrypoint: make utility-worker
                 depends_on:
+                - flask
                 - rabbitmq
                 - postgres
                 restart: unless-stopped
@@ -100,12 +115,15 @@ services:
                   options:
                     max-size: "100k"
                     max-file: "10"
+                networks:
+                - wallet-net
 
         celery5:
                 env_file: env/${ENV}.env
                 image: modana-wallet-services
                 entrypoint: make logging-worker
                 depends_on:
+                - flask
                 - rabbitmq
                 - postgres
                 restart: unless-stopped
@@ -114,12 +132,15 @@ services:
                   options:
                     max-size: "100k"
                     max-file: "10"
+                networks:
+                - wallet-net
         
         scheduler:
                 env_file: env/${ENV}.env
                 image: modana-wallet-services
                 entrypoint: make beat
                 depends_on:
+                - flask
                 - rabbitmq
                 - postgres
                 restart: unless-stopped
@@ -128,15 +149,29 @@ services:
                   options:
                     max-size: "100k"
                     max-file: "10"
+                networks:
+                - wallet-net
 
         flower:
                 env_file: env/${ENV}.env
                 image: mher/flower
                 depends_on:
+                - flask
                 - rabbitmq
                 ports:
                 - 6555:5555
                 restart: unless-stopped
+                logging:
+                  driver: "json-file"
+                  options:
+                    max-size: "100k"
+                    max-file: "10"
+                networks:
+                - wallet-net
                 
 volumes:
         prod_volume:
+
+networks:
+        wallet-net:
+          external: true

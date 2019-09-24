@@ -8,7 +8,9 @@ from app.api import db
 from app.api.models import *
 
 from task.bank.tasks import BankTask
-from task.bank.BNI.core import ApiError
+
+from task.bank.BNI.va import ApiError as BNIVAApiError
+from task.bank.BNI.core import ApiError as BNICoreApiError
 
 
 class TestBankWorker(BaseTestCase):
@@ -41,7 +43,7 @@ class TestBankWorker(BaseTestCase):
         db.session.add(va)
         db.session.commit()
 
-        result = BankTask().create_va.delay(va.id)
+        result = BankTask().create_va.apply_async(args=[va.id], queue="bank")
 
     def test_bank_transfer(self):
         """ test function that transfer money using OPG in the background """
@@ -70,7 +72,7 @@ class TestBankWorker(BaseTestCase):
         db.session.add(debit_transaction)
         db.session.commit()
 
-        result = BankTask().bank_transfer.delay(payment.id)
+        result = BankTask().bank_transfer.apply_async(args=[payment.id], queue="bank")
         self.assertEqual(len(Transaction.query.all()), 1)
 
     @patch("task.bank.tasks.CoreBank")
@@ -103,11 +105,11 @@ class TestBankWorker(BaseTestCase):
         db.session.add(debit_transaction)
         db.session.commit()
 
-        mock_core_bank.return_value.transfer.side_effect = ApiError("dsdsds")
+        mock_core_bank.return_value.transfer.side_effect = BNICoreApiError("dsdsds")
         mock_celery.side_effect = Retry()
 
         with self.assertRaises(Retry):
-            task = BankTask().bank_transfer(payment.id).apply()
+            result = BankTask().bank_transfer.apply_async(args=[payment.id], queue="bank")
 
     @patch("task.bank.tasks.CoreBank")
     @patch("task.bank.tasks.BankTask.retry")
@@ -139,8 +141,8 @@ class TestBankWorker(BaseTestCase):
         db.session.add(debit_transaction)
         db.session.commit()
 
-        mock_core_bank.return_value.transfer.side_effect = ApiError("dsdsds")
+        mock_core_bank.return_value.transfer.side_effect = BNICoreApiError("dsdsds")
         mock_celery.side_effect = MaxRetriesExceededError()
 
         with self.assertRaises(MaxRetriesExceededError):
-            task = BankTask().bank_transfer(payment.id).apply()
+            result = BankTask().bank_transfer.apply_async(args=[payment.id], queue="bank")

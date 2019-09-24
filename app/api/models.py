@@ -759,68 +759,6 @@ class Transaction(db.Model):
 
 # end class
 
-
-class ExternalLog(db.Model):
-    """
-        This is class that represent External Database Object
-    """
-
-    id = db.Column(db.Integer, primary_key=True)
-    status = db.Column(db.Boolean, default=True)
-    resource = db.Column(db.String(255))
-    api_name = db.Column(db.String(255))
-    request = db.Column(db.JSON)
-    response = db.Column(db.JSON)
-    api_type = db.Column(db.Integer, default=0)  # 0 mean outgoing
-    created_at = db.Column(db.DateTime, default=now)
-    response_time = db.Column(db.Float, default=0)  # seconds
-
-    def set_status(self, status):
-        """
-            Function to set Log status
-            args :
-                status -- True / False
-        """
-        self.status = status
-
-    # end def
-
-    def save_response(self, response):
-        """
-            Function to set log response
-            args :
-                response -- Json response
-        """
-        self.response = response
-
-    # end def
-
-    def save_response_time(self, response_time):
-        """
-            Function to set log response time
-            args :
-                response -- Json response
-        """
-        self.response_time = response_time
-
-    # end def
-
-    def __repr__(self):
-        return "<External Log {} {} {} {} {} {}>".format(
-            self.id,
-            self.resource,
-            self.api_name,
-            self.status,
-            self.request,
-            self.response,
-        )
-
-    # end def
-
-
-# end class
-
-
 class BlacklistToken(db.Model):
     """
         This is class Model for Blacklisted Token

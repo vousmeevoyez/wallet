@@ -529,27 +529,6 @@ class TransactionModelCase(BaseTestCase):
         self.assertEqual(len(wallet2.transactions), 1)
 
 
-class ExternalModelCase(BaseTestCase):
-    def test_set_status(self):
-        request = {"client_id": 123, "payload": "this is my payload"}
-        response = {"client_id": 123, "payload": "this is my payload"}
-
-        log = ExternalLog(id=1, status=True, request=request, response=response)
-        log.set_status(True)
-
-        log2 = ExternalLog(id=2, status=True, request=request, response=response)
-        log2.set_status(False)
-        db.session.add(log)
-        db.session.add(log2)
-        db.session.commit()
-
-        result = ExternalLog.query.get(1)
-        result2 = ExternalLog.query.get(2)
-
-        self.assertTrue(result.status)
-        self.assertFalse(result2.status)
-
-
 class ForgotPinModelCase(BaseTestCase):
     def test_set_otp_code(self):
         # create wallet
