@@ -95,13 +95,13 @@ class User(db.Model):
     status = db.Column(db.Integer, default=1)  # active
     role_id = db.Column(db.Integer, db.ForeignKey("role.id"))
     role = db.relationship(
-        "Role", back_populates="user", cascade="delete"
+        "Role", back_populates="user"
     )  # one to one
     wallets = db.relationship(
-        "Wallet", back_populates="user", cascade="delete"
+        "Wallet", back_populates="user", cascade="all, delete-orphan"
     )  # one to many
     bank_accounts = db.relationship(
-        "BankAccount", back_populates="user", cascade="delete"
+        "BankAccount", back_populates="user", cascade="all, delete-orphan"
     )  # one to N
 
     def __repr__(self):
@@ -196,20 +196,21 @@ class Wallet(db.Model):
     balance = db.Column(db.Float, default=0)
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("user.id"))
     user = db.relationship(
-        "User", back_populates="wallets", cascade="delete"
+        "User", back_populates="wallets", cascade="all, delete-orphan",
+        single_parent=True
     )  # many to one
     virtual_accounts = db.relationship(
-        "VirtualAccount", cascade="delete"
+        "VirtualAccount", cascade="all, delete-orphan"
     )  # one to many
-    forgot_pin = db.relationship("ForgotPin", cascade="delete")  # one to many
-    incorrect_pin = db.relationship("IncorrectPin", cascade="delete")  # one to many
-    wallet_lock = db.relationship("WalletLock", cascade="delete")  # one to many
-    withdraw = db.relationship("Withdraw", cascade="delete")  # one to many
+    forgot_pin = db.relationship("ForgotPin")  # one to many
+    incorrect_pin = db.relationship("IncorrectPin")  # one to many
+    wallet_lock = db.relationship("WalletLock")  # one to many
+    withdraw = db.relationship("Withdraw")  # one to many
     payment_plans = db.relationship(
-        "PaymentPlan", back_populates="wallet", cascade="delete"
+        "PaymentPlan", back_populates="wallet"
     )  # one to many
     transactions = db.relationship(
-        "Transaction", back_populates="wallet", cascade="delete"
+        "Transaction", back_populates="wallet"
     )  # one to many
 
     def __repr__(self):
@@ -232,7 +233,7 @@ class Wallet(db.Model):
         wallet_lock = WalletLock.query.filter(
             WalletLock.wallet_id == self.id,
             WalletLock.lock_until > datetime.now(),
-            WalletLock.status == True,  # pylint:disable=singleton-comparison
+            WalletLock.status == True  # pylint:disable=singleton-comparison
         ).first()
         # if is found then it means locked, but it ifs not it mean not unlocked
         return bool(not wallet_lock)
@@ -276,7 +277,7 @@ class Wallet(db.Model):
         wallet_lock = WalletLock.query.filter(
             WalletLock.wallet_id == self.id,
             WalletLock.lock_until > datetime.now(),
-            WalletLock.status == True,  # pylint:disable=singleton-comparison
+            WalletLock.status == True  # pylint:disable=singleton-comparison
         ).first()
         # unlock it here
         wallet_lock.status = False
@@ -374,7 +375,7 @@ class VaType(db.Model):
     created_at = db.Column(db.DateTime, default=now)
     status = db.Column(db.Boolean, default=True)
     virtual_account = db.relationship(
-        "VirtualAccount", back_populates="va_type", cascade="delete"
+        "VirtualAccount", back_populates="va_type"
     )
 
     def __repr__(self):
@@ -399,7 +400,7 @@ class VaLog(db.Model):
         UUID(as_uuid=True), db.ForeignKey("virtual_account.id")
     )
     virtual_account = db.relationship(
-        "VirtualAccount", back_populates="logs", cascade="delete"
+        "VirtualAccount", back_populates="logs"
     )  # many to one
 
     def __repr__(self):
@@ -453,7 +454,8 @@ class BankAccount(db.Model):
     bank_id = db.Column(UUID(as_uuid=True), db.ForeignKey("bank.id"))
     bank = db.relationship("Bank", back_populates="bank_accounts")  # one to one
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("user.id"))
-    user = db.relationship("User", back_populates="bank_accounts")  # one to one
+    user = db.relationship("User", back_populates="bank_accounts",
+                           cascade="all, delete-orphan", single_parent=True)  # one to one
 
     def __repr__(self):
         return "<BankAccount {} {} {}>".format(self.id, self.name, self.status)
@@ -551,15 +553,16 @@ class VirtualAccount(db.Model):
     created_at = db.Column(db.DateTime, default=now)
     wallet_id = db.Column(UUID(as_uuid=True), db.ForeignKey("wallet.id"))
     wallet = db.relationship(
-        "Wallet", back_populates="virtual_accounts", cascade="delete"
+        "Wallet", back_populates="virtual_accounts",
+        cascade="all, delete-orphan", single_parent=True
     )
     va_type_id = db.Column(db.Integer, db.ForeignKey("va_type.id"))
     va_type = db.relationship(
-        "VaType", back_populates="virtual_account", cascade="delete"
+        "VaType", back_populates="virtual_account"
     )
     bank_id = db.Column(UUID(as_uuid=True), db.ForeignKey("bank.id"))
-    bank = db.relationship("Bank", back_populates="virtual_account", cascade="delete")
-    logs = db.relationship("VaLog", back_populates="virtual_account", cascade="delete")
+    bank = db.relationship("Bank", back_populates="virtual_account")
+    logs = db.relationship("VaLog", back_populates="virtual_account")
 
     TIMEZONE = pytz.timezone("Asia/Jakarta")
 

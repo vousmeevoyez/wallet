@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 41dbeaf74b97
+Revision ID: 968830ee803b
 Revises: 
-Create Date: 2019-09-16 09:57:34.856922
+Create Date: 2019-09-25 14:12:04.625453
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '41dbeaf74b97'
+revision = '968830ee803b'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -51,18 +51,6 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('token', sa.String(length=255), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_table('external_log',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('status', sa.Boolean(), nullable=True),
-    sa.Column('resource', sa.String(length=255), nullable=True),
-    sa.Column('api_name', sa.String(length=255), nullable=True),
-    sa.Column('request', sa.JSON(), nullable=True),
-    sa.Column('response', sa.JSON(), nullable=True),
-    sa.Column('api_type', sa.Integer(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.Column('response_time', sa.Float(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('role',
@@ -164,7 +152,7 @@ def upgrade():
     sa.Column('status', sa.Integer(), nullable=True),
     sa.Column('balance', sa.Float(), nullable=True),
     sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('id')
     )
@@ -239,7 +227,7 @@ def upgrade():
     sa.Column('bank_id', postgresql.UUID(as_uuid=True), nullable=True),
     sa.ForeignKeyConstraint(['bank_id'], ['bank.id'], ),
     sa.ForeignKeyConstraint(['va_type_id'], ['va_type.id'], ),
-    sa.ForeignKeyConstraint(['wallet_id'], ['wallet.id'], ),
+    sa.ForeignKeyConstraint(['wallet_id'], ['wallet.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('id'),
     sa.UniqueConstraint('trx_id')
@@ -308,7 +296,6 @@ def downgrade():
     op.drop_table('transaction_type')
     op.drop_table('transaction_note')
     op.drop_table('role')
-    op.drop_table('external_log')
     op.drop_table('blacklist_token')
     op.drop_table('bank')
     op.drop_table('balance_log')
