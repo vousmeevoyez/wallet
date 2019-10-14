@@ -55,7 +55,7 @@ WALLET = {
 }
 
 LOGGING = {
-    "TIMEOUT": 5,
+    "TIMEOUT": 15,
     "BNI_ECOLLECTION": "BNI-ECOLLECTION",
     "BNI_OPG": "BNI-OPG",
     "WAVECELL": "WAVECELL",

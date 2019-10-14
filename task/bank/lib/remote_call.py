@@ -1,7 +1,6 @@
 """
-    Remote Call
-    __________________
-    module to handle HTTP Execution to all kind of external API
+    Excute HTTP Call
+    ____________________
 """
 import logging
 import requests
@@ -20,44 +19,26 @@ def debug_request():
     requests_log.addHandler(stream_handler)
 
 
-class RemoteCallError(BaseError):
-    """ exception raised when there are something wrong with http call """
+class FetchError(BaseError):
+    """ raised when fetch error """
 
 
-class RemoteCall:
-    """ Base Class for all Remote Call """
-
-    def __init__(self, request, response):
-        """
-            Need HTTP Request Object
-            HTTP Response Object
-        """
-        self.request = request
-        self.response = response
-
-    def pre_call(self):
-        """ will trigger before http call executed"""
-        pass
-
-    def after_call(self):
-        """ will trigger after http call executed"""
-        pass
-
-    def call(self):
-        """ execute http request """
-        try:
-            debug_request()
-            resp = requests.request(**self.request.to_representation())
-            logging.info("%s %s", self.request.method, self.request.url)
-            logging.info("HEADER : %s", resp.request.headers)
-            logging.info("PAYLOAD : %s", self.request.payload)
-        except requests.exceptions.Timeout as error:
-            raise RemoteCallError("TIMEOUT", error)
-        except requests.exceptions.SSLError as error:
-            raise RemoteCallError("SSL_ERROR", error)
-        except requests.exceptions.ConnectionError as error:
-            raise RemoteCallError("CONNECTION_ERROR", error)
-        else:
-            logging.info("HTTP_STATUS : %s", resp.status_code)
-            logging.info("RESPONSE : %s", resp.text)
-        return self.response(resp).to_representation()
+def fetch(request, response):
+    """ execute http request """
+    try:
+        debug_request()
+        resp = requests.request(**request.to_representation())
+        logging.info("%s %s", request.method, request.url)
+        logging.info("HEADER : %s", resp.request.headers)
+        logging.info("PAYLOAD : %s", request.payload)
+    except requests.exceptions.Timeout as error:
+        raise FetchError("TIMEOUT", error)
+    except requests.exceptions.SSLError as error:
+        raise FetchError("SSL_ERROR", error)
+    except requests.exceptions.ConnectionError as error:
+        raise FetchError("CONNECTION_ERROR", error)
+    else:
+        logging.info("HTTP_STATUS : %s", resp.status_code)
+        logging.info("RESPONSE : %s", resp.text)
+        response.set(resp)
+    return response.to_representation()

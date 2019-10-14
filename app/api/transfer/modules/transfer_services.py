@@ -41,7 +41,8 @@ from app.api.utility.utils import validate_uuid
 class TransferServices(WalletCore):
     """ Transfer Services"""
 
-    def calculate_transfer_fee(self, destination, method=None):
+    @staticmethod
+    def calculate_transfer_fee(destination, method=None):
         """ calculate transfer fee based on method and destination"""
         transfer_fee = 0
 

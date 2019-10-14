@@ -100,8 +100,8 @@ class PlanServices:
             # print(err.orig)
             db.session.rollback()
             raise UnprocessableEntity(
-                error_response["DUPLICATE_PLAN"]["TITLE"],
-                error_response["DUPLICATE_PLAN"]["MESSAGE"],
+                error_response["DUPLICATE_PLAN_DUE_DATE"]["TITLE"],
+                error_response["DUPLICATE_PLAN_DUE_DATE"]["MESSAGE"],
             )
         # end try
         response = {"plan_id": plan.id}

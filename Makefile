@@ -20,7 +20,7 @@ shell:
 	python manage.py shell
 
 coverage:
-	coverage run --source app/api -m unittest discover -s app/test/
+	coverage run -m pytest
 
 payment-worker:
 	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q payment -n paymentworker@%h

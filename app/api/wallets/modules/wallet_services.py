@@ -66,8 +66,13 @@ class WalletServices(WalletCore):
         # end try
 
         # automatically create virtual account for additional wallet here
+        # need to check whether company or personal
+        va_name = wallet.user.name
+        if wallet.label == "COMPANY":
+            va_name = wallet.user.organization
+
         try:
-            virtual_account = VirtualAccount(name=wallet.user.name)
+            virtual_account = VirtualAccount(name=va_name)
             va_payload = {
                 "bank_name": "BNI",
                 "type": "CREDIT",

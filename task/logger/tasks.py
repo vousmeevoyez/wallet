@@ -16,11 +16,8 @@ from app.api.models import (
     VaLog
 )
 
-from task.bank.BNI.va import VirtualAccount as BNIVA
-from task.bank.BNI.va import ApiError as BNIVAError
-
-from task.bank.BNI.core import CoreBank as BNICoreBank
-from task.bank.BNI.core import ApiError as BNICoreBankError
+from task.bank.factories.provider.factory import generate_provider
+from task.bank.lib.provider import ProviderError
 
 # services
 
@@ -41,8 +38,10 @@ def check_va(va_trx_id):
         "status": True
     }
     try:
-        response = BNIVA("CREDIT").get_inquiry(va_trx_id)
-    except BNIVAError:
+        provider = generate_provider("BNI_VA")
+        provider.set("CREDIT")
+        response = provider.get_inquiry(va_trx_id)
+    except ProviderError:
         result["status"] = False
     else:
         # access paymount value
@@ -146,21 +145,20 @@ class LoggingTask(celery.Task):
         current_app.logger.info("Internal balance: {}".format(internal_balance))
 
         try:
-            response = BNICoreBank().get_balance(
-                {"account_no": BNI_OPG["MASTER_ACCOUNT"]}
-            )
-        except BNICoreBankError as error:
+            provider = generate_provider("BNI_OPG")
+            response = provider.get_balance(BNI_OPG["MASTER_ACCOUNT"])
+        except ProviderError as error:
             self.retry(countdown=backoff(self.request.retries), exc=error)
         # end try
         else:
-            external_balance = response["data"]["bank_account_info"]["balance"]
+            external_balance = response["bank_account_info"]["balance"]
 
             balance_log = {
                 "account_no": BNI_OPG["MASTER_ACCOUNT"],
                 "internal_balance": internal_balance,
                 "balance": external_balance,
             }
-            external_balance = response["data"]["bank_account_info"]["balance"]
+            external_balance = response["bank_account_info"]["balance"]
             if internal_balance <= float(external_balance):
                 # we want to keep our external balance more than our internal balance
                 balance_log["is_match"] = True

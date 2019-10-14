@@ -1,7 +1,7 @@
 """
     HTTP Request
-    __________________
-    base reusable class for various HTTP Request
+    ______________
+    Base class for any http request object
 """
 from app.api.const import LOGGING
 
@@ -9,10 +9,10 @@ from app.api.const import LOGGING
 class HTTPRequest:
     """ represent http request """
 
-    def __init__(self, url, method):
-        self._url = url
+    def __init__(self):
+        self._url = None
         self._header = {}
-        self._method = method
+        self._method = None
         self._payload = {}
         self.timeout = LOGGING["TIMEOUT"]
 
@@ -26,6 +26,7 @@ class HTTPRequest:
         return underscore
 
     def to_representation(self):
+        """ method inteface for represent the object """
         # convert object into parsable data
         self.setup_header()
         return {

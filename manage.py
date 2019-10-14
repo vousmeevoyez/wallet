@@ -83,7 +83,6 @@ def make_shell_context():
         'VirtualAccount' : VirtualAccount,
         'Transaction'    : Transaction,
         'Log'            : Log,
-        'ExternalLog'    : ExternalLog,
         'ForgotPin'      : ForgotPin,
         'Payment'        : Payment,
         'PaymentChannel' : PaymentChannel,

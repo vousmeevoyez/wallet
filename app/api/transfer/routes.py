@@ -34,7 +34,6 @@ from app.api.error.http import BadRequest
 # configuration
 from app.config import config
 
-
 '''
 @api.route('/<string:source_wallet_id>/transfer/checkout')
 class TransferCheckoutRoutes(Routes):
