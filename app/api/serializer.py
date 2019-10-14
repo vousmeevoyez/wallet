@@ -64,15 +64,13 @@ def validate_name(name):
             name -- name
     """
     # onyl allow alphabet character
-    pattern = r"^[a-zA-Z ]+$"
+    #pattern = r"^[a-zA-Z ]+$"
     if len(name) < 2:
         raise ValidationError("Invalid name, minimum is 2 character")
     if len(name) > 70:
         raise ValidationError("Invalid name, max is 70 character")
-    if re.match(pattern, name) is None:
-        raise ValidationError("Invalid name, only alphabet allowed")
-
-
+    #if re.match(pattern, name) is None:
+    #    raise ValidationError("Invalid name, only alphabet allowed")
 # end def
 
 
@@ -265,11 +263,6 @@ class WalletSchema(ma.Schema):
         """ make wallet object """
         return Wallet(**data)
 
-    # end def
-
-
-# end class
-
 
 class UserSchema(ma.Schema):
     """ this is class schema for user object"""
@@ -277,6 +270,7 @@ class UserSchema(ma.Schema):
     id = fields.Str()
     username = fields.Str(required=True, validate=cannot_be_blank)
     name = fields.Str(required=True, validate=(cannot_be_blank, validate_name))
+    organization = fields.Str(allow_none=True, validate=(cannot_be_blank, validate_name))
     phone_ext = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
     phone_number = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
     msisdn = fields.Method("phone_to_msisdn", dump_only=True)
@@ -657,49 +651,6 @@ class CallbackSchema(ma.Schema):
         # end if
 
 
-# end class
-
-
-class ExternalLogSchema(ma.Schema):
-    """ this is schema for external log object """
-
-    id = fields.Int(dump_only=True)
-    status = fields.Method("bool_to_status", dump_only=True)
-    resource = fields.Str(dump_only=True)
-    api_name = fields.Str(dump_only=True)
-    request = fields.Str(dump_only=True)
-    response = fields.Str(dump_only=True)
-    api_type = fields.Method("api_type_to_type", dump_only=True)
-    created_at = fields.DateTime()
-    response_time = fields.Float(dump_only=True)
-
-    def bool_to_status(self, obj):
-        """
-            function to convert boolean into human friendly string
-            args:
-                obj - user object
-        """
-        status = "SUCCESS"
-        if obj.status is not True:
-            status = "FAILED"
-        return status
-
-    # end def
-
-    def api_type_to_type(self, obj):
-        """
-            function to convert api tpye into human friendly string
-            args:
-                obj - user object
-        """
-        api_type = "OUTGOING"
-        if obj.api_type == 1:
-            api_type = "INCOMING"
-        return api_type
-
-    # end def
-
-
 class WalletTransactionSchema(ma.Schema):
     """ this is schema for transaction log object """
 
@@ -892,7 +843,7 @@ class PlanSchema(ma.Schema):
 class PaymentPlanSchema(ma.Schema):
     """ this is schema for payment plan """
 
-    id = fields.Str(allow_none=True)
+    id = fields.Str(missing=None)
     destination = fields.Str(required=True, validate=cannot_be_blank)
     wallet_id = fields.Str(dump_only=True)
     method = fields.Method("method_to_string", allow_none=True)

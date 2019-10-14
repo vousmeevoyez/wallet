@@ -2,21 +2,28 @@
     This is Celery Task to help interacting with Bank API
     in the background
 """
+import functools
 import random
+from datetime import datetime
 
 from flask import current_app
-from sqlalchemy.exc import OperationalError, IntegrityError
-from celery.exceptions import MaxRetriesExceededError, Reject, Retry
+from celery.exceptions import (
+    MaxRetriesExceededError
+)
 
-from app.api import celery, sentry, db
+from app.api import (
+    celery,
+    sentry,
+    db
+)
+from app.api.models import (
+    VirtualAccount,
+    Payment,
+    BankAccount
+)
 
-from app.api.models import VirtualAccount, Payment, BankAccount
-
-from task.bank.BNI.va import VirtualAccount as VaServices
-from task.bank.BNI.va import ApiError as BniVaApiError
-
-from task.bank.BNI.core import CoreBank
-from task.bank.BNI.core import ApiError as BniCoreApiError
+from task.bank.factories.provider.factory import generate_provider
+from task.bank.lib.provider import ProviderError
 
 # config
 from app.config.external.bank import BNI_OPG
@@ -26,6 +33,17 @@ from app.api.const import WORKER, STATUS
 def backoff(attempts):
     """ prevent hammering service with thousand retry"""
     return random.uniform(2, 4) ** attempts
+
+
+@functools.lru_cache(maxsize=128)
+def generate_ref_number(destination, amount):
+    """ generate reference number matched to BNI format"""
+    now = datetime.utcnow()
+    # first 8 digit is date
+    value_date = now.strftime("%Y%m%d%H%M")
+    randomize = random.randint(1, 99)
+    end_fix = str(destination)[:4] + str(amount)[:4]
+    return str(value_date) + str(end_fix) + str(randomize)
 
 
 class BankTask(celery.Task):
@@ -72,17 +90,18 @@ class BankTask(celery.Task):
         msisdn = str(phone_ext) + str(phone_number)
 
         va_payload = {
-            "virtual_account": virtual_account.account_no,
-            "transaction_id": virtual_account.trx_id,
+            "account_no": virtual_account.account_no,
+            "trx_id": virtual_account.trx_id,
             "amount": int(virtual_account.amount),
             "customer_name": virtual_account.name,
             "customer_phone": msisdn,
-            "datetime_expired": virtual_account.datetime_expired,
+            "expire_date": virtual_account.datetime_expired,
         }
-        resources = virtual_account.va_type.key
         try:
-            result = VaServices(resources).create_va(va_payload)
-        except BniVaApiError as error:
+            provider = generate_provider("BNI_VA")
+            provider.set(virtual_account.va_type.key)
+            result = provider.create_va(**va_payload)
+        except ProviderError as error:
             # set current user to wallet id so when something wrong we know exactly what happen
             self.current_user = virtual_account.wallet.id
             self.retry(countdown=backoff(self.request.retries), exc=error)
@@ -120,17 +139,21 @@ class BankTask(celery.Task):
         # convert amount to positive
         amount = abs(int(payment.amount))
 
+        ref_number = generate_ref_number(
+            bank_account_no, amount
+        )
         transfer_payload = {
             "amount": amount,  # BANK CODE
             "bank_code": bank_account.bank.code,  # BANK CODE
-            "source_account": BNI_OPG["MASTER_ACCOUNT"],  # MASTER ACCOUNT ID
-            "account_no": bank_account_no,  # destination account bank transfer
-            "ref_number": None,  # use system generated refnumber
+            "source": BNI_OPG["MASTER_ACCOUNT"],  # MASTER ACCOUNT ID
+            "destination": bank_account_no,  # destination account bank transfer
+            "ref_number": ref_number
         }
 
         try:
-            result = CoreBank().transfer(transfer_payload)
-        except BniCoreApiError as error:
+            provider = generate_provider("BNI_OPG")
+            result = provider.transfer(transfer_payload)
+        except ProviderError:
             # handle celery exception here
             try:
                 # set current user to wallet id so when something wrong we know exactly what happen
@@ -145,16 +168,16 @@ class BankTask(celery.Task):
                 current_app.logger.info("REFUND {}".format(result))
         else:
             # get reference number from transfer response
-            transfer_info = result["data"]["transfer_info"]
+            transfer_info = result["transfer_info"]
             # update referenc number here
             request_reference = transfer_info["ref_number"]
             # try fetch bank reference if available
             response_reference = transfer_info.get("bank_ref", "NA")
-            payment.ref_number = request_reference + "-" + response_reference
+            payment.ref_number = ref_number + "-" + request_reference + "-" + response_reference
             db.session.commit()
         finally:
             # only enable the fake callback when it is debug
-            if current_app.debug:
+            if not current_app.testing:
                 import grpc
                 from task.bank.lib.rpc import callback_pb2
                 from task.bank.lib.rpc import callback_pb2_grpc

@@ -19,13 +19,6 @@ from task.bank.tasks import BankTask
 from task.payment.tasks import PaymentTask
 from task.utility.tasks import UtilityTask
 
-# External
-from task.bank.BNI.va import VirtualAccount as BNIVirtualAccount
-from task.bank.BNI.va import ApiError as BNIVirtualAccountApiError
-
-from task.bank.BNI.core import CoreBank as BNICoreBank
-from task.bank.BNI.core import ApiError as BNICoreBankApiError
-
 
 def str_to_class(class_name):
     return getattr(sys.modules[__name__], class_name)
@@ -120,23 +113,6 @@ class HealthServices:
         result = job_group.apply_async()
         return self._convert_state_to_bool(result)
 
-    def _check_external(self):
-        """ method to check all health for external services that we connect """
-        # check all external service here
-        banks = ["BNIVirtualAccount"]
-
-        external_status = {}
-        for bank in banks:
-            bank_class = str_to_class(bank)
-            try:
-                result = bank_class.health_check()
-            except:
-                result = 500
-            # end try
-            external_status[bank] = self._convert_http_to_bool(result)
-        # end for
-        return external_status
-
     def check(self):
         """ inteface method to check various health modules """
         health_status = {}
@@ -144,8 +120,6 @@ class HealthServices:
         health_status["db"] = self._check_db()
         # check worker connection
         health_status["worker"] = self._check_worker()
-        # check external connection
-        health_status["external"] = self._check_external()
         # calcaulate overall percentage of current health
         health_status["hp"] = self._convert_to_percentage(health_status)
         return health_status

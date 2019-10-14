@@ -55,7 +55,7 @@ class PaymentTask(celery.Task):
     )
     def background_transfer(self, plan_id, flag="AUTO_DEBIT"):
         """ create task in background to move money between wallet """
-        from app.api.wallets.modules.transfer_services import TransferServices
+        from app.api.transfer.modules.transfer_services import TransferServices
 
         # fetch payment record that going to be processed
         # extract all info needed from plan_id

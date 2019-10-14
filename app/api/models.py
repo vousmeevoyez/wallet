@@ -87,6 +87,7 @@ class User(db.Model):
     id = db.Column(UUID(as_uuid=True), unique=True, primary_key=True, default=uid)
     username = db.Column(db.String(144), unique=True)
     name = db.Column(db.String(144))
+    organization = db.Column(db.String(144))
     phone_ext = db.Column(db.String(3))  # phone extension
     phone_number = db.Column(db.String(14), unique=True)
     email = db.Column(db.String(144), unique=True)
@@ -454,8 +455,7 @@ class BankAccount(db.Model):
     bank_id = db.Column(UUID(as_uuid=True), db.ForeignKey("bank.id"))
     bank = db.relationship("Bank", back_populates="bank_accounts")  # one to one
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("user.id"))
-    user = db.relationship("User", back_populates="bank_accounts",
-                           cascade="all, delete-orphan", single_parent=True)  # one to one
+    user = db.relationship("User", back_populates="bank_accounts")  # one to one
 
     def __repr__(self):
         return "<BankAccount {} {} {}>".format(self.id, self.name, self.status)

@@ -24,7 +24,7 @@ from app.config.external.bank import BNI_ECOLLECTION
 from app.api.error.message import RESPONSE as error_response
 
 # remote call
-from task.bank.BNI.va.BniEnc3 import BniEnc, BNIVADecryptError
+from task.bank.lib.helper import decrypt, DecryptError
 
 
 class Callback(Routes):
@@ -40,13 +40,12 @@ class Callback(Routes):
 
     def preprocess(self, payload):
         try:
-            payload = BniEnc().decrypt(
-                payload["data"],
+            payload = decrypt(
                 self.client_id,
-                self.secret_key
+                self.secret_key,
+                payload["data"]
             )
-            payload = json.loads(payload)
-        except BNIVADecryptError:
+        except DecryptError:
             # raise error
             raise BadRequest(
                 error_response["INVALID_CALLBACK"]["TITLE"],

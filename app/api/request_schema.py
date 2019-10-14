@@ -14,6 +14,7 @@ class UserRequestSchema:
     parser = reqparse.RequestParser()
     parser.add_argument("username", type=str, required=True)
     parser.add_argument("name", type=str, required=True)
+    parser.add_argument("organization", type=str)
     parser.add_argument("phone_ext", type=str, required=True)
     parser.add_argument("phone_number", type=str, required=True)
     parser.add_argument("email", type=str)

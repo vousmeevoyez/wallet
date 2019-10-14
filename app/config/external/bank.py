@@ -10,11 +10,8 @@ BNI_ECOLLECTION = {
     "CREDIT_CLIENT_ID": os.getenv("BNI_VA_CREDIT_CLIENT_ID") or "99096",
     "VA_PREFIX": os.getenv("BNI_VA_PREFIX") or "988",
     "VA_LENGTH": 16,
-    "BILLING": "createbilling",
-    "CARDLESS": "createdebitcardless",
     "UPDATE": "updatebilling",
     "INQUIRY": "inquirybilling",
-    "BILLING_TYPE": {"DEPOSIT": "o", "WITHDRAW": "j"},
 }
 
 # BNI OPG CONFIG
@@ -38,5 +35,5 @@ BNI_OPG = {
         "GET_INTERBANK_PAYMENT": "/H2H/v2/getinterbankpayment",
         "HOLD_AMOUNT": "/H2H/v2/holdamount",
         "HOLD_AMOUNT_RELEASE": "/H2H/v2/holdamountrelease",
-    },
+    }
 }
