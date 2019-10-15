@@ -24,6 +24,7 @@ from app.api.models import (
 
 from task.bank.factories.provider.factory import generate_provider
 from task.bank.lib.provider import ProviderError
+from task.bank.lib.helper import generate_ref_number
 
 # config
 from app.config.external.bank import BNI_OPG
@@ -33,17 +34,6 @@ from app.api.const import WORKER, STATUS
 def backoff(attempts):
     """ prevent hammering service with thousand retry"""
     return random.uniform(2, 4) ** attempts
-
-
-@functools.lru_cache(maxsize=128)
-def generate_ref_number(destination, amount):
-    """ generate reference number matched to BNI format"""
-    now = datetime.utcnow()
-    # first 8 digit is date
-    value_date = now.strftime("%Y%m%d%H%M")
-    randomize = random.randint(1, 99)
-    end_fix = str(destination)[:4] + str(amount)[:4]
-    return str(value_date) + str(end_fix) + str(randomize)
 
 
 class BankTask(celery.Task):
@@ -139,41 +129,51 @@ class BankTask(celery.Task):
         # convert amount to positive
         amount = abs(int(payment.amount))
 
-        ref_number = generate_ref_number(
+        inquiry_ref_number = generate_ref_number(
+            bank_account_no
+        )
+
+        transfer_ref_number = generate_ref_number(
             bank_account_no, amount
         )
+
         transfer_payload = {
             "amount": amount,  # BANK CODE
             "bank_code": bank_account.bank.code,  # BANK CODE
             "source": BNI_OPG["MASTER_ACCOUNT"],  # MASTER ACCOUNT ID
             "destination": bank_account_no,  # destination account bank transfer
-            "ref_number": ref_number
+            "inquiry_ref_number": inquiry_ref_number,
+            "transfer_ref_number": transfer_ref_number
         }
 
         try:
             provider = generate_provider("BNI_OPG")
             result = provider.transfer(transfer_payload)
-        except ProviderError:
+        except ProviderError as error:
             # handle celery exception here
-            try:
-                # set current user to wallet id so when something wrong we know exactly what happen
-                self.current_user = payment.source_account
-                self.retry(countdown=backoff(self.request.retries))
-            except MaxRetriesExceededError:
-                # create transaction refund here
-                transaction_id = str(payment.transaction.id)
-                result = TransactionServices(
-                    transaction_id=transaction_id
-                ).refund()
-                current_app.logger.info("REFUND {}".format(result))
+            # prevent retrying when it is already requested
+            if error.message != "DUPLICATE_REQUEST":
+                try:
+                    # set current user to wallet id so when something wrong we
+                    # know exactly what happen
+                    self.current_user = payment.source_account
+                    self.retry(countdown=backoff(self.request.retries))
+                except MaxRetriesExceededError:
+                    # create transaction refund here
+                    transaction_id = str(payment.transaction.id)
+                    result = TransactionServices(
+                        transaction_id=transaction_id
+                    ).refund()
+                    current_app.logger.info("REFUND {}".format(result))
+            else:
+                # abort!
+                celery.control.revoke(self.request.id)
         else:
             # get reference number from transfer response
             transfer_info = result["transfer_info"]
-            # update referenc number here
-            request_reference = transfer_info["ref_number"]
             # try fetch bank reference if available
             response_reference = transfer_info.get("bank_ref", "NA")
-            payment.ref_number = ref_number + "-" + request_reference + "-" + response_reference
+            payment.ref_number = transfer_ref_number + "-" + response_reference
             db.session.commit()
         finally:
             # only enable the fake callback when it is debug
@@ -195,3 +195,6 @@ class BankTask(celery.Task):
                 # end try
                 current_app.logger.info(response)
         # end try
+
+        # clear function cache
+        generate_ref_number.cache_clear()

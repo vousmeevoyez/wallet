@@ -6,7 +6,8 @@
 from task.bank.lib.response import HTTPResponse
 from task.bank.lib.response import (
     FailedResponseError,
-    ResponseError
+    ResponseError,
+    DuplicateRequestError
 )
 
 
@@ -42,6 +43,10 @@ class BNIOpgResponse(HTTPResponse):
                                 raise FailedResponseError(
                                     original_exception=response
                                 )
+                            elif value == "0007":
+                                raise DuplicateRequestError(
+                                    original_exception=response
+                                )
         return True
 
     def validate_data(self):
@@ -51,6 +56,8 @@ class BNIOpgResponse(HTTPResponse):
             self._check_response_code(self.data)
         except FailedResponseError as error:
             raise ResponseError("RESPONSE_FAILED", error.original_exception)
+        except DuplicateRequestError as error:
+            raise ResponseError("DUPLICATE_REQUEST", error.original_exception)
         # end try
 
     def validate(self):

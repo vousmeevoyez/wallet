@@ -21,6 +21,9 @@ class InvalidResponseError(BaseError):
 class ResponseError(BaseError):
     """ Error raised when response error it can be failed / invalid """
 
+class DuplicateRequestError(BaseError):
+    """ Error raised when client try send request that already received or processed """
+
 
 class HTTPResponse:
     """ Wrap HTTP Response """

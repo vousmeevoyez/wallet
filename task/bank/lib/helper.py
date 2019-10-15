@@ -2,7 +2,10 @@
     BNI E-Collection Helper
     ________________________
 """
+from datetime import datetime
+import functools
 import json
+import random
 
 from task.bank.lib.BniEnc3 import BniEnc, BNIVADecryptError
 
@@ -28,6 +31,7 @@ def decrypt(client_id, secret_key, data):
     except BNIVADecryptError:
         raise DecryptError
 
+
 def opg_extract_error(obj):
     """ extract error from BNI OPG Response format """
     error_message = ""
@@ -46,6 +50,7 @@ def opg_extract_error(obj):
     # end if
     return error_message
 
+
 def extract_error(obj):
     try:
         key = obj.original_exception["response"]
@@ -54,3 +59,18 @@ def extract_error(obj):
     except:
         error = obj.message
     return error
+
+
+@functools.lru_cache(maxsize=128)
+def generate_ref_number(destination, amount=None):
+    """ generate reference number matched to BNI format"""
+    now = datetime.utcnow()
+    # first 8 digit is date
+    value_date = now.strftime("%Y%m%d%H%M")
+    randomize = random.randint(1, 99)
+
+    end_fix = str(destination)[:8]
+    if amount is not None:
+        end_fix = str(destination)[:4] + str(amount)[:4]
+
+    return str(value_date) + str(end_fix) + str(randomize)

@@ -60,10 +60,8 @@ def test_va_generate_provider():
     }
 
     result = provider.create_va(**data)
-    print(result)
 
 
 def test_opg_generate_provider():
     provider = generate_provider("BNI_OPG")
     result = provider.get_balance("123456")
-    print(result)

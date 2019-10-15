@@ -240,6 +240,10 @@ class BNIOpgProvider(BaseProvider):
         """
         response = None
         # if bank code is BNI then use do_payment
+        transfer_ref_number = params["transfer_ref_number"]
+        inquiry_ref_number = params["inquiry_ref_number"]
+
+
         if params["bank_code"] == "009":
             # adjust required parameter here and replace with empty string
             params["method"] = "0"  # inhouse
@@ -249,17 +253,24 @@ class BNIOpgProvider(BaseProvider):
             params["address"] = ""
             params["charge_mode"] = ""
 
+            del params["inquiry_ref_number"]
+            del params["transfer_ref_number"]
             del params["bank_code"]
+
+            params["ref_number"] = transfer_ref_number
 
             response = self.do_payment(**params)
         else:
             interbank_inquiry_payload = {
-                "ref_number": params["ref_number"],
+                "ref_number": inquiry_ref_number,
                 "source": params["source"],
                 "bank_code": params["bank_code"],
                 "destination": params["destination"]
             }
-            interbank_resp = self.get_interbank_inquiry(**interbank_inquiry_payload)
+
+            interbank_resp = self.get_interbank_inquiry(
+                **interbank_inquiry_payload
+            )
 
             params["bank_name"] = interbank_resp["inquiry_info"][
                 "transfer_bank_name"
@@ -270,6 +281,10 @@ class BNIOpgProvider(BaseProvider):
             params["transfer_ref"] = interbank_resp["inquiry_info"][
                 "transfer_ref"
             ]
+            params["ref_number"] = transfer_ref_number
+
+            del params["inquiry_ref_number"]
+            del params["transfer_ref_number"]
 
             response = self.interbank_payment(**params)
         return response

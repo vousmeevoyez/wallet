@@ -486,7 +486,8 @@ class TestMockBNIOpgProvider:
             "destination": "115471119",
             "amount": "100500",
             "bank_code": "009",
-            "ref_number": "123456"
+            "inquiry_ref_number": "12345678910",
+            "transfer_ref_number": "12345678910"
         }
 
         mock_request.return_value = Mock(status_code=200)
@@ -524,7 +525,8 @@ class TestMockBNIOpgProvider:
             "destination": "115471119",
             "amount": "100500",
             "bank_code": "009",
-            "ref_number": "12345678910",
+            "inquiry_ref_number": "12345678910",
+            "transfer_ref_number": "12345678910"
         }
 
         mock_request.return_value = Mock(status_code=400)
@@ -534,6 +536,50 @@ class TestMockBNIOpgProvider:
 
         with pytest.raises(ProviderError):
             BNIOpgProvider(access_token).transfer(data)
+
+    @patch("requests.request")
+    def test_transfer_bni(self, mock_request):
+        """ test to transfer from bni to bni"""
+        # mock the response here
+        expected_value = {
+            "doPaymentResponse": {
+                "clientId": "BNISERVICE",
+                "parameters": {
+                    "responseCode": "0001",
+                    "responseMessage": "Request has been processed successfully",
+                    "responseTimestamp": "2017-02-27T14:46:55.084Z",
+                    "debitAccountNo": 113183203,
+                    "creditAccountNo": 115471119,
+                    "valueAmount": 100500,
+                    "valueCurrency": "IDR",
+                    "bankReference": 953403,
+                    "customerReference": 20170227000000000020,
+                }
+            }
+        }
+
+        data = {
+            "source": "113183203",
+            "destination": "115471119",
+            "amount": "100500",
+            "bank_code": "009",
+            "inquiry_ref_number": "12345678910",
+            "transfer_ref_number": "12345678910"
+        }
+
+        mock_request.return_value = Mock(status_code=200)
+        mock_request.return_value.json.return_value = expected_value
+
+        access_token = "x3LyfeWKbeaARhd2PfU4F4OeNi43CrDFdi6XnzScKIuk5VmvFiq0B2"
+
+        result = BNIOpgProvider(access_token).transfer(data)
+        assert result["transfer_info"]
+        assert result["transfer_info"]["source_account"]
+        assert result["transfer_info"]["destination_account"]
+        assert result["transfer_info"]["amount"]
+        assert result["transfer_info"]["ref_number"]
+        assert result["transfer_info"]["bank_ref"]
+        assert result["request_ref"]
 
     @patch("requests.request")
     def test_hold_amount_success(self, mock_request):

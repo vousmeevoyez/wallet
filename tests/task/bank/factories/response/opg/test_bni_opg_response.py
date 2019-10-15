@@ -61,3 +61,27 @@ def test_to_representation_failed():
         response = BNIOpgResponse()
         response.set(mock_http_response)
         response.to_representation()
+
+
+def test_to_representation_failed_duplicate_request():
+    """ test case wbere BNI VA return success """
+    # validate successfull http status code
+
+    expected_data = {
+        "getBalanceResponse": {
+            "clientId": "BNISERVICE",
+            "parameters": {
+                "responseCode": "Duplicate request",
+                "errorMessage": "Duplicate Request",
+                "responseMessage": "Request failed",
+                "responseTimestamp": "2017-02-24T14:12:25.871Z",
+            },
+        }
+    }
+
+    mock_http_response = create_http_response(200, expected_data)
+
+    with pytest.raises(ResponseError):
+        response = BNIOpgResponse()
+        response.set(mock_http_response)
+        response.to_representation()
