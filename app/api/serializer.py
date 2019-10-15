@@ -270,7 +270,9 @@ class UserSchema(ma.Schema):
     id = fields.Str()
     username = fields.Str(required=True, validate=cannot_be_blank)
     name = fields.Str(required=True, validate=(cannot_be_blank, validate_name))
-    organization = fields.Str(allow_none=True, validate=(cannot_be_blank, validate_name))
+    organization = fields.Str(allow_none=True, validate=(cannot_be_blank,
+                                                         validate_name),
+                              load_only=True)
     phone_ext = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
     phone_number = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
     msisdn = fields.Method("phone_to_msisdn", dump_only=True)
