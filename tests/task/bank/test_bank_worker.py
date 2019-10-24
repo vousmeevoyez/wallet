@@ -34,6 +34,25 @@ def test_create_va(mock_provider, setup_user_wallet_va):
 
 
 @patch("task.bank.tasks.generate_provider")
+def test_update_va(mock_provider, setup_user_wallet_va):
+    """ test function that create va in the background """
+    # create virtual account credit
+    access_token, user_id, wallet_id = setup_user_wallet_va
+    va = VirtualAccount.query.filter_by(wallet_id=wallet_id).first()
+
+    # update va name here
+    va.name = "cool name"
+    db.session.commit()
+
+    plain_data = {"trx_id": va.trx_id, "virtual_account": va.account_no}
+    mock_provider.return_value.update_va.return_value = plain_data
+
+    BankTask().update_va(va.id)
+    # need to make sure vitual account is activated
+    assert va.name == "cool name"
+
+
+@patch("task.bank.tasks.generate_provider")
 def test_bank_transfer_to_bni(mock_provider, setup_wallet_with_balance, setup_bni_bank_account):
     """ test function that transfer money using OPG in the background """
     amount = -100

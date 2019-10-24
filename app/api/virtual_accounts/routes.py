@@ -51,10 +51,22 @@ class VirtualAccountInfoRoutes(Routes):
         /virtual-accounts/<account_no>
     """
 
+    __schema__ = VirtualAccountUpdateRequestSchema
+    __serializer__ = VirtualAccountSchema(strict=True)
+
     @admin_required
     def get(self, account_no):
         """ endpoint for getting singel virtual account """
         response = VirtualAccountServices(account_no).info()
+        return response
+
+    # end def
+
+    @admin_required
+    def put(self, account_no):
+        """ endpoint for updating virtual account """
+        request_data = self.serialize(self.payload())
+        response = VirtualAccountServices(account_no).update(request_data)
         return response
 
     # end def

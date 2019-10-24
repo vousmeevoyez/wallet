@@ -50,6 +50,32 @@ def test_info_va(mock_create_va, setup_wallet_info):
 
 
 @patch.object(BankTask, "create_va")
+def test_update_va(mock_create_va, setup_wallet_info):
+    """ test method for updating va information """
+    virtual_account = VirtualAccount(name="lisa")
+
+    params = {
+        "bank_name": "BNI",
+        "type": "CREDIT",
+        "wallet_id": setup_wallet_info["id"],
+        "amount": 0
+    }
+
+    mock_create_va.return_value = True
+    result = VirtualAccountServices().add(virtual_account, params)
+    virtual_account = result[0]["data"]["virtual_account"]
+
+    params = {
+        "name": "more cool name update",
+        "datetime_expired": "2029-11-22"
+    }
+    result = VirtualAccountServices(virtual_account).update(params)
+    # make sure its updated
+    va = VirtualAccount.query.filter_by(account_no=virtual_account).first()
+    assert va.name == "more cool name update"
+
+
+@patch.object(BankTask, "create_va")
 def test_show(mock_create_va, setup_wallet_info):
     """ test method for showing all va"""
     virtual_account = VirtualAccount(name="lisa")

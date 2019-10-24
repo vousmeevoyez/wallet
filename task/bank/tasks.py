@@ -101,6 +101,36 @@ class BankTask(celery.Task):
         virtual_account.status = STATUS["ACTIVE"]
         db.session.commit()
 
+    @celery.task(
+        bind=True,
+        max_retries=int(WORKER["MAX_RETRIES"]),
+        task_soft_time_limit=WORKER["SOFT_LIMIT"],
+        task_time_limit=WORKER["SOFT_LIMIT"],
+        acks_late=WORKER["ACKS_LATE"],
+    )
+    def update_va(self, virtual_account_id):
+        """ create task in background to create a Virtual account """
+        # fetch va object
+        virtual_account = VirtualAccount.query.filter_by(
+            id=virtual_account_id
+        ).first()
+
+        va_payload = {
+            "trx_id": virtual_account.trx_id,
+            "amount": int(virtual_account.amount),
+            "customer_name": virtual_account.name,
+            "expire_date": virtual_account.datetime_expired,
+        }
+        try:
+            provider = generate_provider("BNI_VA")
+            provider.set(virtual_account.va_type.key)
+            provider.update_va(**va_payload)
+        except ProviderError as error:
+            # set current user to wallet id so when something wrong we know exactly what happen
+            self.retry(countdown=backoff(self.request.retries), exc=error)
+        # end try
+        db.session.commit()
+
     """
         BNI CORE BANK
     """
