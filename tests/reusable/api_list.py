@@ -554,8 +554,6 @@ def bni_do_payment(client, params, access_token):
         headers=headers,
     )
 
-# end def
-
 def bni_interbank_inquiry(client, params, access_token):
     """ Api Call for do bni interbank inquiry"""
     headers = {"Authorization": "Bearer {}".format(access_token)}
@@ -564,8 +562,6 @@ def bni_interbank_inquiry(client, params, access_token):
     return client.get(
         BASE_URL + "/banks/bni/interbank/payment/{}".format(query), headers=headers
     )
-
-# end def
 
 def bni_interbank_payment(client, params, access_token):
     """ Api Call for do bni interbank payment"""
@@ -584,10 +580,6 @@ def bni_interbank_payment(client, params, access_token):
         headers=headers,
     )
 
-# end def
-
-
-
 
 """
     Virtual Accounts
@@ -598,7 +590,7 @@ def get_virtual_accounts(client, access_token):
     return client.get(
         BASE_URL + "/virtual_accounts/", headers=headers
     )
-# end def
+
 
 def get_virtual_account(client, account_no, access_token):
     """ Api Call for gettign virtual account """
@@ -606,7 +598,7 @@ def get_virtual_account(client, account_no, access_token):
     return client.get(
         BASE_URL + "/virtual_accounts/{}".format(account_no), headers=headers
     )
-# end def
+
 
 def get_virtual_account_logs(client, account_no, access_token):
     """ Api Call for gettign logs for virtual account """
@@ -614,4 +606,12 @@ def get_virtual_account_logs(client, account_no, access_token):
     return client.get(
         BASE_URL + "/virtual_accounts/{}/logs/".format(account_no), headers=headers
     )
-# end def
+
+
+def update_virtual_account(client, access_token, account_no, params):
+    """ Api Call for gettign updating virtual accounts """
+    headers = {"Authorization": "Bearer {}".format(access_token)}
+    return client.put(
+        BASE_URL + "/virtual_accounts/{}".format(account_no), headers=headers,
+        data=params
+    )

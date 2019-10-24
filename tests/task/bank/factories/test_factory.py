@@ -13,6 +13,7 @@ from task.bank.factories.provider.factory import generate_provider
 
 from tests.reusable.setup import create_http_response
 
+'''
 def test_create_request_response():
     request, response = generate_request_response("BNI_CREDIT_VA")
 
@@ -65,3 +66,4 @@ def test_va_generate_provider():
 def test_opg_generate_provider():
     provider = generate_provider("BNI_OPG")
     result = provider.get_balance("123456")
+'''

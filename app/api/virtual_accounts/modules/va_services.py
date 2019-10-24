@@ -7,6 +7,7 @@
 # pylint: disable=no-name-in-module
 # pylint: disable=import-error
 # pylint: disable=no-member
+from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
 # database
@@ -20,7 +21,7 @@ from app.api.serializer import VirtualAccountSchema, VaLogSchema
 from app.api.http_response import created, no_content
 from app.api.error.http import RequestNotFound, UnprocessableEntity
 
-from app.api.http_response import ok, created, no_content
+from app.api.http_response import ok, no_content
 
 # const
 from app.api.const import STATUS
@@ -139,6 +140,24 @@ class VirtualAccountServices:
         ).all()
         response = VaLogSchema(many=True).dump(logs).data
         return ok(response)
+
+    # end def
+
+    def update(self, params):
+        """
+            update Virtual Account information details
+        """
+        self.virtual_account.name = params["name"]
+        if params["datetime_expired"] is not None:
+            self.virtual_account.datetime_expired = \
+                datetime.fromisoformat(params["datetime_expired"])
+
+        db.session.commit()
+
+        BankTask().update_va.apply_async(
+            args=[self.virtual_account.id], queue="bank"
+        )
+        return no_content()
 
     # end def
 
