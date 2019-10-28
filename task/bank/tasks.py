@@ -90,7 +90,7 @@ class BankTask(celery.Task):
         try:
             provider = generate_provider("BNI_VA")
             provider.set(virtual_account.va_type.key)
-            result = provider.create_va(**va_payload)
+            provider.create_va(**va_payload)
         except ProviderError as error:
             # set current user to wallet id so when something wrong we know exactly what happen
             self.current_user = virtual_account.wallet.id
@@ -205,6 +205,7 @@ class BankTask(celery.Task):
             response_reference = transfer_info.get("bank_ref", "NA")
             payment.ref_number = transfer_ref_number + "-" + response_reference
             db.session.commit()
+        '''
         finally:
             # only enable the fake callback when it is debug
             if not current_app.testing:
@@ -224,6 +225,7 @@ class BankTask(celery.Task):
                     current_app.logger.warning(error.details())
                 # end try
                 current_app.logger.info(response)
+        '''
         # end try
 
         # clear function cache
