@@ -4,9 +4,6 @@
     Handle withdraw request process
 """
 from datetime import datetime, timedelta
-
-from sqlalchemy.exc import IntegrityError
-
 # db
 from app.api import db
 
@@ -17,16 +14,21 @@ from app.api.virtual_accounts.modules.va_services import VirtualAccountServices
 from app.api.wallets.modules.wallet_core import WalletCore
 
 # models
-from app.api.models import *
+from app.api.models import (
+    Withdraw,
+    Bank,
+    VirtualAccount,
+    VaType
+)
 
 # http
-from app.api.http_response import *
+from app.api.http_response import ok
 
 # const
-from app.api.const import WALLET
+from app.api.const import WALLET, VIRTUAL_ACCOUNT
 
 # exceptions
-from app.api.error.http import *
+from app.api.error.http import UnprocessableEntity
 
 # error
 from app.api.error.message import RESPONSE as error_response
@@ -41,39 +43,46 @@ class WithdrawServices(WalletCore):
         bank_name = params["bank_name"]
 
         if amount == 0:
-            amount = self.source.balance
+            # ADD RULES HERE
+            # if its less than 2.5 jt we use that value but if its more, we use
+            # we use debit max balance
+            current_balance = self.source.balance
+            allowed_max_balance = \
+                float(VIRTUAL_ACCOUNT["BNI"]["DEBIT_MAX_BALANCE"])
+
+            if current_balance < allowed_max_balance:
+                amount = current_balance
+            else:
+                amount = VIRTUAL_ACCOUNT["BNI"]["DEBIT_MAX_BALANCE"]
 
         if amount < float(WALLET["MINIMAL_WITHDRAW"]):
             raise UnprocessableEntity(
                 error_response["MIN_WITHDRAW"]["TITLE"],
                 error_response["MIN_WITHDRAW"]["MESSAGE"],
             )
-        # end if
 
         if amount > float(WALLET["MAX_WITHDRAW"]):
             raise UnprocessableEntity(
                 error_response["MAX_WITHDRAW"]["TITLE"],
                 error_response["MAX_WITHDRAW"]["MESSAGE"],
             )
-        # end if
 
         if amount > float(self.source.balance):
             raise UnprocessableEntity(
                 error_response["INSUFFICIENT_BALANCE"]["TITLE"],
                 error_response["INSUFFICIENT_BALANCE"]["MESSAGE"],
             )
-        # end if
 
         # before creating a cardless va, we need to make sure there's no ongoing withdraw request
         pending_withdraw = Withdraw.query.filter(
-            Withdraw.wallet_id == self.source.id, Withdraw.valid_until > datetime.now()
+            Withdraw.wallet_id == self.source.id,
+            Withdraw.valid_until > datetime.now()
         ).count()
         if pending_withdraw > 0:
             raise UnprocessableEntity(
                 error_response["PENDING_WITHDRAW"]["TITLE"],
                 error_response["PENDING_WITHDRAW"]["MESSAGE"],
             )
-        # end if
 
         # creating withdraw record and set it to valid for certain period of time
         valid_until = datetime.now() + timedelta(
@@ -84,9 +93,12 @@ class WithdrawServices(WalletCore):
         db.session.add(withdraw)
         db.session.commit()
 
+        # ADD RULES HERE
+        # if its less than 2.5 jt we use that value but if its more, we use
+
         # define payload here
         va_payload = {
-            "bank_name": "BNI",
+            "bank_name": bank_name,
             "type": "DEBIT",
             "wallet_id": self.source.id,
             "amount": amount,
@@ -114,15 +126,10 @@ class WithdrawServices(WalletCore):
             va_response = VirtualAccountServices(va_record.account_no).reactivate(
                 va_payload
             )
-        # end if
+
         response = {
             "virtual_account": va_response["virtual_account"],
             "valid_until": va_response["valid_until"],
             "amount": va_response["amount"],
         }
         return ok(response)
-
-    # end def
-
-
-# end class

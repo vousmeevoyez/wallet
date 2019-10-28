@@ -35,6 +35,7 @@ VIRTUAL_ACCOUNT = {
     "BNI": {
         "CREDIT_VA_TIMEOUT": 4350,  # 1 year
         "DEBIT_VA_TIMEOUT": 5,  # 10 minutes cardless
+        "DEBIT_MAX_BALANCE": 2500000 # allowed debit balance
     }
 }
 
