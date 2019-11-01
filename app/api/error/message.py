@@ -35,7 +35,7 @@ RESPONSE = {
     },
     "WALLET_LOCKED": {
         "TITLE": "WALLET_LOCKED",
-        "MESSAGE": "Wallet is temporary locked",
+        "MESSAGE": "Too many attempts, please try again in 5 minutes. Your Modanaku is temporary locked",
     },
     "UNMATCH_PIN": {"TITLE": "UNMATCH_PIN", "MESSAGE": "Unmatch Pin and Confirm Pin"},
     "DUPLICATE_PIN": {
