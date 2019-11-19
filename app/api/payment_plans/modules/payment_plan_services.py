@@ -75,24 +75,15 @@ class PaymentPlanServices:
             db.session.add(payment_plan)
             db.session.commit()
 
-            # register the destination as bank account if not created
-            # defaultly register as BNI VA
-            repayment_va_account = BankAccount.query.filter_by(
-                account_no=payment_plan.destination
-            ).first()
-            if repayment_va_account is None:
-                repayment_va_account = BankAccount(
-                    label="VA Repayment Account",
-                    name=self.wallet.user.name,
-                    account_no=payment_plan.destination,
-                )
-                result = BankAccountServices(str(self.wallet.user.id), "009").add(
-                    repayment_va_account
-                )[0]
-                response["bank_account_id"] = result["data"]["bank_account_id"]
-            else:
-                response["bank_account_id"] = str(repayment_va_account.id)
-            # end if
+            repayment_va_account = BankAccount(
+                label="VA Repayment Account",
+                name=self.wallet.user.name,
+                account_no=payment_plan.destination,
+            )
+            result = BankAccountServices(str(self.wallet.user.id), "009").add(
+                repayment_va_account
+            )[0]
+            response["bank_account_id"] = result["data"]["bank_account_id"]
 
             # adding plan
             for plan in plans:

@@ -540,17 +540,7 @@ def bni_do_payment(client, params, access_token):
     headers = {"Authorization": "Bearer {}".format(access_token)}
     return client.post(
         BASE_URL + "/banks/bni/payment/",
-        data=dict(
-            method=params["method"],
-            source_account=params["source_account"],
-            account_no=params["account_no"],
-            amount=params["amount"],
-            email=params["email"],
-            clearing_code=params["clearing_code"],
-            account_name=params["account_name"],
-            address=params["address"],
-            charge_mode=params["charge_mode"],
-        ),
+        data=params,
         headers=headers,
     )
 
@@ -563,20 +553,13 @@ def bni_interbank_inquiry(client, params, access_token):
         BASE_URL + "/banks/bni/interbank/payment/{}".format(query), headers=headers
     )
 
+
 def bni_interbank_payment(client, params, access_token):
     """ Api Call for do bni interbank payment"""
     headers = {"Authorization": "Bearer {}".format(access_token)}
     return client.post(
         BASE_URL + "/banks/bni/interbank/payment/",
-        data=dict(
-            source_account=params["source_account"],
-            account_no=params["account_no"],
-            account_name=params["account_name"],
-            amount=params["amount"],
-            bank_code=params["bank_code"],
-            bank_name=params["bank_name"],
-            transfer_ref=params["transfer_ref"],
-        ),
+        data=params,
         headers=headers,
     )
 
