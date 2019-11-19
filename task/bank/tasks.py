@@ -205,28 +205,5 @@ class BankTask(celery.Task):
             response_reference = transfer_info.get("bank_ref", "NA")
             payment.ref_number = transfer_ref_number + "-" + response_reference
             db.session.commit()
-        '''
-        finally:
-            # only enable the fake callback when it is debug
-            if not current_app.testing:
-                import grpc
-                from task.bank.lib.rpc import callback_pb2
-                from task.bank.lib.rpc import callback_pb2_grpc
-                # send fake callback via gRPC
-                channel = grpc.insecure_channel("callback:10000")
-                stub = callback_pb2_grpc.CallbackStub(channel)
-                request = callback_pb2.DepositCallbackRequest()
-                request.body.virtual_account = bank_account_no
-                request.body.payment_amount = str(amount)
-                try:
-                    response = stub.DepositCallback(request)
-                except grpc.RpcError as error:
-                    current_app.logger.warning(error.code())
-                    current_app.logger.warning(error.details())
-                # end try
-                current_app.logger.info(response)
-        '''
-        # end try
-
         # clear function cache
         generate_ref_number.cache_clear()

@@ -175,24 +175,6 @@ services:
                 networks:
                 - wallet-net
 
-        callback:
-                image: modana-va-fake-grpc
-                entrypoint: ./start.sh
-                environment: 
-                - GRPC_PORT=10000
-                depends_on:
-                - flask
-                ports:
-                - 10000:10000
-                restart: unless-stopped
-                logging:
-                  driver: "json-file"
-                  options:
-                    max-size: "100k"
-                    max-file: "10"
-                networks:
-                - wallet-net
-
 volumes:
         db_volume:
 
