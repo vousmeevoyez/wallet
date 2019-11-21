@@ -301,7 +301,7 @@ class BNIOpgProvider(BaseProvider):
             params["email"] = ""
             params["destination_bank_code"] = bank.rtgs
             params["account_name"] = params["destination_name"]
-            params["address"] = "Puri Indah Financial Tower #0506, Jl. Puri Indah Raya No.8, RT.1/RW.2, Kembangan Sel., Kec. Kembangan, Kota Jakarta Barat, Daerah Khusus Ibukota Jakarta 11610"
+            params["address"] = ""
             # if charge mode is blank it means by default sender is the one who
             # paid for the transfer
             params["charge_mode"] = ""
