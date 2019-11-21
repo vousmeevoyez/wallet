@@ -294,7 +294,7 @@ class BNIOpgProvider(BaseProvider):
             '''
             # for interbank transfer we use clearing
             # we exchange bank code with their own rtgs / clearing code
-            bank = Bank.query.filter_by(code=params["bank_code"])
+            bank = Bank.query.filter_by(code=params["bank_code"]).first()
 
             # adjust required parameter here and replace with empty string
             params["method"] = "2"  # CLEARING
