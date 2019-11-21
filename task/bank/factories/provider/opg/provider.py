@@ -14,6 +14,8 @@ from task.bank.lib.provider import (
     BaseProvider
 )
 
+from app.api.models import Bank
+
 
 class BNIOpgProvider(BaseProvider):
     """ Class that provide various BNI OPG Interface """
@@ -114,7 +116,7 @@ class BNIOpgProvider(BaseProvider):
     # end def
 
     def do_payment(self, method, source, destination, amount, email,
-                   clearing_code, account_name, address, charge_mode,
+                   destination_bank_code, account_name, address, charge_mode,
                    ref_number):
         """
             function to do interbank payment
@@ -140,7 +142,7 @@ class BNIOpgProvider(BaseProvider):
                 "valueAmount": amount,
                 "remark": "?",
                 "beneficiaryEmailAddress": email,  # must be filled if not IN_HOUSE
-                "destinationBankCode": clearing_code,  # must be filled if not IN_HOUSE
+                "destinationBankCode": destination_bank_code,  # must be filled if not IN_HOUSE
                 "beneficiaryName": account_name,  # must be filled if not IN_HOUSE
                 "beneficiaryAddress1": address,
                 "beneficiaryAddress2": "",
@@ -248,7 +250,7 @@ class BNIOpgProvider(BaseProvider):
             # adjust required parameter here and replace with empty string
             params["method"] = "0"  # inhouse
             params["email"] = ""
-            params["clearing_code"] = ""
+            params["destination_bank_code"] = ""
             params["account_name"] = ""
             params["address"] = ""
             params["charge_mode"] = ""
@@ -256,11 +258,13 @@ class BNIOpgProvider(BaseProvider):
             del params["inquiry_ref_number"]
             del params["transfer_ref_number"]
             del params["bank_code"]
+            del params["destination_name"]
 
             params["ref_number"] = transfer_ref_number
 
             response = self.do_payment(**params)
         else:
+            '''
             interbank_inquiry_payload = {
                 "ref_number": inquiry_ref_number,
                 "source": params["source"],
@@ -287,6 +291,30 @@ class BNIOpgProvider(BaseProvider):
             del params["transfer_ref_number"]
 
             response = self.interbank_payment(**params)
+            '''
+            # for interbank transfer we use clearing
+            # we exchange bank code with their own rtgs / clearing code
+            bank = Bank.query.filter_by(code=params["bank_code"])
+
+            # adjust required parameter here and replace with empty string
+            params["method"] = "2"  # CLEARING
+            params["email"] = ""
+            params["destination_bank_code"] = bank.rtgs
+            params["account_name"] = params["destination_name"]
+            params["address"] = "Puri Indah Financial Tower #0506, Jl. Puri Indah Raya No.8, RT.1/RW.2, Kembangan Sel., Kec. Kembangan, Kota Jakarta Barat, Daerah Khusus Ibukota Jakarta 11610"
+            # if charge mode is blank it means by default sender is the one who
+            # paid for the transfer
+            params["charge_mode"] = ""
+
+            del params["inquiry_ref_number"]
+            del params["transfer_ref_number"]
+            del params["bank_code"]
+            del params["destination_name"]
+
+            params["ref_number"] = transfer_ref_number
+
+            response = self.do_payment(**params)
+
         return response
 
     # end def

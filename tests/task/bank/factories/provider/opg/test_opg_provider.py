@@ -187,7 +187,7 @@ class TestMockBNIOpgProvider:
             "amount": "100500",
             "ref_number": "20170227000000000020",
             "email": "jennie@blackpink.com",
-            "clearing_code": "CENAIDJAXXX",
+            "destination_bank_code": "CENAIDJAXXX",
             "account_name": "Jennie",
             "address": "Jl. Buntu",
             "charge_mode": "SOURCE",
@@ -230,7 +230,7 @@ class TestMockBNIOpgProvider:
             "amount": "100500",
             "ref_number": "20170227000000000020",
             "email": "jennie@blackpink.com",
-            "clearing_code": "CENAIDJAXXX",
+            "destination_bank_code": "CENAIDJAXXX",
             "account_name": "Jennie",
             "address": "Jl. Buntu",
             "charge_mode": "SOURCE",
@@ -484,6 +484,7 @@ class TestMockBNIOpgProvider:
         data = {
             "source": "113183203",
             "destination": "115471119",
+            "destination_name": "some destination name",
             "amount": "100500",
             "bank_code": "009",
             "inquiry_ref_number": "12345678910",
@@ -523,6 +524,7 @@ class TestMockBNIOpgProvider:
         data = {
             "source": "113183203",
             "destination": "115471119",
+            "destination_name": "some destniation name",
             "amount": "100500",
             "bank_code": "009",
             "inquiry_ref_number": "12345678910",
@@ -561,6 +563,7 @@ class TestMockBNIOpgProvider:
         data = {
             "source": "113183203",
             "destination": "115471119",
+            "destination_name": "some destination name",
             "amount": "100500",
             "bank_code": "009",
             "inquiry_ref_number": "12345678910",

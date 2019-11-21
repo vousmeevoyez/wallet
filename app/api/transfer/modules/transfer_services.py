@@ -52,8 +52,6 @@ class TransferServices(WalletCore):
         if bank_account:
             if bank_account.bank.code != "009":
                 transfer_fee = WALLET["TRANSFER_FEE"][method]
-            # end if
-        # end if
         return transfer_fee
 
     def internal_transfer(self, params):
@@ -104,7 +102,7 @@ class TransferServices(WalletCore):
 
         # calculate transfer fee here
         # for now only online
-        transfer_fee = self.calculate_transfer_fee(bank_account_id, "ONLINE")
+        transfer_fee = self.calculate_transfer_fee(bank_account_id, "CLEARING")
 
         if float(amount) + float(transfer_fee) > float(self.source.balance):
             raise UnprocessableEntity(

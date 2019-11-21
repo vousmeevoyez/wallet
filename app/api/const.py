@@ -56,7 +56,7 @@ WALLET = {
 }
 
 LOGGING = {
-    "TIMEOUT": 15,
+    "TIMEOUT": os.getenv("NETWORK_TIMEOUT") or 15,
     "BNI_ECOLLECTION": "BNI-ECOLLECTION",
     "BNI_OPG": "BNI-OPG",
     "WAVECELL": "WAVECELL",

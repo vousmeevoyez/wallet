@@ -14,7 +14,7 @@ class HTTPRequest:
         self._header = {}
         self._method = None
         self._payload = {}
-        self.timeout = LOGGING["TIMEOUT"]
+        self.timeout = int(LOGGING["TIMEOUT"])
 
     @staticmethod
     def _convert_to_header_convention(key):

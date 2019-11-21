@@ -19,7 +19,8 @@ from app.api import (
 from app.api.models import (
     VirtualAccount,
     Payment,
-    BankAccount
+    BankAccount,
+    Bank
 )
 
 from task.bank.factories.provider.factory import generate_provider
@@ -172,6 +173,7 @@ class BankTask(celery.Task):
             "bank_code": bank_account.bank.code,  # BANK CODE
             "source": BNI_OPG["MASTER_ACCOUNT"],  # MASTER ACCOUNT ID
             "destination": bank_account_no,  # destination account bank transfer
+            "destnation_name": bank_account.name,
             "inquiry_ref_number": inquiry_ref_number,
             "transfer_ref_number": transfer_ref_number
         }
