@@ -173,7 +173,7 @@ class BankTask(celery.Task):
             "bank_code": bank_account.bank.code,  # BANK CODE
             "source": BNI_OPG["MASTER_ACCOUNT"],  # MASTER ACCOUNT ID
             "destination": bank_account_no,  # destination account bank transfer
-            "destnation_name": bank_account.name,
+            "destination_name": bank_account.name,
             "inquiry_ref_number": inquiry_ref_number,
             "transfer_ref_number": transfer_ref_number
         }
