@@ -47,7 +47,7 @@ WALLET = {
     "MAX_WITHDRAW": os.getenv("MAX_WITHDRAW") or 100000000,
     "MINIMAL_DEPOSIT": os.getenv("MINIMAL_DEPOSIT") or 50000,
     "MAX_DEPOSIT": os.getenv("MAX_DEPOSIT") or 100000000,
-    "TRANSFER_FEE": {"USER": 0, "CLEARING": 5000, "RTGS": 30000, "ONLINE": 6500},
+    "TRANSFER_FEE": {"USER": 0, "CLEARING": 3500, "RTGS": 30000, "ONLINE": 6500},
     "OTP_TIMEOUT": 2,  # set otp timeout in minutes
     "INCORRECT_TIMEOUT": os.getenv("INCORRECT_TIMEOUT") or 5,
     "INCORRECT_RETRY": os.getenv("INCORRECT_RETRY") or 3,  # set max pin retry
