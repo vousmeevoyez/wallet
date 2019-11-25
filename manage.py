@@ -86,6 +86,8 @@ def make_shell_context():
         'ForgotPin'      : ForgotPin,
         'Payment'        : Payment,
         'PaymentChannel' : PaymentChannel,
+        'PaymentPlan'    : PaymentPlan,
+        'Plan'           : Plan,
         'User'           : User
     }
 

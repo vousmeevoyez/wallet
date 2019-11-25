@@ -303,7 +303,7 @@ def test_calculate_transfer_fee(setup_bca_bank_account,
         str(setup_bca_bank_account.id), "CLEARING"
     )
     # should be 5000
-    assert result == 5000
+    assert result == 3500
 
 
 def test_checkout(setup_user_only, setup_wallet_without_balance):
