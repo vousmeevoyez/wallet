@@ -168,6 +168,23 @@ services:
                     max-file: "10"
                 networks:
                 - wallet-net
+
+        grpc:
+                env_file: env/${ENV}.env
+                image: modana-wallet-grpc
+                entrypoint: ./start.sh
+                depends_on:
+                - flask
+                ports:
+                - 6001:6001
+                restart: unless-stopped
+                logging:
+                  driver: "json-file"
+                  options:
+                    max-size: "100k"
+                    max-file: "10"
+                networks:
+                - wallet-net
                 
 volumes:
         prod_volume:

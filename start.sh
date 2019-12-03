@@ -6,7 +6,7 @@ read stage
 if [ "$stage" == "dev" ]; then
 	export ENV="dev"
 	export APP_PORT=5000
-	docker-compose -f docker-compose-dev.yml up --build
+	docker-compose up -d --build
 else
 	export ENV="prod"
 	export APP_PORT=5000
