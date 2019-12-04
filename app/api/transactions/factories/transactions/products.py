@@ -8,6 +8,7 @@
 # pylint: disable=invalid-name
 # pylint: disable=no-name-in-module
 # pylint: disable=no-member
+import pytz
 from celery import chain
 from abc import ABC
 from datetime import datetime, timedelta
@@ -203,7 +204,10 @@ class ReceivePayrollTransaction(CreditTransaction):
         plan = PaymentPlan.check_payment(self.transaction.wallet)
         if plan is not None:
             # make sure today is the due date to able deduct it
+            indo_time = pytz.timezone("Asia/Jakarta")
+
             due_date = plan.due_date
+
             payroll_date = datetime.utcnow()
             differences = payroll_date - due_date
 
@@ -244,7 +248,7 @@ class ReceivePayrollTransaction(CreditTransaction):
                             args=[plan.id], queue="payment"
                         ),
                         trigger="date",
-                        next_run_time=due_date,
+                        next_run_time=due_date.replace(tzinfo=indo_time),
                     )
                     response["data"] = {"message": "AUTO_DEBIT"}
                 # end if
