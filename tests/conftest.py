@@ -14,7 +14,9 @@ from app.api.models import (
     Wallet,
     VaType,
     VirtualAccount,
-    BankAccount
+    BankAccount,
+    Transaction,
+    TransactionType
 )
 
 from manage import init
@@ -544,6 +546,25 @@ def setup_debit_va(setup_wallet_without_balance, setup_bank, setup_debit_va_type
     db.session.commit()
 
     return va_number, va_trx_id
+
+
+@pytest.fixture(scope="module")
+def setup_transaction(setup_user_wallet_va):
+    """ fixture for creating debit va object only!"""
+    access_token, user_id, wallet_id = setup_user_wallet_va
+
+    transaction_type = TransactionType.query.filter_by(key="TOP_UP").first()
+
+    transaction = Transaction(
+        wallet_id=wallet_id,
+        balance=0,
+        amount=1000,
+        notes="some notes",
+        transaction_type_id=transaction_type.id
+    )
+    db.session.add(transaction)
+    db.session.commit()
+    return transaction
 
 @pytest.fixture(scope="module")
 def setup_payment_plan_auto(client, setup_wallet_info):

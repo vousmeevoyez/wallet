@@ -2,17 +2,23 @@
     This is Celery Task to help interacting with Bank API
     in the background
 """
-import random
 from datetime import datetime
 from celery.signals import task_postrun
-
-from app.api import sentry
-from app.api import db
-
 from sqlalchemy.exc import OperationalError, IntegrityError
-from app.api import celery
 
-from app.api.models import *
+from app.api import (
+    celery,
+    db,
+    sentry
+)
+
+from app.api.models import (
+    Transaction,
+    Payment,
+    Log,
+    Wallet
+)
+from app.api.utility.utils import backoff
 
 # const
 from app.api.const import TRANSACTION_LOG, PAYMENT_STATUS, WORKER
@@ -20,18 +26,13 @@ from app.api.const import TRANSACTION_LOG, PAYMENT_STATUS, WORKER
 now = datetime.utcnow()
 
 
+class TransferFailed(Exception):
+    """ raised when something occured on transfer process """
+
+
 @task_postrun.connect
 def close_session(*args, **kwargs):
     db.session.remove()
-
-
-def backoff(attempts):
-    """ prevent hammering service with thousand retry"""
-    return random.uniform(2, 4) ** attempts
-
-
-class TransferFailed(Exception):
-    """ raised when something occured on transfer process """
 
 
 class TransactionTask(celery.Task):
@@ -104,7 +105,6 @@ class TransactionTask(celery.Task):
 
             # added transaction balance
             transaction.balance = wallet.balance
-
             # commit everything here
             db.session.commit()
         except (IntegrityError, OperationalError) as error:
@@ -115,5 +115,3 @@ class TransactionTask(celery.Task):
         # end try
         db.session.commit()
         return transaction.id
-
-    # end def

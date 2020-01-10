@@ -37,6 +37,9 @@ utility-worker:
 logging-worker:
 	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q logging -n loggingworker@%h
 
+report-worker:
+	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q report -n reportworker@%h
+
 beat:
 	celery beat -A task.worker.celery --loglevel=info
 

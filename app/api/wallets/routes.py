@@ -311,7 +311,7 @@ class WalletWithdrawRoutes(Routes):
         """ endpoint for withdraw request """
         request_data = self.serialize(self.payload())
 
-        request_data["bank_name"] = "BNI"
+        request_data["bank_code"] = "009" ## BNI
         response = WithdrawServices(wallet_id, request_data["pin"]).request(
             request_data
         )

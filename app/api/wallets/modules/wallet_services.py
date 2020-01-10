@@ -74,7 +74,7 @@ class WalletServices(WalletCore):
         try:
             virtual_account = VirtualAccount(name=va_name)
             va_payload = {
-                "bank_name": "BNI",
+                "bank_code": "009",
                 "type": "CREDIT",
                 "wallet_id": str(wallet.id),
                 "amount": 0,

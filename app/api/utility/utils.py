@@ -6,8 +6,11 @@
 # pylint: disable=no-self-use
 # pylint: disable=too-few-public-methods
 import json
+import random
 
 from uuid import UUID
+
+from jinja2 import Environment, FileSystemLoader
 
 # const
 from app.api.const import WALLET
@@ -34,6 +37,22 @@ class UtilityError(Exception):
         super(UtilityError).__init__()
         self.original = original
 
+def validate_uuid(string):
+    """ validate uuid"""
+    try:
+        uuid_object = UUID(string)
+    except ValueError:
+        raise BadRequest(
+            error_response["INVALID_ID"]["TITLE"],
+            error_response["INVALID_ID"]["MESSAGE"],
+        )
+    return uuid_object
+
+
+def backoff(attempts):
+    """ prevent hammering service with thousand retry"""
+    return random.uniform(2, 4) ** attempts
+
 
 class Sms:
     """ Class for helping sending SMS """
@@ -48,13 +67,7 @@ class Sms:
             result = SmsServices().send_sms(to, message)
         except SmsError as error:
             raise UtilityError(error.original)
-        # end try
         return result
-
-    # end def
-
-
-# end class
 
 
 class QR:
@@ -66,21 +79,13 @@ class QR:
         qr_raw = AESCipher(WALLET["QR_SECRET_KEY"]).encrypt(json.dumps(data))
         return qr_raw.decode("utf-8")
 
-    # end def
-
     def read(self, data):
         """ function to read encrypyed QR Code """
         try:
             qr_decrypted = AESCipher(WALLET["QR_SECRET_KEY"]).decrypt(data)
         except DecryptError as error:
             raise UtilityError()
-        # end try
         return json.loads(qr_decrypted)
-
-    # end def
-
-
-# end class
 
 
 class Notif:
@@ -92,25 +97,19 @@ class Notif:
             result = NotifServices().send(data)
         except NotifError as error:
             raise UtilityError(error.original)
-        # end try
         return result
 
-    # end def
 
+class TemplateEngine:
+    """ utility for handling html templating """
+    def __init__(self, template_name, data, template_dir_path):
+        self.env = Environment(loader=FileSystemLoader(template_dir_path))
+        self.template_name = template_name
+        self.data = data
 
-# end class
-
-
-def validate_uuid(string):
-    """ validate uuid"""
-    try:
-        uuid_object = UUID(string)
-    except ValueError:
-        raise BadRequest(
-            error_response["INVALID_ID"]["TITLE"],
-            error_response["INVALID_ID"]["MESSAGE"],
-        )
-    return uuid_object
-
-
-# end def
+    def render(self):
+        """ fetch selected template replace the placeholder and render it to
+        string """
+        template = self.env.get_template(self.template_name + ".html")
+        template = template.render(self.data)
+        return template

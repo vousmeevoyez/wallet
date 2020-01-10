@@ -40,7 +40,7 @@ class WithdrawServices(WalletCore):
     def request(self, params):
         """ handle withdraw request """
         amount = float(params["amount"])
-        bank_name = params["bank_name"]
+        bank_code = params["bank_code"]
 
         if amount == 0:
             # ADD RULES HERE
@@ -48,12 +48,12 @@ class WithdrawServices(WalletCore):
             # we use debit max balance
             current_balance = self.source.balance
             allowed_max_balance = \
-                float(VIRTUAL_ACCOUNT["BNI"]["DEBIT_MAX_BALANCE"])
+                float(VIRTUAL_ACCOUNT["009"]["DEBIT_MAX_BALANCE"])
 
             if current_balance < allowed_max_balance:
                 amount = current_balance
             else:
-                amount = VIRTUAL_ACCOUNT["BNI"]["DEBIT_MAX_BALANCE"]
+                amount = VIRTUAL_ACCOUNT["009"]["DEBIT_MAX_BALANCE"]
 
         if amount < float(WALLET["MINIMAL_WITHDRAW"]):
             raise UnprocessableEntity(
@@ -86,7 +86,7 @@ class WithdrawServices(WalletCore):
 
         # creating withdraw record and set it to valid for certain period of time
         valid_until = datetime.now() + timedelta(
-            minutes=VIRTUAL_ACCOUNT["BNI"]["DEBIT_VA_TIMEOUT"]
+            minutes=VIRTUAL_ACCOUNT["009"]["DEBIT_VA_TIMEOUT"]
         )
 
         withdraw = Withdraw(wallet_id=self.source.id, valid_until=valid_until)
@@ -98,15 +98,14 @@ class WithdrawServices(WalletCore):
 
         # define payload here
         va_payload = {
-            "bank_name": bank_name,
+            "bank_code": bank_code,
             "type": "DEBIT",
             "wallet_id": self.source.id,
             "amount": amount,
         }
 
         # GET BANK INFORMATION HERE
-        keyword = "%{}%".format(bank_name)
-        bank = Bank.query.filter(Bank.name.like(keyword)).first()
+        bank = Bank.query.filter_by(code=bank_code).first()
 
         # check va record first make sure no va on the same bank with the same
         # type existed

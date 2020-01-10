@@ -43,6 +43,7 @@ class Config:
         "task.payment.tasks",
         "task.utility.tasks",
         "task.logger.tasks",
+        "task.report.tasks",
     )
     CELERY_TASK_DEFAULT_QUEUE = "default"
     # REGISTER ALL KNOWN QUEUES HERE
@@ -52,6 +53,7 @@ class Config:
         "bank": {"exchange": "bank", "binding_key": "bank"},
         "transaction": {"exchange": "transaction", "binding_key": "transaction"},
         "utility": {"exchange": "utility", "binding_key": "utility"},
+        "report": {"exchange": "report", "binding_key": "report"},
     }
     CELERY_TRACK_STARTED = True
     # CELERY BEAT
@@ -66,7 +68,13 @@ class Config:
             "schedule": crontab(hour=12),
             "options": {"queue": "logging"}
         },
+        "modanaku-daily-report": {
+            "task": "task.report.tasks.send_report",
+            "schedule": crontab(hour=7, minute=0),
+            "options": {"queue": "report"}
+        },
     }
+    CELERY_TIMEZONE = "Asia/Jakarta"
 
     # APSCHEDULER JOBSTORE
     APSCHEDULER_JOBSTORE_URI = "sqlite:///jobs.sqlite"
