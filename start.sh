@@ -9,6 +9,6 @@ if [ "$stage" == "dev" ]; then
 	docker-compose up -d --build
 else
 	export ENV="prod"
-	export APP_PORT=5000
+	export APP_PORT=6000
 	docker-compose up -d --build
 fi

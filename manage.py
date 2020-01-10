@@ -182,7 +182,10 @@ def _import_bank_csv():
     else:
         for bank in bank_list:
             # lookup existing bank code inside csv and update it
-            row = find_bank_row(bank.code, "data/bank_list.csv")
+            try:
+                row = find_bank_row(bank.code, "data/bank_list.csv")
+            except ValueError:
+                pass
             bank.name = row[2]
             bank.rtgs = row[1]
             db.session.commit()
