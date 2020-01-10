@@ -185,10 +185,17 @@ def _import_bank_csv():
             try:
                 row = find_bank_row(bank.code, "data/bank_list.csv")
             except ValueError:
-                pass
-            bank.name = row[2]
-            bank.rtgs = row[1]
-            db.session.commit()
+                bank = Bank(
+                    code=row[0],
+                    name=row[2],
+                    rtgs=row[1]
+                )
+                db.session.add(bank)
+                db.session.commit()
+            else:
+                bank.name = row[2]
+                bank.rtgs = row[1]
+                db.session.commit()
 
 def _create_va_type():
     # only create va type when there are none
