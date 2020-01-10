@@ -180,22 +180,21 @@ def _import_bank_csv():
             db.session.commit()
     # if already some data we update or add new entry
     else:
-        for bank in bank_list:
-            # lookup existing bank code inside csv and update it
-            try:
-                row = find_bank_row(bank.code, "data/bank_list.csv")
-            except ValueError:
-                bank = Bank(
-                    code=row[0],
-                    name=row[2],
-                    rtgs=row[1]
+        datas = read_file("data/bank_list.csv")
+        for data in datas:
+            bank = Bank.query.filter_by(code=data[0]).first()
+            if bank is None:
+                new_bank = Bank(
+                    code=data[0],
+                    name=data[2],
+                    rtgs=data[1]
                 )
-                db.session.add(bank)
+                db.session.add(new_bank)
                 db.session.commit()
-            else:
-                bank.name = row[2]
-                bank.rtgs = row[1]
-                db.session.commit()
+            # end if
+            bank.name = data[2]
+            bank.rtgs = data[1]
+            db.session.commit()
 
 def _create_va_type():
     # only create va type when there are none
