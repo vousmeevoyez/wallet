@@ -182,6 +182,7 @@ def _import_bank_csv():
     else:
         datas = read_file("data/bank_list.csv")
         for data in datas:
+            print(data)
             bank = Bank.query.filter_by(code=data[0]).first()
             if bank is None:
                 new_bank = Bank(
@@ -191,10 +192,10 @@ def _import_bank_csv():
                 )
                 db.session.add(new_bank)
                 db.session.commit()
-            # end if
-            bank.name = data[2]
-            bank.rtgs = data[1]
-            db.session.commit()
+            else:
+                bank.name = data[2]
+                bank.rtgs = data[1]
+                db.session.commit()
 
 def _create_va_type():
     # only create va type when there are none
