@@ -2,7 +2,6 @@
     This is Celery Task to help interacting with Bank API
     in the background
 """
-import random
 from concurrent.futures import ThreadPoolExecutor
 
 from flask import current_app
@@ -15,20 +14,14 @@ from app.api.models import (
     BalanceLog,
     VaLog
 )
+from app.api.utility.utils import backoff
 
 from task.bank.factories.provider.factory import generate_provider
 from task.bank.lib.provider import ProviderError
 
-# services
-
 # config
 from app.config.external.bank import BNI_OPG
 from app.api.const import WORKER, LOGGING
-
-
-def backoff(attempts):
-    """ prevent hammering service with thousand retry"""
-    return random.uniform(2, 4) ** attempts
 
 
 def check_va(va_trx_id):

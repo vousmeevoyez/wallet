@@ -9,7 +9,6 @@ def test_get_all_banks(client):
     response = result.get_json()
 
     assert result.status_code == 200
-    assert len(response["data"]) == 164
 
 def test_check_bni_balance_offline(client, setup_admin_token):
     result = check_bni_balance(client, "123456", setup_admin_token)

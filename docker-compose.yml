@@ -9,13 +9,13 @@ services:
                         args:
                                 dependencies: requirements-${ENV}
                 image: modana-wallet-services
-                entrypoint: ./scripts/build-prod.sh
+                entrypoint: ./scripts/build-${ENV}.sh
                 depends_on:
                 - postgres
                 - rabbitmq
                 restart: unless-stopped
                 ports:
-                - ${APP_PORT}:6000
+                - ${APP_PORT}:5000
                 logging:
                   driver: "json-file"
                   options:
@@ -122,6 +122,23 @@ services:
                 env_file: env/${ENV}.env
                 image: modana-wallet-services
                 entrypoint: make logging-worker
+                depends_on:
+                - flask
+                - rabbitmq
+                - postgres
+                restart: unless-stopped
+                logging:
+                  driver: "json-file"
+                  options:
+                    max-size: "100k"
+                    max-file: "10"
+                networks:
+                - wallet-net
+
+        celery6:
+                env_file: env/${ENV}.env
+                image: modana-wallet-services
+                entrypoint: make report-worker
                 depends_on:
                 - flask
                 - rabbitmq

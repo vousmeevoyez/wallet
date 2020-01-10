@@ -596,10 +596,10 @@ class VirtualAccount(db.Model):
 
     # end def
 
-    def get_datetime_expired(self, bank_name, va_type):
+    def get_datetime_expired(self, bank_code, va_type):
         """ function to set virtual account datetime_expired based on which
         bank and which type"""
-        timeout = VIRTUAL_ACCOUNT[bank_name]
+        timeout = VIRTUAL_ACCOUNT[bank_code]
 
         if va_type == "CREDIT":
             datetime_expired = datetime.now(self.TIMEZONE) + timedelta(

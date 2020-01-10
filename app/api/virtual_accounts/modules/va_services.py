@@ -59,7 +59,7 @@ class VirtualAccountServices:
                 params -- wallet_id, name, type
                 session -- database session (optional)
         """
-        bank_name = params["bank_name"]
+        bank_code = params["bank_code"]
         va_type = params["type"]
         wallet_id = params["wallet_id"]
         amount = params["amount"]
@@ -68,8 +68,7 @@ class VirtualAccountServices:
         va_type = VaType.query.filter_by(key=va_type).first()
 
         # fetch bank id
-        keyword = "%{}%".format(bank_name)
-        bank = Bank.query.filter(Bank.name.like(keyword)).first()
+        bank = Bank.query.filter_by(code=bank_code).first()
 
         # put va creation in the queue
         virtual_account.wallet_id = wallet_id
@@ -80,7 +79,7 @@ class VirtualAccountServices:
         virtual_account_number = virtual_account.generate_va_number()
         transaction_id = virtual_account.generate_trx_id()
         datetime_expired = virtual_account.get_datetime_expired(
-            bank_name, params["type"]
+            bank_code, params["type"]
         )
 
         try:
@@ -178,7 +177,7 @@ class VirtualAccountServices:
         # update existing va with new generated value
         transaction_id = self.virtual_account.generate_trx_id()
         datetime_expired = self.virtual_account.get_datetime_expired(
-            params["bank_name"], params["type"]
+            params["bank_code"], params["type"]
         )
         self.virtual_account.amount = params["amount"]
 

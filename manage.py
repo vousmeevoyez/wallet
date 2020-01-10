@@ -142,24 +142,50 @@ def _create_admin(role_id):
         db.session.commit()
 
 
+def read_file(file_path):
+    # read file from file path and return iterator
+    with open(file_path, "r") as files:
+        csv_reader = csv.reader(files, delimiter=';')
+        line = 0
+        for row in csv_reader:
+            # skip headers
+            if line > 0:
+                yield row
+            line += 1
+
+
+def find_bank_row(bank_code, file_path):
+    # find bank data from csv using bank code
+    rows = read_file(file_path)
+    for row in rows:
+        if row[0] == bank_code:
+            return row
+        else:
+            raise ValueError
+
+
 def _import_bank_csv():
     # only imoprt the bank when there are none
     bank_list = Bank.query.all()
+    # if there's nothing in the db we load everything
     if not bank_list:
-        file_path = "data/bank_list.csv"
-        with open(file_path, "r") as files:
-            csv_reader = csv.reader(files, delimiter=';')
-            line = 0
-            for row in csv_reader:
-                if line > 0:
-                    bank = Bank(
-                        code=row[0],
-                        name=row[2],
-                        rtgs=row[1]
-                    )
-                    db.session.add(bank)
-                    db.session.commit()
-                line += 1
+        datas = read_file("data/bank_list.csv")
+        for data in datas:
+            bank = Bank(
+                code=data[0],
+                name=data[2],
+                rtgs=data[1]
+            )
+            db.session.add(bank)
+            db.session.commit()
+    # if already some data we update or add new entry
+    else:
+        for bank in bank_list:
+            # lookup existing bank code inside csv and update it
+            row = find_bank_row(bank.code, "data/bank_list.csv")
+            bank.name = row[2]
+            bank.rtgs = row[1]
+            db.session.commit()
 
 def _create_va_type():
     # only create va type when there are none

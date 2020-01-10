@@ -110,3 +110,6 @@ dmypy.json
 
 .swp
 .DS_Store
+
+# ignore reports file
+data/reports/

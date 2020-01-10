@@ -2,10 +2,6 @@
     This is Celery Task to help interacting with Bank API
     in the background
 """
-import functools
-import random
-from datetime import datetime
-
 from flask import current_app
 from celery.exceptions import (
     MaxRetriesExceededError
@@ -19,22 +15,17 @@ from app.api import (
 from app.api.models import (
     VirtualAccount,
     Payment,
-    BankAccount,
-    Bank
+    BankAccount
 )
+from app.api.utility.utils import backoff
 
 from task.bank.factories.provider.factory import generate_provider
 from task.bank.lib.provider import ProviderError
 from task.bank.lib.helper import generate_ref_number
 
 # config
-from app.config.external.bank import BNI_OPG
 from app.api.const import WORKER, STATUS
-
-
-def backoff(attempts):
-    """ prevent hammering service with thousand retry"""
-    return random.uniform(2, 4) ** attempts
+from app.config.external.bank import BNI_OPG
 
 
 class BankTask(celery.Task):

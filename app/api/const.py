@@ -32,7 +32,7 @@ TRANSACTION_LOG = {"DONE": 1, "CANCELLED": 2}
 PAYMENT_STATUS = {"DONE": 1, "CANCELLED": 2}
 
 VIRTUAL_ACCOUNT = {
-    "BNI": {
+    "009": {
         "CREDIT_VA_TIMEOUT": 4350,  # 1 year
         "DEBIT_VA_TIMEOUT": 5,  # 10 minutes cardless
         "DEBIT_MAX_BALANCE": 2500000 # allowed debit balance
@@ -63,4 +63,8 @@ LOGGING = {
     "OUTGOING": 0,
     "INGOING": 1,
     "PAGE_SIZE": 100,
+}
+
+REPORTS = {
+    "RECIPIENTS": os.getenv("REPORT_RECIPIENTS") or ["kelvin@modana.id"]
 }

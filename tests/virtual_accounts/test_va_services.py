@@ -18,7 +18,7 @@ def test_add_va(mock_create_va, setup_wallet_info):
     virtual_account = VirtualAccount(name="lisa")
 
     params = {
-        "bank_name": "BNI",
+        "bank_code": "009",
         "type": "CREDIT",
         "wallet_id": setup_wallet_info["id"],
         "amount": 0
@@ -35,7 +35,7 @@ def test_info_va(mock_create_va, setup_wallet_info):
     virtual_account = VirtualAccount(name="lisa")
 
     params = {
-        "bank_name": "BNI",
+        "bank_code": "009",
         "type": "CREDIT",
         "wallet_id": setup_wallet_info["id"],
         "amount": 0
@@ -55,7 +55,7 @@ def test_update_va(mock_create_va, setup_wallet_info):
     virtual_account = VirtualAccount(name="lisa")
 
     params = {
-        "bank_name": "BNI",
+        "bank_code": "009",
         "type": "CREDIT",
         "wallet_id": setup_wallet_info["id"],
         "amount": 0
@@ -81,7 +81,7 @@ def test_show(mock_create_va, setup_wallet_info):
     virtual_account = VirtualAccount(name="lisa")
 
     params = {
-        "bank_name": "BNI",
+        "bank_code": "009",
         "type": "CREDIT",
         "wallet_id": setup_wallet_info["id"],
         "amount": 0
