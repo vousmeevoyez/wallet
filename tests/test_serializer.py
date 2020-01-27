@@ -577,7 +577,7 @@ def test_validate_bank_account_name_success():
         "account_no": "1111111110",
         "name": "irene red velvet",
         "label": "Irene Bank Account",
-        "bank_code": "009",
+        "bank_id": "bank-id",
     }
     errors = BankAccountSchema().validate(data)
     expected_error = {}
@@ -588,7 +588,7 @@ def test_validate_bank_account_name_failed_min_string():
         "account_no": "1111111110",
         "name": "a",
         "label": "Irene Bank Account",
-        "bank_code": "009",
+        "bank_id": "bank-id",
     }
     errors = BankAccountSchema().validate(data)
     expected_error = {"name": ["Invalid name, minimum is 2 character"]}
@@ -599,7 +599,7 @@ def test_validate_bank_account_no_failed():
         "account_no": "0000000000",
         "name": "Irene",
         "label": "Irene Bank Account",
-        "bank_code": "009",
+        "bank_id": "bank-id",
     }
     errors = BankAccountSchema().validate(data)
     expected_error = {"account_no": ["account no can't be 0"]}
@@ -609,7 +609,7 @@ def test_validate_bank_account_no_failed():
         "account_no": "abakdsalkdasjlk",
         "name": "Irene",
         "label": "Irene Bank Account",
-        "bank_code": "009",
+        "bank_id": "bank-id",
     }
     errors = BankAccountSchema().validate(data)
     expected_error = {"account_no": ["Invalid account number, only number allowed"]}
@@ -619,31 +619,10 @@ def test_validate_bank_account_no_failed():
         "account_no": "12345",
         "name": "Irene",
         "label": "Irene Bank Account",
-        "bank_code": "009",
+        "bank_id": "bank-id",
     }
     errors = BankAccountSchema().validate(data)
     expected_error = {"account_no": ["Invalid account number, only number allowed"]}
-    assert errors == expected_error
-
-def test_validate_bank_code_failed():
-    data = {
-        "account_no": "1234567891",
-        "name": "Irene",
-        "label": "Irene Bank Account",
-        "bank_code": "000",
-    }
-    errors = BankAccountSchema().validate(data)
-    expected_error = {"bank_code": ["bank code can't be 0"]}
-    assert errors == expected_error
-
-    data = {
-        "account_no": "1234567891",
-        "name": "Irene",
-        "label": "Irene Bank Account",
-        "bank_code": "ads",
-    }
-    errors = BankAccountSchema().validate(data)
-    expected_error = {"bank_code": ["Invalid bank code, only number allowed"]}
     assert errors == expected_error
 
 def test_validate_bank_account_label_min_string():
@@ -651,7 +630,7 @@ def test_validate_bank_account_label_min_string():
         "account_no": "1111111110",
         "name": "irene red velvet",
         "label": "a",
-        "bank_code": "009",
+        "bank_id": "bank-id",
     }
     errors = BankAccountSchema().validate(data)
     expected_error = {"label": ["Invalid label, minimum is 2 character"]}
@@ -662,7 +641,7 @@ def test_validate_bank_account_label_max_string():
         "account_no": "1111111110",
         "name": "irene red velvet",
         "label": "dsakldsadjalkjdljasjdkjasjdljasjdljalsjdlajsdjaljsdjdasjkjlkjlka",
-        "bank_code": "009",
+        "bank_id": "bank-id",
     }
     errors = BankAccountSchema().validate(data)
     expected_error = {"label": ["Invalid label, max is 30 character"]}
@@ -673,7 +652,7 @@ def test_validate_bank_account_label_invalid():
         "account_no": "1111111110",
         "name": "irene red velvet",
         "label": "&@!*#&(@&(",
-        "bank_code": "009",
+        "bank_id": "bank-id",
     }
     errors = BankAccountSchema().validate(data)
     expected_error = {"label": ["Invalid label, only alphabet allowed"]}

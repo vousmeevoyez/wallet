@@ -32,7 +32,7 @@ from app.api.error.message import RESPONSE as error_response
 class BankAccountServices:
     """ Bank Account Services Class"""
 
-    def __init__(self, user_id, bank_code=None, bank_account_id=None):
+    def __init__(self, user_id, bank_id=None, bank_account_id=None):
         user_record = User.query.filter_by(id=validate_uuid(user_id)).first()
         if user_record is None:
             raise RequestNotFound(
@@ -43,8 +43,8 @@ class BankAccountServices:
 
         # get bank id from bank code
         bank_record = None
-        if bank_code is not None:
-            bank_record = Bank.query.filter_by(code=bank_code).first()
+        if bank_id is not None:
+            bank_record = Bank.query.filter_by(id=validate_uuid(bank_id)).first()
 
             if bank_record is None:
                 raise RequestNotFound(

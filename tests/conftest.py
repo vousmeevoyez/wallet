@@ -175,13 +175,14 @@ def setup_user_wallet_va(client, setup_admin_token):
 def setup_user_wallet_va_bank_acc(client, setup_user_wallet_va):
 
     access_token, user_id, wallet_id = setup_user_wallet_va
+    bank = Bank.query.filter_by(code="009").first()
 
     # add account bank information
     params = {
         "account_no": "3333333333",
         "name": "Bpk KEN AROK",
         "label": "Irene Bank Account",
-        "bank_code": "014",
+        "bank_id": str(bank.id)
     }
     result = create_user_bank_account(client, user_id, params, access_token)
     response = result.get_json()["data"]
