@@ -110,7 +110,7 @@ class UserBankAccountRoutes(Routes):
         request_data = self.payload()
         bank_account = self.serialize(request_data, load=True)
 
-        response = BankAccountServices(user_id, request_data["bank_code"]).add(
+        response = BankAccountServices(user_id, request_data["bank_id"]).add(
             bank_account
         )
         return response
@@ -153,7 +153,7 @@ class UserBankAccountDetailsRoutes(Routes):
         request_data = self.serialize(self.payload())
 
         response = BankAccountServices(
-            user_id, request_data["bank_code"], user_bank_account_id
+            user_id, request_data["bank_id"], user_bank_account_id
         ).update(request_data)
         return response
 

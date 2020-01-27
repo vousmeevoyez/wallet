@@ -97,7 +97,7 @@ class BankSchema(ma.Schema):
         This is Class Schema for Bank Object
     """
 
-    id = fields.Int(load_only=True)
+    id = fields.Str(required=True, validate=cannot_be_blank)
     name = fields.Str(required=True, validate=cannot_be_blank)
     code = fields.Str(required=True, validate=cannot_be_blank)
 
@@ -111,7 +111,7 @@ class BankAccountSchema(ma.Schema):
     name = fields.Str(required=True, validate=(cannot_be_blank, validate_name))
     account_no = fields.Str(required=True, validate=cannot_be_blank)
     label = fields.Str(required=True, validate=(cannot_be_blank, validate_label))
-    bank_code = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
+    bank_id = fields.Str(required=True, validate=cannot_be_blank)
     bank_name = fields.Method("bank_id_to_name")
 
     def bank_id_to_name(self, obj):
@@ -141,26 +141,9 @@ class BankAccountSchema(ma.Schema):
 
     # end def
 
-    @validates("bank_code")
-    def validate_bank_code(self, bank_code):
-        """
-            function to validate bank_code field
-            args :
-                bank_code -- bank code
-        """
-        pattern = r"^[0-9]{1,3}$"
-        if re.search(pattern, bank_code) is None:
-            raise ValidationError("Invalid bank code, only number allowed")
-        elif int(bank_code) < 1:
-            raise ValidationError("bank code can't be 0")
-        # end if
-
-    # end def
-
     @post_load
     def make_object(self, request_data):
         """ make bank account object """
-        del request_data["bank_code"]
         return BankAccount(**request_data)
 
 

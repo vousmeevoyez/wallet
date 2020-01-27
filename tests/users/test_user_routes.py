@@ -87,7 +87,8 @@ def test_get_user(client, setup_user_wallet_va, setup_admin_token):
     result = get_user(client, user_id, access_token)
     assert result.status_code == 200  # ok
 
-def test_create_user_bank_account_success(client, setup_user_wallet_va):
+def test_create_user_bank_account_success(client, setup_user_wallet_va,
+                                          setup_bank):
     """ test method that get user info"""
     # get access token first
     access_token, user_id, wallet_id = setup_user_wallet_va
@@ -96,13 +97,14 @@ def test_create_user_bank_account_success(client, setup_user_wallet_va):
         "account_no": "3333333333",
         "name": "Bpk KEN AROK",
         "label": "Irene Bank Account",
-        "bank_code": "014",
+        "bank_id": str(setup_bank.id),
     }
 
     result = create_user_bank_account(client, user_id, params, access_token)
     assert result.status_code == 201  # created
 
-def test_create_user_bank_account_validate_failed(client, setup_user_wallet_va):
+def test_create_user_bank_account_validate_failed(client, setup_user_wallet_va,
+                                                 setup_bank):
     """ test method that get user info but failed because some invalid
     input"""
 
@@ -112,7 +114,7 @@ def test_create_user_bank_account_validate_failed(client, setup_user_wallet_va):
         "account_no": "",
         "name": "Bpk KEN AROK",
         "label": "Irene Bank Account",
-        "bank_code": "014",
+        "bank_id": str(setup_bank.id),
     }
 
     result = create_user_bank_account(client, user_id, params, access_token)
@@ -123,7 +125,7 @@ def test_create_user_bank_account_validate_failed(client, setup_user_wallet_va):
         "name": "aaaaaaaaaaaaaa aaaaaaaaaa aaaaaaaaaaaa\
         aaaaaaaaaaaaaaaaaaaaaaaaaa",
         "label": "Irene Bank Account",
-        "bank_code": "014",
+        "bank_id": str(setup_bank.id),
     }
 
     result = create_user_bank_account(client, user_id, params, access_token)
@@ -136,7 +138,8 @@ def test_get_user_bank_account(client, setup_user_wallet_va):
     result = get_bank_account(client, user_id, access_token)
     assert result.status_code == 200  # ok
 
-def test_update_user_bank_account_success(client, setup_user_wallet_va):
+def test_update_user_bank_account_success(client, setup_user_wallet_va,
+                                          setup_bank):
     """ test method that update user bank account information"""
     access_token, user_id, wallet_id = setup_user_wallet_va
 
@@ -144,7 +147,7 @@ def test_update_user_bank_account_success(client, setup_user_wallet_va):
         "account_no": "3333333333",
         "name": "Bpk KEN AROK",
         "label": "Irene Bank Account",
-        "bank_code": "014",
+        "bank_id": str(setup_bank.id),
     }
 
     result = create_user_bank_account(client, user_id, params, access_token)
@@ -157,7 +160,7 @@ def test_update_user_bank_account_success(client, setup_user_wallet_va):
         "account_no": "1111333333",
         "name": "Bpk KEN AROK",
         "label": "Kelvin Bank Accounts",
-        "bank_code": "014",
+        "bank_id": str(setup_bank.id),
     }
     result = update_bank_account(
         client, user_id, bank_account_id, params, access_token
@@ -166,7 +169,7 @@ def test_update_user_bank_account_success(client, setup_user_wallet_va):
 
     assert status_code == 204  # ok
 
-def test_remove_bank_account(client, setup_user_wallet_va):
+def test_remove_bank_account(client, setup_user_wallet_va, setup_bank):
     """ test method that remove user bank account information"""
     access_token, user_id, wallet_id = setup_user_wallet_va
 
@@ -174,7 +177,7 @@ def test_remove_bank_account(client, setup_user_wallet_va):
         "account_no": "3333333333",
         "name": "Bpk KEN AROK",
         "label": "Irene Bank Account",
-        "bank_code": "014",
+        "bank_id": str(setup_bank.id),
     }
 
     result = create_user_bank_account(client, user_id, params, access_token)
@@ -187,7 +190,7 @@ def test_remove_bank_account(client, setup_user_wallet_va):
         "account_no": "1111333333",
         "name": "Bpk KEN AROK",
         "label": "Kelvin Bank Accounts",
-        "bank_code": "014",
+        "bank_id": str(setup_bank.id),
     }
     result = remove_bank_account(
         client, user_id, bank_account_id, access_token

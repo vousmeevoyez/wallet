@@ -123,7 +123,7 @@ def create_user_bank_account(client, user_id, params, access_token):
             account_no=params["account_no"],
             label=params["label"],
             name=params["name"],
-            bank_code=params["bank_code"],
+            bank_id=params["bank_id"],
         ),
         headers=headers,
     )
@@ -158,7 +158,7 @@ def update_bank_account(client, user_id, bank_account_id, params, access_token):
             account_no=params["account_no"],
             label=params["label"],
             name=params["name"],
-            bank_code=params["bank_code"],
+            bank_id=params["bank_id"],
         ),
         headers=headers,
     )

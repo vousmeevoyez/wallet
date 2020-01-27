@@ -48,7 +48,7 @@ class BankAccountRequestSchema:
     parser.add_argument("account_no", type=str, required=True)
     parser.add_argument("name", type=str, required=True)
     parser.add_argument("label", type=str, required=True)
-    parser.add_argument("bank_code", type=str, required=True)
+    parser.add_argument("bank_id", type=str, required=True)
 
 
 # end class

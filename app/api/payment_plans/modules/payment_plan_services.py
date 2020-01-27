@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from app.api import db
 
 # models
-from app.api.models import Wallet, BankAccount, PaymentPlan
+from app.api.models import Wallet, BankAccount, PaymentPlan, Bank
 
 # bank account
 from app.api.users.modules.bank_account_services import BankAccountServices
@@ -80,7 +80,8 @@ class PaymentPlanServices:
                 name=self.wallet.user.name,
                 account_no=payment_plan.destination,
             )
-            result = BankAccountServices(str(self.wallet.user.id), "009").add(
+            bank = Bank.query.filter(Bank.name.like("BANK BNI")).first()
+            result = BankAccountServices(str(self.wallet.user.id), str(bank.id)).add(
                 repayment_va_account
             )[0]
             response["bank_account_id"] = result["data"]["bank_account_id"]
@@ -136,10 +137,4 @@ class PaymentPlanServices:
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
-        # end try
         return no_content()
-
-    # end def
-
-
-# end class
