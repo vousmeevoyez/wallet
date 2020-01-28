@@ -3,7 +3,6 @@
     _________________
     handle request response communication with BNI OPG and provide various interface based on BNI Documentation
 """
-import random
 from datetime import datetime
 
 from werkzeug.contrib.cache import SimpleCache
@@ -14,6 +13,7 @@ from task.bank.lib.provider import (
     BaseProvider
 )
 
+from app.api.const import WALLET
 from app.api.models import Bank
 
 

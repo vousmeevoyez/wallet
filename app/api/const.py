@@ -53,6 +53,7 @@ WALLET = {
     "INCORRECT_RETRY": os.getenv("INCORRECT_RETRY") or 3,  # set max pin retry
     "QR_SECRET_KEY": "1#$@!%2jajdasnknvxivodisufu039021ofjldsjfa@@!",
     "LOCK_TIMEOUT": os.getenv("LOCK_TIMEOUT") or 5,
+    "ALLOWED_BANK_CODES": ["009", "427"] # BNI & BNI Syariah
 }
 
 LOGGING = {
