@@ -9,33 +9,25 @@
 # pylint: disable=bad-whitespace
 # pylint: disable=invalid-name
 from sqlalchemy.exc import IntegrityError
-
 # core
 from app.api import scheduler, db
-
 # models
 from app.api.models import *
-
 # core
 from app.api.wallets.modules.wallet_core import WalletCore
-
 # transactions
 from app.api.transactions.factories.helper import process_transaction
-
 # error response
 from app.api.error.message import RESPONSE as error_response
-
 # exceptions
 from app.api.error.http import *
-
 # http response
 from app.api.http_response import *
-
 # serializer
 from app.api.serializer import UserSchema
-
 # utility
 from app.api.utility.utils import validate_uuid
+from app.api.const import WALLET
 
 
 class TransferServices(WalletCore):
@@ -50,7 +42,7 @@ class TransferServices(WalletCore):
             id=validate_uuid(destination)
         ).first()
         if bank_account:
-            if bank_account.bank.code != "009":
+            if bank_account.bank.code not in WALLET["ALLOWED_BANK_CODES"]:
                 transfer_fee = WALLET["TRANSFER_FEE"][method]
         return transfer_fee
 
