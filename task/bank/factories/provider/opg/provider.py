@@ -245,8 +245,7 @@ class BNIOpgProvider(BaseProvider):
         transfer_ref_number = params["transfer_ref_number"]
         inquiry_ref_number = params["inquiry_ref_number"]
 
-
-        if params["bank_code"] == "009":
+        if params["bank_code"] in WALLET["ALLOWED_BANK_CODES"]:
             # adjust required parameter here and replace with empty string
             params["method"] = "0"  # inhouse
             params["email"] = ""
