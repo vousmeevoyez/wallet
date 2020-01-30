@@ -4,7 +4,7 @@
     Module that handler http request for utility
 """
 # core
-from app.api.core import Routes
+from app.lib.core import Routes
 
 # namespace
 from app.api.utility import api
@@ -24,8 +24,3 @@ class UtilityRoutes(Routes):
         """ Endpoint for checking all health """
         response = HealthServices().check()
         return response
-
-    # end def
-
-
-# end def

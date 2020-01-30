@@ -35,5 +35,5 @@ BNI_OPG = {
         "GET_INTERBANK_PAYMENT": "/H2H/v2/getinterbankpayment",
         "HOLD_AMOUNT": "/H2H/v2/holdamount",
         "HOLD_AMOUNT_RELEASE": "/H2H/v2/holdamountrelease",
-    }
+    },
 }

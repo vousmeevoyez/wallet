@@ -15,11 +15,7 @@ from tests.reusable.api_list import health_check
 
 def test_health_check_partial_success(client):
     """ test api call for checking health and return partial success"""
-    expected_result = {
-        "db": True,
-        "worker": False,
-        "hp": 50.0
-    }
+    expected_result = {"db": True, "worker": False, "hp": 50.0}
 
     result = health_check(client)
     response = result.get_json()

@@ -2,13 +2,7 @@ import string
 from datetime import datetime, timedelta
 from collections import OrderedDict
 
-from app.api.models import (
-    Transaction,
-    VirtualAccount,
-    User,
-    Payment,
-    Wallet
-)
+from app.api.models import Transaction, VirtualAccount, User, Payment, Wallet
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -72,11 +66,7 @@ class DailyTransactionReport:
             insert cell for particular row based on list of values
         """
         for value in values:
-            cell = self.ws.cell(
-                column=column_position,
-                row=row_position,
-                value=value,
-            )
+            cell = self.ws.cell(column=column_position, row=row_position, value=value)
             if style is not None:
                 self.style_cell(style, cell)
             column_position += 1
@@ -104,31 +94,31 @@ class DailyTransactionReport:
 
         # define cells for title
         source_titles = [
-            "Tx ID", "Tx Ref ID", "Source VA", "Phone Number",
-            "Modanaku Type", "Tx Type", "Tx Date", "Tx Amount",
-            "Balance after tx"
+            "Tx ID",
+            "Tx Ref ID",
+            "Source VA",
+            "Phone Number",
+            "Modanaku Type",
+            "Tx Type",
+            "Tx Date",
+            "Tx Amount",
+            "Balance after tx",
         ]
         destination_titles = source_titles
 
         # generate source column
         # insert column titles
-        cell_style = {
-            "alignment": "center",
-            "color": self.color
-        }
+        cell_style = {"alignment": "center", "color": self.color}
         self.insert_cell(row_position=2, values=source_titles, style=cell_style)
 
         # generate destination column
         # insert column titles
-        cell_style = {
-            "alignment": "center",
-            "color": self.color2
-        }
+        cell_style = {"alignment": "center", "color": self.color2}
         self.insert_cell(
             row_position=2,
             values=destination_titles,
             style=cell_style,
-            column_position=10
+            column_position=10,
         )
         # adjust column here
         self.adjust_column(values=source_titles + destination_titles)
@@ -141,27 +131,24 @@ class DailyTransactionReport:
         # only output the ordered dict
         ordered_result = OrderedDict()
 
-        source_trx_link = row.transaction_link
         # if its linked to other transaction then generate another
-        if source_trx_link is not None:
-            source_trx_link = source_trx_link.id
+        if row.children != []:
             # maintain order
+            child_trx = row.children[0]
             ordered_result["credit"] = {
-                "trx_id": str(row.transaction_link.id),
-                "trx_link_id": str(row.transaction_link.transaction_link.id),
-                "account_no": row.transaction_link.wallet.virtual_account[0].account_no,
-                "msisdn": row.transaction_link.wallet.user.phone_ext
-                + row.transaction_link.wallet.user.phone_number,
-                "wallet_type": row.transaction_link.wallet.wallet_type,
-                "trx_type": row.transaction_link.transaction_type.key,
-                "timestamp": self._prettify_timestamp(row.transaction_link.created_at),
-                "amount": row.transaction_link.amount,
-                "last_balance": row.transaction_link.balance,
+                "trx_id": str(child_trx.id),
+                "account_no": child_trx.wallet.virtual_account[0].account_no,
+                "msisdn": child_trx.wallet.user.phone_ext
+                + child_trx.wallet.user.phone_number,
+                "wallet_type": child_trx.wallet.wallet_type,
+                "trx_type": child_trx.transaction_type.key,
+                "timestamp": self._prettify_timestamp(child_trx.created_at),
+                "amount": child_trx.amount,
+                "last_balance": child_trx.balance,
             }
 
         ordered_result["debit"] = {
             "trx_id": str(row.id),
-            "trx_link_id": str(source_trx_link),
             "account_no": row.wallet.virtual_accounts[0].account_no,
             "msisdn": row.wallet.user.phone_ext + row.wallet.user.phone_number,
             "wallet_type": row.wallet.label,

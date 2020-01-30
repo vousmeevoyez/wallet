@@ -15,19 +15,13 @@ class HTTPError(Exception):
 
     def to_dict(self):
         """
-	        Call this in the the error handler to serialize the
-	        error for the json-encoded http response body.
+            Call this in the the error handler to serialize the
+            error for the json-encoded http response body.
         """
         error_response = {"error": self.error, "message": self.message}
         if self.details is not None:
             error_response["details"] = self.details
-        # end if
         return error_response
-
-    # end def
-
-
-# end class
 
 
 class BadRequest(HTTPError):
@@ -41,15 +35,8 @@ class BadRequest(HTTPError):
             self.error = "BAD_REQUEST"
         else:
             self.error = error
-        # end if
-
         self.message = message
         self.details = details
-
-    # end def
-
-
-# end class
 
 
 class RequestNotFound(HTTPError):
@@ -63,14 +50,8 @@ class RequestNotFound(HTTPError):
             self.error = "REQUEST_NOT_FOUND"
         else:
             self.error = error
-        # end if
         self.message = message
         self.details = details
-
-    # end def
-
-
-# end class
 
 
 class UnprocessableEntity(HTTPError):
@@ -84,14 +65,8 @@ class UnprocessableEntity(HTTPError):
             self.error = "UNPROCESSABLE_ENTITY"
         else:
             self.error = error
-        # end if
         self.message = message
         self.details = details
-
-    # end def
-
-
-# end class
 
 
 class Unauthorized(HTTPError):
@@ -110,9 +85,6 @@ class Unauthorized(HTTPError):
         self.details = details
 
 
-# end class
-
-
 class InsufficientScope(HTTPError):
     """ base http error class for insufficient scope """
 
@@ -124,14 +96,8 @@ class InsufficientScope(HTTPError):
             self.error = "INSUFFICIENT_SCOPE"
         else:
             self.error = error
-        # end if
         self.message = message
         self.details = details
-
-    # end def
-
-
-# end class
 
 
 class MethodNotAllowed(HTTPError):
@@ -143,8 +109,3 @@ class MethodNotAllowed(HTTPError):
         self.error = "METHOD_NOT_ALLOWED"
         self.message = message
         self.details = None
-
-    # end def
-
-
-# end class

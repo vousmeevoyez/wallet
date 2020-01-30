@@ -10,6 +10,7 @@ from tests.reusable.api_list import *
     TEST BEGIN HERE 
 """
 
+
 def test_create_user_routes_success(client, setup_admin_token):
     """ test routes function to create user"""
     params = {
@@ -28,6 +29,7 @@ def test_create_user_routes_success(client, setup_admin_token):
 
     assert response["user_id"]
 
+
 def test_create_user_routes_failed_validate_input(client, setup_admin_token):
     """ test routes function to create user but there are some invalid data
     passed to this routes"""
@@ -45,12 +47,14 @@ def test_create_user_routes_failed_validate_input(client, setup_admin_token):
     result = create_user(client, params, setup_admin_token)
     assert result.status_code == 400  # bad request
 
+
 def test_get_all_user(client, setup_admin_token):
     """ test method that return all user """
     result = get_all_user(client, setup_admin_token)
     status_code = result.status_code
 
     assert status_code == 200  # ok
+
 
 def test_update_user(client, setup_admin_token):
     """ test routes function to update user"""
@@ -79,6 +83,7 @@ def test_update_user(client, setup_admin_token):
     }
     result = update_user(client, params, user_id, setup_admin_token)
     assert result.status_code == 204
+
 
 def test_get_user(client, setup_user_wallet_va, setup_admin_token):
     """ test method that get user info"""
@@ -131,6 +136,7 @@ def test_create_user_bank_account_validate_failed(client, setup_user_wallet_va,
     result = create_user_bank_account(client, user_id, params, access_token)
     assert result.status_code == 400  # ok
 
+
 def test_get_user_bank_account(client, setup_user_wallet_va):
     """ test routes that return bank account information"""
     access_token, user_id, wallet_id = setup_user_wallet_va
@@ -162,9 +168,7 @@ def test_update_user_bank_account_success(client, setup_user_wallet_va,
         "label": "Kelvin Bank Accounts",
         "bank_id": str(setup_bank.id),
     }
-    result = update_bank_account(
-        client, user_id, bank_account_id, params, access_token
-    )
+    result = update_bank_account(client, user_id, bank_account_id, params, access_token)
     status_code = result.status_code
 
     assert status_code == 204  # ok
@@ -192,9 +196,7 @@ def test_remove_bank_account(client, setup_user_wallet_va, setup_bank):
         "label": "Kelvin Bank Accounts",
         "bank_id": str(setup_bank.id),
     }
-    result = remove_bank_account(
-        client, user_id, bank_account_id, access_token
-    )
+    result = remove_bank_account(client, user_id, bank_account_id, access_token)
     status_code = result.status_code
 
     assert status_code == 204  # ok

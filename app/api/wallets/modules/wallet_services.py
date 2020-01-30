@@ -29,15 +29,16 @@ from app.api.serializer import (
 # core
 from app.api.wallets.modules.wallet_core import WalletCore
 from app.api.virtual_accounts.modules.va_services import VirtualAccountServices
+from app.api.quotas.modules.quota_services import QuotaServices
 
 # error
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import ERROR as error_response
 
 # http error
-from app.api.http_response import *
+from app.lib.http_response import *
 
 # exception
-from app.api.error.http import *
+from app.lib.http_error import *
 from app.api.utility.utils import UtilityError
 
 
@@ -83,6 +84,9 @@ class WalletServices(WalletCore):
         except UnprocessableEntity as error:
             # raise CommitError(error.msg, None, error.title, None)
             pass
+
+        # we automatically create quota for newly generated wallet
+        quota_info = QuotaServices(wallet_id=wallet.id).add(is_custom=False)
 
         response = {"wallet_id": str(wallet.id)}
         return created(response)

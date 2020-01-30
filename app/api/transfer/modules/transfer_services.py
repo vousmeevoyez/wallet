@@ -12,22 +12,26 @@ from sqlalchemy.exc import IntegrityError
 # core
 from app.api import scheduler, db
 # models
-from app.api.models import *
+from app.api.models import BankAccount, User
+# serializer
+from app.api.serializer import UserSchema
 # core
 from app.api.wallets.modules.wallet_core import WalletCore
+from app.api.quotas.modules.quota_services import QuotaServices
 # transactions
 from app.api.transactions.factories.helper import process_transaction
 # error response
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import WALLET
+from app.api.const import ERROR as error_response
 # exceptions
-from app.api.error.http import *
+from app.lib.http_error import (
+    UnprocessableEntity,
+    RequestNotFound
+)
 # http response
-from app.api.http_response import *
-# serializer
-from app.api.serializer import UserSchema
+from app.lib.http_response import accepted, ok
 # utility
 from app.api.utility.utils import validate_uuid
-from app.api.const import WALLET
 
 
 class TransferServices(WalletCore):
@@ -42,7 +46,7 @@ class TransferServices(WalletCore):
             id=validate_uuid(destination)
         ).first()
         if bank_account:
-            if bank_account.bank.code not in WALLET["ALLOWED_BANK_CODES"]:
+            if bank_account.bank.code != "009":
                 transfer_fee = WALLET["TRANSFER_FEE"][method]
         return transfer_fee
 
@@ -78,8 +82,7 @@ class TransferServices(WalletCore):
         )
 
         # link debit and credit
-        debit_trx.transaction_link_id = credit_trx.id
-        credit_trx.transaction_link_id = debit_trx.id
+        credit_trx.parent_id = debit_trx.id
         db.session.commit()
 
         return accepted({"id": str(debit_trx.id)})
@@ -131,17 +134,35 @@ class TransferServices(WalletCore):
                 flag="TRANSFER_FEE",
                 notes=notes,
             )
-            # link bank and transaction fee
-            bank_transfer_trx.transaction_link_id = fee_trx.id
-            fee_trx.transaction_link_id = bank_transfer_trx.id
+
+            # map bank transfer trx -> fee trx
+            fee_trx.parent_id = bank_transfer_trx.id
+
+            # check whether this transaction and user valid for reward
+            reward_info = QuotaServices(
+                wallet_id=str(self.source.id),
+                transaction_id=bank_transfer_trx.id
+            ).use_quota()
+            if reward_info["is_rewarded"]:
+                reward_trx = process_transaction(
+                    source="N/A",
+                    destination=self.source,
+                    amount=reward_info["reward_amount"],
+                    flag="CASHBACK",
+                )
+                # map fee trx -> reward trx
+                # so it became
+                # bank trx -> fee trx -> reward trx
+                reward_trx.parent_id = fee_trx.id
+
+            # commit everything
             db.session.commit()
         # end if
-
         return accepted({"id": str(bank_transfer_trx.id)})
 
     # end def
 
-    def checkout(self, phone_ext, phone_number):
+    def checkout(self, phone_ext, phone_number, fields=None):
         """
             Checkout Transfer
             exchange phone number and return wallet available for that users
@@ -157,36 +178,5 @@ class TransferServices(WalletCore):
         # end if
 
         # serialize
-        user_info = (
-            UserSchema(only=("name", "msisdn", "wallets.id", "wallets.status"))
-            .dump(user)
-            .data
-        )
+        user_info = UserSchema(fields).dump(user).data
         return ok(user_info)
-
-    # end def
-
-    ################################## PATCH ############################################
-    def checkout2(self, phone_ext, phone_number):
-        """
-            Checkout Transfer
-            exchange phone number and return wallet available for that users
-        """
-        user = User.query.filter_by(
-            phone_ext=phone_ext, phone_number=phone_number
-        ).first()
-        if user is None:
-            raise RequestNotFound(
-                error_response["USER_NOT_FOUND"]["TITLE"],
-                error_response["USER_NOT_FOUND"]["MESSAGE"],
-            )
-        # end if
-
-        # serialize
-        user_info = UserSchema().dump(user).data
-        return ok(user_info)
-
-    # end def
-
-
-# end class

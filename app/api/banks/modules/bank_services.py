@@ -11,10 +11,10 @@ from app.api.models import Bank
 from app.api.serializer import BankSchema
 
 # error response
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import ERROR as error_response
 
 # http error
-from app.api.error.http import UnprocessableEntity
+from app.lib.http_error import UnprocessableEntity
 
 # BNI API
 from task.bank.factories.provider.factory import generate_provider

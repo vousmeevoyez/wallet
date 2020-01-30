@@ -8,7 +8,7 @@ from app.api.users.modules.user_services import UserServices
 from app.api.models import *
 from app.api import db
 
-from app.api.error.http import *
+from app.lib.http_error import *
 
 
 """ Test User Services"""

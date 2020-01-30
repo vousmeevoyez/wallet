@@ -15,22 +15,21 @@ from app.api.callback.modules.callback_services import CallbackServices
 from app.api.transfer.modules.transfer_services import TransferServices
 
 # exceptions
-from app.api.error.http import *
+from app.lib.http_error import *
 
 from task.bank.tasks import BankTask
 
 fake_wallet_id = str(uuid.uuid4())
 
 
-def test_refund_transfer(setup_wallet_with_balance,
-                         setup_wallet_without_balance):
+def test_refund_transfer(setup_wallet_with_balance, setup_wallet_without_balance):
     """ test function to create transaction refund on transfer between user """
     params = {"amount": 1, "notes": "Some transfer notes", "types": None}
 
     result = TransferServices(
-        str(setup_wallet_with_balance.id),
+        setup_wallet_with_balance.id,
         "123456",
-        str(setup_wallet_without_balance.id)
+        setup_wallet_without_balance.id,
     ).internal_transfer(params)
 
     transaction = Transaction.query.all()
@@ -48,18 +47,16 @@ def test_refund_transfer(setup_wallet_with_balance,
     assert len(result[0]["data"]) == 2
 
 
-def test_refund_ext_transfer_without_fee(setup_wallet_with_balance,
-                                         setup_bni_bank_account):
+def test_refund_ext_transfer_without_fee(
+    setup_wallet_with_balance, setup_bni_bank_account
+):
     """ test function to refund an external transfer without transaction
     fee """
     params = {"amount": 1, "destination": str(setup_bni_bank_account.id), "notes": None}
 
     result = TransferServices(
-        str(setup_wallet_with_balance.id),
-        "123456"
-    ).external_transfer(
-        params
-    )
+        setup_wallet_with_balance.id, "123456"
+    ).external_transfer(params)
 
     transaction = Transaction.query.all()
     assert len(transaction) > 0
@@ -74,19 +71,18 @@ def test_refund_ext_transfer_without_fee(setup_wallet_with_balance,
     assert len(result[0]["data"]) == 1  # because not trf fee
 
 
-def test_refund_ext_transfer_with_fee(setup_wallet_with_balance,
-                                      setup_bca_bank_account):
+def test_refund_ext_transfer_with_fee(
+    setup_wallet_with_quotas, setup_bca_bank_account
+):
     """ test function to refund an external transfer with transaction
     fee """
+    wallet = setup_wallet_with_quotas("MONTHLY")
 
     params = {"amount": 1, "destination": str(setup_bca_bank_account.id), "notes": None}
 
     result = TransferServices(
-        str(setup_wallet_with_balance.id),
-        "123456"
-    ).external_transfer(
-        params
-    )
+        wallet.id, "123456"
+    ).external_transfer(params)
 
     transaction = Transaction.query.all()
     assert len(transaction) > 0
@@ -98,19 +94,21 @@ def test_refund_ext_transfer_with_fee(setup_wallet_with_balance,
 
     # refund a transfer here
     result = TransactionServices(transaction_id=transaction_id).refund()
-    assert len(result[0]["data"]) == 2  # because with trf fee
+    assert len(result[0]["data"]) == 3  # because with trf fee + cashback
 
 
-def test_refund_transfer_failed(setup_wallet_with_balance,
-                                setup_wallet_without_balance):
+def test_refund_transfer_failed(
+    setup_wallet_with_quotas, setup_wallet_without_balance
+):
     """ test function to create transaction refund with transaction that
     already refunded """
+    wallet = setup_wallet_with_quotas("MONTHLY")
     params = {"amount": 1, "notes": "Some transfer notes", "types": None}
 
     result = TransferServices(
-        str(setup_wallet_with_balance.id),
+        wallet.id,
         "123456",
-        str(setup_wallet_without_balance.id)
+        setup_wallet_without_balance.id,
     ).internal_transfer(params)
 
     transaction = Transaction.query.all()
@@ -131,16 +129,17 @@ def test_refund_transfer_failed(setup_wallet_with_balance,
         result = TransactionServices(transaction_id=transaction_id).refund()
 
 
-def test_refund_transfer_failed_invalid(setup_wallet_with_balance,
-                                        setup_wallet_without_balance):
+def test_refund_transfer_failed_invalid(
+    setup_wallet_with_balance, setup_wallet_without_balance
+):
     """ test function to create transaction refund on refund transaction
     """
     params = {"amount": 1, "notes": "Some transfer notes", "types": None}
 
     result = TransferServices(
-        str(setup_wallet_with_balance.id),
+        setup_wallet_with_balance.id,
         "123456",
-        str(setup_wallet_without_balance.id)
+        setup_wallet_without_balance.id,
     ).internal_transfer(params)
 
     transaction = Transaction.query.all()
@@ -160,26 +159,22 @@ def test_refund_transfer_failed_invalid(setup_wallet_with_balance,
 
     with pytest.raises(UnprocessableEntity):
         # should raise an error because transaction already refunded
-        result = TransactionServices(
-            transaction_id=refunded_transaction_id
-        ).refund()
+        result = TransactionServices(transaction_id=refunded_transaction_id).refund()
 
 
 def test_wallet_in_history(setup_wallet_with_balance):
     """ test method for checking wallet in transaction on wallet history """
     params = {"start_date": "2019/02/01", "end_date": "2019/02/02", "flag": "IN"}
-    result = TransactionServices(
-        str(setup_wallet_with_balance.id)
-    ).history(params)[0]["data"]
+    result = TransactionServices(str(setup_wallet_with_balance.id)).history(params)[0][
+        "data"
+    ]
 
     assert result == []
 
 
 def test_wallet_out_history(setup_wallet_with_balance):
     """ test method for checking wallet out transaction on wallet history """
-    result = TransactionServices(
-        str(setup_wallet_with_balance.id)
-    ).history(
+    result = TransactionServices(str(setup_wallet_with_balance.id)).history(
         {"start_date": "2019/02/01", "end_date": "2019/02/02", "flag": "OUT"}
     )[0]["data"]
 

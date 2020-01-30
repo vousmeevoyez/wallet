@@ -5,12 +5,8 @@
 from unittest.mock import Mock
 import pytest
 
-from task.bank.factories.response.opg.response import (
-    BNIOpgAuthResponse
-)
-from task.bank.lib.response import (
-    ResponseError
-)
+from task.bank.factories.response.opg.response import BNIOpgAuthResponse
+from task.bank.lib.response import ResponseError
 
 from tests.reusable.setup import create_http_response
 

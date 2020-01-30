@@ -19,14 +19,14 @@ from app.api.models import BankAccount
 from app.api.serializer import BankAccountSchema
 
 # http response
-from app.api.http_response import created, no_content
+from app.lib.http_response import created, no_content
 from app.api.utility.utils import validate_uuid
 
 # exception
-from app.api.error.http import RequestNotFound, UnprocessableEntity
+from app.lib.http_error import RequestNotFound, UnprocessableEntity
 
 # error
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import ERROR as error_response
 
 
 class BankAccountServices:

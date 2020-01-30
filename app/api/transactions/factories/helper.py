@@ -4,8 +4,8 @@ from app.api.transactions.factories.transactions.products import TransactionErro
 
 from app.api.transactions.factories.payments.factory import generate_payment
 
-from app.api.error.http import UnprocessableEntity
-from app.api.error.message import RESPONSE as error_response
+from app.lib.http_error import UnprocessableEntity
+from app.api.const import ERROR as error_response
 
 
 def _serialize_object(object_):

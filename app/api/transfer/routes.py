@@ -8,7 +8,7 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=no-name-in-module
 
-from app.api.core import Routes
+from app.lib.core import Routes
 
 from app.api.transfer import api
 
@@ -29,7 +29,7 @@ from app.api.utility.utils import QR
 
 # exceptions
 from app.api.utility.utils import UtilityError
-from app.api.error.http import BadRequest
+from app.lib.http_error import BadRequest
 
 # configuration
 from app.config import config

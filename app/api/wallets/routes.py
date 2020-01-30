@@ -8,7 +8,7 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=no-name-in-module
 
-from app.api.core import Routes
+from app.lib.core import Routes
 
 from app.api.wallets import api
 
@@ -36,7 +36,7 @@ from app.api.utility.utils import QR
 
 # exceptions
 from app.api.utility.utils import UtilityError
-from app.api.error.http import BadRequest
+from app.lib.http_error import BadRequest
 
 # configuration
 from app.config import config
@@ -242,8 +242,7 @@ class WalletPinRoutes(Routes):
         request_data = self.serialize(self.payload())
         # need to check the original old pin first
         response = WalletServices(
-            source=wallet_id,
-            pin=request_data["old_pin"]
+            source=wallet_id, pin=request_data["old_pin"]
         ).update_pin(request_data)
         return response
 
@@ -311,7 +310,7 @@ class WalletWithdrawRoutes(Routes):
         """ endpoint for withdraw request """
         request_data = self.serialize(self.payload())
 
-        request_data["bank_code"] = "009" ## BNI
+        request_data["bank_code"] = "009"  ## BNI
         response = WithdrawServices(wallet_id, request_data["pin"]).request(
             request_data
         )
@@ -339,7 +338,9 @@ class TransferCheckoutRoutes(Routes):
         # parse request data
         request_data = self.serialize(self.payload())
         response = TransferServices().checkout(
-            request_data["phone_ext"], request_data["phone_number"]
+            request_data["phone_ext"],
+            request_data["phone_number"],
+            only=("name", "msisdn", "wallets.id", "wallets.status"),
         )
         return response
 
@@ -363,7 +364,7 @@ class TransferCheckout2Routes(Routes):
     def post(self):
         """ endpoint for checking out wallet before transfer """
         request_data = self.serialize(self.payload())
-        response = TransferServices().checkout2(
+        response = TransferServices().checkout(
             request_data["phone_ext"], request_data["phone_number"]
         )
         return response

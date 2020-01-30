@@ -8,7 +8,7 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=no-name-in-module
 
-from app.api.core import Routes
+from app.lib.core import Routes
 from app.api.transactions import api
 
 # services

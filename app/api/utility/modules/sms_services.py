@@ -7,6 +7,7 @@ import json
 import requests
 
 from flask import current_app
+
 # configuration
 from app.config.external.sms import WAVECELL
 
@@ -42,7 +43,7 @@ class SmsServices:
             if r.status_code != 200:
                 result = False
             # end if
-            current_app.logger.info("OTP: {}". format(r.status_code))
+            current_app.logger.info("OTP: {}".format(r.status_code))
         except (requests.exceptions.Timeout, requests.exceptions.RequestException) as e:
             raise ApiError(e)
         # end try

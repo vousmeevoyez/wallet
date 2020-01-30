@@ -4,14 +4,13 @@
     module to check health for db, external service, etc...
 """
 import sys
-import time
 
+from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from flask import current_app
 from celery import group
 
-from app.api import sentry
-from app.api.models import Bank
+from app.api import db, sentry
 
 # task
 from task.transaction.tasks import TransactionTask
@@ -29,7 +28,9 @@ class HealthServices:
     def _check_db():
         """ method to check db that we connect """
         try:
-            result = Bank.query.first()
+            # execute raw query
+            sql = text("SELECT * from bank")
+            result = db.engine.execute(sql)
         except SQLAlchemyError as e:
             if not current_app.testing and not current_app.debug:
                 sentry.captureException(e)

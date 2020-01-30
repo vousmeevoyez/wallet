@@ -54,6 +54,7 @@ class Config:
         "transaction": {"exchange": "transaction", "binding_key": "transaction"},
         "utility": {"exchange": "utility", "binding_key": "utility"},
         "report": {"exchange": "report", "binding_key": "report"},
+        "quota": {"exchange": "quota", "binding_key": "quota"},
     }
     CELERY_TRACK_STARTED = True
     # CELERY BEAT
@@ -61,17 +62,23 @@ class Config:
         "tracking_va": {
             "task": "task.logger.tasks.fetch_va",
             "schedule": crontab(minute=30),
-            "options": {"queue": "logging"}
+            "options": {"queue": "logging"},
         },
         "tracking_master_balance": {
             "task": "task.logger.tasks.record_external_balance",
             "schedule": crontab(hour=12),
-            "options": {"queue": "logging"}
+            "options": {"queue": "logging"},
         },
         "modanaku-daily-report": {
             "task": "task.report.tasks.send_report",
             "schedule": crontab(hour=7, minute=0),
-            "options": {"queue": "report"}
+            "options": {"queue": "report"},
+        },
+        # generate quota every 1st of month
+        "generate-monthly-quota": {
+            "task": "task.quota.tasks.generate_monthly_quota",
+            "schedule": crontab(hour=0, minute=0, day_of_month="1"),
+            "options": {"queue": "quota"},
         },
     }
     CELERY_TIMEZONE = "Asia/Jakarta"

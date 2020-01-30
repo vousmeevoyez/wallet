@@ -4,19 +4,13 @@
 from unittest.mock import Mock, patch
 import pytest
 
-from task.bank.lib.response import (
-    HTTPResponse
-)
-from task.bank.lib.response import (
-    StatusCodeError,
-    InvalidResponseError
-)
+from task.bank.lib.response import HTTPResponse
+from task.bank.lib.response import StatusCodeError, InvalidResponseError
 
 from tests.reusable.setup import create_http_response
 
 
 class TestHTTPResponse:
-
     def test_validate_success_status_code(self):
         # validate successfull http status_code code
         mock_http_response = create_http_response(200)
@@ -44,8 +38,10 @@ class TestHTTPResponse:
     def test_validate_data(self):
         mock_http_response = create_http_response(
             200,
-            {"data": "Your request has been processed\
-            successfully"}
+            {
+                "data": "Your request has been processed\
+            successfully"
+            },
         )
 
         response = HTTPResponse()
@@ -53,10 +49,7 @@ class TestHTTPResponse:
 
         assert response.validate_data()
 
-        mock_http_response = create_http_response(
-            200,
-            "request success"
-        )
+        mock_http_response = create_http_response(200, "request success")
 
         response = HTTPResponse()
         response.set(mock_http_response)
@@ -74,9 +67,7 @@ class TestHTTPResponse:
     def test_to_representation_ok(self):
         """ test successfull request """
         mock_http_response = Mock(status_code=200)
-        expected_data = {
-            "data": "Your request has been processed successfully"
-        }
+        expected_data = {"data": "Your request has been processed successfully"}
         mock_http_response.json.return_value = expected_data
 
         response = HTTPResponse()

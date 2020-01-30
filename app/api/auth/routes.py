@@ -11,7 +11,7 @@
 # local
 from app.api.auth import api
 
-from app.api.core import Routes
+from app.lib.core import Routes
 
 # services
 from app.api.auth.modules.auth_services import AuthServices
@@ -23,10 +23,12 @@ from app.api.serializer import UserSchema
 from app.api.request_schema import AuthRequestSchema
 
 # decorator
-from app.api.auth.decorator import refresh_token_only
-from app.api.auth.decorator import token_required
-from app.api.auth.decorator import get_current_token
-from app.api.auth.decorator import get_token_payload
+from app.api.auth.decorator import (
+    refresh_token_only,
+    token_required,
+    get_current_token,
+    get_token_payload,
+)
 
 
 @api.route("/token")

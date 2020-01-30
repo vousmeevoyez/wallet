@@ -20,10 +20,7 @@ from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from app.config import config
-
-# import logging config immediately
-from app.config import logging
+from app.config import config, logging
 
 db = SQLAlchemy()
 ma = Marshmallow()

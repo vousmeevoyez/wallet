@@ -10,7 +10,7 @@ from app.api.models import User, Wallet, ForgotPin, IncorrectPin
 
 from app.api.utility.utils import Sms
 
-from app.api.error.http import *
+from app.lib.http_error import *
 
 from app.api.utility.utils import UtilityError
 
@@ -157,12 +157,14 @@ def test_verify_forgot_otp_but_already_verified(setup_wallet_info):
             {"otp_code": pytest.otp_code, "otp_key": pytest.otp_key, "pin": "111111"}
         )
 
+
 def test_verify_forgot_otp_but_invalid_otp_code(setup_wallet_info):
     """ test method for sending forgot otp sms but already veirfied"""
     with pytest.raises(UnprocessableEntity):
         WalletServices(setup_wallet_info["id"]).verify_forgot_otp(
             {"otp_code": "000000", "otp_key": pytest.otp_key, "pin": "111111"}
         )
+
 
 def test_verify_forgot_otp_but_invalid_otp_key(setup_wallet_info):
     """ test method for sending forgot otp sms but already veirfied"""

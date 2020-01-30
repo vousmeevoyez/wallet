@@ -60,7 +60,6 @@ class CustomApi(Api):
 
         if to_dict:
             data = to_dict()
-
         return self.make_response(data, code)
 
 

@@ -20,6 +20,7 @@ def test_process(setup_credit_va):
     )
     assert result["status"] == "000"
 
+
 def test_deposit(setup_credit_va):
     """ test deposit """
     va_number, va_trx_id = setup_credit_va
@@ -31,10 +32,9 @@ def test_deposit(setup_credit_va):
         "payment_ntb": str(ref_number),
         "payment_channel_key": "BNI_VA",
     }
-    result = CallbackServices(va_number, va_trx_id, "IN").process_callback(
-        params
-    )
+    result = CallbackServices(va_number, va_trx_id, "IN").process_callback(params)
     assert result["status"] == "000"
+
 
 def test_withdraw(setup_debit_va):
     """ test deposit """
@@ -47,8 +47,6 @@ def test_withdraw(setup_debit_va):
         "payment_ntb": str(ref_number),
         "payment_channel_key": "BNI_VA",
     }
-    result = CallbackServices(va_number, va_trx_id, "OUT").process_callback(
-        params
-    )
+    result = CallbackServices(va_number, va_trx_id, "OUT").process_callback(params)
 
     assert result["status"] == "000"

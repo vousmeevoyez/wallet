@@ -182,7 +182,11 @@ class CreditRefundTransaction(DebitTransaction):
 
 class TopUpTransaction(CreditTransaction):
     """ implementation class of top up to wallet """
+    pass
 
+
+class CashbackTransaction(CreditTransaction):
+    """ implementation class of cashback transaction to wallet """
     pass
 
 

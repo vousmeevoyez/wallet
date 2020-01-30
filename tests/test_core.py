@@ -5,7 +5,7 @@
 from unittest.mock import patch
 
 from app.api.request_schema import UserRequestSchema
-from app.api.core import CoreRoutes
+from app.lib.core import CoreRoutes
 
 from marshmallow.exceptions import ValidationError
 

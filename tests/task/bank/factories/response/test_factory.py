@@ -10,6 +10,7 @@ from task.bank.lib.response import *
 
 from tests.reusable.setup import create_http_response
 
+
 class TestResponseFactory:
     """ Testing Factory response Class"""
 

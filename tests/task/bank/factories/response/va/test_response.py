@@ -15,7 +15,7 @@ from task.bank.factories.response.va.response import (
     BNICreditEcollectionResponse,
     InvalidResponseError,
     FailedResponseError,
-    ResponseError
+    ResponseError,
 )
 
 from tests.reusable.setup import create_http_response
@@ -36,10 +36,9 @@ def test_to_representation_success():
         expected_data,
     )
 
-    mock_http_response = create_http_response(200, {
-        "status": "000",
-        "data": encrypted_data
-    })
+    mock_http_response = create_http_response(
+        200, {"status": "000", "data": encrypted_data}
+    )
 
     response = BNICreditEcollectionResponse()
     response.set(mock_http_response)
@@ -55,16 +54,9 @@ def test_decrypt():
     }
 
     # purposely use random key
-    encrypted_data = encrypt(
-        "99099",
-        "some-random-secret-key",
-        expected_data,
-    )
+    encrypted_data = encrypt("99099", "some-random-secret-key", expected_data)
 
-    response = {
-        "status": "000",
-        "data": encrypted_data
-    }
+    response = {"status": "000", "data": encrypted_data}
 
     mock_http_response = create_http_response(200, response)
 

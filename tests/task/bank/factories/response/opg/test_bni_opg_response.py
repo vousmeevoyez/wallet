@@ -4,12 +4,8 @@
 """
 import pytest
 
-from task.bank.factories.response.opg.response import (
-    BNIOpgResponse
-)
-from task.bank.lib.response import (
-    ResponseError
-)
+from task.bank.factories.response.opg.response import BNIOpgResponse
+from task.bank.lib.response import ResponseError
 
 from tests.reusable.setup import create_http_response
 

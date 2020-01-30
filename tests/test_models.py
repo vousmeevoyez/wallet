@@ -12,9 +12,168 @@ from app.api import db
 from app.api.models import *
 from app.config import config
 
-from app.api.error.authentication import *
+from app.api.auth.exceptions import *
 
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
+
+
+def test_quota(setup_wallet_with_balance, setup_transaction):
+    quota = Quota(
+        no_of_transactions=3, reward_amount=3000, wallet_id=setup_wallet_with_balance.id
+    )
+    db.session.add(quota)
+    db.session.commit()
+
+    quota_usage = QuotaUsage(quota_id=quota.id, transaction_id=setup_transaction.id)
+    db.session.add(quota_usage)
+    db.session.commit()
+
+
+def test_transaction_link():
+    """ test self ref credit trx with debit trx"""
+    # create 2 dummy wallet here
+    wallet = Wallet()
+    wallet2 = Wallet()
+
+    db.session.add(wallet)
+    db.session.add(wallet2)
+    db.session.flush()
+
+    wallet.add_balance(1000)
+    db.session.flush()
+
+    assert wallet.balance == 1000
+
+    wallet2.add_balance(1000)
+    db.session.flush()
+
+    assert wallet2.balance == 1000
+
+    # start transaction here
+    amount = -10
+    # first create debit payment
+    debit_payment = Payment(
+        source_account=wallet.id, to=wallet2.id, amount=amount, payment_type=False
+    )
+    db.session.add(debit_payment)
+
+    # create debit transaction
+    debit_trx = Transaction(wallet_id=wallet.id, amount=amount)
+    db.session.add(debit_trx)
+    # deduct balance
+    wallet.add_balance(amount)
+
+    db.session.flush()
+
+    # start another transaction here
+    amount = 10
+    # second create credit payment
+    credit_payment = Payment(source_account=wallet.id, to=wallet2.id, amount=amount)
+    db.session.add(credit_payment)
+
+    # create debit transaction
+    credit_trx = Transaction(wallet_id=wallet2.id, amount=amount)
+    db.session.add(credit_trx)
+    # deduct user balance here
+    wallet2.add_balance(amount)
+
+    db.session.flush()
+
+    # link transaction
+    debit_trx.parent_id = credit_trx.id
+    credit_trx.parent_id = debit_trx.id
+    db.session.commit()
+
+    # make sure each account have correct balance after each transaction
+    assert wallet.balance == 990
+    assert len(wallet.transactions) == 1
+
+    assert wallet2.balance == 1010
+    assert len(wallet2.transactions) == 1
+
+def test_transaction_link2():
+    """ test self ref debit trx with fee trx and cashback trx """
+    # create 2 dummy wallet here
+    wallet = Wallet()
+
+    db.session.add(wallet)
+    db.session.flush()
+
+    wallet.add_balance(1000)
+    db.session.flush()
+
+    assert wallet.balance == 1000
+
+    # start transaction here
+    amount = -10
+    # first create debit payment
+    debit_payment = Payment(
+        source_account=wallet.id,
+        to="some-bank-acc-id",
+        amount=amount,
+        payment_type=False
+    )
+    db.session.add(debit_payment)
+
+    # create debit transaction
+    debit_trx = Transaction(
+        wallet_id=wallet.id,
+        amount=amount
+    )
+    db.session.add(debit_trx)
+    # deduct balance
+    wallet.add_balance(amount)
+
+    db.session.flush()
+
+    # create transfer fee payment
+    amount = -1
+    fee_payment = Payment(
+        source_account=wallet.id,
+        to="some-bank-acc-id",
+        amount=amount
+    )
+    db.session.add(fee_payment)
+    # create transfer fee transaction
+    fee_trx = Transaction(
+        wallet_id=wallet.id,
+        amount=amount
+    )
+    db.session.add(fee_trx)
+    # deduct user balance here
+    wallet.add_balance(amount)
+
+    db.session.flush()
+
+    # create cashback transfer fee payment
+    amount = 1
+    reward_payment = Payment(
+        source_account="N/A",
+        to=wallet.id,
+        amount=amount
+    )
+    db.session.add(reward_payment)
+    # create transfer fee transaction
+    reward_trx = Transaction(
+        wallet_id=wallet.id,
+        amount=amount
+    )
+    db.session.add(reward_trx)
+    # deduct user balance here
+    wallet.add_balance(amount)
+
+    db.session.flush()
+
+    # link transaction
+    # debit -> fee -> reward
+    #debit_trx.children = fee_trx
+    fee_trx.parent_id = debit_trx.id
+    reward_trx.parent_id = fee_trx.id
+    db.session.commit()
+
+    # make sure each account have correct balance after each transaction
+    assert wallet.balance == 990
+    assert len(wallet.transactions) == 3
 
 '''
 def test_user_role_relation(setup_user_only):

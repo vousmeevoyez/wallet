@@ -4,6 +4,7 @@ from app.api.models import VaLog, BalanceLog
 
 from task.logger.tasks import LoggingTask
 
+
 @patch("task.bank.tasks.generate_provider")
 def test_fetch_va(mock_provider, setup_credit_va):
     """ test function that transfer money using OPG in the background but
@@ -43,7 +44,7 @@ def test_record_external_balance(mock_provider, setup_wallet_with_balance):
     mock_provider.return_value.get_balance.return_value = {
         "account_no": "12345678",
         "internal_balance": "10000",
-        "balance": "10000"
+        "balance": "10000",
     }
 
     LoggingTask().record_external_balance()

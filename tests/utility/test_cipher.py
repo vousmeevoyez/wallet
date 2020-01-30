@@ -10,6 +10,7 @@ from app.api.utility.modules.cipher import DecryptError
 
 """ AES Cipher Test Class"""
 
+
 def test_encrypt():
     """ test encrypt using aes """
     result = AESCipher("someveryverysecretkey").encrypt(
@@ -18,6 +19,7 @@ def test_encrypt():
     )
     assert type(result) == bytes
 
+
 def test_decrypt_success():
     """ test decrypt using aes """
     text = "Here's my secret message"
@@ -25,6 +27,7 @@ def test_decrypt_success():
 
     result = AESCipher("someveryverysecretkey").decrypt(encrypted)
     assert result == text
+
 
 def test_decrypt_failed():
     """ test decrypt using aes """

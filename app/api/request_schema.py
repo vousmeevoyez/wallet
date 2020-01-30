@@ -262,6 +262,7 @@ class QRTransferRequestSchema:
 
 # end class
 
+
 class VirtualAccountUpdateRequestSchema:
     parser = reqparse.RequestParser()
     parser.add_argument("name", type=str, required=True)

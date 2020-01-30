@@ -2,4 +2,4 @@ from app.api.namespace import UtilityNamespace
 
 api = UtilityNamespace.api
 
-from app.api.utility import utils, routes
+from app.api.utility import routes

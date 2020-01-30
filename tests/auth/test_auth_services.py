@@ -10,16 +10,19 @@ from app.api.models import User
 
 from app.api.auth.modules.auth_services import Token, AuthServices
 
-from app.api.error.authentication import RevokedTokenError
-from app.api.error.authentication import SignatureExpiredError
-from app.api.error.authentication import InvalidTokenError
-from app.api.error.authentication import EmptyPayloadError
+from app.api.auth.exceptions import (
+    RevokedTokenError,
+    SignatureExpiredError,
+    InvalidTokenError,
+    EmptyPayloadError,
+)
 
-from app.api.error.http import *
+from app.lib.http_error import *
 
 """
     TEST TOKEN
 """
+
 
 def test_create(setup_user_only):
     """ test Token class method that generate token """
@@ -30,6 +33,7 @@ def test_create(setup_user_only):
     token = Token.create(user, "REFRESH")
     assert type(token) == str
 
+
 def test_decode(setup_user_only):
     """ test Token class method that decode token """
     user = User.query.filter_by(username="dummyuser").first()
@@ -38,6 +42,7 @@ def test_decode(setup_user_only):
 
     payload = Token(token).decode()
     assert type(payload) == dict
+
 
 @patch.object(User, "decode_token")
 def test_decode_revoked_token(mock_decode):
@@ -83,6 +88,7 @@ def test_decode_empty_payload(mock_decode):
     TEST AUTH SERVICES
 """
 
+
 def test_current_login_user(setup_user_factory):
     """ test curren login user"""
     setup_user_factory("loggeduser")
@@ -92,6 +98,7 @@ def test_current_login_user(setup_user_factory):
     result = AuthServices().current_login_user(token)
     assert result["token_type"]
     assert result["user"]
+
 
 @patch.object(Token, "decode")
 def test_current_login_user_mock_token(mock_decode):
@@ -122,17 +129,15 @@ def test_create_token_failed_not_found():
     """ test failed create access & refresh token because user is not
     created yet"""
     with pytest.raises(RequestNotFound):
-        AuthServices().create_token(
-            {"username": "roserose", "password": "password"}
-        )
+        AuthServices().create_token({"username": "roserose", "password": "password"})
+
 
 def test_create_token_failed_incorrect_login():
     """ test failed create access & refresh token by using invalid
     credentials"""
     with pytest.raises(Unauthorized):
-        AuthServices().create_token(
-            {"username": "dummyuser", "password": "pasword"}
-        )
+        AuthServices().create_token({"username": "dummyuser", "password": "pasword"})
+
 
 def test_refresh_token_success():
     """ test success refreshing token"""
@@ -159,6 +164,7 @@ def test_blacklist(setup_user_only):
 
     result = Token(token).blacklist()
     assert result
+
 
 def test_logout():
     """ test blacklist access token """

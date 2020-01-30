@@ -10,7 +10,7 @@ from app.api.models import BankAccount
 
 from app.config import config
 
-from app.api.error.http import *
+from app.lib.http_error import *
 
 fake_uuid = str(uuid.uuid4())
 
@@ -43,11 +43,13 @@ def test_add_bank_account_failed_bank_not_found(setup_user_factory):
     with pytest.raises(RequestNotFound):
         result = BankAccountServices(str(user.id), fake_uuid).add(bank_account)
 
+
 def test_show_bank_account_success(setup_user_factory):
     """ test function that show all bank account"""
     user = setup_user_factory("someuser")
     result = BankAccountServices(str(user.id)).show()
     assert len(result) == 1
+
 
 def test_show_bank_account_failed_record_not_found():
     """ test function that show all bank account but user not found"""
@@ -64,11 +66,12 @@ def test_update_bank_account_success(setup_user_factory, setup_bank):
     user_bank_account_id = result[0]["id"]
 
     params = {"label": "my label", "name": "jennie", "account_no": "1234567891"}
-    result = BankAccountServices(
-        str(user.id), str(setup_bank.id), user_bank_account_id
-    ).update(params)
+    result = BankAccountServices(str(user.id), setup_bank.id, user_bank_account_id).update(
+        params
+    )
 
     assert result[1] == 204
+
 
 def test_update_bank_account_failed_bank_account_not_found(setup_user_factory,
                                                           setup_bank):

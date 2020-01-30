@@ -26,8 +26,7 @@ from app.api.transactions.factories.transactions.products import (
 )
 
 
-def test_credit_transaction(setup_wallet_with_balance,
-                            setup_wallet_without_balance):
+def test_credit_transaction(setup_wallet_with_balance, setup_wallet_without_balance):
     credit_payment = Payment(
         source_account=str(setup_wallet_with_balance.id),
         to=str(setup_wallet_without_balance.id),
@@ -39,7 +38,7 @@ def test_credit_transaction(setup_wallet_with_balance,
         wallet=setup_wallet_with_balance,
         amount=1000,
         notes="some transfer",
-        payment=credit_payment
+        payment=credit_payment,
     )
 
     credit_transaction = CreditTransaction()
@@ -48,8 +47,7 @@ def test_credit_transaction(setup_wallet_with_balance,
     assert result
 
 
-def test_debit_transaction(setup_wallet_with_balance,
-                           setup_wallet_without_balance):
+def test_debit_transaction(setup_wallet_with_balance, setup_wallet_without_balance):
     debit_payment = Payment(
         source_account=str(setup_wallet_with_balance.id),
         to=str(setup_wallet_without_balance.id),
@@ -61,7 +59,7 @@ def test_debit_transaction(setup_wallet_with_balance,
         wallet=setup_wallet_with_balance,
         amount=-1000,
         notes="some transfer",
-        payment=debit_payment
+        payment=debit_payment,
     )
 
     debit_transaction = DebitTransaction()
@@ -70,8 +68,9 @@ def test_debit_transaction(setup_wallet_with_balance,
     assert result
 
 
-def test_receive_payroll_without_payment_plan(setup_wallet_with_balance,
-                                              setup_wallet_without_balance):
+def test_receive_payroll_without_payment_plan(
+    setup_wallet_with_balance, setup_wallet_without_balance
+):
     debit_payment = Payment(
         source_account=str(setup_wallet_with_balance.id),
         to=str(setup_wallet_without_balance.id),
@@ -83,7 +82,7 @@ def test_receive_payroll_without_payment_plan(setup_wallet_with_balance,
         wallet=setup_wallet_with_balance,
         amount=1000,
         notes="Terima gaji",
-        payment=debit_payment
+        payment=debit_payment,
     )
 
     receive_payroll_transaction = ReceivePayrollTransaction()
@@ -93,8 +92,9 @@ def test_receive_payroll_without_payment_plan(setup_wallet_with_balance,
     assert result == {}
 
 
-def test_receive_payroll_less_payroll(setup_wallet_with_balance,
-                                      setup_wallet_without_balance):
+def test_receive_payroll_less_payroll(
+    setup_wallet_with_balance, setup_wallet_without_balance
+):
     debit_payment = Payment(
         source_account=str(setup_wallet_with_balance),
         to=str(setup_wallet_without_balance),
@@ -106,13 +106,12 @@ def test_receive_payroll_less_payroll(setup_wallet_with_balance,
         wallet=setup_wallet_with_balance,
         amount=1000,
         notes="Terima gaji",
-        payment=debit_payment
+        payment=debit_payment,
     )
 
     # create payment plan
     payment_plan = PaymentPlan(
-        destination="12345678910",
-        wallet=setup_wallet_with_balance
+        destination="12345678910", wallet=setup_wallet_with_balance
     )
     db.session.add(payment_plan)
     db.session.commit()
@@ -120,9 +119,7 @@ def test_receive_payroll_less_payroll(setup_wallet_with_balance,
     # create plan
     due_date = datetime.utcnow().replace(hour=0, minute=1, second=0)
     january_plan = Plan(
-        payment_plan_id=payment_plan.id,
-        amount=100000,
-        due_date=due_date
+        payment_plan_id=payment_plan.id, amount=100000, due_date=due_date
     )
     db.session.add(january_plan)
     db.session.commit()
@@ -143,8 +140,9 @@ def test_receive_payroll_less_payroll(setup_wallet_with_balance,
     assert result["data"]["message"], "AUTO_DEBIT"
 
 
-def test_receive_payroll_early_payroll(setup_wallet_with_balance,
-                                       setup_wallet_without_balance):
+def test_receive_payroll_early_payroll(
+    setup_wallet_with_balance, setup_wallet_without_balance
+):
     debit_payment = Payment(
         source_account=str(setup_wallet_with_balance.id),
         to=str(setup_wallet_without_balance.id),
@@ -156,12 +154,13 @@ def test_receive_payroll_early_payroll(setup_wallet_with_balance,
         wallet=setup_wallet_with_balance,
         amount=1000,
         notes="Terima gaji",
-        payment=debit_payment
+        payment=debit_payment,
     )
 
     # create payment plan
-    payment_plan = PaymentPlan(destination="12345678910",
-                               wallet=setup_wallet_with_balance)
+    payment_plan = PaymentPlan(
+        destination="12345678910", wallet=setup_wallet_with_balance
+    )
     db.session.add(payment_plan)
     db.session.commit()
 
@@ -169,9 +168,7 @@ def test_receive_payroll_early_payroll(setup_wallet_with_balance,
     due_date = datetime.utcnow() + timedelta(days=1)
 
     january_plan = Plan(
-        payment_plan_id=payment_plan.id,
-        amount=100000,
-        due_date=due_date
+        payment_plan_id=payment_plan.id, amount=100000, due_date=due_date
     )
     db.session.add(january_plan)
     db.session.commit()
@@ -193,8 +190,9 @@ def test_receive_payroll_early_payroll(setup_wallet_with_balance,
 
 
 @freeze_time("2019-04-29")
-def test_receive_payroll_late_payroll(setup_wallet_with_balance,
-                                      setup_wallet_without_balance):
+def test_receive_payroll_late_payroll(
+    setup_wallet_with_balance, setup_wallet_without_balance
+):
     debit_payment = Payment(
         source_account=str(setup_wallet_with_balance.id),
         to=str(setup_wallet_without_balance.id),
@@ -206,12 +204,13 @@ def test_receive_payroll_late_payroll(setup_wallet_with_balance,
         wallet=setup_wallet_with_balance,
         amount=1000,
         notes="Terima gaji",
-        payment=debit_payment
+        payment=debit_payment,
     )
 
     # create payment plan
-    payment_plan = PaymentPlan(destination="12345678910",
-                               wallet=setup_wallet_with_balance)
+    payment_plan = PaymentPlan(
+        destination="12345678910", wallet=setup_wallet_with_balance
+    )
     db.session.add(payment_plan)
     db.session.commit()
 

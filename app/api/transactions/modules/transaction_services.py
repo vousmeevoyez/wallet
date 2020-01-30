@@ -13,30 +13,23 @@ from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 
 from app.api import db
-
 # helper
 from app.api.utility.utils import validate_uuid
-
 # models
 from app.api.models import Wallet, Transaction, Payment
-
 # serializer
 from app.api.serializer import TransactionSchema
-
 # core
 from app.api.transactions.factories.helper import process_transaction
-
+from app.api.quotas.modules.quota_services import QuotaServices
 # config
 from app.config import config
-
 # http error
-from app.api.http_response import ok, accepted
-
+from app.lib.http_response import ok, accepted
 # const
-from app.api.error.message import RESPONSE as error_response
-
+from app.api.const import ERROR as error_response
 # exception
-from app.api.error.http import UnprocessableEntity, RequestNotFound
+from app.lib.http_error import UnprocessableEntity, RequestNotFound
 
 
 class TransactionServices:
@@ -67,7 +60,6 @@ class TransactionServices:
             # end if
             self.transaction = transaction_record
         # end if
-
     # end def
 
     def history(self, params):
@@ -118,7 +110,55 @@ class TransactionServices:
         transaction_details = TransactionSchema().dump(self.transaction).data
         return ok(transaction_details)
 
-    # end def
+    def execute_refund(self, transaction):
+        # fetch all information needed
+        source = transaction.payment.to
+        destination = transaction.payment.source_account
+
+        # only look up object when it is not a bank account
+        if not source.isdigit() and source != "N/A":
+            source = Wallet.query.filter_by(id=validate_uuid(source)).first()
+
+        # only look up object when it is not a bank account
+        if not destination.isdigit() and destination != "N/A":
+            destination = Wallet.query.filter_by(
+                id=validate_uuid(destination)
+            ).first()
+
+        refunded_amount = -transaction.payment.amount
+        flag = "CREDIT_REFUND"
+
+        if transaction.payment.payment_type is False:
+            refunded_amount = abs(transaction.payment.amount)
+            flag = "DEBIT_REFUND"
+
+        # if its transaction linked with usage we need to revert it back
+        if transaction.quota_usage != []:
+            QuotaServices(
+                transaction_id=transaction.id
+            ).revert_usage()
+
+        refunded_transaction = process_transaction(
+            source=source,
+            destination=destination,
+            amount=refunded_amount,
+            flag=flag,
+        )
+        # end if
+        # update payment status to refunded
+        transaction.payment.status = 2
+        db.session.commit()
+        return refunded_transaction
+
+    def unpack(self, transaction, refunds):
+        """ unpack transaction child and execute refund """
+        for child in transaction.children:
+            # execute refund for child transaction
+            refund_trx = self.execute_refund(child)
+            # recursion
+            refunds.append({"id": str(refund_trx.id)})
+            self.unpack(child, refunds)
+        # end if
 
     def refund(self):
         """ method to refund a transaction """
@@ -136,57 +176,13 @@ class TransactionServices:
                 error_response["INVALID_REFUND"]["MESSAGE"],
             )
 
-        # populates refund transaction
+        # populate refunded trx here
         refunds = []
-        # append current object
-        refunds.append(self.transaction)
-        # if transaction link is existed append it too
-        if self.transaction.transaction_link is not None:
-            refunds.append(self.transaction.transaction_link)
-        # end if
+        # trigger refund main trx
+        transaction = self.execute_refund(self.transaction)
+        refunds.append({"id": str(transaction.id)})
 
-        transactions = []
-        for refund in refunds:
-            # fetch all information needed
-            source = refund.payment.to
-            destination = refund.payment.source_account
-
-            # only look up object when it is not a bank account
-            if not source.isdigit() and source != "N/A":
-                source = Wallet.query.filter_by(id=validate_uuid(source)).first()
-
-            # only look up object when it is not a bank account
-            if not destination.isdigit():
-                destination = Wallet.query.filter_by(
-                    id=validate_uuid(destination)
-                ).first()
-
-            if refund.payment.payment_type is False:
-                refunded_amount = abs(refund.payment.amount)
-
-                transaction = process_transaction(
-                    source=source,
-                    destination=destination,
-                    amount=refunded_amount,
-                    flag="DEBIT_REFUND",
-                )
-            else:
-                refunded_amount = -refund.payment.amount
-
-                transaction = process_transaction(
-                    source=source,
-                    destination=destination,
-                    amount=refunded_amount,
-                    flag="CREDIT_REFUND",
-                )
-            # end if
-            # update payment status to refunded
-            refund.payment.status = 2
-            db.session.commit()
-            # append
-            transactions.append({"id": str(transaction.id)})
-        # end for
-        return accepted(transactions)
-
-
-# end class
+        # if transaction has children refund all child transaction also
+        # so it became consistent
+        self.unpack(self.transaction, refunds)
+        return accepted(refunds)

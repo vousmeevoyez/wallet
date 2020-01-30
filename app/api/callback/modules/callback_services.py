@@ -15,10 +15,10 @@ from app.api.transfer.modules.transfer_services import TransferServices
 from app.api.transactions.factories.helper import process_transaction
 
 # exceptions
-from app.api.error.http import *
+from app.lib.http_error import *
 
 # configuration
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import ERROR as error_response
 
 
 class Callback:

@@ -10,7 +10,7 @@ from app.api.models import *
 from app.api.payment_plans.modules.payment_plan_services import PaymentPlanServices
 
 # exceptions
-from app.api.error.http import *
+from app.lib.http_error import *
 
 
 def test_add_without_id(setup_wallet_info):

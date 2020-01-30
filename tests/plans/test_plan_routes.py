@@ -32,10 +32,12 @@ def test_update_plan(client, setup_additional_plan_for_auto):
         "payment_plan_id": "",  # we dont actualy need this! BAD
         "amount": "1000",
         "type": "ADDITIONAL",
-        "due_date": "2020-12-12"
+        "due_date": "2020-12-12",
     }
     result = update_plan(client, plan_id, params, API_KEY)
     assert result.status_code == 204
+
+
 # end def
 
 

@@ -14,6 +14,7 @@ from marshmallow.exceptions import ValidationError
     USER SERIALIZERS
 """
 
+
 def test_validate_username_failed_min_string():
     data = {
         "username": "Lisa",
@@ -30,6 +31,7 @@ def test_validate_username_failed_min_string():
     expected_error = {"username": ["Invalid username, minimum is 5 character"]}
     assert errors == expected_error
 
+
 def test_validate_username_failed_max_string():
     data = {
         "username": "dsadasdasdhakshdklaskjhdjkhasdhjasklhsalhldsa",
@@ -45,6 +47,7 @@ def test_validate_username_failed_max_string():
     errors = UserSchema().validate(data)
     expected_error = {"username": ["Invalid username, max is 32 character"]}
     assert errors == expected_error
+
 
 def test_validate_username_failed_alphanumeric_only():
     data = {
@@ -64,6 +67,7 @@ def test_validate_username_failed_alphanumeric_only():
     }
     assert errors == expected_error
 
+
 def test_validate_username_success():
     data = {
         "username": "jennei",
@@ -79,6 +83,7 @@ def test_validate_username_success():
     errors = UserSchema().validate(data)
     expected_error = {}
     assert errors == expected_error
+
 
 def test_validate_name_failed_min_string():
     data = {
@@ -96,6 +101,7 @@ def test_validate_name_failed_min_string():
     expected_error = {"name": ["Invalid name, minimum is 2 character"]}
     assert errors == expected_error
 
+
 def test_validate_name_failed_max_string():
     data = {
         "username": "Jennie",
@@ -111,6 +117,7 @@ def test_validate_name_failed_max_string():
     errors = UserSchema().validate(data)
     expected_error = {"name": ["Invalid name, max is 70 character"]}
     assert errors == expected_error
+
 
 def test_validate_name_success():
     data = {
@@ -128,6 +135,7 @@ def test_validate_name_success():
     expected_error = {}
     assert errors == expected_error
 
+
 def test_validate_phone_ext_success():
     data = {
         "username": "jennie",
@@ -143,6 +151,7 @@ def test_validate_phone_ext_success():
     errors = UserSchema().validate(data)
     expected_error = {}
     assert errors == expected_error
+
 
 def test_validate_phone_ext_failed_zero():
     data = {
@@ -160,6 +169,7 @@ def test_validate_phone_ext_failed_zero():
     expected_error = {"phone_ext": ["phone ext can't be 0"]}
     assert errors == expected_error
 
+
 def test_validate_phone_ext_failed_invalid():
     data = {
         "username": "jennie",
@@ -175,6 +185,7 @@ def test_validate_phone_ext_failed_invalid():
     errors = UserSchema().validate(data)
     expected_error = {"phone_ext": ["Invalid phone ext, only number allowed"]}
     assert errors == expected_error
+
 
 def test_validate_phone_number_success():
     data = {
@@ -192,6 +203,7 @@ def test_validate_phone_number_success():
     expected_error = {}
     assert errors == expected_error
 
+
 def test_validate_phone_number_failed_invalid():
     data = {
         "username": "jennie",
@@ -207,6 +219,7 @@ def test_validate_phone_number_failed_invalid():
     errors = UserSchema().validate(data)
     expected_error = {"phone_number": ["Invalid phone number, only number allowed"]}
     assert errors == expected_error
+
 
 def test_validate_phone_number_failed_zero():
     data = {
@@ -224,6 +237,7 @@ def test_validate_phone_number_failed_zero():
     expected_error = {"phone_number": ["phone number can't be 0"]}
     assert errors == expected_error
 
+
 def test_validate_email_success():
     data = {
         "username": "jennie",
@@ -239,6 +253,7 @@ def test_validate_email_success():
     errors = UserSchema().validate(data)
     expected_error = {}
     assert errors == expected_error
+
 
 def test_validate_email_failed_invalid():
     data = {
@@ -256,6 +271,7 @@ def test_validate_email_failed_invalid():
     expected_error = {"email": ["Invalid email"]}
     assert errors == expected_error
 
+
 def test_validate_password_success():
     data = {
         "username": "jennie",
@@ -271,6 +287,7 @@ def test_validate_password_success():
     errors = UserSchema().validate(data)
     expected_error = {}
     assert errors == expected_error
+
 
 def test_validate_password_failed_min_password():
     data = {
@@ -288,6 +305,7 @@ def test_validate_password_failed_min_password():
     expected_error = {"password": ["Invalid Password, Minimum 6 Character"]}
     assert errors == expected_error
 
+
 def test_validate_pin_success():
     data = {
         "username": "jennie",
@@ -304,6 +322,7 @@ def test_validate_pin_success():
     expected_error = {}
     assert errors == expected_error
 
+
 def test_validate_pin_failed_min_pin():
     data = {
         "username": "jennie",
@@ -317,10 +336,9 @@ def test_validate_pin_failed_min_pin():
         "label": "PERSONAL",
     }
     errors = UserSchema().validate(data)
-    expected_error = {
-        "pin": ["Invalid Pin, Only allowed 6 digit and must be integer"]
-    }
+    expected_error = {"pin": ["Invalid Pin, Only allowed 6 digit and must be integer"]}
     assert errors == expected_error
+
 
 def test_validate_role_failed_invalid():
     data = {
@@ -337,6 +355,7 @@ def test_validate_role_failed_invalid():
     errors = UserSchema().validate(data)
     expected_error = {"role": ["Invalid Role, only alphabet allowed"]}
     assert errors == expected_error
+
 
 def test_validate_role_failed_invalid_role():
     data = {
@@ -361,15 +380,18 @@ def test_user_deserialize(setup_user_only):
     assert result["status"]
     assert result["role"]
 
+
 """
     Wallet Serializer
 """
+
 
 def test_validate_wallet():
     # CHECKING PIN
     data = {"label": "wendy", "msisdn": "081212341234", "pin": "123456"}
     errors = WalletSchema().validate(data)
     assert errors == {}
+
 
 def test_validate_wallet_pin():
     data = {"name": "wendy", "msisdn": "081212341234", "pin": "1234"}
@@ -413,7 +435,7 @@ def test_wallet_deserialize(setup_wallet_with_balance, setup_wallet_without_bala
         amount=trx_amount,
         payment_id=debit_payment.id,
         transaction_type_id=transaction_type.id,
-        notes="something"
+        notes="something",
     )
     db.session.add(debit_trx)
     db.session.commit()
@@ -514,6 +536,7 @@ def test_validate_callback_max_withdraw_amount():
     expected_error = {"payment_amount": ["Maximum withdraw is 100000000"]}
     assert errors == expected_error
 
+
 def test_validate_callback_va_number():
     data = {
         "virtual_account": 9889909912490089,
@@ -528,6 +551,7 @@ def test_validate_callback_va_number():
     errors = CallbackSchema().validate(data)
     expected_error = {}
     assert errors == expected_error
+
 
 def test_validate_callback_invalid_va_number():
     data = {
@@ -572,6 +596,7 @@ def test_validate_callback_invalid_va_number():
     expected_error = {"virtual_account": ["Invalid Virtual Account Number"]}
     assert errors == expected_error
 
+
 def test_validate_bank_account_name_success():
     data = {
         "account_no": "1111111110",
@@ -583,6 +608,7 @@ def test_validate_bank_account_name_success():
     expected_error = {}
     assert errors == expected_error
 
+
 def test_validate_bank_account_name_failed_min_string():
     data = {
         "account_no": "1111111110",
@@ -593,6 +619,7 @@ def test_validate_bank_account_name_failed_min_string():
     errors = BankAccountSchema().validate(data)
     expected_error = {"name": ["Invalid name, minimum is 2 character"]}
     assert errors == expected_error
+
 
 def test_validate_bank_account_no_failed():
     data = {
@@ -636,6 +663,7 @@ def test_validate_bank_account_label_min_string():
     expected_error = {"label": ["Invalid label, minimum is 2 character"]}
     assert errors == expected_error
 
+
 def test_validate_bank_account_label_max_string():
     data = {
         "account_no": "1111111110",
@@ -646,6 +674,7 @@ def test_validate_bank_account_label_max_string():
     errors = BankAccountSchema().validate(data)
     expected_error = {"label": ["Invalid label, max is 30 character"]}
     assert errors == expected_error
+
 
 def test_validate_bank_account_label_invalid():
     data = {
@@ -658,10 +687,12 @@ def test_validate_bank_account_label_invalid():
     expected_error = {"label": ["Invalid label, only alphabet allowed"]}
     assert errors == expected_error
 
+
 def test_bank_id_to_name(setup_user_only, setup_bank):
     # create bank account here
-    bank_account = BankAccount(name="Lisa", bank_id=setup_bank.id,
-                               user_id=setup_user_only.id)
+    bank_account = BankAccount(
+        name="Lisa", bank_id=setup_bank.id, user_id=setup_user_only.id
+    )
     db.session.add(bank_account)
     db.session.commit()
 
@@ -671,6 +702,7 @@ def test_bank_id_to_name(setup_user_only, setup_bank):
     assert result["name"]
     assert result["label"] == None
     assert result["account_no"] == None
+
 
 def test_validate_payment_schema_id():
     # no errors
@@ -711,6 +743,7 @@ def test_validate_payment_schema_id():
     with pytest.raises(ValidationError):
         data = PaymentPlanSchema(strict=True).load(data)
 
+
 def test_validate_payment_schema_destination():
     # no errors
     data = {
@@ -743,6 +776,7 @@ def test_validate_payment_schema_destination():
     }
     assert errors == expected_error
 
+
 def test_validate_payment_schema_status():
     # no errors
     data = {
@@ -772,6 +806,7 @@ def test_validate_payment_schema_status():
     errors = PaymentPlanSchema().validate(data)
     expected_error = {"status": ["Invalid status type"]}
     assert errors == expected_error
+
 
 '''
 def test_nested_plan():
@@ -848,6 +883,7 @@ def test_plan_id():
     with pytest.raises(ValidationError):
         result = PlanSchema(strict=True).load(data)
 
+
 def test_plan_amount():
     data = {
         "id": "some-payment-plan-id",
@@ -859,6 +895,7 @@ def test_plan_amount():
     expected_error = {"amount": ["Invalid Amount, cannot be less than 0"]}
     assert errors == expected_error
 
+
 def test_plan_type():
     data = {
         "id": "some-payment-plan-id",
@@ -869,6 +906,7 @@ def test_plan_type():
     errors = PlanSchema().validate(data)
     expected_error = {"type": ["Invalid plan type"]}
     assert errors == expected_error
+
 
 def test_plan_due_date():
     data = {

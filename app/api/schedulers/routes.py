@@ -8,7 +8,7 @@
 # pylint: disable=too-few-public-methods
 from datetime import datetime, timedelta
 
-from app.api.core import Routes
+from app.lib.core import Routes
 
 from app.api.schedulers import api
 

@@ -7,14 +7,14 @@ from task.bank.factories.request.opg.request import BNIOpgAuthRequest, BNIOpgReq
 
 class TestBNIOpgAuthRequest:
     """ Testing class for BNI OPG Auth Request """
+
     def test_create_signature(self):
         http_request = BNIOpgAuthRequest()
         http_request.url = "https://apidev.bni.co.id:8066/api/oauth/token"
         http_request.method = "POST"
-        result = http_request.create_signature({
-            "accountNo": "0115476151",
-            "clientId": "IDBNITU9EQU5B"
-        })
+        result = http_request.create_signature(
+            {"accountNo": "0115476151", "clientId": "IDBNITU9EQU5B"}
+        )
         assert len(result) > 15
 
     def test_to_representation(self):
