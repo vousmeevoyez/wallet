@@ -10,7 +10,7 @@
 from app.api import scheduler
 
 # http response
-from app.api.http_response import accepted
+from app.lib.http_response import accepted
 
 
 class SchedulerServices:

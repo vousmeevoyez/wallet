@@ -77,30 +77,23 @@ def test_get_transactions_details(self):
 """
 
 
-def test_refund_transfer(client,
-                         setup_user_wallet_va,
-                         setup_user_wallet_va_without_balance,
-                         setup_admin_token):
+def test_refund_transfer(
+    client,
+    setup_user_wallet_va,
+    setup_user_wallet_va_without_balance,
+    setup_admin_token,
+):
     """ CASE 1 Refund : successfully refund a transfer """
 
-    source_access_token, source_user_id, source_wallet_id = \
-    setup_user_wallet_va
-    destination_access_token, destination_user_id, destination_wallet_id = \
-    setup_user_wallet_va_without_balance
+    source_access_token, source_user_id, source_wallet_id = setup_user_wallet_va
+    destination_access_token, destination_user_id, destination_wallet_id = (
+        setup_user_wallet_va_without_balance
+    )
 
-    params = {
-        "amount": "1",
-        "notes": "some notes",
-        "pin": "123456",
-        "types": "PAYROLL",
-    }
+    params = {"amount": "1", "notes": "some notes", "pin": "123456", "types": "PAYROLL"}
 
     result = transfer(
-        client,
-        source_wallet_id,
-        destination_wallet_id,
-        params,
-        source_access_token
+        client, source_wallet_id, destination_wallet_id, params, source_access_token
     )
     response = result.get_json()
 

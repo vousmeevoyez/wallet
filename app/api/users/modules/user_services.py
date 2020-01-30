@@ -19,19 +19,19 @@ from app.api.serializer import UserSchema
 from app.api.wallets.modules.wallet_services import WalletServices
 
 # http response
-from app.api.http_response import ok, created, no_content
+from app.lib.http_response import ok, created, no_content
 
 # utility
 from app.api.utility.utils import validate_uuid
 
 # exceptions
-from app.api.error.http import RequestNotFound, UnprocessableEntity
+from app.lib.http_error import RequestNotFound, UnprocessableEntity
 
 # const
 from app.api.const import STATUS
 
 # configuration
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import ERROR as error_response
 
 
 class UserServices:

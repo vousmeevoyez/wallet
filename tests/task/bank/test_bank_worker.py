@@ -5,12 +5,7 @@ from unittest.mock import patch
 from celery.exceptions import Retry, MaxRetriesExceededError
 
 from app.api import db
-from app.api.models import (
-    VirtualAccount,
-    Payment,
-    Transaction,
-    Bank
-)
+from app.api.models import VirtualAccount, Payment, Transaction, Bank
 
 from task.bank.tasks import BankTask
 from task.bank.lib.provider import ProviderError
@@ -53,7 +48,9 @@ def test_update_va(mock_provider, setup_user_wallet_va):
 
 
 @patch("task.bank.tasks.generate_provider")
-def test_bank_transfer_to_bni(mock_provider, setup_wallet_with_balance, setup_bni_bank_account):
+def test_bank_transfer_to_bni(
+    mock_provider, setup_wallet_with_balance, setup_bni_bank_account
+):
     """ test function that transfer money using OPG in the background """
     amount = -100
 
@@ -68,9 +65,7 @@ def test_bank_transfer_to_bni(mock_provider, setup_wallet_with_balance, setup_bn
     db.session.add(payment)
 
     debit_transaction = Transaction(
-        payment_id=payment.id,
-        wallet_id=setup_wallet_with_balance.id,
-        amount=amount
+        payment_id=payment.id, wallet_id=setup_wallet_with_balance.id, amount=amount
     )
 
     db.session.add(debit_transaction)
@@ -82,7 +77,7 @@ def test_bank_transfer_to_bni(mock_provider, setup_wallet_with_balance, setup_bn
             "destination_account": "115471119",
             "amount": 100500,
             "bank_ref": "953403",
-            "ref_number": "20170227000000000020"
+            "ref_number": "20170227000000000020",
         }
     }
 
@@ -91,12 +86,12 @@ def test_bank_transfer_to_bni(mock_provider, setup_wallet_with_balance, setup_bn
     BankTask().bank_transfer(payment.id)
     assert payment.ref_number
 
+
 @patch("task.bank.tasks.generate_provider")
 @patch("task.bank.tasks.BankTask.retry")
-def test_bank_transfer_retry(mock_provider,
-                             mock_celery,
-                             setup_wallet_with_balance,
-                             setup_bni_bank_account):
+def test_bank_transfer_retry(
+    mock_provider, mock_celery, setup_wallet_with_balance, setup_bni_bank_account
+):
     """ test function that transfer money using OPG in the background but
     failed and reach max retries """
     amount = -100
@@ -112,9 +107,7 @@ def test_bank_transfer_retry(mock_provider,
     db.session.add(payment)
 
     debit_transaction = Transaction(
-        payment_id=payment.id,
-        wallet_id=setup_wallet_with_balance.id,
-        amount=amount
+        payment_id=payment.id, wallet_id=setup_wallet_with_balance.id, amount=amount
     )
 
     db.session.add(debit_transaction)
@@ -129,9 +122,9 @@ def test_bank_transfer_retry(mock_provider,
 
 @patch("task.bank.tasks.generate_provider")
 @patch("task.bank.tasks.BankTask.retry")
-def test_bank_transfer_max_retry(mock_core_bank, mock_celery,
-                                 setup_wallet_with_balance,
-                                 setup_bni_bank_account):
+def test_bank_transfer_max_retry(
+    mock_core_bank, mock_celery, setup_wallet_with_balance, setup_bni_bank_account
+):
     """ test function that transfer money using OPG in the background but
     failed and reach max retries """
     amount = -100

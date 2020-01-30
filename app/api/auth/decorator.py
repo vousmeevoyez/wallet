@@ -11,8 +11,8 @@ from flask_restplus import reqparse
 
 # local
 from app.api.auth.modules.auth_services import AuthServices
-from app.api.error.http import BadRequest, InsufficientScope, MethodNotAllowed
-from app.api.error.message import RESPONSE as error_response
+from app.lib.http_error import BadRequest, InsufficientScope, MethodNotAllowed
+from app.api.const import ERROR as error_response
 
 
 class ParseError(Exception):

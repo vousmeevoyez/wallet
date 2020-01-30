@@ -182,7 +182,6 @@ def _import_bank_csv():
     else:
         datas = read_file("data/bank_list.csv")
         for data in datas:
-            print(data)
             bank = Bank.query.filter_by(code=data[0]).first()
             if bank is None:
                 new_bank = Bank(
@@ -213,49 +212,68 @@ def _create_va_type():
         db.session.add(va_credit)
         db.session.commit()
 
+
 def _create_transaction_type():
-    # only create transaction type when there are none
-    transaction_type = TransactionType.query.count()
-    if transaction_type == 0:
-        file_path = "data/transaction_types.csv"
-        with open(file_path, "r") as files:
-            csv_reader = csv.reader(files, delimiter=';')
-            line = 0
-            for row in csv_reader:
-                if line > 0:
-                    transaction_type = TransactionType(
-                        key=row[0],
-                        description=row[1]
-                    )
-                    db.session.add(transaction_type)
-                    db.session.commit()
-                # end if
-                line += 1
-            # end for
-        # end with
-    # end if
+    transaction_types = TransactionType.query.all()
+    # if there's nothing in the db we load everything
+    if not transaction_types:
+        datas = read_file("data/transaction_types.csv")
+        for data in datas:
+            transaction_type = TransactionType(
+                key=data[0],
+                description=data[1],
+            )
+            db.session.add(transaction_type)
+            db.session.commit()
+    # if already some data we update or add new entry
+    else:
+        datas = read_file("data/transaction_types.csv")
+        for data in datas:
+            transaction_type = TransactionType.query.filter_by(
+                key=data[0]
+            ).first()
+            if transaction_type is None:
+                transaction_type = TransactionType(
+                    key=data[0],
+                    description=data[1],
+                )
+                db.session.add(transaction_type)
+                db.session.commit()
+            else:
+                transaction_type.key = data[0]
+                transaction_type.description = data[1]
+                db.session.commit()
 
 def _create_transaction_note():
-    # only create transaction type when there are none
-    transaction_note = TransactionNote.query.count()
-    if transaction_note == 0:
-        file_path = "data/transaction_notes.csv"
-        with open(file_path, "r") as files:
-            csv_reader = csv.reader(files, delimiter=';')
-            line = 0
-            for row in csv_reader:
-                if line > 0:
-                    transaction_note = TransactionNote(
-                        key=row[0],
-                        notes=row[1]
-                    )
-                    db.session.add(transaction_note)
-                    db.session.commit()
-                # end if
-                line += 1
-            # end for
-        # end with
-    # end if
+    transaction_notes = TransactionNote.query.all()
+    # if there's nothing in the db we load everything
+    if not transaction_notes:
+        datas = read_file("data/transaction_notes.csv")
+        for data in datas:
+            transaction_note = TransactionNote(
+                key=data[0],
+                notes=data[1],
+            )
+            db.session.add(transaction_note)
+            db.session.commit()
+    # if already some data we update or add new entry
+    else:
+        datas = read_file("data/transaction_notes.csv")
+        for data in datas:
+            transaction_note = TransactionNote.query.filter_by(
+                key=data[0]
+            ).first()
+            if transaction_note is None:
+                transaction_note = TransactionNote(
+                    key=data[0],
+                    notes=data[1],
+                )
+                db.session.add(transaction_note)
+                db.session.commit()
+            else:
+                transaction_note.key = data[0]
+                transaction_note.notes = data[1]
+                db.session.commit()
 
 def _create_payment_channel():
     # only create payment if there are none

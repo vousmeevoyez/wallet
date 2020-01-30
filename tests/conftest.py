@@ -1,3 +1,4 @@
+from calendar import monthrange
 from datetime import datetime, timedelta
 import pytest
 
@@ -16,7 +17,9 @@ from app.api.models import (
     VirtualAccount,
     BankAccount,
     Transaction,
-    TransactionType
+    TransactionType,
+    Quota,
+    QuotaUsage,
 )
 
 from manage import init
@@ -71,6 +74,7 @@ def setup_role(setup_db):
 @pytest.fixture(scope="module")
 def setup_user_factory(setup_role):
     """ fixture for generate user using username only!"""
+
     def _setup_user_factory(username):
         user = User.query.filter_by(username=username).first()
 
@@ -90,6 +94,7 @@ def setup_user_factory(setup_role):
             db.session.add(user)
             db.session.commit()
         return user
+
     return _setup_user_factory
 
 
@@ -118,13 +123,16 @@ def setup_user_token(setup_user_only):
     token = user.encode_token("ACCESS", user.id)
     return token.decode()
 
+
 @pytest.fixture(scope="module")
 def setup_user_token_factory(setup_user_factory):
     """ fixture for generate user token using username """
+
     def _setup_user_factory(username):
         user = setup_user_factory(username)
         token = user.encode_token("ACCESS", user.id)
         return token.decode()
+
     return _setup_user_factory
 
 
@@ -175,7 +183,7 @@ def setup_user_wallet_va(client, setup_admin_token):
 def setup_user_wallet_va_bank_acc(client, setup_user_wallet_va):
 
     access_token, user_id, wallet_id = setup_user_wallet_va
-    bank = Bank.query.filter_by(code="009").first()
+    bank = Bank.query.filter_by(code="014").first()
 
     # add account bank information
     params = {
@@ -188,7 +196,7 @@ def setup_user_wallet_va_bank_acc(client, setup_user_wallet_va):
     response = result.get_json()["data"]
 
     bank_account_id = response["bank_account_id"]
-    return access_token, user_id, wallet_id, bank_account_id 
+    return access_token, user_id, wallet_id, bank_account_id
 
 
 @pytest.fixture(scope="module")
@@ -300,7 +308,7 @@ def setup_credit_va(setup_wallet_without_balance, setup_bank, setup_credit_va_ty
     credit_va = VirtualAccount(
         wallet_id=setup_wallet_without_balance.id,
         va_type_id=setup_credit_va_type.id,
-        bank_id=setup_bank.id
+        bank_id=setup_bank.id,
     )
     va_number = credit_va.generate_va_number()
     va_trx_id = credit_va.generate_trx_id()
@@ -317,7 +325,7 @@ def setup_debit_va(setup_wallet_without_balance, setup_bank, setup_debit_va_type
     debit_va = VirtualAccount(
         wallet_id=setup_wallet_without_balance.id,
         va_type_id=setup_debit_va_type.id,
-        bank_id=setup_bank.id
+        bank_id=setup_bank.id,
     )
     va_number = debit_va.generate_va_number()
     va_trx_id = debit_va.generate_trx_id()
@@ -326,6 +334,7 @@ def setup_debit_va(setup_wallet_without_balance, setup_bank, setup_debit_va_type
     db.session.commit()
 
     return va_number, va_trx_id
+
 
 @pytest.fixture(scope="module")
 def setup_payment_plan_auto(client, setup_wallet_info):
@@ -344,6 +353,7 @@ def setup_payment_plan_auto(client, setup_wallet_info):
     response = result.get_json()["data"]
     return response
 
+
 @pytest.fixture(scope="module")
 def setup_payment_plan_auto_pay(client, setup_wallet_info):
     """ setup payment plan for auto pay"""
@@ -360,6 +370,7 @@ def setup_payment_plan_auto_pay(client, setup_wallet_info):
     result = create_payment_plan(client, params, API_KEY)
     response = result.get_json()["data"]
     return response
+
 
 @pytest.fixture(scope="module")
 def setup_payment_plan_auto_debit(client, setup_wallet_info):
@@ -378,6 +389,7 @@ def setup_payment_plan_auto_debit(client, setup_wallet_info):
     response = result.get_json()["data"]
     return response
 
+
 @pytest.fixture(scope="module")
 def setup_additional_plan_for_auto(client, setup_payment_plan_auto):
     """ setup additional plan based on existing auto payment plan"""
@@ -395,6 +407,7 @@ def setup_additional_plan_for_auto(client, setup_payment_plan_auto):
     response = result.get_json()["data"]
     return response
 
+
 @pytest.fixture(scope="module")
 def setup_additional_plan_for_auto_debit(client, setup_payment_plan_auto_debit):
     """ setup additional plan based on existing auto debit payment plan"""
@@ -411,6 +424,7 @@ def setup_additional_plan_for_auto_debit(client, setup_payment_plan_auto_debit):
     result = create_plan(client, params, API_KEY)
     response = result.get_json()["data"]
     return response
+
 
 @pytest.fixture(scope="module")
 def setup_additional_plan_for_auto_pay(client, setup_payment_plan_auto_pay):
@@ -440,11 +454,11 @@ def setup_wallet_info(client, setup_user_wallet_va):
     response = result.get_json()["data"]
     return response
 
+
 @pytest.fixture(scope="module")
 def setup_wallet_info2(client, setup_user_wallet_va_without_balance):
     """ fixture for getting wallet and va information """
-    user_access_token, user_id, wallet_id = \
-    setup_user_wallet_va_without_balance
+    user_access_token, user_id, wallet_id = setup_user_wallet_va_without_balance
 
     result = get_wallet_info(client, wallet_id, user_access_token)
     response = result.get_json()
@@ -472,6 +486,50 @@ def setup_wallet_without_balance():
     db.session.add(wallet)
     db.session.commit()
     return wallet
+
+
+@pytest.fixture(scope="module")
+def setup_wallet_with_quotas():
+    def _setup_wallet_with_quotas(
+        quota_type="MONTHLY", no_of_transactions=3, reward_amount=3500
+    ):
+        """ fixture for creating wallet object only!"""
+        wallet = Wallet()
+        wallet.set_pin("123456")
+        db.session.add(wallet)
+        db.session.flush()
+        wallet.add_balance(10000)
+        db.session.commit()
+
+        early_morning = {"hour": 0, "minute": 0, "second": 0, "microsecond": 0}
+        midnight = {"hour": 23, "minute": 59, "second": 59, "microsecond": 59}
+        now = datetime.utcnow()
+        # by default we set daily quota
+        start_valid = now.replace(**early_morning)
+        end_valid = start_valid.replace(**midnight)
+
+        # add montlhy quota 1-to last day of month
+        if quota_type == "MONTHLY":
+            early_morning["day"] = 1
+            start_valid = start_valid.replace(**early_morning)
+
+            last_day_of_month = monthrange(start_valid.year, start_valid.month)[1]
+            midnight["day"] = last_day_of_month
+            end_valid = start_valid.replace(**midnight)
+
+        quota = Quota(
+            wallet_id=wallet.id,
+            quota_type=quota_type,
+            no_of_transactions=no_of_transactions,
+            reward_amount=reward_amount,
+            start_valid=start_valid,
+            end_valid=end_valid,
+        )
+        db.session.add(quota)
+        db.session.commit()
+        return wallet
+
+    return _setup_wallet_with_quotas
 
 
 @pytest.fixture(scope="module")
@@ -521,7 +579,7 @@ def setup_credit_va(setup_wallet_without_balance, setup_bank, setup_credit_va_ty
     credit_va = VirtualAccount(
         wallet_id=setup_wallet_without_balance.id,
         va_type_id=setup_credit_va_type.id,
-        bank_id=setup_bank.id
+        bank_id=setup_bank.id,
     )
     va_number = credit_va.generate_va_number()
     va_trx_id = credit_va.generate_trx_id()
@@ -538,7 +596,7 @@ def setup_debit_va(setup_wallet_without_balance, setup_bank, setup_debit_va_type
     debit_va = VirtualAccount(
         wallet_id=setup_wallet_without_balance.id,
         va_type_id=setup_debit_va_type.id,
-        bank_id=setup_bank.id
+        bank_id=setup_bank.id,
     )
     va_number = debit_va.generate_va_number()
     va_trx_id = debit_va.generate_trx_id()
@@ -551,7 +609,6 @@ def setup_debit_va(setup_wallet_without_balance, setup_bank, setup_debit_va_type
 
 @pytest.fixture(scope="module")
 def setup_transaction(setup_user_wallet_va):
-    """ fixture for creating debit va object only!"""
     access_token, user_id, wallet_id = setup_user_wallet_va
 
     transaction_type = TransactionType.query.filter_by(key="TOP_UP").first()
@@ -561,11 +618,12 @@ def setup_transaction(setup_user_wallet_va):
         balance=0,
         amount=1000,
         notes="some notes",
-        transaction_type_id=transaction_type.id
+        transaction_type_id=transaction_type.id,
     )
     db.session.add(transaction)
     db.session.commit()
     return transaction
+
 
 @pytest.fixture(scope="module")
 def setup_payment_plan_auto(client, setup_wallet_info):
@@ -584,6 +642,7 @@ def setup_payment_plan_auto(client, setup_wallet_info):
     response = result.get_json()["data"]
     return response
 
+
 @pytest.fixture(scope="module")
 def setup_payment_plan_auto_pay(client, setup_wallet_info):
     """ setup payment plan for auto pay"""
@@ -600,6 +659,7 @@ def setup_payment_plan_auto_pay(client, setup_wallet_info):
     result = create_payment_plan(client, params, API_KEY)
     response = result.get_json()["data"]
     return response
+
 
 @pytest.fixture(scope="module")
 def setup_payment_plan_auto_debit(client, setup_wallet_info):
@@ -618,6 +678,7 @@ def setup_payment_plan_auto_debit(client, setup_wallet_info):
     response = result.get_json()["data"]
     return response
 
+
 @pytest.fixture(scope="module")
 def setup_additional_plan_for_auto(client, setup_payment_plan_auto):
     """ setup additional plan based on existing auto payment plan"""
@@ -635,27 +696,11 @@ def setup_additional_plan_for_auto(client, setup_payment_plan_auto):
     response = result.get_json()["data"]
     return response
 
+
 @pytest.fixture(scope="module")
 def setup_additional_plan_for_auto_debit(client, setup_payment_plan_auto_debit):
     """ setup additional plan based on existing auto debit payment plan"""
     payment_plan_id = setup_payment_plan_auto_debit["payment_plan_id"]
-
-    # CREATE PLAN
-    due_date = datetime.utcnow() + timedelta(minutes=1)
-    params = {
-        "payment_plan_id": payment_plan_id,
-        "amount": "1000",
-        "type": "ADDITIONAL",
-        "due_date": due_date.isoformat(),
-    }
-    result = create_plan(client, params, API_KEY)
-    response = result.get_json()["data"]
-    return response
-
-@pytest.fixture(scope="module")
-def setup_additional_plan_for_auto_pay(client, setup_payment_plan_auto_pay):
-    """ setup additional plan based on existing auto pay payment plan"""
-    payment_plan_id = setup_payment_plan_auto_pay["payment_plan_id"]
 
     # CREATE PLAN
     due_date = datetime.utcnow() + timedelta(minutes=1)

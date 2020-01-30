@@ -2,7 +2,7 @@
     Test HTTP Response
 """
 
-from app.api.http_response import *
+from app.lib.http_response import *
 
 
 """ HTTP Response test class"""

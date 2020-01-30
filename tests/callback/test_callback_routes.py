@@ -24,14 +24,12 @@ def test_deposit_callback(client, setup_wallet_info):
     }
     # generate encrypted data using BNI encryption
     encrypted_data = encrypt(
-        BNI_ECOLLECTION["CREDIT_CLIENT_ID"],
-        BNI_ECOLLECTION["CREDIT_SECRET_KEY"],
-        data
+        BNI_ECOLLECTION["CREDIT_CLIENT_ID"], BNI_ECOLLECTION["CREDIT_SECRET_KEY"], data
     )
 
     fake_callback_request = {
         "client_id": BNI_ECOLLECTION["CREDIT_CLIENT_ID"],
-        "data": encrypted_data
+        "data": encrypted_data,
     }
     result = deposit_callback(client, fake_callback_request)
     response = result.get_json()
@@ -55,14 +53,12 @@ def test_withdraw_callback(client, setup_wallet_info):
     }
 
     encrypted_data = encrypt(
-        BNI_ECOLLECTION["DEBIT_CLIENT_ID"],
-        BNI_ECOLLECTION["DEBIT_SECRET_KEY"],
-        data
+        BNI_ECOLLECTION["DEBIT_CLIENT_ID"], BNI_ECOLLECTION["DEBIT_SECRET_KEY"], data
     )
 
     fake_callback_request = {
         "client_id": BNI_ECOLLECTION["DEBIT_CLIENT_ID"],
-        "data": encrypted_data
+        "data": encrypted_data,
     }
 
     result = withdraw_callback(client, fake_callback_request)

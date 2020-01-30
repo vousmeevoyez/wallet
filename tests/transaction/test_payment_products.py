@@ -3,10 +3,7 @@
 """
 from app.api.models import Payment
 
-from app.api.transactions.factories.payments.products import (
-    CreditPayment,
-    DebitPayment
-)
+from app.api.transactions.factories.payments.products import CreditPayment, DebitPayment
 
 
 def test_credit_payment():

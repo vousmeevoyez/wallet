@@ -18,16 +18,16 @@ from app.api.models import VirtualAccount, Bank, VaType, VaLog
 
 # serializer
 from app.api.serializer import VirtualAccountSchema, VaLogSchema
-from app.api.http_response import created, no_content
-from app.api.error.http import RequestNotFound, UnprocessableEntity
+from app.lib.http_response import created, no_content
+from app.lib.http_error import RequestNotFound, UnprocessableEntity
 
-from app.api.http_response import ok, no_content
+from app.lib.http_response import ok, no_content
 
 # const
 from app.api.const import STATUS
 
 # error response
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import ERROR as error_response
 
 # bank task
 from task.bank.tasks import BankTask
@@ -121,9 +121,7 @@ class VirtualAccountServices:
         """
             return Virtual Account information details
         """
-        virtual_account = VirtualAccountSchema().dump(
-            self.virtual_account
-        ).data
+        virtual_account = VirtualAccountSchema().dump(self.virtual_account).data
         return {"data": virtual_account}
 
     # end def
@@ -132,11 +130,11 @@ class VirtualAccountServices:
         """
             return all Virtual Account logs that recorded
         """
-        logs = VaLog.query.join(
-            VirtualAccount
-        ).filter(
-            VaLog.virtual_account_id == self.virtual_account.id
-        ).all()
+        logs = (
+            VaLog.query.join(VirtualAccount)
+            .filter(VaLog.virtual_account_id == self.virtual_account.id)
+            .all()
+        )
         response = VaLogSchema(many=True).dump(logs).data
         return ok(response)
 
@@ -148,14 +146,13 @@ class VirtualAccountServices:
         """
         self.virtual_account.name = params["name"]
         if params["datetime_expired"] is not None:
-            self.virtual_account.datetime_expired = \
-                datetime.fromisoformat(params["datetime_expired"])
+            self.virtual_account.datetime_expired = datetime.fromisoformat(
+                params["datetime_expired"]
+            )
 
         db.session.commit()
 
-        BankTask().update_va.apply_async(
-            args=[self.virtual_account.id], queue="bank"
-        )
+        BankTask().update_va.apply_async(args=[self.virtual_account.id], queue="bank")
         return no_content()
 
     # end def
@@ -196,4 +193,6 @@ class VirtualAccountServices:
         return response
 
     # end def
+
+
 # end class

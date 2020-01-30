@@ -14,7 +14,7 @@ from app.api import db
 from app.api.models import User, BlacklistToken, ApiKey
 
 # exceptions
-from app.api.error.authentication import (
+from app.api.auth.exceptions import (
     RevokedTokenError,
     SignatureExpiredError,
     InvalidTokenError,
@@ -22,16 +22,16 @@ from app.api.error.authentication import (
 )
 
 # http error
-from app.api.error.http import Unauthorized, UnprocessableEntity, RequestNotFound
+from app.lib.http_error import Unauthorized, UnprocessableEntity, RequestNotFound
 
 # utility
 from app.api.utility.utils import validate_uuid
 
 # http response
-from app.api.http_response import ok, no_content
+from app.lib.http_response import ok, no_content
 
 # error response
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import ERROR as error_response
 
 # const
 from app.api.const import STATUS

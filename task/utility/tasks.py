@@ -1,9 +1,9 @@
 """
     This is Celery Task to help interacting with various utility
 """
+from app.lib.task import BaseTask
 from app.api import (
     celery,
-    sentry,
     db
 )
 
@@ -14,28 +14,8 @@ from app.api.utility.utils import Notif, backoff, UtilityError
 from app.api.const import WORKER
 
 
-class UtilityTask(celery.Task):
+class UtilityTask(BaseTask):
     """Abstract base class for all tasks in my app."""
-
-    abstract = True
-
-    def on_retry(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to sentry at retry."""
-        sentry.captureException(exc)
-        super(UtilityTask, self).on_retry(exc, task_id, args, kwargs, einfo)
-
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to sentry."""
-        sentry.captureException(exc)
-        super(UtilityTask, self).on_failure(exc, task_id, args, kwargs, einfo)
-
-    @celery.task(bind=True)
-    def health_check(self, text):
-        return text
-
-    """
-        PUSH NOTIFICATION
-    """
 
     @celery.task(
         bind=True,

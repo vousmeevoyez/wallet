@@ -12,6 +12,7 @@ from app.api.transactions.factories.transactions.products import (
     ReceiveTransferTransaction,
     ReceivePayrollTransaction,
     DebitRefundTransaction,
+    CashbackTransaction,
 )
 
 
@@ -57,6 +58,7 @@ def generate_transaction(transaction, type_):
     factory.register("CREDIT_REFUND", DebitRefundTransaction)
     # CREDIT TYPE
     factory.register("TOP_UP", TopUpTransaction)
+    factory.register("CASHBACK", TopUpTransaction)
     factory.register("RECEIVE_TRANSFER", ReceiveTransferTransaction)
     factory.register("RECEIVE_PAYROLL", ReceivePayrollTransaction)
     factory.register("DEBIT_REFUND", CreditRefundTransaction)

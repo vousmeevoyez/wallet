@@ -19,7 +19,7 @@ def test_transfer(setup_wallet_with_balance, setup_wallet_without_balance):
         destination=setup_wallet_without_balance,
         amount=-amount,
         flag="TRANSFER",
-        notes="test transfer"
+        notes="test transfer",
     )
     # exchange transaction id for payment id
     payment = Payment.query.filter_by(transaction=transaction).first()
@@ -43,7 +43,7 @@ def test_transfer(setup_wallet_with_balance, setup_wallet_without_balance):
         destination=setup_wallet_without_balance,
         amount=amount,
         flag="RECEIVE_TRANSFER",
-        notes="test transfer"
+        notes="test transfer",
     )
 
     # exchange transaction id for payment id

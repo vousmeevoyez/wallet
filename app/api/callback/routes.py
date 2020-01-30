@@ -7,7 +7,7 @@ import json
 from flask import current_app
 
 # api
-from app.api.core import Routes
+from app.lib.core import Routes
 from app.api.callback import api
 
 # serializer
@@ -17,11 +17,11 @@ from app.api.serializer import CallbackSchema
 from app.api.callback.modules.callback_services import CallbackServices
 
 # error
-from app.api.error.http import BadRequest
+from app.lib.http_error import BadRequest
 
 # configuration
 from app.config.external.bank import BNI_ECOLLECTION
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import ERROR as error_response
 
 # remote call
 from task.bank.lib.helper import decrypt, DecryptError
@@ -40,11 +40,7 @@ class Callback(Routes):
 
     def preprocess(self, payload):
         try:
-            payload = decrypt(
-                self.client_id,
-                self.secret_key,
-                payload["data"]
-            )
+            payload = decrypt(self.client_id, self.secret_key, payload["data"])
         except DecryptError:
             # raise error
             raise BadRequest(
@@ -65,8 +61,7 @@ class Callback(Routes):
         # add payment channel key here to know where the request coming from
         request_data["payment_channel_key"] = "BNI_VA"
         response = CallbackServices(
-            request_data["virtual_account"], request_data["trx_id"],
-            self.traffic_type
+            request_data["virtual_account"], request_data["trx_id"], self.traffic_type
         ).process_callback(request_data)
 
         return response

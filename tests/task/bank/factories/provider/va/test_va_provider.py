@@ -6,9 +6,7 @@ from unittest.mock import Mock, patch
 
 from task.bank.lib.provider import ProviderError
 from task.bank.lib.helper import encrypt
-from task.bank.factories.provider.va.provider import (
-    BNIVaProvider
-)
+from task.bank.factories.provider.va.provider import BNIVaProvider
 
 from app.config.external.bank import BNI_ECOLLECTION
 
@@ -17,12 +15,14 @@ def encrypt_response(data, types):
     encrypted_data = encrypt(
         BNI_ECOLLECTION[f"{types}_CLIENT_ID"],
         BNI_ECOLLECTION[f"{types}_SECRET_KEY"],
-        data
+        data,
     )
     return encrypted_data
 
 
 """ All test case for testing remote call utility"""
+
+
 @patch("requests.request")
 def test_mock_create_va_success(mock_post):
     # payload needed to create virtual account
@@ -37,10 +37,7 @@ def test_mock_create_va_success(mock_post):
 
     # expected value from BNI server
     plain_data = {"trx_id": "1234", "virtual_account": "000211"}
-    expected_data = {
-        "status": "000",
-        "data": encrypt_response(plain_data, "CREDIT"),
-    }
+    expected_data = {"status": "000", "data": encrypt_response(plain_data, "CREDIT")}
 
     # replace return value using expected value here
     mock_post.return_value = Mock(status_code=200)
@@ -50,6 +47,7 @@ def test_mock_create_va_success(mock_post):
     provider.set("CREDIT")
     result = provider.create_va(**data)
     assert result == plain_data
+
 
 @patch("requests.request")
 def test_mock_create_va_failed(mock_post):
@@ -80,6 +78,7 @@ def test_mock_create_va_failed(mock_post):
         provider.set("CREDIT")
         provider.create_va(**data)
 
+
 @patch("requests.request")
 def test_mock_create_va_cardless_success(mock_post):
     """
@@ -104,11 +103,11 @@ def test_mock_create_va_cardless_success(mock_post):
     mock_post.return_value = Mock(status_code=200)
     mock_post.return_value.json.return_value = expected_data
 
-
     provider = BNIVaProvider()
     provider.set("DEBIT")
     result = provider.create_va(**data)
     assert result == plain_data
+
 
 @patch("requests.request")
 def test_mock_create_va_cardless_failed(mock_post):
@@ -172,19 +171,16 @@ def test_mock_get_inquiry_success(mock_post):
         },
     }
 
-    expected_data = {
-        "status": "000",
-        "data": encrypt_response(plain_data, "CREDIT"),
-    }
+    expected_data = {"status": "000", "data": encrypt_response(plain_data, "CREDIT")}
 
     mock_post.return_value = Mock(status_code=200)
     mock_post.return_value.json.return_value = expected_data
-
 
     provider = BNIVaProvider()
     provider.set("CREDIT")
     result = provider.get_inquiry("121")
     assert result == plain_data
+
 
 @patch("requests.request")
 def test_mock_get_inquiry_failed(mock_post):
@@ -203,6 +199,7 @@ def test_mock_get_inquiry_failed(mock_post):
         provider = BNIVaProvider()
         provider.set("CREDIT")
         provider.get_inquiry("123")
+
 
 @patch("requests.request")
 def test_mock_update_va_success(mock_post):
@@ -226,10 +223,7 @@ def test_mock_update_va_success(mock_post):
         "expire_date": "2017-10-29 06:39:27",
     }
 
-    expected_data = {
-        "status": "000",
-        "data": encrypt_response(plain_data, "CREDIT"),
-    }
+    expected_data = {"status": "000", "data": encrypt_response(plain_data, "CREDIT")}
 
     mock_post.return_value = Mock(status_code=200)
     mock_post.return_value.json.return_value = expected_data
@@ -238,6 +232,7 @@ def test_mock_update_va_success(mock_post):
     provider.set("CREDIT")
     result = provider.update_va(**data)
     assert result == plain_data
+
 
 @patch("requests.request")
 def test_mock_update_va_failed(mock_post):
@@ -261,6 +256,7 @@ def test_mock_update_va_failed(mock_post):
         provider = BNIVaProvider()
         provider.set("CREDIT")
         provider.update_va(**data)
+
 
 '''
 @patch("requests.request")

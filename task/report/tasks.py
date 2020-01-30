@@ -1,11 +1,12 @@
 """
     Celery task for report
 """
-import os
 from datetime import datetime
 
 from flask import current_app
-from app.api import celery, sentry, db
+
+from app.lib.task import BaseTask
+from app.api import celery, db
 
 from app.api.reports.modules.report_services import (
     extract_transactions,
@@ -18,33 +19,10 @@ from app.api.reports.modules.email_services import (
 from app.api.utility.utils import backoff
 
 # config
-from app.config.external.bank import BNI_OPG
 from app.api.const import WORKER, LOGGING, REPORTS
 
 
-class ReportTask(celery.Task):
-    """Abstract base class for all tasks in my app."""
-
-    abstract = True
-
-    def on_retry(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to sentry at retry."""
-        sentry.capture_exception(exc)
-        super(ReportTask, self).on_retry(exc, task_id, args, kwargs, einfo)
-
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to sentry."""
-        sentry.capture_exception(exc)
-        # end with
-        super(ReportTask, self).on_failure(exc, task_id, args, kwargs, einfo)
-
-    @celery.task(bind=True)
-    def health_check(self, text):
-        return text
-
-    """
-        QUERY ALL BNI
-    """
+class ReportTask(BaseTask):
 
     @celery.task(
         bind=True,

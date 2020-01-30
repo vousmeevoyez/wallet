@@ -5,6 +5,7 @@
 # pylint: disable=invalid-name
 # pylint: disable=no-self-use
 # pylint: disable=too-few-public-methods
+import csv
 import json
 import random
 
@@ -17,7 +18,7 @@ from app.api.const import WALLET
 from app.config.external.sms import WAVECELL, TEMPLATES
 
 # error
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import ERROR as error_response
 
 from app.api.utility.modules.cipher import AESCipher
 from app.api.utility.modules.sms_services import SmsServices
@@ -27,7 +28,7 @@ from app.api.utility.modules.notif_services import NotifServices
 from app.api.utility.modules.cipher import DecryptError
 from app.api.utility.modules.sms_services import ApiError as SmsError
 from app.api.utility.modules.notif_services import ApiError as NotifError
-from app.api.error.http import BadRequest
+from app.lib.http_error import BadRequest
 
 
 class UtilityError(Exception):
@@ -37,21 +38,45 @@ class UtilityError(Exception):
         super(UtilityError).__init__()
         self.original = original
 
+
 def validate_uuid(string):
     """ validate uuid"""
-    try:
-        uuid_object = UUID(string)
-    except ValueError:
-        raise BadRequest(
-            error_response["INVALID_ID"]["TITLE"],
-            error_response["INVALID_ID"]["MESSAGE"],
-        )
+    uuid_object = string
+    if not isinstance(string, UUID):
+        try:
+            uuid_object = UUID(string)
+        except ValueError:
+            raise BadRequest(
+                error_response["INVALID_ID"]["TITLE"],
+                error_response["INVALID_ID"]["MESSAGE"],
+            )
     return uuid_object
 
 
 def backoff(attempts):
     """ prevent hammering service with thousand retry"""
     return random.uniform(2, 4) ** attempts
+
+
+def read_file(file_path):
+    # read file from file path and return iterator
+    with open(file_path, "r") as files:
+        csv_reader = csv.reader(files, delimiter=';')
+        line = 0
+        for row in csv_reader:
+            # skip headers
+            if line > 0:
+                yield row
+            line += 1
+
+
+def lookup_from_csv(column_no, value, file_path):
+    # find bank data from csv using bank code
+    rows = read_file(file_path)
+    for row in rows:
+        if str(row[column_no]) == str(value):
+            return row
+    return ValueError
 
 
 class Sms:
@@ -102,6 +127,7 @@ class Notif:
 
 class TemplateEngine:
     """ utility for handling html templating """
+
     def __init__(self, template_name, data, template_dir_path):
         self.env = Environment(loader=FileSystemLoader(template_dir_path))
         self.template_name = template_name

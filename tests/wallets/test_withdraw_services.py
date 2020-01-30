@@ -10,7 +10,7 @@ from app.api.models import Wallet, Withdraw
 from app.api.wallets.modules.withdraw_services import WithdrawServices
 
 # exceptions
-from app.api.error.http import *
+from app.lib.http_error import *
 
 from app.api.utility.utils import validate_uuid
 
@@ -22,10 +22,7 @@ def test_request_withdraw_success(setup_wallet_info):
     """ test function to request withdraw """
     params = {"amount": 50000, "bank_code": "009"}
 
-    result = WithdrawServices(
-        setup_wallet_info["id"],
-        "123456"
-    ).request(params)
+    result = WithdrawServices(setup_wallet_info["id"], "123456").request(params)
 
     assert result[0]["data"]
     assert result[0]["data"]["virtual_account"]
@@ -42,10 +39,7 @@ def test_request_withdraw_success_all_amount(setup_wallet_info):
     """
     params = {"amount": 0, "bank_code": "009"}
 
-    result = WithdrawServices(
-        setup_wallet_info["id"],
-        "123456"
-    ).request(params)
+    result = WithdrawServices(setup_wallet_info["id"], "123456").request(params)
 
     assert result[0]["data"]
     assert result[0]["data"]["virtual_account"]
@@ -64,10 +58,7 @@ def test_request_withdraw_success_all_amount_max(setup_wallet_info):
 
     params = {"amount": 0, "bank_code": "009"}
 
-    result = WithdrawServices(
-        setup_wallet_info["id"],
-        "123456"
-    ).request(params)
+    result = WithdrawServices(setup_wallet_info["id"], "123456").request(params)
 
     assert result[0]["data"]
     assert result[0]["data"]["virtual_account"]
@@ -90,9 +81,7 @@ def test_request_withdraw_va_already_exist(setup_wallet_info):
     db.session.query(Withdraw).delete()
     db.session.commit()
 
-    result = WithdrawServices(
-        setup_wallet_info["id"], "123456"
-    ).request(params)
+    result = WithdrawServices(setup_wallet_info["id"], "123456").request(params)
 
     assert result[0]["data"]
     assert result[0]["data"]["virtual_account"]

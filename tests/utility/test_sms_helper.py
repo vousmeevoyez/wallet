@@ -48,6 +48,7 @@ def test_post_success(mock_post):
     result = SmsServices()._post(api_name, payload)
     assert result
 
+
 @patch("requests.post")
 def test_post_failed(mock_post):
     """ test method to post to some rest api but server return 400 """

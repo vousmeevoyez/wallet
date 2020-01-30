@@ -14,11 +14,14 @@ from app.api.auth.decorator import *
 from app.api.auth.decorator import _parse_token
 from app.api.auth.decorator import _parse_key
 
-from app.api.error.authentication import RevokedTokenError
-from app.api.error.authentication import SignatureExpiredError
-from app.api.error.authentication import InvalidTokenError
+from app.api.auth.exceptions import (
+    RevokedTokenError,
+    SignatureExpiredError,
+    InvalidTokenError,
+)
 
-from app.api.error.http import *
+from app.lib.http_error import *
+
 
 @patch("flask_restplus.reqparse.RequestParser.parse_args")
 def test_parse_token(parse_args_mock):
@@ -59,6 +62,7 @@ def test_admin_required_failed(parse_args_mock):
     with pytest.raises(BadRequest):
         decorated_func()
 
+
 @patch("flask_restplus.reqparse.RequestParser.parse_args")
 def test_admin_required_invalid_identifier(parse_args_mock):
     """ test admin required decorator with valid token but invalid user """
@@ -73,6 +77,7 @@ def test_admin_required_invalid_identifier(parse_args_mock):
     with pytest.raises(BadRequest):
         result = decorated_func()
 
+
 @patch("flask_restplus.reqparse.RequestParser.parse_args")
 def test_refresh_token_only(parse_args_mock, setup_user_token_factory):
     """ test refresh token only but with access token"""
@@ -86,6 +91,7 @@ def test_refresh_token_only(parse_args_mock, setup_user_token_factory):
 
     with pytest.raises(MethodNotAllowed):
         result = decorated_func()
+
 
 @patch("flask_restplus.reqparse.RequestParser.parse_args")
 def test_token_required(parse_args_mock, setup_user_token_factory):

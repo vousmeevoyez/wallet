@@ -12,6 +12,8 @@ import secrets
 import random
 import uuid
 
+from calendar import monthrange
+
 from datetime import datetime, timedelta
 from dateutil import relativedelta
 
@@ -20,7 +22,9 @@ import jwt
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from sqlalchemy import asc, func
+from sqlalchemy import select, asc, func
+from sqlalchemy.orm import backref
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.api import db
@@ -33,7 +37,7 @@ from app.config.external.bank import BNI_ECOLLECTION
 from app.config import config
 
 # exceptions
-from app.api.error.authentication import (
+from app.api.auth.exceptions import (
     RevokedTokenError,
     SignatureExpiredError,
     InvalidTokenError,
@@ -95,9 +99,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))  # hashed password
     status = db.Column(db.Integer, default=1)  # active
     role_id = db.Column(db.Integer, db.ForeignKey("role.id"))
-    role = db.relationship(
-        "Role", back_populates="user"
-    )  # one to one
+    role = db.relationship("Role", back_populates="user")  # one to one
     wallets = db.relationship(
         "Wallet", back_populates="user", cascade="all, delete-orphan"
     )  # one to many
@@ -197,8 +199,10 @@ class Wallet(db.Model):
     balance = db.Column(db.Float, default=0)
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("user.id"))
     user = db.relationship(
-        "User", back_populates="wallets", cascade="all, delete-orphan",
-        single_parent=True
+        "User",
+        back_populates="wallets",
+        cascade="all, delete-orphan",
+        single_parent=True,
     )  # many to one
     virtual_accounts = db.relationship(
         "VirtualAccount", cascade="all, delete-orphan"
@@ -213,6 +217,7 @@ class Wallet(db.Model):
     transactions = db.relationship(
         "Transaction", back_populates="wallet"
     )  # one to many
+    quotas = db.relationship("Quota", cascade="all, delete-orphan")  # one to many
 
     def __repr__(self):
         return "<Wallet {} {} {}>".format(self.id, self.balance, self.user_id)
@@ -234,7 +239,7 @@ class Wallet(db.Model):
         wallet_lock = WalletLock.query.filter(
             WalletLock.wallet_id == self.id,
             WalletLock.lock_until > datetime.now(),
-            WalletLock.status == True  # pylint:disable=singleton-comparison
+            WalletLock.status == True,  # pylint:disable=singleton-comparison
         ).first()
         # if is found then it means locked, but it ifs not it mean not unlocked
         return bool(not wallet_lock)
@@ -278,7 +283,7 @@ class Wallet(db.Model):
         wallet_lock = WalletLock.query.filter(
             WalletLock.wallet_id == self.id,
             WalletLock.lock_until > datetime.now(),
-            WalletLock.status == True  # pylint:disable=singleton-comparison
+            WalletLock.status == True,  # pylint:disable=singleton-comparison
         ).first()
         # unlock it here
         wallet_lock.status = False
@@ -375,9 +380,7 @@ class VaType(db.Model):
     key = db.Column(db.String(24))
     created_at = db.Column(db.DateTime, default=now)
     status = db.Column(db.Boolean, default=True)
-    virtual_account = db.relationship(
-        "VirtualAccount", back_populates="va_type"
-    )
+    virtual_account = db.relationship("VirtualAccount", back_populates="va_type")
 
     def __repr__(self):
         return "<VaType {} {} {}>".format(self.id, self.key, self.status)
@@ -394,7 +397,9 @@ class VaLog(db.Model):
     """
 
     id = db.Column(UUID(as_uuid=True), unique=True, primary_key=True, default=uid)
-    status = db.Column(db.Boolean, default=False)  # to show is the operation success or not
+    status = db.Column(
+        db.Boolean, default=False
+    )  # to show is the operation success or not
     created_at = db.Column(db.DateTime, default=now)  # UTC
     balance = db.Column(db.Float, default=0)
     virtual_account_id = db.Column(
@@ -553,13 +558,13 @@ class VirtualAccount(db.Model):
     created_at = db.Column(db.DateTime, default=now)
     wallet_id = db.Column(UUID(as_uuid=True), db.ForeignKey("wallet.id"))
     wallet = db.relationship(
-        "Wallet", back_populates="virtual_accounts",
-        cascade="all, delete-orphan", single_parent=True
+        "Wallet",
+        back_populates="virtual_accounts",
+        cascade="all, delete-orphan",
+        single_parent=True,
     )
     va_type_id = db.Column(db.Integer, db.ForeignKey("va_type.id"))
-    va_type = db.relationship(
-        "VaType", back_populates="virtual_account"
-    )
+    va_type = db.relationship("VaType", back_populates="virtual_account")
     bank_id = db.Column(UUID(as_uuid=True), db.ForeignKey("bank.id"))
     bank = db.relationship("Bank", back_populates="virtual_account")
     logs = db.relationship("VaLog", back_populates="virtual_account")
@@ -726,7 +731,6 @@ class Transaction(db.Model):
     """
         This is class that represent Transaction Database Object
     """
-
     id = db.Column(UUID(as_uuid=True), unique=True, primary_key=True, default=uid)
     wallet_id = db.Column(UUID(as_uuid=True), db.ForeignKey("wallet.id"))
     balance = db.Column(db.Float, default=0)
@@ -746,8 +750,16 @@ class Transaction(db.Model):
     wallet = db.relationship(
         "Wallet", back_populates="transactions", uselist=False
     )  # one to one
-    transaction_link_id = db.Column(UUID(as_uuid=True), db.ForeignKey("transaction.id"))
-    transaction_link = db.relationship("Transaction", remote_side=[id])  # one to one
+    parent_id = db.Column(UUID(as_uuid=True), db.ForeignKey("transaction.id"))
+    children = db.relationship(
+        "Transaction",
+        backref=backref("parent", remote_side=[id])
+    )  # one to one
+    # one to one
+    quota_usage = db.relationship(  # one to one
+        "QuotaUsage",
+        back_populates="transaction",
+    )
 
     def __repr__(self):
         return "<Transaction {} {} {} {} {}>".format(
@@ -759,8 +771,6 @@ class Transaction(db.Model):
     def load(self, generator):
         generator.load(self)
 
-
-# end class
 
 class BlacklistToken(db.Model):
     """
@@ -1024,6 +1034,137 @@ class BalanceLog(db.Model):
     def __repr__(self):
         return "<BalanceLog {} {} {} {} {}>".format(
             self.id, self.account_no, self.internal_balance, self.balance, self.is_match
+        )
+
+    # end def
+
+
+class Quota(db.Model):
+    """ class model for representing transfer quota """
+
+    id = db.Column(UUID(as_uuid=True), unique=True, primary_key=True, default=uid)
+    quota_type = db.Column(db.String(255))
+    no_of_transactions = db.Column(db.Integer)
+    # FIXED / PERCENTAGE
+    reward_type = db.Column(db.String(255))
+    reward_amount = db.Column(db.Float)
+    # many quota have relation with one wallet
+    wallet_id = db.Column(UUID(as_uuid=True), db.ForeignKey("wallet.id"))
+    wallet = db.relationship(
+        "Wallet",
+        back_populates="quotas",
+        cascade="all, delete-orphan",
+        single_parent=True,
+    )
+    # one quota can have many usage
+    quota_usages = db.relationship("QuotaUsage", cascade="all, delete-orphan")
+    start_valid = db.Column(db.DateTime)
+    end_valid = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=now)  # UTC
+
+    def __repr__(self):
+        return "<Quota {} {} {} {} {} {}>".format(
+            self.id,
+            self.no_of_transactions,
+            self.reward_amount,
+            self.start_valid,
+            self.end_valid,
+            self.wallet_id,
+        )
+
+    # end def
+
+    @staticmethod
+    def get_month_last_day(month, year):
+        # return only the day
+        return monthrange(year, month)[1]
+
+    def get_valid_range(self, quota_type):
+        """ based on DAILY / MONTHLY we return correct start and end range """
+        # set default valid range to daily 00.00 to 23.59
+        early_morning = {"hour": 0, "minute": 0, "second": 0, "microsecond": 0}
+        midnight = {"hour": 23, "minute": 59, "second": 59, "microsecond": 59}
+
+        start = datetime.utcnow().replace(**early_morning)
+        end = start.replace(**midnight)
+        if quota_type == "MONTHLY":
+            # for MONTHLY we set to 1 until last day of every month
+            early_morning["day"] = 1
+            start = datetime.utcnow().replace(**early_morning)
+
+            last_day_of_month = self.get_month_last_day(
+                start.month, start.year
+            )
+            midnight["day"] = last_day_of_month
+
+            end = start.replace(**midnight)
+        return start, end
+
+    @staticmethod
+    def lookup_current_reward():
+        """ check current reward from stored CSV  """
+        # prevent circular import
+        from app.api.utility.utils import lookup_from_csv
+        current_now = datetime.utcnow()
+        current_month = current_now.month
+
+        column_no = 0
+        row = lookup_from_csv(
+            column_no,
+            current_month,
+            "data/monthly_rewards.csv"
+        )
+        quota_type = row[1]
+        no_of_transactions = row[2]
+        reward_type = row[3]
+        reward_amount = row[4]
+        return quota_type, no_of_transactions, reward_type, reward_amount
+
+    @hybrid_property
+    def used(self):
+        return abs(sum(acc.usage for acc in self.quota_usages))
+
+    @hybrid_property
+    def remaining(cls):
+        return cls.no_of_transactions
+
+    @remaining.expression
+    def remaining(cls):
+        """ for now we only return active quota every month ! """
+        current_now = datetime.utcnow()
+        return select([func.sum(Quota.no_of_transactions)]).\
+            where(Quota.start_valid <= current_now).\
+            where(Quota.end_valid >= current_now).\
+            label('remaining')
+
+
+class QuotaUsage(db.Model):
+    """ class model for representing transfer quota usage """
+    id = db.Column(UUID(as_uuid=True), unique=True, primary_key=True, default=uid)
+    usage = db.Column(db.Integer)
+    # many quota usage link to one quota
+    quota_id = db.Column(UUID(as_uuid=True), db.ForeignKey("quota.id"))
+    quota = db.relationship(
+        "Quota",
+        back_populates="quota_usages",
+        cascade="all, delete-orphan",
+        single_parent=True,
+    )
+    # one quota mapped to one transaction
+    transaction_id = db.Column(
+        UUID(as_uuid=True), db.ForeignKey("transaction.id")
+    )
+    transaction = db.relationship(
+        "Transaction",
+        back_populates="quota_usage",
+    )  # one to one
+    # quota usage status PENDING | COMPLETED | CANCELLED
+    status = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=now)  # UTC
+
+    def __repr__(self):
+        return "<QuotaUsage {} {} {} {}>".format(
+            self.id, self.usage, self.quota_id, self.transaction_id
         )
 
     # end def

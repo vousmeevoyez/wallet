@@ -12,10 +12,10 @@
 from app.api.models import *
 
 # exceptions
-from app.api.error.http import *
+from app.lib.http_error import *
 
 # error
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import ERROR as error_response
 
 # utility
 from app.api.utility.utils import validate_uuid

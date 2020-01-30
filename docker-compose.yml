@@ -151,6 +151,23 @@ services:
                     max-file: "10"
                 networks:
                 - wallet-net
+
+        celery7:
+                env_file: env/${ENV}.env
+                image: modana-wallet-services
+                entrypoint: make quota-worker
+                depends_on:
+                - flask
+                - rabbitmq
+                - postgres
+                restart: unless-stopped
+                logging:
+                  driver: "json-file"
+                  options:
+                    max-size: "100k"
+                    max-file: "10"
+                networks:
+                - wallet-net
         
         scheduler:
                 env_file: env/${ENV}.env

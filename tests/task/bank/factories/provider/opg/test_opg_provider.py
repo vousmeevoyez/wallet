@@ -4,21 +4,20 @@ from unittest.mock import Mock, patch
 from task.bank.lib.provider import ProviderError
 from task.bank.factories.provider.opg.provider import (
     BNIOpgProvider,
-    BNIOpgProviderBuilder
+    BNIOpgProviderBuilder,
 )
 
 from app.config.external.bank import BNI_OPG
 
 
 class TestBNIOpgProviderBuilder:
-
     @patch("requests.request")
     def test_authorize(self, mock_request):
         expected_value = {
             "access_token": "x3LyfeWKbeaARhd2PfU4F4OeNi43CrDFdi6XnzScKIuk5VmvFiq0B2",
             "token_type": "Bearer",
             "expires_in": 3599,
-            "scope": "resource.WRITE resource.READ"
+            "scope": "resource.WRITE resource.READ",
         }
 
         mock_request.return_value = Mock(status_code=200)
@@ -34,7 +33,10 @@ class TestMockBNIOpgProvider:
 
     def test_api_name_to_full_url(self):
         result = BNIOpgProvider("some-access-token").api_name_to_full_url("GET_BALANCE")
-        assert result == "https://apidev.bni.co.id:8066/H2H/v2/getbalance?access_token=some-access-token"
+        assert (
+            result
+            == "https://apidev.bni.co.id:8066/H2H/v2/getbalance?access_token=some-access-token"
+        )
 
     def test_prepare_request(self):
         """ make sure by passing api_name we get the designated request object
@@ -42,7 +44,7 @@ class TestMockBNIOpgProvider:
         payload = {
             "api_name": "GET_BALANCE",
             "method": "POST",
-            "payload": {"somepayload": "test"}
+            "payload": {"somepayload": "test"},
         }
         result = BNIOpgProvider("some-access-token").prepare_request(**payload)
         request = result.to_representation()
@@ -88,7 +90,7 @@ class TestMockBNIOpgProvider:
                     "errorMessage": "Unknown Output",
                     "responseMessage": "Request failed",
                     "responseTimestamp": "2017-02-24T14:12:25.871Z",
-                }
+                },
             }
         }
 
@@ -158,7 +160,6 @@ class TestMockBNIOpgProvider:
         with pytest.raises(ProviderError):
             BNIOpgProvider(access_token).get_inhouse_inquiry("123456")
 
-    
     @patch("requests.request")
     def test_do_payment_success(self, mock_request):
         """ test success do payment from BNI OPG"""
@@ -206,7 +207,6 @@ class TestMockBNIOpgProvider:
         assert result["transfer_info"]["ref_number"]
         assert result["transfer_info"]["bank_ref"]
 
-    
     @patch("requests.request")
     def test_do_payment_failed(self, mock_request):
         """ test fail to do payment from BNI OPG"""
@@ -412,7 +412,6 @@ class TestMockBNIOpgProvider:
             "transfer_ref": "100000000024",
         }
 
-
         mock_request.return_value = Mock(status_code=200)
         mock_request.return_value.json.return_value = expected_value
 
@@ -488,7 +487,7 @@ class TestMockBNIOpgProvider:
             "amount": "100500",
             "bank_code": "009",
             "inquiry_ref_number": "12345678910",
-            "transfer_ref_number": "12345678910"
+            "transfer_ref_number": "12345678910",
         }
 
         mock_request.return_value = Mock(status_code=200)
@@ -528,7 +527,7 @@ class TestMockBNIOpgProvider:
             "amount": "100500",
             "bank_code": "009",
             "inquiry_ref_number": "12345678910",
-            "transfer_ref_number": "12345678910"
+            "transfer_ref_number": "12345678910",
         }
 
         mock_request.return_value = Mock(status_code=400)
@@ -556,7 +555,7 @@ class TestMockBNIOpgProvider:
                     "valueCurrency": "IDR",
                     "bankReference": 953403,
                     "customerReference": 20170227000000000020,
-                }
+                },
             }
         }
 
@@ -567,7 +566,7 @@ class TestMockBNIOpgProvider:
             "amount": "100500",
             "bank_code": "009",
             "inquiry_ref_number": "12345678910",
-            "transfer_ref_number": "12345678910"
+            "transfer_ref_number": "12345678910",
         }
 
         mock_request.return_value = Mock(status_code=200)
@@ -601,7 +600,7 @@ class TestMockBNIOpgProvider:
                     "valueCurrency": "IDR",
                     "bankReference": 953403,
                     "customerReference": 20170227000000000020,
-                }
+                },
             }
         }
 
@@ -612,7 +611,7 @@ class TestMockBNIOpgProvider:
             "amount": "100500",
             "bank_code": "014",
             "inquiry_ref_number": "12345678910",
-            "transfer_ref_number": "12345678910"
+            "transfer_ref_number": "12345678910",
         }
 
         mock_request.return_value = Mock(status_code=200)
@@ -647,11 +646,7 @@ class TestMockBNIOpgProvider:
             }
         }
 
-        data = {
-            "ref_number": "113183203",
-            "account_no": "115471119",
-            "amount": "11111",
-        }
+        data = {"ref_number": "113183203", "account_no": "115471119", "amount": "11111"}
 
         mock_request.return_value = Mock(status_code=200)
         mock_request.return_value.json.return_value = expected_value
@@ -681,12 +676,7 @@ class TestMockBNIOpgProvider:
                 },
             }
         }
-        data = {
-            "ref_number": "113183203",
-            "account_no": "115471119",
-            "amount": "11111",
-        }
-
+        data = {"ref_number": "113183203", "account_no": "115471119", "amount": "11111"}
 
         mock_request.return_value = Mock(status_code=200)
         mock_request.return_value.json.return_value = expected_value

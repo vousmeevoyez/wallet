@@ -6,10 +6,10 @@ from datetime import datetime
 from celery.signals import task_postrun
 from sqlalchemy.exc import OperationalError, IntegrityError
 
+from app.lib.task import BaseTask
 from app.api import (
     celery,
-    db,
-    sentry
+    db
 )
 
 from app.api.models import (
@@ -35,24 +35,8 @@ def close_session(*args, **kwargs):
     db.session.remove()
 
 
-class TransactionTask(celery.Task):
+class TransactionTask(BaseTask):
     """Abstract base class for all tasks in my app."""
-
-    abstract = True
-
-    def on_retry(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to sentry at retry."""
-        sentry.captureException(exc)
-        super(TransactionTask, self).on_retry(exc, task_id, args, kwargs, einfo)
-
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to sentry."""
-        sentry.captureException(exc)
-        super(TransactionTask, self).on_failure(exc, task_id, args, kwargs, einfo)
-
-    @celery.task(bind=True)
-    def health_check(self, text):
-        return text
 
     @celery.task(
         bind=True,

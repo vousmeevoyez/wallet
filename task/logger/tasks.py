@@ -5,7 +5,9 @@
 from concurrent.futures import ThreadPoolExecutor
 
 from flask import current_app
-from app.api import celery, sentry, db
+
+from app.lib.task import BaseTask
+from app.api import celery, db
 
 from app.api.models import (
     VirtualAccount,
@@ -59,29 +61,8 @@ def record_va(account_no, balance, status):
     db.session.commit()
 
 
-class LoggingTask(celery.Task):
+class LoggingTask(BaseTask):
     """Abstract base class for all tasks in my app."""
-
-    abstract = True
-
-    def on_retry(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to sentry at retry."""
-        sentry.capture_exception(exc)
-        super(LoggingTask, self).on_retry(exc, task_id, args, kwargs, einfo)
-
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to sentry."""
-        sentry.capture_exception(exc)
-        # end with
-        super(LoggingTask, self).on_failure(exc, task_id, args, kwargs, einfo)
-
-    @celery.task(bind=True)
-    def health_check(self, text):
-        return text
-
-    """
-        QUERY ALL BNI
-    """
 
     @celery.task(
         bind=True,

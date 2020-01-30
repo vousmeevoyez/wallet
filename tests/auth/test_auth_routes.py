@@ -65,6 +65,7 @@ def test_get_refresh_token_failed_refresh_token_only(client, setup_user_only):
 
     assert result.status_code == 405
 
+
 def test_get_refresh_token_failed_invalid_token(client, setup_user_only):
     """ test get refresh token using invalid token"""
     refresh_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"

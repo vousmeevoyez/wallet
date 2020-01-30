@@ -4,6 +4,7 @@
     Handle withdraw request process
 """
 from datetime import datetime, timedelta
+
 # db
 from app.api import db
 
@@ -14,24 +15,19 @@ from app.api.virtual_accounts.modules.va_services import VirtualAccountServices
 from app.api.wallets.modules.wallet_core import WalletCore
 
 # models
-from app.api.models import (
-    Withdraw,
-    Bank,
-    VirtualAccount,
-    VaType
-)
+from app.api.models import Withdraw, Bank, VirtualAccount, VaType
 
 # http
-from app.api.http_response import ok
+from app.lib.http_response import ok
 
 # const
 from app.api.const import WALLET, VIRTUAL_ACCOUNT
 
 # exceptions
-from app.api.error.http import UnprocessableEntity
+from app.lib.http_error import UnprocessableEntity
 
 # error
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import ERROR as error_response
 
 
 class WithdrawServices(WalletCore):
@@ -47,8 +43,7 @@ class WithdrawServices(WalletCore):
             # if its less than 2.5 jt we use that value but if its more, we use
             # we use debit max balance
             current_balance = self.source.balance
-            allowed_max_balance = \
-                float(VIRTUAL_ACCOUNT["009"]["DEBIT_MAX_BALANCE"])
+            allowed_max_balance = float(VIRTUAL_ACCOUNT["009"]["DEBIT_MAX_BALANCE"])
 
             if current_balance < allowed_max_balance:
                 amount = current_balance
@@ -75,8 +70,7 @@ class WithdrawServices(WalletCore):
 
         # before creating a cardless va, we need to make sure there's no ongoing withdraw request
         pending_withdraw = Withdraw.query.filter(
-            Withdraw.wallet_id == self.source.id,
-            Withdraw.valid_until > datetime.now()
+            Withdraw.wallet_id == self.source.id, Withdraw.valid_until > datetime.now()
         ).count()
         if pending_withdraw > 0:
             raise UnprocessableEntity(

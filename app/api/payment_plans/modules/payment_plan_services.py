@@ -19,16 +19,16 @@ from app.api.plans.modules.plan_services import PlanServices
 from app.api.serializer import PaymentPlanSchema
 
 # http response
-from app.api.http_response import ok, no_content, created
+from app.lib.http_response import ok, no_content, created
 
 # utility
 from app.api.utility.utils import validate_uuid
 
 # configuration
-from app.api.error.message import RESPONSE as error_response
+from app.api.const import ERROR as error_response
 
 # exceptions
-from app.api.error.http import RequestNotFound, UnprocessableEntity
+from app.lib.http_error import RequestNotFound, UnprocessableEntity
 
 
 class PaymentPlanServices:

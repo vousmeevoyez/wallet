@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 from celery.signals import task_postrun
 
 # core
+from app.lib.task import BaseTask
 from app.api import (
-    sentry,
     db,
     celery,
     scheduler
@@ -19,7 +19,7 @@ from app.api.models import *
 # exceptions
 from sqlalchemy.exc import OperationalError, IntegrityError
 from celery.exceptions import MaxRetriesExceededError
-from app.api.error.http import *
+from app.lib.http_error import UnprocessableEntity
 
 # configuration
 from app.api.const import BACKGROUND_PAYMENT, WORKER
@@ -27,24 +27,8 @@ from app.api.const import BACKGROUND_PAYMENT, WORKER
 max_retries = int(BACKGROUND_PAYMENT["DAY"]) / int(BACKGROUND_PAYMENT["COUNTDOWN"])
 
 
-class PaymentTask(celery.Task):
+class PaymentTask(BaseTask):
     """Abstract base class for all tasks in my app."""
-
-    abstract = True
-
-    def on_retry(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to sentry at retry."""
-        sentry.captureException(exc)
-        super(PaymentTask, self).on_retry(exc, task_id, args, kwargs, einfo)
-
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to sentry."""
-        sentry.captureException(exc)
-        super(PaymentTask, self).on_failure(exc, task_id, args, kwargs, einfo)
-
-    @celery.task(bind=True)
-    def health_check(self, text):
-        return text
 
     @celery.task(
         bind=True,

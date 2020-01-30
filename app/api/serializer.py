@@ -64,13 +64,15 @@ def validate_name(name):
             name -- name
     """
     # onyl allow alphabet character
-    #pattern = r"^[a-zA-Z ]+$"
+    # pattern = r"^[a-zA-Z ]+$"
     if len(name) < 2:
         raise ValidationError("Invalid name, minimum is 2 character")
     if len(name) > 70:
         raise ValidationError("Invalid name, max is 70 character")
-    #if re.match(pattern, name) is None:
+    # if re.match(pattern, name) is None:
     #    raise ValidationError("Invalid name, only alphabet allowed")
+
+
 # end def
 
 
@@ -208,6 +210,67 @@ class VirtualAccountSchema(ma.Schema):
 
 # end class
 
+class QuotaSchema(ma.Schema):
+    """ this is schema for transfer quota """
+
+    id = fields.Str(missing=None)
+    quota_type = fields.Str(required=True, validate=cannot_be_blank)
+    wallet_id = fields.Str(required=True, validate=cannot_be_blank)
+    no_of_transactions = fields.Int(required=True, validate=cannot_be_blank)
+    reward_amount = fields.Float(required=True, validate=cannot_be_blank)
+    start_valid = fields.Str(required=True, validate=cannot_be_blank)
+    end_valid = fields.Str(required=True, validate=cannot_be_blank)
+    used = fields.Int()
+    remaining = fields.Int()
+    created_at = fields.DateTime()
+
+    @validates("quota_type")
+    def validate_quota_type(self, status):
+        """
+            function to validate quota type
+        """
+        if status is not None:
+            if status not in ["DAILY", "MONTHLY"]:
+                raise ValidationError("Invalid quota type")
+
+    @validates("no_of_transactions")
+    def validate_no_of_trx(self, no_of_transactions):
+        """
+            function to validate allowed no of transactions
+        """
+        if no_of_transactions < 1:
+            raise ValidationError("No of transactions can't be less than zero")
+
+    @validates("reward_amount")
+    def validate_reward_amount(self, reward_amount):
+        """
+            function to validate reward amount
+        """
+        if reward_amount < 1:
+            raise ValidationError("Reward amount can't be less than zero ")
+
+    @validates("start_valid")
+    def validate_start_valid(self, start_valid):
+        """
+            function to validate start_valid
+        """
+        try:
+            start_valid = datetime.strptime(start_valid, "%Y/%m/%d")
+        except ValueError:
+            raise ValidationError("Invalid start valid format")
+
+    @validates("end_valid")
+    def validate_end_valid(self, end_valid):
+        """
+            function to validate end_date
+            args:
+                end_date -- End Date
+        """
+        try:
+            end_valid = datetime.strptime(end_valid, "%Y/%m/%d")
+        except ValueError:
+            raise ValidationError("Invalid end valid format")
+
 
 class WalletSchema(ma.Schema):
     """ This is class that represent wallet schema"""
@@ -225,6 +288,7 @@ class WalletSchema(ma.Schema):
     status = fields.Method("bool_to_status")
     balance = fields.Float()
     virtual_accounts = fields.Nested(VirtualAccountSchema, many=True)
+    quotas = fields.Nested(QuotaSchema(only=("used", "remaining", "end_valid")), many=True)
 
     def bool_to_status(self, obj):
         """
@@ -253,9 +317,9 @@ class UserSchema(ma.Schema):
     id = fields.Str()
     username = fields.Str(required=True, validate=cannot_be_blank)
     name = fields.Str(required=True, validate=(cannot_be_blank, validate_name))
-    organization = fields.Str(allow_none=True, validate=(cannot_be_blank,
-                                                         validate_name),
-                              load_only=True)
+    organization = fields.Str(
+        allow_none=True, validate=(cannot_be_blank, validate_name), load_only=True
+    )
     phone_ext = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
     phone_number = fields.Str(required=True, validate=cannot_be_blank, load_only=True)
     msisdn = fields.Method("phone_to_msisdn", dump_only=True)
@@ -948,6 +1012,7 @@ class PaymentPlanSchema(ma.Schema):
 
 
 # end class
+
 
 class VaLogSchema(ma.Schema):
     """ this is schema for virtual account log object """

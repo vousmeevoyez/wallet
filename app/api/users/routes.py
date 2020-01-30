@@ -6,7 +6,7 @@
 # pylint: disable=import-error
 # pylint: disable=no-self-use
 
-from app.api.core import Routes
+from app.lib.core import Routes
 from app.api.users import api
 
 # serializer

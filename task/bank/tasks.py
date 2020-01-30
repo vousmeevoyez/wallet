@@ -7,9 +7,9 @@ from celery.exceptions import (
     MaxRetriesExceededError
 )
 
+from app.lib.task import BaseTask
 from app.api import (
     celery,
-    sentry,
     db
 )
 from app.api.models import (
@@ -28,27 +28,10 @@ from app.api.const import WORKER, STATUS
 from app.config.external.bank import BNI_OPG
 
 
-class BankTask(celery.Task):
+class BankTask(BaseTask):
     """Abstract base class for all tasks in my app."""
 
-    abstract = True
-
     current_user = None
-
-    def on_retry(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to sentry at retry."""
-        sentry.captureException(exc)
-        super(BankTask, self).on_retry(exc, task_id, args, kwargs, einfo)
-
-    def on_failure(self, exc, task_id, args, kwargs, einfo):
-        """Log the exceptions to sentry."""
-        sentry.captureException(exc)
-        # end with
-        super(BankTask, self).on_failure(exc, task_id, args, kwargs, einfo)
-
-    @celery.task(bind=True)
-    def health_check(self, text):
-        return text
 
     """
         BNI VIRTUAL ACCOUNT TASK

@@ -31,4 +31,4 @@ def test_fetch():
     response = HTTPResponse()
 
     response = fetch(request, response)
-    assert response == {'status': '009', 'message': 'Unexpected Error.'}
+    assert response == {"status": "009", "message": "Unexpected Error."}

@@ -1,6 +1,9 @@
 clean:
 	find . -type f -name '*.pyc' -delete
 	find . -type f -name '*.log' -delete
+stamp:
+	python manage.py db stamp head
+
 migrate:
 	python manage.py db migrate
 
@@ -39,6 +42,9 @@ logging-worker:
 
 report-worker:
 	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q report -n reportworker@%h
+
+quota-worker:
+	celery worker -A task.worker.celery --loglevel=info --autoscale=4,2 -Q quota -n quotaworker@%h
 
 beat:
 	celery beat -A task.worker.celery --loglevel=info

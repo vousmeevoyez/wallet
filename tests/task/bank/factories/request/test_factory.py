@@ -4,6 +4,7 @@
 """
 from task.bank.factories.request.factory import generate_request
 
+
 class TestRequestFactory:
     """ Testing Factory Request Class"""
 
