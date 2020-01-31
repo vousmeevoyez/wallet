@@ -17,6 +17,8 @@ from app.api import create_app, db
 from app.api import models
 from app.api.models import *
 
+from task.quota.tasks import QuotaTask
+
 app = create_app(os.getenv("ENVIRONMENT") or 'dev')
 app.register_blueprint(blueprint, url_prefix="/api/v1")
 
@@ -70,6 +72,7 @@ def init():
     _create_payment_channel()
     # create api key
     _create_api_key()
+    _create_quota()
 
 def make_shell_context():
     """ create shell context here"""
@@ -299,6 +302,9 @@ def _create_api_key():
         )
         db.session.add(api_key)
         db.session.commit()
+
+def _create_quota():
+    QuotaTask().generate_monthly_quota()
 
 if __name__ == "__main__":
     manager.run()
