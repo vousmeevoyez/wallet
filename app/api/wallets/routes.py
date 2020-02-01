@@ -365,8 +365,8 @@ class TransferCheckout2Routes(Routes):
         """ endpoint for checking out wallet before transfer """
         request_data = self.serialize(self.payload())
         response = TransferServices().checkout(
-            request_data["phone_ext"], request_data["phone_number"],
-            exclude=("wallets.quotas")
+            request_data["phone_ext"],
+            request_data["phone_number"]
         )
         return response
 
