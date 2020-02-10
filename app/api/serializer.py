@@ -288,7 +288,12 @@ class WalletSchema(ma.Schema):
     status = fields.Method("bool_to_status")
     balance = fields.Float()
     virtual_accounts = fields.Nested(VirtualAccountSchema, many=True)
-    quotas = fields.Nested(QuotaSchema(only=("used", "remaining", "end_valid")), many=True)
+    quotas = fields.Nested(
+        QuotaSchema(
+            only=("used", "remaining", "end_valid")
+        ), many=True,
+        deserialize="active_only"
+    )
 
     def bool_to_status(self, obj):
         """
@@ -309,6 +314,9 @@ class WalletSchema(ma.Schema):
     def make_wallet(self, data):
         """ make wallet object """
         return Wallet(**data)
+
+    def active_only(self, value):
+        return value[-1]
 
 
 class UserSchema(ma.Schema):

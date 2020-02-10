@@ -27,7 +27,9 @@ class WalletCore:
     def __init__(self, source=None, pin=None, destination=None):
         if source is not None:
             # only look up in db when source is set
-            source_wallet = Wallet.query.filter_by(id=validate_uuid(source)).first()
+            source_wallet = Wallet.query.filter_by(
+                id=validate_uuid(source)
+            ).first()
             if source_wallet is None:
                 raise RequestNotFound(
                     error_response["WALLET_NOT_FOUND"]["TITLE"],
