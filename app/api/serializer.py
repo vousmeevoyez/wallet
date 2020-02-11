@@ -295,11 +295,7 @@ class WalletSchema(ma.Schema):
     status = fields.Method("bool_to_status")
     balance = fields.Float()
     virtual_accounts = fields.Nested(VirtualAccountSchema, many=True)
-    quotas = fields.Nested(
-        QuotaSchema(
-            only=("used", "remaining", "end_valid")
-        ), many=True
-    )
+    quotas = fields.Method("filter_result")
 
     def bool_to_status(self, obj):
         """
@@ -321,24 +317,13 @@ class WalletSchema(ma.Schema):
         """ make wallet object """
         return Wallet(**data)
 
-    '''
-    @pre_dump(pass_many=True)
-    def filter_result(self, data, many, **kwargs):
-        if many:
-            for item in data:
-                # we only return the active one
-                item.quotas = item.quotas.filter(
-                    Quota.start_valid >= datetime.utcnow(),
-                    Quota.end_valid <= datetime.utcnow()
-                ).all()
-        else:
-            data.quotas = data.quotas.filter(
-                Quota.start_valid >= datetime.utcnow(),
-                Quota.end_valid <= datetime.utcnow()
-            ).all()
-
-        return data
-    '''
+    def filter_result(self, obj):
+        new_obj = obj.quotas.filter(
+            Quota.start_valid <= datetime.utcnow(),
+            Quota.end_valid >= datetime.utcnow()
+        ).all()
+        serialized = QuotaSchema(many=True, only=("used", "remaining", "end_valid")).dump(new_obj)
+        return serialized.data
 
 
 class UserSchema(ma.Schema):

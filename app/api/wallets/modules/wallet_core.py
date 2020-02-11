@@ -57,11 +57,6 @@ class WalletCore:
                         error_response["WALLET_LOCKED"]["MESSAGE"],
                     )
                 # end if
-
-            source_wallet.quotas.filter(
-                Quota.start_valid >= datetime.utcnow(),
-                Quota.end_valid <= datetime.utcnow()
-            ).all()
             self.source = source_wallet
         # end if
 
@@ -90,10 +85,6 @@ class WalletCore:
                 )
             # end if
             # set attributes here
-            destination_wallet.quotas.filter(
-                Quota.start_valid >= datetime.utcnow(),
-                Quota.end_valid <= datetime.utcnow()
-            ).all()
             self.destination = destination_wallet
         # end if
 
