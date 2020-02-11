@@ -82,6 +82,7 @@ class QuotaTask(BaseTask):
         # and doesnt have valid quota yet
         start_valid, end_valid = Quota().get_valid_range(quota_type)
 
+        # get all active wallet
         wallets = Wallet.query.filter(
             Wallet.status == 1,
             ~Wallet.quotas.any(
@@ -89,7 +90,7 @@ class QuotaTask(BaseTask):
                     Quota.start_valid <= start_valid,
                     Quota.end_valid >= end_valid
                 )
-            ),
+            )
         ).all()
 
         quotas = []

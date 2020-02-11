@@ -51,9 +51,10 @@ def test_adds_monthly_quota():
     expected_end_valid = datetime(
         year=2019, month=1, day=31, hour=23, minute=59, second=59, microsecond=59
     )
-    assert len(wallet.quotas) == 1
-    assert wallet.quotas[0].quota_type == "MONTHLY"
-    assert wallet.quotas[0].no_of_transactions == 1
-    assert wallet.quotas[0].reward_amount == 3500
-    assert wallet.quotas[0].start_valid == expected_start_valid
-    assert wallet.quotas[0].end_valid == expected_end_valid
+    wallet_quotas = wallet.quotas.all()
+    assert len(wallet_quotas) == 1
+    assert wallet_quotas[0].quota_type == "MONTHLY"
+    assert wallet_quotas[0].no_of_transactions == 1
+    assert wallet_quotas[0].reward_amount == 3500
+    assert wallet_quotas[0].start_valid == expected_start_valid
+    assert wallet_quotas[0].end_valid == expected_end_valid

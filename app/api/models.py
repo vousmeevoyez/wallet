@@ -217,7 +217,8 @@ class Wallet(db.Model):
     transactions = db.relationship(
         "Transaction", back_populates="wallet"
     )  # one to many
-    quotas = db.relationship("Quota", cascade="all, delete-orphan")  # one to many
+    quotas = db.relationship("Quota", cascade="all, delete-orphan",
+                             lazy="dynamic")  # one to many
 
     def __repr__(self):
         return "<Wallet {} {} {}>".format(self.id, self.balance, self.user_id)
