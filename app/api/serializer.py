@@ -10,7 +10,14 @@
 
 import re
 from datetime import datetime
-from marshmallow import fields, ValidationError, post_load, validates
+from marshmallow import (
+    fields,
+    post_load,
+    validates,
+    pre_dump,
+    post_load,
+    ValidationError
+)
 
 from app.api import ma
 from app.api.models import *
@@ -291,8 +298,7 @@ class WalletSchema(ma.Schema):
     quotas = fields.Nested(
         QuotaSchema(
             only=("used", "remaining", "end_valid")
-        ), many=True,
-        deserialize="active_only"
+        ), many=True
     )
 
     def bool_to_status(self, obj):
@@ -315,8 +321,24 @@ class WalletSchema(ma.Schema):
         """ make wallet object """
         return Wallet(**data)
 
-    def active_only(self, value):
-        return value[-1]
+    '''
+    @pre_dump(pass_many=True)
+    def filter_result(self, data, many, **kwargs):
+        if many:
+            for item in data:
+                # we only return the active one
+                item.quotas = item.quotas.filter(
+                    Quota.start_valid >= datetime.utcnow(),
+                    Quota.end_valid <= datetime.utcnow()
+                ).all()
+        else:
+            data.quotas = data.quotas.filter(
+                Quota.start_valid >= datetime.utcnow(),
+                Quota.end_valid <= datetime.utcnow()
+            ).all()
+
+        return data
+    '''
 
 
 class UserSchema(ma.Schema):
