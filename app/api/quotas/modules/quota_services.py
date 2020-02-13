@@ -115,6 +115,8 @@ class QuotaServices:
         # get remaining quota here
         quota = Quota.query.filter(
             Quota.wallet_id == self.wallet.id,
+            Quota.start_valid <= datetime.utcnow(),
+            Quota.end_valid >= datetime.utcnow()
         ).first()
 
         response = {

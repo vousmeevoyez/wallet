@@ -533,6 +533,81 @@ def setup_wallet_with_quotas():
 
 
 @pytest.fixture(scope="module")
+def setup_wallet_with_multiple_quotas():
+    def _setup_wallet_with_multiple_quotas(
+        quota_type="MONTHLY", no_of_transactions=3, reward_amount=3500
+    ):
+        """ fixture for creating wallet object only!"""
+        wallet = Wallet()
+        wallet.set_pin("123456")
+        db.session.add(wallet)
+        db.session.flush()
+        wallet.add_balance(10000)
+        db.session.commit()
+
+        now = datetime.utcnow()
+        early_morning = {"hour": 0, "minute": 0, "second": 0, "microsecond": 0}
+        midnight = {"hour": 23, "minute": 59, "second": 59, "microsecond": 59}
+        # replace current date with early monring and midnight
+        current_start_valid = now.replace(**early_morning)
+        current_end_valid = current_start_valid.replace(**midnight)
+
+        last_start_valid = current_start_valid.replace(
+            day=current_start_valid.day - 1
+        )
+        last_end_valid = current_end_valid.replace(
+            day=current_end_valid.day - 1
+        )
+
+        if quota_type == "MONTHLY":
+            # generate quota for this month starting from 1 to last day of month
+            early_morning["day"] = 1
+            current_start_valid = current_start_valid.replace(**early_morning)
+            # set current end valid at lat day of month
+            last_day_of_month = monthrange(
+                current_start_valid.year,
+                current_start_valid.month
+            )[1]
+            midnight["day"] = last_day_of_month
+            current_end_valid = current_end_valid.replace(**midnight)
+
+            last_start_valid = current_start_valid.replace(
+                month=current_start_valid.month - 1
+            )
+
+            last_end_valid = last_end_valid.replace(
+                month=last_end_valid.month - 1
+            )
+        # end if
+
+        quota = Quota(
+            wallet_id=wallet.id,
+            quota_type=quota_type,
+            no_of_transactions=no_of_transactions,
+            reward_amount=reward_amount,
+            start_valid=current_start_valid,
+            end_valid=current_end_valid,
+        )
+        db.session.add(quota)
+        db.session.commit()
+
+        quota = Quota(
+            wallet_id=wallet.id,
+            quota_type=quota_type,
+            no_of_transactions=no_of_transactions,
+            reward_amount=reward_amount,
+            start_valid=last_start_valid,
+            end_valid=last_end_valid,
+        )
+        db.session.add(quota)
+        db.session.commit()
+
+        return wallet
+
+    return _setup_wallet_with_multiple_quotas
+
+
+@pytest.fixture(scope="module")
 def setup_bni_bank_account():
     """ fixture for creating bni bank account object !"""
     bank = Bank.query.filter_by(code="009").first()
