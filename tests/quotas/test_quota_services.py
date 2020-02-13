@@ -126,6 +126,70 @@ def test_use_daily_quota(setup_wallet_with_quotas, setup_transaction):
     assert response["is_rewarded"] is True
     assert response["reward_amount"] == 3500
     # make sure usage is correct
-    quota_usage = QuotaUsage.query.filter_by(transaction_id=setup_transaction.id).first()
+    quota_usage = QuotaUsage.query.filter_by(
+        transaction_id=setup_transaction.id
+    ).first()
     assert quota_usage.status == 0  # PENDING
-    assert quota_usage.usage == -1 # deducted value
+    assert quota_usage.usage == -1  # deducted value
+
+
+def test_monthly_quota_multiple(setup_wallet_with_multiple_quotas, setup_transaction):
+    """ case 1: testing wallet that have quota for this month and last month,
+    and need to make sure only quota for this month is deducted and leave the
+    last month quota blank """
+    wallet = setup_wallet_with_multiple_quotas("MONTHLY")
+
+    response = QuotaServices(
+        wallet_id=wallet.id,
+        transaction_id=setup_transaction.id
+    ).use_quota()
+    # make sure current quota is deducted
+    current_quota = wallet.quotas.all()[0]
+    quota = Quota.query.get(current_quota.id)
+    assert len(quota.quota_usages) == 1
+
+    # make sure current quota is deducted
+    last_quota = wallet.quotas.all()[1]
+    quota = Quota.query.get(last_quota.id)
+    assert len(quota.quota_usages) == 0
+
+    # make sure get correct reward
+    assert response["is_rewarded"] is True
+    assert response["reward_amount"] == 3500
+    # make sure usage is correct
+    quota_usage = QuotaUsage.query.filter_by(
+        transaction_id=setup_transaction.id
+    ).first()
+    assert quota_usage.status == 0  # PENDING
+    assert quota_usage.usage == -1  # deducted value
+
+
+def test_daily_quota_multiple(setup_wallet_with_multiple_quotas, setup_transaction):
+    """ case 1: testing wallet that have quota for today and yesterday,
+    and need to make sure only quota for today is deducted and leave the
+    yesterday quota unusded """
+    wallet = setup_wallet_with_multiple_quotas("DAILY")
+
+    response = QuotaServices(
+        wallet_id=wallet.id,
+        transaction_id=setup_transaction.id
+    ).use_quota()
+    # make sure current quota is deducted
+    current_quota = wallet.quotas.all()[0]
+    quota = Quota.query.get(current_quota.id)
+    assert len(quota.quota_usages) == 1
+
+    # make sure current quota is deducted
+    last_quota = wallet.quotas.all()[1]
+    quota = Quota.query.get(last_quota.id)
+    assert len(quota.quota_usages) == 0
+
+    # make sure get correct reward
+    assert response["is_rewarded"] is True
+    assert response["reward_amount"] == 3500
+    # make sure usage is correct
+    quota_usage = QuotaUsage.query.filter_by(
+        transaction_id=setup_transaction.id
+    ).first()
+    assert quota_usage.status == 0  # PENDING
+    assert quota_usage.usage == -1  # deducted value
