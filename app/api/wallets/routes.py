@@ -340,7 +340,7 @@ class TransferCheckoutRoutes(Routes):
         response = TransferServices().checkout(
             request_data["phone_ext"],
             request_data["phone_number"],
-            only=("name", "msisdn", "wallets.id", "wallets.status"),
+            fields=("name", "msisdn", "wallets.id", "wallets.status"),
         )
         return response
 
