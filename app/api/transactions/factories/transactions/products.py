@@ -203,10 +203,11 @@ class ReceivePayrollTransaction(CreditTransaction):
         """ should decide trigger auto debit or auto pay here after successfully receive the money """
         payroll_amount = self.transaction.amount
 
-        response = {}
+        response = []
 
-        plan = PaymentPlan.check_payment(self.transaction.wallet)
-        if plan is not None:
+        plans = PaymentPlan.check_payments(self.transaction.wallet)
+        current_app.logger.info("no of plans {}".format(plans))
+        for plan in plans:
             # make sure today is the due date to able deduct it
             indo_time = pytz.timezone("Asia/Jakarta")
 
@@ -224,11 +225,11 @@ class ReceivePayrollTransaction(CreditTransaction):
                 PaymentTask.background_transfer.apply_async(
                     args=[plan.id, "AUTO_PAY"], queue="payment"
                 )
-                response["data"] = {"message": "AUTO_PAY"}
                 current_app.logger.info("payroll_date : {}".format(payroll_date))
                 current_app.logger.info("due_date : {}".format(due_date))
                 current_app.logger.info("differences : {}".format(differences.days))
                 current_app.logger.info("should trigger AUTO_PAY")
+                response.append({"message": "AUTO_PAY"})
             else:
                 current_app.logger.info("payroll_date : {}".format(payroll_date))
                 current_app.logger.info("due_date : {}".format(due_date))
@@ -254,7 +255,7 @@ class ReceivePayrollTransaction(CreditTransaction):
                         trigger="date",
                         next_run_time=due_date.replace(tzinfo=indo_time),
                     )
-                    response["data"] = {"message": "AUTO_DEBIT"}
+                    response.append({"message": "AUTO_DEBIT"})
                 # end if
             # end if
         # end if

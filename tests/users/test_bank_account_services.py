@@ -44,9 +44,16 @@ def test_add_bank_account_failed_bank_not_found(setup_user_factory):
         result = BankAccountServices(str(user.id), fake_uuid).add(bank_account)
 
 
-def test_show_bank_account_success(setup_user_factory):
+def test_show_bank_account_success(setup_user_factory, setup_bank):
     """ test function that show all bank account"""
+    # create repayment bank account
     user = setup_user_factory("someuser")
+    params = {"label": "VA Repayment", "name": "jennie", "account_no": "1234567891"}
+    bank_account = BankAccount(**params)
+
+    result = BankAccountServices(str(user.id), str(setup_bank.id)).add(bank_account)
+    assert result[1] == 201
+
     result = BankAccountServices(str(user.id)).show()
     assert len(result) == 1
 

@@ -938,9 +938,9 @@ class PaymentPlan(db.Model):
     # end def
 
     @staticmethod
-    def check_payment(wallet):
+    def check_payments(wallet):
         """ look up using wallet and check if there's any payment plan or not """
-        plan = (
+        plans = (
             Plan.query.join(PaymentPlan)
             .filter(
                 PaymentPlan.wallet_id == wallet.id,
@@ -949,9 +949,9 @@ class PaymentPlan(db.Model):
                 Plan.status.in_([0, 1, 2]),
             )
             .order_by(asc(Plan.due_date))
-            .first()
+            .all()
         )
-        return plan
+        return plans
 
     # end def
 

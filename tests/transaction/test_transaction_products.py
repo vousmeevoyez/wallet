@@ -89,7 +89,7 @@ def test_receive_payroll_without_payment_plan(
     receive_payroll_transaction.load(transaction)
 
     result = receive_payroll_transaction.post_create("RECEIVE_PAYROLL")
-    assert result == {}
+    assert len(result) == 0
 
 
 def test_receive_payroll_less_payroll(
@@ -137,7 +137,7 @@ def test_receive_payroll_less_payroll(
     receive_payroll_transaction.load(transaction)
 
     result = receive_payroll_transaction.post_create("RECEIVE_PAYROLL")
-    assert result["data"]["message"], "AUTO_DEBIT"
+    assert any("AUTO_DEBIT" in payment_plan["message"] for payment_plan in result)
 
 
 def test_receive_payroll_early_payroll(
@@ -186,7 +186,7 @@ def test_receive_payroll_early_payroll(
     receive_payroll_transaction.load(transaction)
 
     result = receive_payroll_transaction.post_create("RECEIVE_PAYROLL")
-    assert result["data"]["message"], "AUTO_DEBIT"
+    assert any("AUTO_DEBIT" in payment_plan["message"] for payment_plan in result)
 
 
 @freeze_time("2019-04-29")
@@ -236,4 +236,4 @@ def test_receive_payroll_late_payroll(
     receive_payroll_transaction.load(transaction)
 
     result = receive_payroll_transaction.post_create("RECEIVE_PAYROLL")
-    assert result == {}
+    assert any("AUTO_DEBIT" in payment_plan["message"] for payment_plan in result)

@@ -92,7 +92,11 @@ class BankAccountServices:
 
     def show(self):
         """ method to show user bank accounts"""
-        bank_accounts = BankAccount.query.filter_by(user_id=self.user.id).all()
+        # need to hide repayment VA
+        bank_accounts = BankAccount.query.filter(
+            BankAccount.user_id == self.user.id,
+            ~BankAccount.label.ilike("%repayment%")
+        ).all()
         response = BankAccountSchema(many=True).dump(bank_accounts).data
         return response
 
