@@ -178,5 +178,7 @@ class TransferServices(WalletCore):
         # end if
 
         # serialize
-        user_info = UserSchema(fields).dump(user).data
+        user_info = UserSchema().dump(user).data
+        if fields is not None:
+            user_info = UserSchema(only=fields).dump(user).data
         return ok(user_info)
