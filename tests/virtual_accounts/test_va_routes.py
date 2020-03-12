@@ -11,6 +11,7 @@ from tests.reusable.api_list import (
     get_virtual_accounts,
     get_virtual_account_logs,
     update_virtual_account,
+    remove_virtual_account
 )
 
 
@@ -70,3 +71,15 @@ def test_get_virtual_account_logs(client, setup_user_wallet_va, setup_admin_toke
     result = get_virtual_account_logs(client, va_account_no, setup_admin_token)
     response = result.get_json()
     assert response["data"] == []
+
+
+def test_remove_virtual_account(client, setup_user_wallet_va, setup_admin_token):
+    access_token, user_id, wallet_id = setup_user_wallet_va
+
+    va = VirtualAccount.query.filter_by(wallet_id=wallet_id).first()
+    account_no = va.account_no
+
+    result = remove_virtual_account(client, setup_admin_token, account_no)
+    assert result.status_code == 204
+    # make sure its deactivated!
+    assert va.status == 2
