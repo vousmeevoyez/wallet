@@ -71,7 +71,6 @@ class VirtualAccountInfoRoutes(Routes):
 
     # end def
 
-    '''
     @admin_required
     def delete(self, account_no):
         """ endpoint for deactivating virtual accounts  """
@@ -79,7 +78,6 @@ class VirtualAccountInfoRoutes(Routes):
         return response
 
     # end def
-    '''
 
 
 # end class

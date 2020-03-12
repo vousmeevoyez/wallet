@@ -4,28 +4,20 @@
     Handle withdraw request process
 """
 from datetime import datetime, timedelta
-
 # db
 from app.api import db
-
 # services
 from app.api.virtual_accounts.modules.va_services import VirtualAccountServices
-
 # core
 from app.api.wallets.modules.wallet_core import WalletCore
-
 # models
 from app.api.models import Withdraw, Bank, VirtualAccount, VaType
-
 # http
 from app.lib.http_response import ok
-
 # const
-from app.api.const import WALLET, VIRTUAL_ACCOUNT
-
+from app.api.const import STATUS, WALLET, VIRTUAL_ACCOUNT
 # exceptions
 from app.lib.http_error import UnprocessableEntity
-
 # error
 from app.api.const import ERROR as error_response
 
@@ -106,7 +98,10 @@ class WithdrawServices(WalletCore):
         va_type = VaType.query.filter_by(key="DEBIT").first()
 
         va_record = VirtualAccount.query.filter_by(
-            wallet_id=self.source.id, bank_id=bank.id, va_type_id=va_type.id
+            wallet_id=self.source.id,
+            bank_id=bank.id,
+            va_type_id=va_type.id,
+            status=STATUS["ACTIVE"]
         ).first()
         # if va not existed create va debit
         if va_record is None:

@@ -668,3 +668,12 @@ def update_virtual_account(client, access_token, account_no, params):
         headers=headers,
         data=params,
     )
+
+
+def remove_virtual_account(client, access_token, account_no):
+    """ Api Call for gettign removing /deactivating virtual accounts """
+    headers = {"Authorization": "Bearer {}".format(access_token)}
+    return client.delete(
+        BASE_URL + "/virtual_accounts/{}".format(account_no),
+        headers=headers
+    )

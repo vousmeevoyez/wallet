@@ -121,3 +121,24 @@ def test_get_logs(setup_bank, setup_credit_va_type):
     # have 2 balance and created at
     assert data[0]["balance"]
     assert data[0]["created_at"]
+
+
+@patch.object(BankTask, "create_va")
+def test_remove_va(mock_create_va, setup_wallet_info):
+    """ test method for deactivating va"""
+    virtual_account = VirtualAccount(name="lisa")
+
+    params = {
+        "bank_code": "009",
+        "type": "CREDIT",
+        "wallet_id": setup_wallet_info["id"],
+        "amount": 0,
+    }
+
+    mock_create_va.return_value = True
+    result = VirtualAccountServices().add(virtual_account, params)
+    virtual_account = result[0]["data"]["virtual_account"]
+    assert virtual_account
+
+    result = VirtualAccountServices(virtual_account).remove()
+    assert result[1] == 204
