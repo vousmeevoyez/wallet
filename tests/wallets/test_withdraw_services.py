@@ -5,7 +5,7 @@ import pytest
 
 from app.api import db
 
-from app.api.models import Wallet, Withdraw
+from app.api.models import Wallet, Withdraw, VirtualAccount
 
 from app.api.wallets.modules.withdraw_services import WithdrawServices
 
@@ -19,7 +19,7 @@ from app.api.utility.utils import validate_uuid
 
 
 def test_request_withdraw_success(setup_wallet_info):
-    """ test function to request withdraw """
+    """ test function to request successful withdraw """
     params = {"amount": 50000, "bank_code": "009"}
 
     result = WithdrawServices(setup_wallet_info["id"], "123456").request(params)
@@ -51,7 +51,9 @@ def test_request_withdraw_success_all_amount(setup_wallet_info):
 
 
 def test_request_withdraw_success_all_amount_max(setup_wallet_info):
-    """ test function to request withdraw """
+    """ test function to request withdraw all amount max but allowed max is
+    only 2.5 mio
+    """
     wallet = Wallet.query.get(setup_wallet_info["id"])
     wallet.add_balance(2500001)
     db.session.commit()
@@ -67,7 +69,7 @@ def test_request_withdraw_success_all_amount_max(setup_wallet_info):
 
 
 def test_request_withdraw_pending(setup_wallet_info):
-    """ test function to request withdraw """
+    """ test function to request withdraw but already request in process """
     params = {"amount": 50000, "bank_code": "009"}
 
     with pytest.raises(UnprocessableEntity):
@@ -75,11 +77,19 @@ def test_request_withdraw_pending(setup_wallet_info):
 
 
 def test_request_withdraw_va_already_exist(setup_wallet_info):
-    """ test function to request withdraw """
+    """ test function to request withdraw but va already created before it
+    means we just need to reactive (create new va with same number but
+    different trx id )"""
     params = {"amount": 50000, "bank_code": "009"}
 
+    # clear any previous withdraw
     db.session.query(Withdraw).delete()
     db.session.commit()
+    # add virtual account information
+    va = VirtualAccount.query.filter_by(wallet_id=setup_wallet_info["id"]).all()
+    for v in va:
+        v.status = 1
+        db.session.commit()
 
     result = WithdrawServices(setup_wallet_info["id"], "123456").request(params)
 

@@ -160,7 +160,7 @@ class VirtualAccountServices:
 
     # end def
 
-    def reactivate(self, bank_code, va_type, amount):
+    def reactivate(self, bank_code, va_type, amount, **ignore):
         """
             Re create VA that already exist with same information
         """
