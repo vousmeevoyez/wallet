@@ -4,20 +4,28 @@
     Handle withdraw request process
 """
 from datetime import datetime, timedelta
+
 # db
 from app.api import db
+
 # services
 from app.api.virtual_accounts.modules.va_services import VirtualAccountServices
+
 # core
 from app.api.wallets.modules.wallet_core import WalletCore
+
 # models
 from app.api.models import Withdraw, Bank, VirtualAccount, VaType
+
 # http
 from app.lib.http_response import ok
+
 # const
 from app.api.const import STATUS, WALLET, VIRTUAL_ACCOUNT
+
 # exceptions
 from app.lib.http_error import UnprocessableEntity
+
 # error
 from app.api.const import ERROR as error_response
 
@@ -85,7 +93,7 @@ class WithdrawServices(WalletCore):
         # define payload here
         va_payload = {
             "bank_code": bank_code,
-            "type": "DEBIT",
+            "va_type": "DEBIT",
             "wallet_id": self.source.id,
             "amount": amount,
         }
@@ -101,18 +109,18 @@ class WithdrawServices(WalletCore):
             wallet_id=self.source.id,
             bank_id=bank.id,
             va_type_id=va_type.id,
-            status=STATUS["ACTIVE"]
+            status=STATUS["ACTIVE"],
         ).first()
         # if va not existed create va debit
         if va_record is None:
             # create va object here
-            virtual_account = VirtualAccount(name=self.source.user.name)
-            va_response = VirtualAccountServices().add(virtual_account, va_payload)
+            va_payload["name"] = self.source.user.name
+            va_response = VirtualAccountServices().add(**va_payload)
             va_response = va_response[0]["data"]
         else:
             # update va here
             va_response = VirtualAccountServices(va_record.account_no).reactivate(
-                va_payload
+                **va_payload
             )
 
         response = {
