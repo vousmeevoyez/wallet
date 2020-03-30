@@ -190,7 +190,7 @@ def setup_user_wallet_va_bank_acc(client, setup_user_wallet_va):
         "account_no": "3333333333",
         "name": "Bpk KEN AROK",
         "label": "Irene Bank Account",
-        "bank_id": str(bank.id)
+        "bank_id": str(bank.id),
     }
     result = create_user_bank_account(client, user_id, params, access_token)
     response = result.get_json()["data"]
@@ -305,18 +305,17 @@ def setup_debit_va_type():
 @pytest.fixture(scope="module")
 def setup_credit_va(setup_wallet_without_balance, setup_bank, setup_credit_va_type):
     """ fixture for creating credit va object only!"""
-    credit_va = VirtualAccount(
+    va = VirtualAccount(
         wallet_id=setup_wallet_without_balance.id,
         va_type_id=setup_credit_va_type.id,
         bank_id=setup_bank.id,
     )
-    va_number = credit_va.generate_va_number()
-    va_trx_id = credit_va.generate_trx_id()
+    va.generate_va_number()
+    va.generate_trx_id()
 
-    db.session.add(credit_va)
+    db.session.add(va)
     db.session.commit()
-
-    return va_number, va_trx_id
+    return va
 
 
 @pytest.fixture(scope="module")
@@ -327,13 +326,12 @@ def setup_debit_va(setup_wallet_without_balance, setup_bank, setup_debit_va_type
         va_type_id=setup_debit_va_type.id,
         bank_id=setup_bank.id,
     )
-    va_number = debit_va.generate_va_number()
-    va_trx_id = debit_va.generate_trx_id()
+    debit_va.generate_va_number()
+    debit_va.generate_trx_id()
 
     db.session.add(debit_va)
     db.session.commit()
-
-    return va_number, va_trx_id
+    return debit_va
 
 
 @pytest.fixture(scope="module")
@@ -552,12 +550,8 @@ def setup_wallet_with_multiple_quotas():
         current_start_valid = now.replace(**early_morning)
         current_end_valid = current_start_valid.replace(**midnight)
 
-        last_start_valid = current_start_valid.replace(
-            day=current_start_valid.day - 1
-        )
-        last_end_valid = current_end_valid.replace(
-            day=current_end_valid.day - 1
-        )
+        last_start_valid = current_start_valid.replace(day=current_start_valid.day - 1)
+        last_end_valid = current_end_valid.replace(day=current_end_valid.day - 1)
 
         if quota_type == "MONTHLY":
             # generate quota for this month starting from 1 to last day of month
@@ -565,8 +559,7 @@ def setup_wallet_with_multiple_quotas():
             current_start_valid = current_start_valid.replace(**early_morning)
             # set current end valid at lat day of month
             last_day_of_month = monthrange(
-                current_start_valid.year,
-                current_start_valid.month
+                current_start_valid.year, current_start_valid.month
             )[1]
             midnight["day"] = last_day_of_month
             current_end_valid = current_end_valid.replace(**midnight)
@@ -575,9 +568,7 @@ def setup_wallet_with_multiple_quotas():
                 month=current_start_valid.month - 1
             )
 
-            last_end_valid = last_end_valid.replace(
-                month=last_end_valid.month - 1
-            )
+            last_end_valid = last_end_valid.replace(month=last_end_valid.month - 1)
         # end if
 
         quota = Quota(
@@ -662,7 +653,7 @@ def setup_credit_va(setup_wallet_without_balance, setup_bank, setup_credit_va_ty
     db.session.add(credit_va)
     db.session.commit()
 
-    return va_number, va_trx_id
+    return va_number, va_trx_id, credit_va
 
 
 @pytest.fixture(scope="module")

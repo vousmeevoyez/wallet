@@ -7,7 +7,7 @@
 # pylint: disable=no-name-in-module
 # pylint: disable=import-error
 # pylint: disable=no-member
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 
 # database
@@ -18,16 +18,16 @@ from app.api.models import VirtualAccount, Bank, VaType, VaLog
 
 # serializer
 from app.api.serializer import VirtualAccountSchema, VaLogSchema
-from app.lib.http_response import created, no_content
+from app.lib.http_response import ok, created, no_content
 from app.lib.http_error import RequestNotFound, UnprocessableEntity
-
-from app.lib.http_response import ok, no_content
 
 # const
 from app.api.const import STATUS
 
 # error response
 from app.api.const import ERROR as error_response
+
+from app.api.banks.modules.bank_services import BankServices
 
 # bank task
 from task.bank.tasks import BankTask
@@ -50,7 +50,8 @@ class VirtualAccountServices:
 
             self.virtual_account = va_record
 
-    def add(self, virtual_account, params):
+    @staticmethod
+    def add(name, wallet_id, bank_code, va_type, amount):
         """
             create virtual account record on database here and return system
             generated transaction and virtual account id
@@ -59,28 +60,22 @@ class VirtualAccountServices:
                 params -- wallet_id, name, type
                 session -- database session (optional)
         """
-        bank_code = params["bank_code"]
-        va_type = params["type"]
-        wallet_id = params["wallet_id"]
-        amount = params["amount"]
+        virtual_account = VirtualAccount(name=name)
 
         # fetch va type id
-        va_type = VaType.query.filter_by(key=va_type).first()
-
+        va_type_obj = VaType.query.filter_by(key=va_type).first()
         # fetch bank id
         bank = Bank.query.filter_by(code=bank_code).first()
 
         # put va creation in the queue
         virtual_account.wallet_id = wallet_id
-        virtual_account.va_type_id = va_type.id
+        virtual_account.va_type_id = va_type_obj.id
         virtual_account.bank_id = bank.id
         virtual_account.amount = amount
 
+        virtual_account.generate_trx_id()
         virtual_account_number = virtual_account.generate_va_number()
-        transaction_id = virtual_account.generate_trx_id()
-        datetime_expired = virtual_account.get_datetime_expired(
-            bank_code, params["type"]
-        )
+        datetime_expired = virtual_account.get_datetime_expired(bank_code, va_type)
 
         try:
             db.session.add(virtual_account)
@@ -94,9 +89,7 @@ class VirtualAccountServices:
         # end try
 
         # create va in the background here
-        task_result = BankTask().create_va.apply_async(
-            args=[virtual_account.id], queue="bank"
-        )
+        BankTask().create_va.apply_async(args=[virtual_account.id], queue="bank")
 
         response = {
             "virtual_account": virtual_account_number,
@@ -140,14 +133,14 @@ class VirtualAccountServices:
 
     # end def
 
-    def update(self, params):
+    def update(self, name, datetime_expired=None):
         """
             update Virtual Account information details
         """
-        self.virtual_account.name = params["name"]
-        if params["datetime_expired"] is not None:
+        self.virtual_account.name = name
+        if datetime_expired is not None:
             self.virtual_account.datetime_expired = datetime.fromisoformat(
-                params["datetime_expired"]
+                datetime_expired
             )
 
         db.session.commit()
@@ -167,28 +160,24 @@ class VirtualAccountServices:
 
     # end def
 
-    def reactivate(self, params):
+    def reactivate(self, bank_code, va_type, amount):
         """
             Re create VA that already exist with same information
         """
         # update existing va with new generated value
-        transaction_id = self.virtual_account.generate_trx_id()
-        datetime_expired = self.virtual_account.get_datetime_expired(
-            params["bank_code"], params["type"]
-        )
-        self.virtual_account.amount = params["amount"]
+        self.virtual_account.generate_trx_id()
+        datetime_expired = self.virtual_account.get_datetime_expired(bank_code, va_type)
+        self.virtual_account.amount = amount
 
         # commit everything
         db.session.commit()
 
-        task_result = BankTask().create_va.apply_async(
-            args=[self.virtual_account.id], queue="bank"
-        )
+        BankTask().create_va.apply_async(args=[self.virtual_account.id], queue="bank")
 
         response = {
             "virtual_account": str(self.virtual_account.account_no),
             "valid_until": datetime_expired,
-            "amount": params["amount"],
+            "amount": amount,
         }
         return response
 
@@ -196,3 +185,38 @@ class VirtualAccountServices:
 
 
 # end class
+
+
+def bulk_update_va():
+    """
+        we go check all virtual accounts and if almost expire we extend it
+        otherwise we just recreate it
+    """
+    va_type = VaType.query.filter_by(key="CREDIT").first()
+    virtual_accounts = VirtualAccount.query.filter_by(
+        va_type_id=va_type.id, status=STATUS["ACTIVE"]
+    ).all()
+    for virtual_account in virtual_accounts:
+        try:
+            va_info = BankServices().get_account_information(virtual_account.account_no)
+        except UnprocessableEntity as error:
+            print(error)
+            print("Failed to fetch {}".format(virtual_account.account_no))
+        else:
+            # if va info status == 2 it means expired we need to recreate it
+            # if va status == 1 we just extend it
+            current_va_status = va_info["bank_account_info"]["status"]
+            if current_va_status == "1":
+                # set to 10 years from now
+                expired_at = datetime.utcnow() + timedelta(days=365 * 10)
+                expired_at = expired_at.isoformat()
+                VirtualAccountServices(virtual_account.account_no).update(
+                    virtual_account.name, expired_at
+                )
+            elif current_va_status == "2":
+                VirtualAccountServices(virtual_account.account_no).reactivate(
+                    amount=0, bank_code="009", va_type="CREDIT"
+                )
+
+
+# end def

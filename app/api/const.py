@@ -33,7 +33,7 @@ PAYMENT_STATUS = {"DONE": 1, "CANCELLED": 2}
 
 VIRTUAL_ACCOUNT = {
     "009": {
-        "CREDIT_VA_TIMEOUT": 4350,  # 1 year
+        "CREDIT_VA_TIMEOUT": 87600,  # 10 year
         "DEBIT_VA_TIMEOUT": 5,  # 10 minutes cardless
         "DEBIT_MAX_BALANCE": 2500000,  # allowed debit balance
     }
@@ -53,7 +53,7 @@ WALLET = {
     "INCORRECT_RETRY": os.getenv("INCORRECT_RETRY") or 3,  # set max pin retry
     "QR_SECRET_KEY": "1#$@!%2jajdasnknvxivodisufu039021ofjldsjfa@@!",
     "LOCK_TIMEOUT": os.getenv("LOCK_TIMEOUT") or 5,
-    "ALLOWED_BANK_CODES": ["009", "427"] # BNI & BNI Syariah
+    "ALLOWED_BANK_CODES": ["009", "427"],  # BNI & BNI Syariah
 }
 
 LOGGING = {

@@ -66,7 +66,7 @@ class VirtualAccountInfoRoutes(Routes):
     def put(self, account_no):
         """ endpoint for updating virtual account """
         request_data = self.serialize(self.payload())
-        response = VirtualAccountServices(account_no).update(request_data)
+        response = VirtualAccountServices(account_no).update(**request_data)
         return response
 
     # end def

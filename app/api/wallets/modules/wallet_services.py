@@ -73,14 +73,14 @@ class WalletServices(WalletCore):
             va_name = wallet.user.organization
 
         try:
-            virtual_account = VirtualAccount(name=va_name)
             va_payload = {
+                "name": va_name,
                 "bank_code": "009",
-                "type": "CREDIT",
+                "va_type": "CREDIT",
                 "wallet_id": str(wallet.id),
                 "amount": 0,
             }
-            result = VirtualAccountServices().add(virtual_account, va_payload)
+            result = VirtualAccountServices().add(**va_payload)
         except UnprocessableEntity as error:
             # raise CommitError(error.msg, None, error.title, None)
             pass
