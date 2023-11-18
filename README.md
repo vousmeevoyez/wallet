@@ -1,6 +1,6 @@
-# Modana Wallet
+# Wallet
 
-Modana Wallet is a system provide API for Modana system to interact with Local & External Bank and also provide balancing for every user transaction
+Wallet is a system provide API for system to interact with Local & External Bank and also provide balancing for every user transaction
 
 ## Code style
 [![PEP8](https://img.shields.io/badge/code%20style-pep8-orange.svg)](https://www.python.org/dev/peps/pep-0008/)
